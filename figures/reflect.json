@@ -1,0 +1,750 @@
+{
+  "title": "反思智能体循环",
+  "speed": 2200,
+  "elements": [
+    {
+      "id": "agent",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "你的AI智能体"
+        }
+      ],
+      "minCardHeight": 133,
+      "width": 200
+    },
+    {
+      "id": "mission",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "任务说明"
+        }
+      ],
+      "minCardHeight": 43
+    },
+    {
+      "id": "disposition",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "性格倾向"
+        }
+      ],
+      "minCardHeight": 28
+    },
+    {
+      "id": "directives",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "指令"
+        }
+      ],
+      "minCardHeight": 28
+    },
+    {
+      "id": "config",
+      "type": "group",
+      "label": {
+        "title": "记忆库配置"
+      },
+      "children": [
+        "mission",
+        "disposition",
+        "directives"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 8,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "g1",
+      "type": "group",
+      "children": [
+        "agent",
+        "config"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 28,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "loop",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "智能体循环"
+        },
+        {
+          "type": "subtitle",
+          "text": "LLM 选择下一个工具"
+        }
+      ],
+      "minCardHeight": 133,
+      "width": 210
+    },
+    {
+      "id": "answer",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "答案"
+        },
+        {
+          "type": "subtitle",
+          "text": "最终综合"
+        }
+      ],
+      "minCardHeight": 103,
+      "width": 210
+    },
+    {
+      "id": "reflect",
+      "type": "group",
+      "label": {
+        "title": "反思"
+      },
+      "children": [
+        "loop",
+        "answer"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 40,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "t-mm",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "search_mental_models"
+        }
+      ]
+    },
+    {
+      "id": "t-obs",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "search_observations"
+        }
+      ]
+    },
+    {
+      "id": "t-recall",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "记忆召回"
+        },
+        {
+          "type": "subtitle",
+          "text": "四路搜索"
+        }
+      ]
+    },
+    {
+      "id": "t-expand",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "展开"
+        },
+        {
+          "type": "subtitle",
+          "text": "记忆 → 块 → 文档"
+        }
+      ]
+    },
+    {
+      "id": "tools",
+      "type": "group",
+      "label": {
+        "title": "工具"
+      },
+      "children": [
+        "t-mm",
+        "t-obs",
+        "t-recall",
+        "t-expand"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 72,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "mm",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "心智模型"
+        }
+      ],
+      "minCardHeight": 58,
+      "width": 196
+    },
+    {
+      "id": "obs",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "观察"
+        }
+      ],
+      "minCardHeight": 88,
+      "width": 196
+    },
+    {
+      "id": "facts",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "事实"
+        },
+        {
+          "type": "subtitle",
+          "text": "世界事实 · 经验事实"
+        }
+      ],
+      "minCardHeight": 118,
+      "width": 196
+    },
+    {
+      "id": "chunks",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "分块与文档"
+        }
+      ],
+      "minCardHeight": 43,
+      "width": 196
+    },
+    {
+      "id": "bank",
+      "type": "group",
+      "label": {
+        "title": "记忆库"
+      },
+      "children": [
+        "mm",
+        "obs",
+        "facts",
+        "chunks"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 12,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "g0",
+      "type": "group",
+      "children": [
+        "g1",
+        "reflect",
+        "tools",
+        "bank"
+      ],
+      "layout": {
+        "direction": "row",
+        "gap": 40,
+        "align": "center"
+      }
+    },
+    {
+      "id": "ask",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "agent"
+      },
+      "end": {
+        "id": "loop"
+      },
+      "label": {
+        "text": "reflect()"
+      }
+    },
+    {
+      "id": "shape",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "config"
+      },
+      "end": {
+        "id": "loop"
+      },
+      "label": {
+        "text": "指令"
+      }
+    },
+    {
+      "id": "c-mm",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "loop"
+      },
+      "end": {
+        "id": "t-mm"
+      }
+    },
+    {
+      "id": "c-obs",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "loop"
+      },
+      "end": {
+        "id": "t-obs"
+      }
+    },
+    {
+      "id": "c-recall",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "loop"
+      },
+      "end": {
+        "id": "t-recall"
+      }
+    },
+    {
+      "id": "c-expand",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "loop"
+      },
+      "end": {
+        "id": "t-expand"
+      }
+    },
+    {
+      "id": "r-mm",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "t-mm"
+      },
+      "end": {
+        "id": "mm"
+      }
+    },
+    {
+      "id": "r-obs",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "t-obs"
+      },
+      "end": {
+        "id": "obs"
+      }
+    },
+    {
+      "id": "r-recall",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "t-recall"
+      },
+      "end": {
+        "id": "facts"
+      }
+    },
+    {
+      "id": "r-expand",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "t-expand"
+      },
+      "end": {
+        "id": "chunks"
+      }
+    },
+    {
+      "id": "done",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "loop"
+      },
+      "end": {
+        "id": "answer"
+      },
+      "label": {
+        "text": "完成"
+      }
+    },
+    {
+      "id": "reply",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "answer"
+      },
+      "end": {
+        "id": "agent"
+      }
+    }
+  ],
+  "scenes": [
+    {
+      "label": "reflect()",
+      "caption": "",
+      "beats": [
+        {
+          "edges": {
+            "edge": "ask",
+            "data": "“Should Alice join the ML project?”"
+          },
+          "show": {
+            "agent": [
+              {
+                "tag": "question",
+                "tone": "gray",
+                "text": "“Alice 应该加入 ML 项目吗？”"
+              }
+            ]
+          },
+          "say": "reflect() 收到一个需要推理、而非仅靠查找就能回答的问题。"
+        },
+        {
+          "edges": {
+            "edge": "shape",
+            "data": "mission · disposition · directives"
+          },
+          "show": {
+            "mission": [
+              {
+                "text": "帮助团队成员匹配合适的项目"
+              }
+            ],
+            "disposition": [
+              {
+                "text": "怀疑主义 4 · 同理心 3"
+              }
+            ],
+            "directives": [
+              {
+                "text": "绝不分享工资"
+              }
+            ],
+            "loop": [
+              {
+                "tag": "plan",
+                "tone": "gray",
+                "text": "从最精炼的知识开始"
+              }
+            ]
+          },
+          "say": "检索前，记忆库的任务说明、性格倾向与指令会加入智能体指令。",
+          "ms": 3000
+        },
+        {
+          "edges": {
+            "edge": "c-mm",
+            "data": "“Alice ML project”"
+          },
+          "show": {
+            "loop": [
+              {
+                "tag": "iteration",
+                "tone": "gray",
+                "text": "第 1 轮 / 最多 10 轮"
+              },
+              {
+                "text": "1. search_mental_models",
+                "mono": true,
+                "mark": "✓"
+              }
+            ]
+          },
+          "say": "每轮执行一次工具调用。检索从最高层的心智模型开始，这些是经过整理且持续更新的摘要。"
+        },
+        {
+          "edges": "r-mm",
+          "show": {
+            "mm": [
+              {
+                "tag": "model",
+                "tone": "orange",
+                "text": "团队概述：Alice，研究",
+                "mark": "fresh"
+              }
+            ]
+          },
+          "say": "最新心智模型可能足以回答。这里的模型涵盖团队，却不涵盖 ML 项目，因此智能体继续查找。",
+          "ms": 2400
+        },
+        {
+          "edges": {
+            "edge": "c-obs",
+            "data": "“Alice”"
+          },
+          "show": {
+            "loop": [
+              {
+                "tag": "iteration",
+                "tone": "gray",
+                "text": "第 2 轮 / 最多 10 轮"
+              },
+              {
+                "text": "1. search_mental_models",
+                "mono": true,
+                "mark": "✓"
+              },
+              {
+                "text": "2. search_observations",
+                "mono": true,
+                "mark": "stale"
+              }
+            ]
+          },
+          "say": "接着读取观察，即从多个事实整合出的信念。",
+          "ms": 1800
+        },
+        {
+          "edges": "r-obs",
+          "show": {
+            "obs": [
+              {
+                "text": "Alice 在Google研究团队工作",
+                "meta": "3 sources"
+              },
+              {
+                "tag": "stale",
+                "tone": "orange",
+                "text": "尚未整合的新事实"
+              }
+            ]
+          },
+          "say": "结果被标记为过时：记忆库有事实尚未整合为观察，所以智能体必须核对原始事实。",
+          "ms": 3000
+        },
+        {
+          "edges": {
+            "edge": "c-recall",
+            "data": "recall(\"Alice ML\")"
+          },
+          "show": {
+            "loop": [
+              {
+                "tag": "iteration",
+                "tone": "gray",
+                "text": "第 3 轮 / 最多 10 轮"
+              },
+              {
+                "text": "1. search_mental_models",
+                "mono": true,
+                "mark": "✓"
+              },
+              {
+                "text": "2. search_observations",
+                "mono": true,
+                "mark": "stale"
+              },
+              {
+                "text": "3. recall",
+                "mono": true,
+                "meta": "verify",
+                "mark": "✓"
+              }
+            ]
+          },
+          "say": "recall() 对原始事实执行完整的四路搜索，以获取事实依据。",
+          "ms": 1800
+        },
+        {
+          "edges": "r-recall",
+          "show": {
+            "facts": [
+              {
+                "tag": "world",
+                "tone": "blue",
+                "text": "Alice 请求加入 ML 项目",
+                "meta": "Sep 2026",
+                "mark": "new"
+              },
+              {
+                "tag": "experience",
+                "tone": "purple",
+                "text": "我建议 Alice 进行 ML",
+                "meta": "Apr 2026"
+              }
+            ]
+          },
+          "say": "新事实补齐了过时观察缺失的信息：Alice 本人提出转到 ML 项目。",
+          "ms": 3000
+        },
+        {
+          "edges": {
+            "edge": "c-expand",
+            "data": "expand → document"
+          },
+          "show": {
+            "loop": [
+              {
+                "tag": "iteration",
+                "tone": "gray",
+                "text": "第 4 轮 / 最多 10 轮"
+              },
+              {
+                "text": "1. search_mental_models",
+                "mono": true,
+                "mark": "✓"
+              },
+              {
+                "text": "2. search_observations",
+                "mono": true,
+                "mark": "stale"
+              },
+              {
+                "text": "3. recall",
+                "mono": true,
+                "meta": "verify",
+                "mark": "✓"
+              },
+              {
+                "text": "4. expand",
+                "mono": true,
+                "mark": "✓"
+              }
+            ]
+          },
+          "ms": 1800
+        },
+        {
+          "edges": "r-expand",
+          "show": {
+            "chunks": [
+              {
+                "tag": "doc",
+                "tone": "gray",
+                "text": "Sep 1:1 指出：“我很乐意在机器学习方面工作。”",
+                "mark": "read"
+              }
+            ]
+          },
+          "say": "recall 已返回各事实的来源分块。expand 更进一步，读取完整来源文档以获得全部上下文。",
+          "ms": 2600
+        },
+        {
+          "edges": {
+            "edge": "done",
+            "data": "done"
+          },
+          "show": {
+            "loop": [
+              {
+                "tag": "iteration",
+                "tone": "gray",
+                "text": "第 5 轮 / 最多 10 轮"
+              },
+              {
+                "text": "1. search_mental_models",
+                "mono": true,
+                "mark": "✓"
+              },
+              {
+                "text": "2. search_observations",
+                "mono": true,
+                "mark": "stale"
+              },
+              {
+                "text": "3. recall",
+                "mono": true,
+                "meta": "verify",
+                "mark": "✓"
+              },
+              {
+                "text": "4. expand",
+                "mono": true,
+                "mark": "✓"
+              },
+              {
+                "text": "5. done",
+                "mono": true,
+                "mark": "✓"
+              }
+            ],
+            "answer": [
+              {
+                "text": "模型 · 团队概况",
+                "mark": "✓"
+              },
+              {
+                "text": "观察 · alice-google",
+                "mark": "✓"
+              },
+              {
+                "text": "事实 · ml-ask",
+                "mark": "✓"
+              },
+              {
+                "text": "事实·7f3a",
+                "meta": "never retrieved",
+                "mark": "✗"
+              }
+            ]
+          },
+          "say": "智能体调用 done。每个引用 ID 都会与实际检索结果核对，不匹配的引用会被丢弃。必须先收集证据，最多进行 10 次迭代。",
+          "ms": 3800
+        },
+        {
+          "edges": {
+            "edge": "reply",
+            "data": "answer + 3 sources"
+          },
+          "show": {
+            "agent": [
+              {
+                "tag": "question",
+                "tone": "gray",
+                "text": "“Alice 应该加入 ML 项目吗？”"
+              },
+              {
+                "tag": "answer",
+                "tone": "green",
+                "text": "“是的。她是Google研究团队的成员，并要求在9月份加入机器学习。”",
+                "meta": "3 sources"
+              }
+            ]
+          },
+          "say": "答案遵循指令与记忆库的性格倾向，并附带所依据的记忆。",
+          "ms": 3200
+        }
+      ]
+    }
+  ]
+}

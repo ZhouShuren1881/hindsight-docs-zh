@@ -1,0 +1,53 @@
+{
+  "version": "1",
+  "bank": {
+    "reflect_mission": "你帮助客服智能体记住客户。召回每位客户的历史、当前及过往问题、账户背景，以及其期望的服务方式，让每次互动都体现充分了解与个性化。",
+    "retain_mission": "提取客户问题及其解决方案、情绪、账户与套餐详情、产品背景、作出的承诺和约定，以及任何偏好。忽略问候与客套话。",
+    "enable_observations": true,
+    "observations_mission": "跟踪每位客户的稳定事实：账户与套餐、反复出现的问题、产品使用情况、偏好，以及情绪随时间的趋势。",
+    "disposition_empathy": 5,
+    "disposition_literalism": 4,
+    "disposition_skepticism": 2
+  },
+  "mental_models": [
+    {
+      "id": "customer-profile",
+      "name": "客户画像",
+      "source_query": "这位客户是谁？其账户、套餐、产品使用情况是什么，期望怎样获得支持？",
+      "max_tokens": 2048,
+      "trigger": {
+        "refresh_after_consolidation": true
+      }
+    },
+    {
+      "id": "issue-history",
+      "name": "问题与解决历史",
+      "source_query": "这位客户报告过哪些问题，如何得到解决？还有哪些问题尚未关闭或解决？",
+      "max_tokens": 1536,
+      "trigger": {
+        "refresh_after_consolidation": true
+      }
+    },
+    {
+      "id": "sentiment-overview",
+      "name": "情绪概览",
+      "source_query": "客户的总体情绪如何，在多次互动中呈现什么趋势？什么让其感到沮丧或满意？",
+      "max_tokens": 1024,
+      "trigger": {
+        "refresh_after_consolidation": true
+      }
+    }
+  ],
+  "directives": [
+    {
+      "name": "不重复询问已知信息",
+      "content": "使用召回的客户账户与历史，而不是让客户重复已经提供的信息。重复询问已知信息会损害信任。",
+      "priority": 10
+    },
+    {
+      "name": "先表达共情",
+      "content": "在直接给出解决方案前，先理解客户的处境与情绪，尤其当召回历史显示问题反复出现或尚未解决时。",
+      "priority": 8
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "version": "1",
+  "bank": {
+    "reflect_mission": "你是一个跨聊天平台（Telegram、Discord、WhatsApp、Slack、QQ、LINE）与多人交流的智能体的共享记忆。召回每个频道或社区的角色设定与规范、每个人的身份及其关心的内容，帮助智能体保持角色与一致性。",
+    "retain_mission": "提取每个频道或社区的角色设定与规范（用途、语气、内部玩笑、规则）、每个人的偏好与事实、群组成员身份、持续中的请求，以及作出的承诺。将所有内容归属于正确的人和频道。忽略机器人命令、加入与退出消息等噪声，以及纯粹的闲聊。",
+    "enable_observations": true,
+    "observations_mission": "跟踪每个频道或社区的角色设定、规范与互动方式，以及各成员的稳定事实（偏好、角色、期望的互动方式），并跟踪两者的变化。",
+    "disposition_empathy": 4,
+    "disposition_literalism": 3,
+    "disposition_skepticism": 3
+  },
+  "mental_models": [
+    {
+      "id": "channel-persona",
+      "name": "频道角色与规范",
+      "source_query": "这个频道或社区的用途、语气和规范是什么？智能体应在这里保持什么角色，与其他频道有何不同？",
+      "max_tokens": 1536,
+      "trigger": {
+        "refresh_after_consolidation": true
+      }
+    },
+    {
+      "id": "member-profiles",
+      "name": "成员画像",
+      "source_query": "这里有哪些人？我们对每个人有哪些了解，包括偏好、角色、兴趣及期望的互动方式？",
+      "max_tokens": 2048,
+      "trigger": {
+        "refresh_after_consolidation": true
+      }
+    },
+    {
+      "id": "open-threads",
+      "name": "待处理事项",
+      "source_query": "近期对话中还有哪些请求、问题或后续事项未完成，谁在等待处理？",
+      "max_tokens": 1024,
+      "trigger": {
+        "refresh_after_consolidation": true
+      }
+    }
+  ],
+  "directives": [
+    {
+      "name": "归属于正确的人",
+      "content": "记忆由多个用户共享。始终将事实、偏好或请求关联到其所属的具体个人，不要将一个人的上下文应用于另一个人。",
+      "priority": 10
+    },
+    {
+      "name": "保持各频道的角色",
+      "content": "保持所在频道或社区特有的角色、语气与规范。同一个智能体可以在某个群组中活泼，在另一个群组中正式；让召回的频道角色持续引导互动方式。",
+      "priority": 9
+    }
+  ]
+}

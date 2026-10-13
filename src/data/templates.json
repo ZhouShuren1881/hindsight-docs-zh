@@ -1,0 +1,133 @@
+{
+  "templates": [
+    {
+      "id": "conversation",
+      "name": "对话",
+      "description": "适用于聊天智能体与助手。跟踪用户偏好、对话模式，并逐步建立用户画像。",
+      "category": "chat",
+      "integrations": [
+        "litellm",
+        "langgraph",
+        "pydantic-ai",
+        "vercel-ai-sdk",
+        "vercel-chat",
+        "crewai",
+        "ag2",
+        "agno",
+        "strands",
+        "llamaindex",
+        "local-mcp",
+        "skills",
+        "hermes"
+      ],
+      "manifest_file": "templates/conversation.json"
+    },
+    {
+      "id": "coding-agent",
+      "name": "编程智能体",
+      "description": "适用于编程助手与智能体。跨会话记住项目架构、技术决策、编程模式、评审偏好与工作流。采用较高的字面理解程度，实现精确的技术记忆召回。",
+      "category": "coding",
+      "integrations": [
+        "claude-code",
+        "codex",
+        "hermes"
+      ],
+      "manifest_file": "templates/coding-agent.json"
+    },
+    {
+      "id": "personal-assistant",
+      "name": "个人助手",
+      "description": "适用于持续在线的个人助手，管理任务、记住偏好，并在日常生活中保持上下文。跟踪承诺、习惯与个人背景。",
+      "category": "assistant",
+      "integrations": [
+        "openclaw",
+        "hermes",
+        "nemoclaw",
+        "hindclaw"
+      ],
+      "manifest_file": "templates/personal-assistant.json"
+    },
+    {
+      "id": "business-executive",
+      "name": "企业高管",
+      "description": "适用于根据会议记录跟踪客户、销售机会、项目交付和产品开发的高管与运营人员。提取决策、承诺、负责人和状态变化，构建销售管道、交付、产品及关系心智模型。采用较高的字面理解程度，精确召回数字、日期与承诺。",
+      "category": "business",
+      "integrations": [
+        "hermes",
+        "openclaw",
+        "langgraph",
+        "crewai",
+        "pydantic-ai",
+        "local-mcp"
+      ],
+      "manifest_file": "templates/business-executive.json"
+    },
+    {
+      "id": "hermes-gateway-bot",
+      "name": "网关 / 社区机器人",
+      "description": "适用于跨聊天平台（Telegram、Discord、Slack）与多人交流的智能体。区分每个人的画像，学习各社区的规范，并跨用户跟踪待处理事项。",
+      "category": "chat",
+      "integrations": [
+        "langgraph",
+        "crewai",
+        "agno",
+        "hermes"
+      ],
+      "manifest_file": "templates/hermes-gateway-bot.json"
+    },
+    {
+      "id": "hermes-orchestrator",
+      "name": "多智能体编排器",
+      "description": "适用于专业智能体的编排。记住决策及其理由、职责边界、交接，以及过往升级问题的解决方式。采用较高的字面理解程度与怀疑程度，实现精确协调。",
+      "category": "orchestration",
+      "integrations": [
+        "langgraph",
+        "crewai",
+        "autogen",
+        "hermes"
+      ],
+      "manifest_file": "templates/hermes-orchestrator.json"
+    },
+    {
+      "id": "customer-support",
+      "name": "客户支持智能体",
+      "description": "适用于客服与客户沟通智能体。记住客户问题、解决方案、情绪与账户背景，让每次互动都基于充分了解。具备较高的共情程度，不重复询问已知信息。",
+      "category": "support",
+      "integrations": [
+        "langgraph",
+        "crewai",
+        "dify",
+        "hermes"
+      ],
+      "manifest_file": "templates/customer-support.json"
+    },
+    {
+      "id": "research-assistant",
+      "name": "研究助手",
+      "description": "适用于研究、监测与知识工作智能体，撰写简报、摘要或维护第二大脑。学习用户兴趣，跟踪应忽略的内容以改善筛选，并逐步积累带有来源的持久知识。",
+      "category": "research",
+      "integrations": [
+        "obsidian",
+        "llamaindex",
+        "langgraph",
+        "hermes"
+      ],
+      "manifest_file": "templates/research-assistant.json"
+    },
+    {
+      "id": "plain-retrieval",
+      "name": "纯检索",
+      "description": "将 Hindsight 用作传统向量存储：输入文本块，输出混合搜索结果，存储与召回时无需 LLM。以舍弃事实、实体、图和时间结构为代价，实现最低成本与延迟。",
+      "category": "retrieval",
+      "integrations": [
+        "litellm",
+        "langgraph",
+        "pydantic-ai",
+        "ai-sdk",
+        "llamaindex",
+        "local-mcp"
+      ],
+      "manifest_file": "templates/plain-retrieval.json"
+    }
+  ]
+}

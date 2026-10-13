@@ -1,0 +1,1455 @@
+{
+  "$defs": {
+    "BankTemplateConfig": {
+      "description": "模板清单中的记忆库配置字段。\n\n仅包含可配置的记忆库级字段。出于安全考虑，不包含凭据字段（API 密钥、基础 URL）。",
+      "properties": {
+        "reflect_mission": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "反思操作的任务目标或上下文",
+          "title": "反思任务目标"
+        },
+        "retain_mission": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "引导记忆存储时提取哪些信息",
+          "title": "记忆存储任务目标"
+        },
+        "retain_extraction_mode": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "事实提取模式：'concise'（默认）、'verbose'、'custom'、'verbatim' 或 'chunks'",
+          "title": "记忆存储提取模式"
+        },
+        "retain_custom_instructions": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "自定义提取提示词（mode='custom' 时使用）",
+          "title": "记忆存储自定义指令"
+        },
+        "retain_chunk_size": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "每个内容分块的目标字符数上限",
+          "title": "记忆存储分块大小"
+        },
+        "retain_structured_chunk_size": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "可完整保留的单行 JSONL 或一轮对话的字符数上限；未设置时使用 retain_chunk_size",
+          "title": "记忆存储结构化分块大小"
+        },
+        "enable_observations": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "启用或禁用观察整合",
+          "title": "启用观察"
+        },
+        "observations_mission": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "控制综合提炼哪些信息",
+          "title": "观察任务目标"
+        },
+        "enable_text_search": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "启用或禁用记忆召回中的关键词（BM25）检索分支；禁用后仅使用向量搜索",
+          "title": "启用文本搜索"
+        },
+        "enable_temporal_retrieval": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "启用或禁用记忆召回中的时间检索分支及其日期感知查询分析",
+          "title": "启用时间检索"
+        },
+        "enable_graph_retrieval": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "启用或禁用记忆召回中的实体及关系图检索分支",
+          "title": "启用图检索"
+        },
+        "enable_reranking": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "启用或禁用记忆召回中的交叉编码器重排序",
+          "title": "启用重排序"
+        },
+        "disposition_skepticism": {
+          "anyOf": [
+            {
+              "maximum": 5,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "怀疑倾向（1–5）",
+          "title": "怀疑倾向"
+        },
+        "disposition_literalism": {
+          "anyOf": [
+            {
+              "maximum": 5,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "字面理解倾向（1–5）",
+          "title": "字面理解倾向"
+        },
+        "disposition_empathy": {
+          "anyOf": [
+            {
+              "maximum": 5,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "共情倾向（1–5）",
+          "title": "共情倾向"
+        },
+        "entity_labels": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/LabelGroup"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "实体标签的受控词汇表",
+          "title": "实体标签"
+        },
+        "entities_allow_free_form": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "允许使用标签词汇表之外的实体",
+          "title": "允许自由形式实体"
+        },
+        "retain_default_strategy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "默认记忆存储策略的名称（retain_strategies 映射中的键）",
+          "title": "默认记忆存储策略"
+        },
+        "retain_strategies": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "记忆存储策略名称到各策略配置字典的映射",
+          "title": "记忆存储策略"
+        },
+        "retain_chunk_batch_size": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "每个流式批次的分块数上限（0 表示禁用分批）",
+          "title": "记忆存储分块批次大小"
+        },
+        "retain_max_attachments_per_chunk": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "单个提取分块中内联图片数量的硬上限",
+          "title": "每个记忆存储分块的附件数上限"
+        },
+        "mcp_enabled_tools": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "此记忆库的 MCP 工具允许列表（None 表示允许所有工具）",
+          "title": "启用的 MCP 工具"
+        },
+        "consolidation_llm_batch_size": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "观察整合的 LLM 批次大小",
+          "title": "整合 LLM 批次大小"
+        },
+        "consolidation_source_facts_max_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "每个整合批次中源事实的 Token 数上限",
+          "title": "整合源事实的 Token 数上限"
+        },
+        "consolidation_source_facts_max_tokens_per_observation": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "每条观察所使用源事实的 Token 数上限",
+          "title": "每条观察的整合源事实 Token 数上限"
+        },
+        "max_observations_per_scope": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "每个整合范围内保留的观察数量上限",
+          "title": "每个范围的观察数量上限"
+        },
+        "observation_scope_limits": {
+          "anyOf": [
+            {
+              "items": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "已弃用：请使用同时支持任务目标的 consolidation_strategies。本字段仍有效，但仅在 consolidation_strategies 之后查询。按范围覆盖 max_observations_per_scope，例如 [{\"scope\": [\"run_*\", \"shared\"], \"limit\": 1}]。每个范围是一组 fnmatch 标签通配模式；整合范围必须满足精确覆盖，即每个标签都被某个通配模式匹配，且每个通配模式都匹配某个标签。采用首条匹配规则；没有匹配规则的范围使用 max_observations_per_scope。",
+          "title": "观察范围限制"
+        },
+        "consolidation_strategies": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ConsolidationStrategySpec"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "按范围配置整合设置，例如 [{\"scopes\": [{\"tags\": [\"company:*\"]}], \"observations_mission\": \"仅记录概括性的趋势。\", \"max_observations_per_scope\": 20}]。每个策略通过一组规则声明适用范围：规则的 tags 是 fnmatch 通配模式，范围必须具备所有这些模式匹配的标签；\"tags_match\" 决定范围能否携带其他标签（默认值 \"all\" 允许，\"exact\" 不允许）。各规则为备选条件，任意一条匹配即表示策略适用。策略可以设置 observations_mission、max_observations_per_scope、consolidation_source_facts_max_tokens 和 consolidation_source_facts_max_tokens_per_observation，各项均可省略。每个范围仅采用一个策略，即列表中首个适用策略。该策略未设置的字段，以及没有策略适用的范围，均使用记忆库级配置；后续策略不会补齐缺失字段。本字段取代 observation_scope_limits，使同一个记忆库可以跨用户、团队和公司标签范围联合使用，各范围按照自己的任务要求整合。",
+          "title": "整合策略"
+        },
+        "reflect_source_facts_max_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "每次反思调用中源事实的 Token 数上限",
+          "title": "反思源事实的 Token 数上限"
+        },
+        "knowledge_page_default_trigger": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "创建知识页时，覆盖内置默认值的触发器字段，例如 {\"refresh_cron\": \"0 * * * *\"}。创建请求显式传入的触发器仍具有更高优先级。",
+          "title": "知识页默认触发器"
+        },
+        "reflect_default_options": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "此记忆库的默认反思选项，例如 {\"reflect_search_observations_max_tokens\": 3000, \"reflect_search_observations_include_entities\": false}。当请求或模型触发器未设置相应选项时，应用于该记忆库中的所有反思操作，包括 API、MCP 和心智模型刷新。",
+          "title": "默认反思选项"
+        },
+        "mental_model_min_refresh_interval_seconds": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "此记忆库中同一心智模型两次自动刷新之间的最短秒数。默认值 0 表示不设下限。每个模型可通过触发器的 min_refresh_interval_seconds 覆盖此设置。",
+          "title": "心智模型最短刷新间隔（秒）"
+        },
+        "llm_gemini_safety_settings": {
+          "anyOf": [
+            {
+              "items": {},
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "记忆库级的 Gemini/VertexAI 安全过滤设置",
+          "title": "LLM Gemini 安全设置"
+        },
+        "recall_budget_function": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "记忆召回预算的映射函数：'fixed' 或 'adaptive'",
+          "title": "记忆召回预算函数"
+        },
+        "recall_budget_fixed_low": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "budget=low 时固定的 thinking_budget（function='fixed'）",
+          "title": "记忆召回固定低预算"
+        },
+        "recall_budget_fixed_mid": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "budget=mid 时固定的 thinking_budget（function='fixed'）",
+          "title": "记忆召回固定中预算"
+        },
+        "recall_budget_fixed_high": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "budget=high 时固定的 thinking_budget（function='fixed'）",
+          "title": "记忆召回固定高预算"
+        },
+        "recall_budget_adaptive_low": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "budget=low 时相对于 max_tokens 的比例（function='adaptive'）",
+          "title": "记忆召回自适应低预算"
+        },
+        "recall_budget_adaptive_mid": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "budget=mid 时相对于 max_tokens 的比例（function='adaptive'）",
+          "title": "记忆召回自适应中预算"
+        },
+        "recall_budget_adaptive_high": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "budget=high 时相对于 max_tokens 的比例（function='adaptive'）",
+          "title": "记忆召回自适应高预算"
+        },
+        "recall_budget_min": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "自适应函数的下限（限制到有效区间后应用）",
+          "title": "记忆召回预算下限"
+        },
+        "recall_budget_max": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "自适应函数的上限（限制到有效区间后应用）",
+          "title": "记忆召回预算上限"
+        },
+        "audit_log_enabled": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "为此记忆库启用审计日志（覆盖服务器默认设置）",
+          "title": "启用审计日志"
+        },
+        "store_document_text": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "持久保存原始源文本（documents.original_text / chunks.chunk_text）。设为 false 时仅保留提取出的事实。",
+          "title": "存储文档文本"
+        },
+        "enable_auto_consolidation": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "在记忆存储后自动整合观察",
+          "title": "启用自动整合"
+        },
+        "consolidation_max_memories_per_round": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "单轮整合输入的记忆单元数上限",
+          "title": "每轮整合的记忆数上限"
+        },
+        "consolidation_llm_parallelism": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "并发处理的整合 LLM 批次数量",
+          "title": "整合 LLM 并发数"
+        },
+        "recall_include_chunks": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "在记忆召回结果中包含原始分块",
+          "title": "记忆召回包含分块"
+        },
+        "recall_max_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "记忆召回返回结果的 Token 数上限",
+          "title": "记忆召回的 Token 数上限"
+        },
+        "recall_chunks_max_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "记忆召回返回原始分块的 Token 数上限（设置 recall_include_chunks 时使用）",
+          "title": "记忆召回分块的 Token 数上限"
+        },
+        "memory_defense": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "此记忆库的记忆防御策略（写入时按照 DefensePolicy schema 校验）",
+          "title": "记忆防御"
+        }
+      },
+      "title": "记忆库模板配置",
+      "type": "object"
+    },
+    "BankTemplateDirective": {
+      "description": "记忆库模板清单中的指令定义。\n\n重新导入时按名称匹配指令：更新同名已有指令，并创建新指令。",
+      "properties": {
+        "name": {
+          "description": "便于阅读的指令名称（重新导入时用作匹配键）",
+          "title": "名称",
+          "type": "string"
+        },
+        "content": {
+          "description": "要注入提示词的指令文本",
+          "title": "内容",
+          "type": "string"
+        },
+        "priority": {
+          "default": 0,
+          "description": "优先级较高的指令先注入",
+          "title": "优先级",
+          "type": "integer"
+        },
+        "is_active": {
+          "default": true,
+          "description": "此指令是否处于启用状态",
+          "title": "是否启用",
+          "type": "boolean"
+        },
+        "tags": {
+          "default": [],
+          "description": "用于过滤的标签",
+          "items": {
+            "type": "string"
+          },
+          "title": "标签",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "content"
+      ],
+      "title": "记忆库模板指令",
+      "type": "object"
+    },
+    "BankTemplateMentalModel": {
+      "description": "记忆库模板清单中的心智模型定义。",
+      "properties": {
+        "id": {
+          "description": "心智模型的唯一 ID（由小写字母、数字和连字符组成）",
+          "title": "ID",
+          "type": "string"
+        },
+        "name": {
+          "description": "便于阅读的心智模型名称",
+          "title": "名称",
+          "type": "string"
+        },
+        "source_query": {
+          "description": "生成内容时运行的查询",
+          "title": "源查询",
+          "type": "string"
+        },
+        "tags": {
+          "default": [],
+          "description": "控制范围可见性的标签",
+          "items": {
+            "type": "string"
+          },
+          "title": "标签",
+          "type": "array"
+        },
+        "max_tokens": {
+          "default": 2048,
+          "description": "生成内容的 Token 数上限",
+          "maximum": 8192,
+          "minimum": 256,
+          "title": "Token 数上限",
+          "type": "integer"
+        },
+        "trigger": {
+          "$ref": "#/$defs/MentalModelTrigger",
+          "default": {},
+          "description": "触发器设置"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "source_query"
+      ],
+      "title": "记忆库模板心智模型",
+      "type": "object"
+    },
+    "Budget": {
+      "description": "记忆召回和反思操作的预算级别。",
+      "enum": [
+        "low",
+        "mid",
+        "high"
+      ],
+      "title": "预算",
+      "type": "string"
+    },
+    "ConsolidationScopePattern": {
+      "description": "整合策略的一条规则：标签及其匹配方式。\n\n``tags`` 可以为空，这表示规则尚在编辑中；编辑器按输入内容保存，而整合过程忽略该规则。类型只约束数据结构，不要求内容完整：如果本应为标签列表的位置传入字符串，会立即拒绝，避免将其存入后在记忆库的整个生命周期中悄然忽略。\n\n未知键也会被拒绝，但由写入路径上的 :class:`StrictConsolidationStrategySpec` 处理，而不是在此使用 ``extra=\"forbid\"``。后者会将 ``additionalProperties: false`` 加入 schema，openapi-generator 无法处理，并会报错 \"Codegen Property not yet supported in getPydanticType\"。",
+      "properties": {
+        "tags": {
+          "description": "fnmatch 标签模式，例如 company:*",
+          "items": {
+            "type": "string"
+          },
+          "title": "标签",
+          "type": "array"
+        },
+        "tags_match": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "\"all\"（省略时的默认值）：范围包含规则中的所有标签，允许其他标签。\"exact\"：只包含这些标签，不允许其他标签。",
+          "title": "标签匹配方式"
+        }
+      },
+      "title": "整合范围模式",
+      "type": "object"
+    },
+    "ConsolidationStrategySpec": {
+      "description": "一个 `consolidation_strategies` 条目，包含用于声明适用范围的规则及这些范围使用的观察设置。所有设置都可省略；未设置的项使用记忆库级配置。",
+      "properties": {
+        "scopes": {
+          "description": "备选规则：任意一条规则匹配时，策略即适用于该范围",
+          "items": {
+            "$ref": "#/$defs/ConsolidationScopePattern"
+          },
+          "title": "范围",
+          "type": "array"
+        },
+        "observations_mission": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "观察任务目标"
+        },
+        "max_observations_per_scope": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "每个范围的观察数量上限"
+        },
+        "consolidation_source_facts_max_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "整合源事实的 Token 数上限"
+        },
+        "consolidation_source_facts_max_tokens_per_observation": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "每条观察的整合源事实 Token 数上限"
+        }
+      },
+      "title": "整合策略定义",
+      "type": "object"
+    },
+    "LabelGroup": {
+      "description": "具有类型和允许值的标签组（维度）。",
+      "properties": {
+        "key": {
+          "title": "键",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "title": "说明",
+          "type": "string"
+        },
+        "type": {
+          "default": "value",
+          "enum": [
+            "value",
+            "multi-values",
+            "text",
+            "multi-text",
+            "map"
+          ],
+          "title": "类型",
+          "type": "string"
+        },
+        "optional": {
+          "default": true,
+          "title": "可选",
+          "type": "boolean"
+        },
+        "tag": {
+          "default": false,
+          "title": "标签",
+          "type": "boolean"
+        },
+        "values": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/LabelValue"
+          },
+          "title": "允许值",
+          "type": "array"
+        },
+        "fields": {
+          "additionalProperties": {
+            "$ref": "#/$defs/MapField"
+          },
+          "default": {},
+          "title": "字段",
+          "type": "object"
+        }
+      },
+      "required": [
+        "key"
+      ],
+      "title": "标签组",
+      "type": "object"
+    },
+    "LabelValue": {
+      "description": "标签组中一个允许的值。",
+      "properties": {
+        "value": {
+          "title": "值",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "title": "说明",
+          "type": "string"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "title": "标签值",
+      "type": "object"
+    },
+    "MapField": {
+      "description": "映射类型实体标签组中的字段。通过 type='map' 支持递归。",
+      "properties": {
+        "type": {
+          "default": "text",
+          "enum": [
+            "text",
+            "multi-text",
+            "value",
+            "multi-values",
+            "map"
+          ],
+          "title": "类型",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "title": "说明",
+          "type": "string"
+        },
+        "values": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/LabelValue"
+          },
+          "title": "允许值",
+          "type": "array"
+        },
+        "fields": {
+          "additionalProperties": {
+            "$ref": "#/$defs/MapField"
+          },
+          "default": {},
+          "title": "字段",
+          "type": "object"
+        }
+      },
+      "title": "映射字段",
+      "type": "object"
+    },
+    "MentalModelTrigger": {
+      "description": "心智模型的触发器设置。\n\n刷新不是更换参数后执行的一次临时反思：它要综合生成整篇文档，因此需要独立的检索和迭代设置。这些设置仅来自该触发器，记忆库的 ``reflect_default_options`` 有意不作用于刷新。这些字段的记忆库级默认值为 ``knowledge_page_default_trigger``，创建页面时按相同结构进行覆盖合并。",
+      "properties": {
+        "budget": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Budget"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "一次刷新可使用的智能体迭代次数，以 reflect_max_iterations 的倍数表示：'low' 减半，'mid' 不变，'high' 加倍。刷新是开销最大的反思操作：它要生成整篇文档，并且设置 exclude_mental_models 后必须先读取原始事实。因此 null 表示 'mid'，不是临时反思默认使用的 'low'。"
+        },
+        "mode": {
+          "default": "full",
+          "description": "刷新模式。'full'（默认）每次刷新都从头生成心智模型内容。'delta' 对已有内容进行局部修改：未变化的部分逐字节保留，过时内容被删除，新内容被添加。如果心智模型尚无内容，或 source_query 自上次刷新后发生变化，delta 模式会自动回退为完整重新生成。",
+          "enum": [
+            "full",
+            "delta"
+          ],
+          "title": "模式",
+          "type": "string"
+        },
+        "refresh_after_consolidation": {
+          "default": false,
+          "description": "设为 true 时，在观察整合后刷新此心智模型（实时模式）",
+          "title": "整合后刷新",
+          "type": "boolean"
+        },
+        "refresh_cron": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "用于按固定时间表刷新心智模型的 Cron 表达式（UTC，标准 5 字段语法，例如 '0 3 * * *' 表示每天 UTC 03:00）。与 refresh_after_consolidation 互斥：模型只能在整合后刷新或按 Cron 时间表刷新，不能同时使用。定时刷新仅在模型过时时运行，即自上次刷新后其范围内有新记忆；没有变化时跳过本次触发，以免浪费 LLM 调用。null 表示不设置时间表。",
+          "title": "刷新 Cron 表达式"
+        },
+        "min_refresh_interval_seconds": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "此心智模型两次自动刷新之间的最短秒数。提前到达的刷新触发不会被丢弃，而是排队等待间隔结束；等待期间的后续触发合并到同一次排队刷新中，因此一批记忆存储只触发一次刷新，而不是每次存储都刷新。适用于 refresh_after_consolidation 和 refresh_cron。显式刷新（API、MCP、控制平面）忽略此限制并立即运行。0 表示禁用此模型的间隔下限；null 使用记忆库或全局 mental_model_min_refresh_interval_seconds 设置，该设置默认也是 0，即不设下限。",
+          "title": "最短刷新间隔（秒）"
+        },
+        "fact_types": {
+          "anyOf": [
+            {
+              "items": {
+                "enum": [
+                  "world",
+                  "experience",
+                  "observation"
+                ],
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "过滤反思期间检索的事实类型。None 表示全部类型（world、experience、observation）。",
+          "title": "事实类型"
+        },
+        "exclude_mental_models": {
+          "default": false,
+          "description": "设为 true 时，在反思循环中排除所有心智模型（跳过 search_mental_models 工具）。",
+          "title": "排除心智模型",
+          "type": "boolean"
+        },
+        "exclude_mental_model_ids": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "在反思循环中按 ID 排除指定心智模型。",
+          "title": "排除的心智模型 ID"
+        },
+        "tags_match": {
+          "anyOf": [
+            {
+              "enum": [
+                "any",
+                "all",
+                "any_strict",
+                "all_strict",
+                "exact"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "覆盖刷新期间模型标签对记忆的过滤方式。未设置时，模型有标签则默认使用 'all_strict'（安全隔离），没有标签则默认使用 'any'。在 'all_strict' 模式下，记忆必须包含模型的每个标签，且排除无标签记忆；因此，如果模型标签没有出现在记忆中，刷新结果会为空。设为 'all' 可在仍要求这些标签的同时纳入无标签记忆；设为 'any' 可同时纳入无标签记忆及任意单个标签匹配的记忆。过时判断不受这种放宽影响：在任何模式下，无标签写入都不会使带标签模型变为过时，只有匹配模型标签的写入才会如此。",
+          "title": "标签匹配方式"
+        },
+        "tag_groups": {
+          "anyOf": [
+            {
+              "items": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/TagGroupLeaf"
+                  },
+                  {
+                    "$ref": "#/$defs/TagGroupAnd"
+                  },
+                  {
+                    "$ref": "#/$defs/TagGroupOr"
+                  },
+                  {
+                    "$ref": "#/$defs/TagGroupNot"
+                  }
+                ]
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "刷新期间使用的复合布尔标签表达式，用来替代模型自身的标签。设置后，这些标签组传给反思操作，模型的扁平标签不再用于过滤。支持嵌套的 and/or/not 表达式，以定义复杂的标签范围。",
+          "title": "标签组"
+        },
+        "include_chunks": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "覆盖刷新内部的记忆召回是否返回原始分块文本。None 表示使用记忆库或全局默认配置（recall_include_chunks）。",
+          "title": "包含分块"
+        },
+        "recall_max_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "覆盖刷新内部的记忆召回返回事实的 Token 预算。None 表示使用记忆库或全局默认配置（recall_max_tokens）。",
+          "title": "记忆召回的 Token 数上限"
+        },
+        "recall_chunks_max_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "覆盖刷新内部的记忆召回返回原始分块的 Token 预算。None 表示使用记忆库或全局默认配置（recall_chunks_max_tokens）。",
+          "title": "记忆召回分块的 Token 数上限"
+        },
+        "reflect_search_observations_max_tokens": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "覆盖刷新中 search_observations 调用的 Token 预算。观察证据通常占据反思上下文的最大部分；降低此值会舍弃排名最低的观察，以缩小 LLM 上下文。null 表示使用内置默认值 5000。",
+          "title": "反思搜索观察的 Token 数上限"
+        },
+        "reflect_search_observations_include_entities": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "覆盖 search_observations 是否为每条观察附加已解析的实体名称。实体可能占序列化工具载荷的一半以上；禁用它们可保持相同的观察及排序，同时显著缩小上下文。null 表示启用。",
+          "title": "反思搜索观察包含实体"
+        },
+        "response_schema": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "用于结构化输出的可选 JSON Schema。设置后，每次刷新会执行与反思 response_schema 相同的结构化输出提取，并将解析结果存入 reflect_response.structured_output，与 Markdown 内容一并保存。",
+          "title": "响应 Schema"
+        },
+        "keep_trace": {
+          "default": false,
+          "description": "设为 true 时，此心智模型的每次刷新都会在 reflect_response.trace 中记录结果的生成过程：运行模式及其原因、解析后的范围和时间窗口、检索返回的事实数量与智能体实际使用的数量、工具与 LLM 调用，以及所有增量操作。只保留最近一次刷新的轨迹。由于 Cron 或整合驱动的刷新无人现场查看，这是事后诊断此类刷新的唯一方式。工具输出简化为结果数量，以限制存储轨迹的大小；如需原始提示词和响应，请使用 LLM 请求追踪。",
+          "title": "保留轨迹",
+          "type": "boolean"
+        }
+      },
+      "title": "心智模型触发器",
+      "type": "object"
+    },
+    "TagGroupAnd": {
+      "description": "复合 AND 组：所有子过滤条件都必须匹配。",
+      "properties": {
+        "and": {
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/TagGroupLeaf"
+              },
+              {
+                "$ref": "#/$defs/TagGroupAnd"
+              },
+              {
+                "$ref": "#/$defs/TagGroupOr"
+              },
+              {
+                "$ref": "#/$defs/TagGroupNot"
+              }
+            ]
+          },
+          "title": "与",
+          "type": "array"
+        }
+      },
+      "required": [
+        "and"
+      ],
+      "title": "AND 标签组",
+      "type": "object"
+    },
+    "TagGroupLeaf": {
+      "description": "叶级标签过滤器：按照标签列表和匹配模式匹配记忆。",
+      "properties": {
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "标签",
+          "type": "array"
+        },
+        "match": {
+          "default": "any_strict",
+          "enum": [
+            "any",
+            "all",
+            "any_strict",
+            "all_strict",
+            "exact"
+          ],
+          "title": "匹配方式",
+          "type": "string"
+        },
+        "resolve": {
+          "default": "exact",
+          "enum": [
+            "exact",
+            "fuzzy"
+          ],
+          "title": "解析方式",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tags"
+      ],
+      "title": "叶级标签组",
+      "type": "object"
+    },
+    "TagGroupNot": {
+      "description": "复合 NOT 组：子过滤条件必须不匹配。",
+      "properties": {
+        "not": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TagGroupLeaf"
+            },
+            {
+              "$ref": "#/$defs/TagGroupAnd"
+            },
+            {
+              "$ref": "#/$defs/TagGroupOr"
+            },
+            {
+              "$ref": "#/$defs/TagGroupNot"
+            }
+          ],
+          "title": "非"
+        }
+      },
+      "required": [
+        "not"
+      ],
+      "title": "NOT 标签组",
+      "type": "object"
+    },
+    "TagGroupOr": {
+      "description": "复合 OR 组：至少一个子过滤条件必须匹配。",
+      "properties": {
+        "or": {
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/TagGroupLeaf"
+              },
+              {
+                "$ref": "#/$defs/TagGroupAnd"
+              },
+              {
+                "$ref": "#/$defs/TagGroupOr"
+              },
+              {
+                "$ref": "#/$defs/TagGroupNot"
+              }
+            ]
+          },
+          "title": "或",
+          "type": "array"
+        }
+      },
+      "required": [
+        "or"
+      ],
+      "title": "OR 标签组",
+      "type": "object"
+    }
+  },
+  "description": "用于导入和导出的记忆库模板清单。\n\n版本字段支持向前兼容的 schema 演进：导入时，API 会自动将旧版本清单升级为当前 schema。",
+  "example": {
+    "bank": {
+      "disposition_empathy": 5,
+      "enable_observations": true,
+      "reflect_mission": "You are helping a support agent remember customer interactions.",
+      "retain_mission": "Extract customer issues, resolutions, and sentiment."
+    },
+    "directives": [
+      {
+        "content": "Always respond with empathy and understanding.",
+        "name": "Always be empathetic",
+        "priority": 10
+      }
+    ],
+    "mental_models": [
+      {
+        "id": "sentiment-overview",
+        "name": "Customer Sentiment Overview",
+        "source_query": "What is the overall sentiment trend?",
+        "trigger": {
+          "refresh_after_consolidation": true
+        }
+      }
+    ],
+    "version": "1"
+  },
+  "properties": {
+    "version": {
+      "description": "清单 schema 版本（当前为 '1'）",
+      "title": "版本",
+      "type": "string"
+    },
+    "bank": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/BankTemplateConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "要应用的记忆库配置。省略时不更改配置。"
+    },
+    "mental_models": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/BankTemplateMentalModel"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "要创建或更新的心智模型（按 id 匹配）。省略时不更改。",
+      "title": "心智模型"
+    },
+    "directives": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/BankTemplateDirective"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "要创建或更新的指令（按 name 匹配）。省略时不更改。",
+      "title": "指令"
+    }
+  },
+  "required": [
+    "version"
+  ],
+  "title": "记忆库模板清单",
+  "type": "object"
+}

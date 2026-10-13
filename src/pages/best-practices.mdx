@@ -1,0 +1,577 @@
+---
+title: 最佳实践
+description: 面向将 Hindsight 记忆接入生产系统的智能体与开发者的实用指南。
+hide_table_of_contents: true
+---
+
+import PageHero from '@site/src/components/PageHero';
+
+<PageHero title="最佳实践" subtitle="面向将 Hindsight 记忆接入生产系统的智能体与开发者的实用指南。" />
+
+**目录**
+- [核心概念](#core-concepts)：记忆库、术语、记忆类型
+- [记忆库配置](#bank-configuration)：任务指令、性格倾向、实体标签
+- [存储数据](#retaining-data)：内容格式、context、document_id、[标签](#tags-naming-conventions)、观察范围
+- [召回记忆](#recalling-memories)：预算、标签筛选、实体标签筛选、include 选项、query_timestamp
+- [反思](#reflecting)：召回与反思、response_schema、审计
+- [心智模型](#mental-models)：创建时机、标签策略、刷新
+- [反模式](#anti-patterns)
+
+---
+
+## 核心概念 {#core-concepts}
+
+### 记忆库 {#memory-banks}
+
+**记忆库**是隔离的记忆存储，也是用户、智能体或上下文之间的隔离单位。所有操作（retain、recall、reflect）都针对单个记忆库。记忆库之间不共享数据。
+
+- 多用户应用最常见的模式是每位用户一个记忆库
+- 智能体专属长期记忆通常采用每个智能体一个记忆库
+- 带标签的共享记忆库可用于跨用户分析（参阅[标签](#tags-naming-conventions)）
+
+首次使用时会自动创建记忆库。应在导入数据前配置，以引导其行为。
+
+---
+
+### 术语 {#taxonomy}
+
+| 操作 | 作用 | 调用时机 |
+|-----------|-------------|-----------------|
+| **记忆存储** | 导入原始内容（对话、文档、笔记）。LLM 提取事实、实体与关系，原始内容不会逐字存储。 | 每轮对话或会话结束后 |
+| **记忆召回** | 使用四种并行策略检索相关记忆：语义搜索、BM25、图遍历与时间排序。返回排序后的事实列表。 | 生成需要历史上下文的回答之前 |
+| **反思** | 自主推理循环：搜索记忆、综合答案并直接返回。按层级使用心智模型与观察。 | 希望 Hindsight 回答问题，而不只是检索事实时 |
+| **观察** | 从多条事实整合出的去重、有证据支撑的知识。每条观察通过精确引用与证据数量跟踪支持记忆。新证据支持、反驳或扩展观察时，会完善而非覆盖观察。 | 存储后自动触发，不属于存储调用本身 |
+| **心智模型** | 为常见查询保存的预计算反思回答，即时且一致地返回。 | 为重复的高频查询或缓慢变化的用户画像创建 |
+
+---
+
+### 记忆类型 {#memory-types}
+
+存储时提取的事实分为三类：
+
+| 类型 | 说明 | 示例 |
+|------|-------------|---------|
+| `world` | 通用知识、外部事实 | “埃菲尔铁塔位于巴黎” |
+| `experience` | 个人经历、用户特定事实 | “用户于 2024 年搬到柏林” |
+| `observation` | 基于多条支持事实整合的认识，随时间去重与完善，并跟踪证据 | “用户一贯偏好异步沟通（5 条支持记忆）” |
+
+召回时使用 `types` 筛选特定记忆类型。
+
+---
+
+## 记忆库配置 {#bank-configuration}
+
+首次使用前配置记忆库，以引导记忆行为适应你的领域。任务指令配置不当是低质量记忆的最主要原因。
+
+### 编写有效的任务指令 {#writing-effective-missions}
+
+三种任务指令都接受自然语言。应明确描述领域，模糊的指令会产生模糊的结果。
+
+#### `retain_mission`
+
+注入事实提取提示词，告诉 LLM 应提取什么、忽略什么。
+
+| 质量 | 示例 |
+|---------|---------|
+| **良好** | `始终提取技术决策、API 设计选择、架构权衡、阻碍与错误消息。忽略问候、闲聊与日程安排细节。` |
+| **良好** | `提取个人偏好、持续中的承诺、截止日期、健康信息与关系详情。忽略无实质内容与客套话。` |
+| **不佳** | `提取所有信息`：过于模糊，会提取噪声 |
+| **不佳** | `提供帮助`：不是提取指令 |
+
+**建议：**
+- 列出所需事实的*类型*（偏好、决策、错误、承诺）
+- 列出应*忽略*的内容，这与列出应包含的内容同样重要
+- 使任务指令与实际数据类型匹配（对话、文档或工单）
+
+#### `observations_mission`
+
+引导整合时综合哪些模式，在存储后运行。
+
+```
+识别变化的偏好、反复出现的模式、行为转变，以及与既往知识
+的矛盾。关注持久模式，而非短暂状态。
+突出用户行为与先前观察相矛盾的情况。
+```
+
+**建议：**
+- 强调“持久模式”，避免短暂观察带来的噪声
+- 需要历史跟踪时，应明确要求检测矛盾
+- 范围应与预期模式变化的频率匹配
+
+#### `reflect_mission`
+
+为 `reflect` 操作设置智能体角色与推理框架。
+
+| 使用场景 | 任务指令 |
+|----------|---------|
+| 编程助手 | `你是一位帮助优化用户工作流的资深开发者。始终考虑过往技术决策、当前项目上下文与已陈述的偏好。表达直接，提出明确观点。` |
+| 客户支持 | `你是掌握客户完整历史上下文的客服智能体。在相关时引用过去的工单与解决方案。保持简洁，专注于解决问题。` |
+| 个人助手 | `你是记得用户所有重要事项的个人助手。根据已知的偏好、日程与进行中的项目，为每次回答提供个性化内容。` |
+| 医疗助手 | `你是健康助手。准确引用用户历史。涉及医疗决策时，始终建议咨询专业人士。不要猜测。` |
+
+---
+
+### 性格倾向特征 {#disposition-traits}
+
+性格倾向仅影响 `reflect`，不影响 `recall`。取值范围为 1–5。
+
+| 特征 | 1 | 5 |
+|-------|---|---|
+| `skepticism` | 直接相信所有记忆 | 质疑矛盾，标记不确定信息 |
+| `literalism` | 宽泛解释，推断意图 | 严格按字面理解，不作推断 |
+| `empathy` | 客观、中性的语气 | 温暖、个性化、理解情绪 |
+
+**常见配置：**
+
+| 智能体类型 | 怀疑程度 | 字面理解程度 | 共情程度 |
+|------------|------------|------------|---------|
+| 代码评审 | 4 | 5 | 1 |
+| 客户支持 | 2 | 3 | 4 |
+| 个人助手 | 2 | 2 | 4 |
+| 医疗助手 | 5 | 4 | 3 |
+| 研究助手 | 4 | 4 | 2 |
+
+---
+
+### 实体标签 {#entity-labels}
+
+为分类定义受控词汇，LLM 会提取值，并将其规范为你定义的集合。
+
+```json
+{
+  "entity_labels": [
+    {
+      "key": "tech_stack",
+      "type": "multi-values",
+      "values": [
+        {"value": "python", "description": "Python 编程语言"},
+        {"value": "typescript", "description": "TypeScript / Node.js"},
+        {"value": "react", "description": "React 前端框架"}
+      ]
+    },
+    {
+      "key": "priority",
+      "type": "value",
+      "tag": true,
+      "values": [
+        {"value": "high", "description": "紧急或阻碍进度"},
+        {"value": "low", "description": "有则更好"}
+      ]
+    }
+  ]
+}
+```
+
+- **`type: "value"`**：每个实体一个值（最后写入的值生效）
+- **`type: "multi-values"`**：累积多个值
+- **`tag: true`**：提取的标签值也会添加为记忆标签（支持按实体值筛选）
+
+需要一致的分类时使用实体标签，例如领域专属术语、状态值、优先级和互动类型。
+
+---
+
+## 存储数据 {#retaining-data}
+
+### 内容格式 {#content-format}
+
+传入尽可能丰富的内容表示。不要预先摘要。
+
+| 格式 | 建议 |
+|--------|---------------|
+| JSON 对话数组 | 对话的**首选格式**，保留结构、角色与关系 |
+| 带前缀的纯文本 | 可以使用，每行采用 `[ISO-timestamp] role: text` |
+| Markdown / HTML / 原始文本 | 适用于文档与笔记 |
+| 预先摘要的文本 | **避免使用**，会丢失实体关系、时间标记与结构上下文 |
+
+**对话 JSON（首选）：**
+
+```json
+[
+  {"role": "user",      "content": "我在前端使用 React。", "timestamp": "2025-06-01T10:30:00Z"},
+  {"role": "assistant", "content": "明白了。你使用什么状态管理方案？"},
+  {"role": "user",      "content": "Zustand。我们上个季度不再使用 Redux。"}
+]
+```
+
+**为什么不要预先摘要：**LLM 从结构中提取事实、实体与关系。“用户使用 React 和 Zustand”这样的摘要会丢失时间引用（“上个季度”）、实体关系（React↔前端、Redux↔迁移）及因果上下文（不再使用）。
+
+---
+
+### `context` 字段 {#the-context-field}
+
+对提取质量影响很大，应始终设置。它描述内容的*性质与来源*。
+
+```python
+# 良好：具体且有描述性
+context="用户 Alice 关于账单差异的客服工单 #12345"
+context="开发者针对支付服务的架构评审会话"
+context="用户入门表单：陈述的目标、当前工具与团队规模"
+context="每周站会笔记：阻碍、进度与即将进行的任务"
+
+# 不佳：笼统，没有提供有效信息
+context="一些数据"
+context="对话"
+# 完全省略：提取时没有上下文
+```
+
+---
+
+### `document_id` 字段 {#the-document_id-field}
+
+用于更新或插入。相同 `document_id` 意味着删除旧版本并重新处理。
+
+**规则：**
+- 使用稳定且有意义的 ID（会话 ID、工单 ID、文档 UUID）
+- 对持续增长的对话始终使用相同 ID，每次有新消息时存储完整对话
+- 不要每次调用存储都使用随机 UUID，这会造成重复
+
+```python
+# 良好：稳定的会话 ID
+client.retain(bank_id="user-alice", items=[{
+    "content": full_conversation,
+    "document_id": f"session-{session_id}",
+}])
+
+# 不佳：每次调用新建随机 ID，导致重复
+client.retain(bank_id="user-alice", items=[{
+    "content": full_conversation,
+    "document_id": str(uuid.uuid4()),  # ❌ 每次都创建新文档
+}])
+```
+
+---
+
+### `timestamp` 字段 {#the-timestamp-field}
+
+只要有时间上下文就应设置，以启用时间检索策略。
+
+- ISO 8601 格式：`"2025-06-01T10:32:00Z"`
+- 对话应设置为*开始*时间
+- 省略会完全禁用时间排序
+
+---
+
+### 标签：命名约定 {#tags-naming-conventions}
+
+标签限定可见范围。标记为 `user:alice` 的记忆，仅在召回或反思调用的 `tags` 筛选包含 `user:alice` 时返回（使用严格匹配）。
+
+**标准命名约定：**
+
+| 模式 | 示例 | 用途 |
+|---------|---------|---------|
+| `user:<id>` | `user:alice`, `user:u_123` | 按用户隔离 |
+| `session:<id>` | `session:s_abc` | 会话范围的记忆 |
+| `team:<name>` | `team:engineering` | 团队共享知识 |
+| `topic:<name>` | `topic:billing`, `topic:technical` | 领域筛选 |
+| `scope:<name>` | `scope:private`, `scope:public` | 可见性层级 |
+
+**多租户最低要求：**每次存储用户数据至少包含 `user:<id>`。省略会使记忆全局可见。
+
+```python
+# 多租户存储：始终使用用户 ID 标记
+items=[{
+    "content": conversation,
+    "tags": ["user:alice", "session:s_abc", "topic:billing"],
+    "document_id": f"session-{session_id}",
+}]
+```
+
+---
+
+### 元数据结构 {#metadata-schema}
+
+用于来源跟踪与下游关联。**不支持筛选**，筛选请使用标签。
+
+```python
+# 来源跟踪
+metadata={"source": "slack", "channel": "#engineering", "thread_id": "T123456"}
+
+# 工单关联
+metadata={"ticket_id": "JIRA-123", "priority": "high", "reporter": "alice"}
+
+# 文档来源
+metadata={"url": "https://...", "section": "pricing-faq", "version": "2025-Q1"}
+```
+
+每条召回记忆都会返回元数据，可用于将记忆关联回源系统，以便界面显示、直接跳转或审计追踪。
+
+---
+
+### 观察范围 {#observation-scopes}
+
+控制哪些标签组合独立进行观察处理。
+
+| 值 | 行为 | 使用时机 |
+|-------|----------|------------|
+| `"combined"` | 所有标签一起处理一次 | 默认，适用于单用户记忆库及一般用途 |
+| `"per_tag"` | 每个标签独立处理一次 | 用户应具有隔离的行为观察时 |
+| `"all_combinations"` | 所有可能的标签子集 | 复杂的多维分析（成本高） |
+| 自定义列表 | 显式的范围列表 | 精确控制多租户范围 |
+
+**自定义范围示例（推荐用于多租户）：**
+
+```python
+# 观察范围：用户级、团队级及两者组合
+observation_scopes=[
+    ["user:alice"],
+    ["team:engineering"],
+    ["user:alice", "team:engineering"],
+]
+```
+
+---
+
+### 同步与异步 {#sync-vs-async}
+
+| 模式 | 使用时机 |
+|------|-------------|
+| `async_=False`（默认） | 继续执行前需要确认时 |
+| `async_=True` | 每轮交互或会话结束时存储；重视延迟的用户交互流程 |
+
+不要在同一轮中存储后立即召回。存储是写入操作，提取的记忆不会立即可用。
+
+---
+
+## 召回记忆 {#recalling-memories}
+
+### 预算选择 {#budget-selection}
+
+| 预算 | 延迟 | 使用时机 |
+|--------|---------|----------|
+| `low` | 50–100ms | 简单事实查找、单跳问题 |
+| `mid` | 100–300ms | 多跳推理、关系查询（*默认*） |
+| `high` | 300–500ms | 深入探索、复杂的跨领域模式 |
+
+默认使用 `mid`。高频智能体循环使用 `low`。仅在用户明确触发“深度召回”的流程中使用 `high`。
+
+---
+
+### 标签筛选模式 {#tag-filtering-modes}
+
+| 模式 | 包含无标签记忆？ | 条件 |
+|------|-------------------|-----------|
+| `any`（*默认*） | 是 | 至少一个标签匹配，或没有标签 |
+| `all` | 是 | 包含所有指定标签，或没有标签 |
+| `any_strict` | 否 | 至少一个标签匹配 |
+| `all_strict` | 否 | 包含所有指定标签 |
+
+**选择指南：**
+- 全局共享知识加按用户数据：`tags=["user:alice"], tags_match="any"`，返回 Alice 的记忆和无标签的全局记忆
+- 完全隔离（无泄漏）：`tags=["user:alice"], tags_match="any_strict"`，仅返回 Alice 的记忆
+- 多条件 AND：`tags=["user:alice", "topic:billing"], tags_match="all_strict"`，仅返回同时包含两个标签的记忆
+
+**使用 `tag_groups` 构建复杂筛选：**
+
+标签组使用树状结构，包含 `and`/`or`/`not` 复合节点和 `{"tags": [...], "match": "..."}` 叶节点。
+
+```python
+# Alice 的账单记忆，或共享账单记忆（没有用户标签）
+recall(
+    query="...",
+    tag_groups=[
+        {"or": [
+            {"tags": ["user:alice", "topic:billing"], "match": "all_strict"},
+            {"and": [
+                {"tags": ["topic:billing"], "match": "any_strict"},
+                {"not": {"tags": ["user:alice"], "match": "any_strict"}},
+            ]},
+        ]}
+    ]
+)
+```
+
+---
+
+### `include` 选项 {#include-options}
+
+| 选项 | 默认值 | 启用时机 |
+|--------|---------|-------------|
+| `include.entities` | 启用 | 保持启用，为图遍历提供实体上下文 |
+| `include.chunks` | 禁用 | 智能体需要精确措辞或来源引用时 |
+| `include.source_facts` | 禁用 | 为审计追溯观察来源时 |
+
+---
+
+### `types` 筛选 {#types-filtering}
+
+| 值 | 返回内容 |
+|-------|---------|
+| *未设置* | 所有类型 |
+| `["observation"]` | 仅整合模式，高层问题的响应更快 |
+| `["world", "experience"]` | 仅原始事实，适用于需要真实依据或重视引用的查询 |
+
+---
+
+### 使用实体标签按记忆形式筛选 {#filtering-by-memory-shape-with-entity-labels}
+
+单个记忆库包含语义相近但用途不同的记忆（例如简洁的操作规则与详细的故障排查流程）时，仅靠排序无法可靠区分。两条关于“入口点”的记忆，不论一条是一行规则、另一条是多步操作手册，都可能获得相近分值。
+
+使用带 `tag: true` 的[实体标签](/developer/api/memory-banks#entity-labels)，在存储时分类事实，在召回时严格筛选。
+
+**1. 在记忆库中定义标签组：**
+
+```json
+{
+  "entity_labels": [
+    {
+      "key": "memory_type",
+      "description": "知识类型：'rule' 表示简洁的操作规则与标准指导，'procedure' 表示逐步技术指令与故障排查笔记",
+      "type": "value",
+      "optional": false,
+      "tag": true,
+      "values": [
+        { "value": "rule",      "description": "简洁的操作规则或标准指导" },
+        { "value": "procedure", "description": "逐步技术指令或故障排查笔记" }
+      ]
+    }
+  ]
+}
+```
+
+**2. 正常存储**：LLM 会自动对每条事实分类，并将 `memory_type:rule` 或 `memory_type:procedure` 写入标签。
+
+**3. 召回时筛选：**
+
+```python
+# 仅规则：在数据库层排除流程，而非事后筛选
+result = client.recall(
+    bank_id="my-bank",
+    query="应该使用哪个入口点？",
+    tags=["memory_type:rule"],
+    tags_match="any_strict"
+)
+```
+
+这是在所有四种检索策略上应用的严格 SQL WHERE 子句。不需要的记忆永远不会进入排序流水线。
+
+---
+
+### `query_timestamp`
+
+为时间敏感的查询设置。将相对时间表达与新近程度评分锚定到具体时间点。
+
+```python
+# “团队在一月份做什么工作？”
+recall(query="团队优先事项", query_timestamp="2025-01-31T23:59:59Z")
+
+# 当前上下文（最常见）
+recall(query="用户偏好", query_timestamp=datetime.utcnow().isoformat() + "Z")
+```
+
+---
+
+## 反思 {#reflecting}
+
+### 召回与反思 {#recall-vs-reflect}
+
+| 使用 `recall` 的情况 | 使用 `reflect` 的情况 |
+|-------------------|--------------------|
+| 智能体自行根据事实推理 | 希望 Hindsight 推理并返回答案 |
+| 需要原始引用 | 需要综合回答 |
+| 正在构建 RAG 流水线 | 希望使用自主多步搜索循环 |
+| 延迟至关重要 | 回答质量比延迟更重要 |
+| 需要精确的事实数量 | 需要结合上下文、细致的答案 |
+
+---
+
+### `response_schema`
+
+需要供程序使用的结构化输出时使用。
+
+```python
+reflect(
+    query="用户最重要的 3 项技术偏好是什么？",
+    response_schema={
+        "type": "object",
+        "properties": {
+            "preferences": {
+                "type": "array",
+                "items": {"type": "string"},
+                "maxItems": 3
+            },
+            "confidence": {"type": "number", "minimum": 0, "maximum": 1}
+        },
+        "required": ["preferences", "confidence"]
+    }
+)
+# 返回：result.structured_output["preferences"], result.structured_output["confidence"]
+```
+
+---
+
+### 审计与调试 {#auditing-and-debugging}
+
+| 选项 | 用途 |
+|--------|---------|
+| `include.facts=True` | 展示使用了哪些记忆与心智模型，用于透明度与审计 |
+| `include.tool_calls=True` | 内部搜索循环的完整执行轨迹，用于调试 |
+
+在生产环境启用 `include.facts` 以支持审计追踪。仅在开发时启用 `include.tool_calls`。
+
+---
+
+## 心智模型 {#mental-models}
+
+心智模型是为常见查询保存的预计算 `reflect` 回答，能够即时且一致地返回。
+
+### 创建时机 {#when-to-create}
+
+- 常见的重复查询，需要一致的答案
+- 需要低于 100ms 响应的高访问量智能体
+- 每次请求都会读取的用户画像或角色信息
+- 由人工审阅或批准的知识摘要
+- 缓慢变化的跨会话状态（偏好、技能、背景）
+
+### 标签策略 {#tag-strategy}
+
+心智模型的标签同时筛选用于构建模型的记忆，以及能够看到模型的召回或反思调用。
+
+```python
+# 每用户心智模型：使用 Alice 的记忆（刷新时自动应用 all_strict）
+create_mental_model(
+    bank_id="shared-bank",
+    name="Alice 的技术画像",
+    source_query="总结 Alice 的技术背景、偏好技术栈与当前项目",
+    tags=["user:alice"],
+)
+
+# 全局心智模型：使用所有记忆，对所有人可见
+create_mental_model(
+    bank_id="shared-bank",
+    name="团队工程标准",
+    source_query="团队约定的工程标准与规范是什么？",
+    # 无标签：读取所有记忆，对所有人可见
+)
+```
+
+### 刷新策略 {#refresh-strategy}
+
+| 触发方式 | 使用时机 |
+|---------|------------|
+| 通过 API 手动触发 | 重要数据更新或审阅周期后 |
+| `trigger={"refresh_after_consolidation": True}` | 观察经常更新，模型应保持最新时 |
+
+创建范围明确的小型模型，每个知识维度一个。名为“关于用户的一切”的心智模型与没有模型一样没用。
+
+**个人助手的模型粒度示例：**
+- “用户画像”：人口统计信息、偏好、陈述的目标
+- “当前项目”：进行中的工作、截止日期、阻碍
+- “技术栈”：使用的语言、工具、框架
+- “沟通风格”：正式程度偏好、回答长度偏好
+
+---
+
+## 反模式 {#anti-patterns}
+
+| 反模式 | 问题 | 解决方法 |
+|-------------|---------|-----|
+| 存储前预先摘要 | 丢失实体关系、时间标记与结构上下文 | 存储原始内容，由 Hindsight 提取事实 |
+| 使用随机 UUID 作为 `document_id` | 每次存储都创建重复文档 | 使用稳定的会话、工单或文档 ID |
+| 省略 `context` 字段 | 明显降低提取质量 | 始终描述数据的类型 |
+| 使用 `metadata` 筛选 | 元数据不支持筛选 | 所有需要筛选的内容都使用 `tags` |
+| 模糊或笼统的任务指令 | 笼统提取产生嘈杂、低价值的记忆 | 明确描述领域、数据类型及应忽略的内容 |
+| 多租户记忆库使用 `tags_match="any"` | 用户间泄漏记忆 | 对按用户隔离的数据使用 `any_strict` 或 `all_strict` |
+| 在同一请求中存储并召回 | 存储的记忆尚未建立索引 | 每轮结束时存储，下一轮开始时召回 |
+| 一个心智模型涵盖所有内容 | 准确率低、刷新慢、难以限定范围 | 每个知识维度创建一个模型 |
+| 每次召回都使用 `high` 预算 | 成本高、速度慢，通常没必要 | 简单查找使用 `low`，默认使用 `mid` |
+| 存储时缺少 `timestamp` | 禁用时间检索策略 | 始终根据实际内容时间戳设置 |

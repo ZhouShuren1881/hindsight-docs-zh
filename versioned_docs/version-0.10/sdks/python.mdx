@@ -1,0 +1,76 @@
+---
+sidebar_position: 1
+---
+
+import CodeSnippet from '@site/src/components/CodeSnippet';
+import pythonSdkPy from '!!raw-loader!@site/examples/api/python-sdk.py';
+
+# Python 客户端 {#python-client}
+
+Hindsight API 的官方 HTTP 客户端。已有在本地、Docker 或托管服务中运行的 Hindsight 服务器时，可使用这个带类型支持的 Python 客户端与它通信。
+
+如果你愿意**在 Python 进程中嵌入并运行 Hindsight 服务器**（无需外部服务器），请参阅 [嵌入式 Python（hindsight-all）](./hindsight-all.md)。
+
+## 安装 {#installation}
+
+```bash
+pip install hindsight-client
+```
+
+## 快速入门 {#quick-start}
+
+<CodeSnippet code={pythonSdkPy} section="quickstart" language="python" />
+
+## 客户端初始化 {#client-initialization}
+
+<CodeSnippet code={pythonSdkPy} section="client-init" language="python" />
+
+辅助方法未覆盖的操作可通过完整生成的异步 API 命名空间调用（`client.banks`、`client.memory`、`client.documents`、`client.mental_models`、`client.directives` 等）。这些方法必须使用 `await`。
+
+## 核心操作 {#core-operations}
+
+### 版本和功能检查 {#version-and-feature-checks}
+
+<CodeSnippet code={pythonSdkPy} section="get-version" language="python" />
+
+异步客户端方法可用作 `await client.aget_version()`。
+
+### 记忆存储（存储记忆） {#retain-store-memory}
+
+<CodeSnippet code={pythonSdkPy} section="retain" language="python" />
+
+### 批量记忆存储 {#retain-batch}
+
+<CodeSnippet code={pythonSdkPy} section="retain-batch" language="python" />
+
+### 记忆召回（搜索） {#recall-search}
+
+<CodeSnippet code={pythonSdkPy} section="recall" language="python" />
+
+### 包含分块的记忆召回 {#recall-with-chunks}
+
+<CodeSnippet code={pythonSdkPy} section="recall-chunks" language="python" />
+
+### 反思（生成响应） {#reflect-generate-response}
+
+<CodeSnippet code={pythonSdkPy} section="reflect" language="python" />
+
+## 记忆库管理 {#bank-management}
+
+### 创建记忆库 {#create-bank}
+
+<CodeSnippet code={pythonSdkPy} section="create-bank" language="python" />
+
+### 列出记忆 {#list-memories}
+
+<CodeSnippet code={pythonSdkPy} section="list-memories" language="python" />
+
+## 异步支持 {#async-support}
+
+所有方法都有以 `a` 为前缀的异步版本：
+
+<CodeSnippet code={pythonSdkPy} section="async" language="python" />
+
+## 上下文管理器 {#context-manager}
+
+<CodeSnippet code={pythonSdkPy} section="context-manager" language="python" />

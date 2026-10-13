@@ -1,0 +1,58 @@
+{
+  "version": "1",
+  "bank": {
+    "reflect_mission": "你是一个持续在线个人助手的长期记忆，该助手通过多种渠道（聊天、电子邮件、语音、iMessage、WhatsApp、Signal、Discord）联系用户。召回其偏好、习惯、日程、生活中的人物，以及当前努力的目标，帮助助手充分了解用户并主动行动。",
+    "retain_mission": "提取用户偏好、每日与每周习惯、日程与重复事件、承诺与后续事项、提到的人及其与用户的关系、使用的平台与工具，以及分享的任何个人背景。跟踪用户反复提出的要求和关心的内容。忽略无实质内容与一次性的闲聊。",
+    "enable_observations": true,
+    "observations_mission": "跟踪用户的稳定偏好、重复习惯与日程、重要人物与关系、依赖的平台和工具，以及优先事项随时间的变化。",
+    "disposition_empathy": 4,
+    "disposition_literalism": 3,
+    "disposition_skepticism": 2
+  },
+  "mental_models": [
+    {
+      "id": "user-profile",
+      "name": "用户画像",
+      "source_query": "我们对这位用户有哪些了解？其偏好、重要人物、使用的平台是什么，期望怎样得到帮助？",
+      "max_tokens": 2048,
+      "trigger": {
+        "refresh_after_consolidation": true
+      }
+    },
+    {
+      "id": "routines-and-schedule",
+      "name": "习惯与日程",
+      "source_query": "用户有哪些每日和每周习惯、重复事件与日程限制？希望何时、以何种方式得到关心或提醒？",
+      "max_tokens": 1024,
+      "trigger": {
+        "refresh_after_consolidation": true
+      }
+    },
+    {
+      "id": "active-tasks",
+      "name": "当前任务与承诺",
+      "source_query": "用户当前在跟踪哪些任务、承诺或后续事项？有哪些截止时间或已作出的承诺？",
+      "max_tokens": 1024,
+      "trigger": {
+        "refresh_after_consolidation": true
+      }
+    }
+  ],
+  "directives": [
+    {
+      "name": "不让用户重复说明",
+      "content": "使用召回的偏好、习惯与既往上下文，不要重复询问用户已经告诉你的事情，包括跨平台与设备提供的信息。",
+      "priority": 10
+    },
+    {
+      "name": "依据记忆采取行动",
+      "content": "使用召回的习惯、日程与承诺主动行动，在用户表现出偏好的时间和方式下提供提醒与问候，而不是等待用户提出要求。",
+      "priority": 8
+    },
+    {
+      "name": "尊重用户生活中的人物",
+      "content": "记住重要人物及其与用户的关系，在协助处理涉及这些人的计划、消息或提醒时使用这些上下文。",
+      "priority": 7
+    }
+  ]
+}

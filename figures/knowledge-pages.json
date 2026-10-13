@@ -1,0 +1,773 @@
+{
+  "title": "知识页面",
+  "speed": 1466.6666666666667,
+  "elements": [
+    {
+      "id": "tools",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "您团队的工具"
+        },
+        {
+          "type": "subtitle",
+          "text": "发送发生了什么"
+        }
+      ],
+      "minCardHeight": 58,
+      "width": 250
+    },
+    {
+      "id": "app",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "另一个客户端"
+        },
+        {
+          "type": "subtitle",
+          "text": "智能体，队友"
+        }
+      ],
+      "minCardHeight": 58,
+      "width": 250
+    },
+    {
+      "id": "g1",
+      "type": "group",
+      "label": {
+        "title": "你"
+      },
+      "children": [
+        "tools",
+        "app"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 380,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "retain",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "记忆存储"
+        },
+        {
+          "type": "subtitle",
+          "text": "接收您发送的内容"
+        }
+      ],
+      "width": 200
+    },
+    {
+      "id": "page",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "部署API"
+        },
+        {
+          "type": "subtitle",
+          "text": "知识页面"
+        }
+      ],
+      "minCardHeight": 238,
+      "width": 390
+    },
+    {
+      "id": "api",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "搜索"
+        },
+        {
+          "type": "subtitle",
+          "text": "找到正确的页面"
+        }
+      ],
+      "width": 200
+    },
+    {
+      "id": "g3",
+      "type": "group",
+      "children": [
+        "retain",
+        "page",
+        "api"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 56,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "mem",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "新记忆"
+        },
+        {
+          "type": "subtitle",
+          "text": "记忆库"
+        }
+      ],
+      "minCardHeight": 58,
+      "width": 310
+    },
+    {
+      "id": "consolidate",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "整合"
+        },
+        {
+          "type": "subtitle",
+          "text": "学习"
+        }
+      ],
+      "minCardHeight": 28,
+      "width": 310
+    },
+    {
+      "id": "obs",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "观察"
+        },
+        {
+          "type": "subtitle",
+          "text": "它相信什么"
+        }
+      ],
+      "minCardHeight": 73,
+      "width": 310
+    },
+    {
+      "id": "refresh",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "刷新"
+        },
+        {
+          "type": "subtitle",
+          "text": "重写页面"
+        }
+      ],
+      "minCardHeight": 58,
+      "width": 310
+    },
+    {
+      "id": "g4",
+      "type": "group",
+      "children": [
+        "mem",
+        "consolidate",
+        "obs",
+        "refresh"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 44,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "g2",
+      "type": "group",
+      "label": {
+        "title": "Hindsight",
+        "logo": "/img/logo.webp"
+      },
+      "children": [
+        "g3",
+        "g4"
+      ],
+      "layout": {
+        "direction": "row",
+        "gap": 60,
+        "align": "center"
+      }
+    },
+    {
+      "id": "g0",
+      "type": "group",
+      "children": [
+        "g1",
+        "g2"
+      ],
+      "layout": {
+        "direction": "row",
+        "gap": 64,
+        "align": "center"
+      }
+    },
+    {
+      "id": "send",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "tools"
+      },
+      "end": {
+        "id": "retain"
+      },
+      "label": {
+        "text": "记忆存储"
+      }
+    },
+    {
+      "id": "store",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "retain"
+      },
+      "end": {
+        "id": "mem"
+      }
+    },
+    {
+      "id": "learn",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "mem"
+      },
+      "end": {
+        "id": "consolidate"
+      }
+    },
+    {
+      "id": "believe",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "consolidate"
+      },
+      "end": {
+        "id": "obs"
+      }
+    },
+    {
+      "id": "changed",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "obs"
+      },
+      "end": {
+        "id": "refresh"
+      }
+    },
+    {
+      "id": "write",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "refresh"
+      },
+      "end": {
+        "id": "page"
+      },
+      "label": {
+        "text": "更新"
+      }
+    },
+    {
+      "id": "ask",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "app"
+      },
+      "end": {
+        "id": "api"
+      },
+      "label": {
+        "text": "问"
+      }
+    },
+    {
+      "id": "find",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "api"
+      },
+      "end": {
+        "id": "page"
+      }
+    }
+  ],
+  "scenes": [
+    {
+      "label": "知识页面",
+      "caption": "",
+      "beats": [
+        {
+          "show": {
+            "tools": [
+              {
+                "tag": "every day",
+                "tone": "gray",
+                "text": "聊天、事件、代码更改"
+              }
+            ],
+            "mem": [
+              {
+                "tag": "doc",
+                "tone": "purple",
+                "text": "部署运行手册，v3"
+              },
+              {
+                "tag": "slack",
+                "tone": "purple",
+                "text": "“生产部署需要值班人员批准”"
+              },
+              {
+                "tag": "incident",
+                "tone": "purple",
+                "text": "7 月：缓慢的数据库更改破坏了发布"
+              }
+            ],
+            "consolidate": [
+              {
+                "tag": "done",
+                "tone": "green",
+                "text": "学到的一切"
+              }
+            ],
+            "obs": [
+              {
+                "text": "合并到 main 即发布 API",
+                "meta": "6 sources"
+              },
+              {
+                "text": "生产部署需要批准",
+                "meta": "4 sources"
+              },
+              {
+                "text": "保持数据库更改较小",
+                "meta": "2 sources"
+              }
+            ],
+            "refresh": [
+              {
+                "tag": "idle",
+                "tone": "gray",
+                "text": "每页都是最新的"
+              }
+            ],
+            "page": [
+              {
+                "tag": "up to date",
+                "tone": "green",
+                "text": ""
+              },
+              {
+                "text": "**# 部署 API**"
+              },
+              {
+                "text": "**## 发布流程**"
+              },
+              {
+                "text": "• 合并到 main 后构建并发布 API"
+              },
+              {
+                "text": "• 生产部署需要批准"
+              },
+              {
+                "text": "**## 数据库变更**"
+              },
+              {
+                "text": "• 数据库变更先于新流量执行"
+              },
+              {
+                "text": "• 变更应保持小规模：一次耗时变更导致 7 月发布失败"
+              },
+              {
+                "text": "**## 回滚**"
+              },
+              {
+                "text": "• 重新部署以前的版本"
+              },
+              {
+                "text": "",
+                "meta": "written by Hindsight from what the bank believes"
+              }
+            ],
+            "app": [
+              {
+                "tag": "waiting",
+                "tone": "gray",
+                "text": "稍后会询问部署情况"
+              }
+            ]
+          },
+          "say": "Hindsight 为团队维护知识库。这篇部署页面根据记忆库已有的知识生成。",
+          "ms": 2400
+        },
+        {
+          "edges": {
+            "edge": "send",
+            "data": "what happened"
+          },
+          "show": {
+            "tools": [
+              {
+                "tag": "incident",
+                "tone": "purple",
+                "text": "发布挂起 20 分钟：在数据库准备好之前就上线了"
+              },
+              {
+                "tag": "slack",
+                "tone": "purple",
+                "text": "“现在先向 10% 的用户发布”"
+              },
+              {
+                "tag": "code change",
+                "tone": "purple",
+                "text": "上线前等待数据库更改"
+              }
+            ]
+          },
+          "say": "随后发生新事件。工具将事件发送给 Hindsight，例如事故、Slack 讨论或代码变更。",
+          "ms": 2533.3333333333335
+        },
+        {
+          "edges": "store",
+          "show": {
+            "mem": [
+              {
+                "tag": "incident",
+                "tone": "purple",
+                "text": "发布挂起 20 分钟：在数据库准备好之前就上线了"
+              },
+              {
+                "tag": "slack",
+                "tone": "purple",
+                "text": "“现在先向 10% 的用户发布”"
+              },
+              {
+                "tag": "code change",
+                "tone": "purple",
+                "text": "上线前等待数据库更改"
+              }
+            ]
+          },
+          "say": "Hindsight 将其存储为新记忆。",
+          "ms": 1733.3333333333333
+        },
+        {
+          "edges": {
+            "edge": "learn",
+            "data": "what’s new"
+          },
+          "show": {
+            "consolidate": [
+              {
+                "tag": "learned",
+                "tone": "orange",
+                "text": "1 个新内容 · 1 个已更正"
+              }
+            ]
+          },
+          "say": "它从这些记忆中学习……",
+          "ms": 1600
+        },
+        {
+          "edges": "believe",
+          "show": {
+            "obs": [
+              {
+                "text": "合并到 main 即发布 API",
+                "meta": "6 sources"
+              },
+              {
+                "text": "生产部署需要批准",
+                "meta": "4 sources"
+              },
+              {
+                "text": "发布等待数据库变更完成",
+                "meta": "3 sources",
+                "mark": "corrected"
+              },
+              {
+                "text": "先向 10% 的用户发布生产版本",
+                "meta": "2 sources",
+                "mark": "new"
+              }
+            ]
+          },
+          "say": "……补充新知识，并纠正不再成立的内容。",
+          "ms": 2133.3333333333335
+        },
+        {
+          "edges": {
+            "edge": "changed",
+            "data": "what changed"
+          },
+          "show": {
+            "refresh": [
+              {
+                "tag": "updating",
+                "tone": "orange",
+                "text": "部署API"
+              }
+            ],
+            "page": [
+              {
+                "tag": "out of date",
+                "tone": "orange",
+                "text": ""
+              },
+              {
+                "text": "**# 部署 API**"
+              },
+              {
+                "text": "**## 发布流程**"
+              },
+              {
+                "text": "• 合并到 main 后构建并发布 API"
+              },
+              {
+                "text": "• 生产部署需要批准"
+              },
+              {
+                "text": "**## 数据库变更**"
+              },
+              {
+                "text": "• 数据库变更先于新流量执行"
+              },
+              {
+                "text": "• 变更应保持小规模：一次耗时变更导致 7 月发布失败"
+              },
+              {
+                "text": "**## 回滚**"
+              },
+              {
+                "text": "• 重新部署以前的版本"
+              },
+              {
+                "text": "",
+                "meta": "written by Hindsight from what the bank believes"
+              }
+            ]
+          },
+          "say": "部署页面此时已过时，Hindsight 因而更新它。",
+          "ms": 2000
+        },
+        {
+          "edges": {
+            "edge": "write",
+            "data": "3 changes"
+          },
+          "show": {
+            "refresh": [
+              {
+                "tag": "added",
+                "tone": "green",
+                "text": "10% 推出"
+              },
+              {
+                "tag": "fixed",
+                "tone": "green",
+                "text": "数据库建议"
+              },
+              {
+                "tag": "added",
+                "tone": "green",
+                "text": "事件部分"
+              }
+            ],
+            "page": [
+              {
+                "tag": "just updated",
+                "tone": "green",
+                "text": ""
+              },
+              {
+                "text": "**# 部署 API**"
+              },
+              {
+                "text": "**## 发布流程**"
+              },
+              {
+                "text": "• 合并到 main 后构建并发布 API"
+              },
+              {
+                "text": "• 生产部署需要批准"
+              },
+              {
+                "tag": "+",
+                "tone": "green",
+                "text": "• 首先向 10% 的用户展示 15 分钟"
+              },
+              {
+                "text": "**## 数据库变更**"
+              },
+              {
+                "text": "• 数据库变更先于新流量执行"
+              },
+              {
+                "tag": "−",
+                "tone": "red",
+                "text": "• 变更应保持小规模：一次耗时变更导致 7 月发布失败",
+                "meta": "removed"
+              },
+              {
+                "tag": "+",
+                "tone": "green",
+                "text": "• 等待数据库更改完成后发布"
+              },
+              {
+                "text": "**## 回滚**"
+              },
+              {
+                "text": "• 重新部署以前的版本"
+              },
+              {
+                "tag": "+",
+                "tone": "green",
+                "text": "**## 事故记录**"
+              },
+              {
+                "tag": "+",
+                "tone": "green",
+                "text": "• 9 月 24 日：发布延迟了 20 分钟，上线过早"
+              },
+              {
+                "text": "",
+                "meta": "only what changed; the rest is untouched"
+              }
+            ]
+          },
+          "say": "仅修改变化的部分：划掉旧建议，将新事实放到对应位置。",
+          "ms": 3733.3333333333335
+        },
+        {
+          "edges": {
+            "edge": "ask",
+            "data": "“Why did the release hang?”"
+          },
+          "show": {
+            "app": [
+              {
+                "tag": "question",
+                "tone": "gray",
+                "text": "“为什么发布挂起？”"
+              }
+            ],
+            "page": [
+              {
+                "tag": "up to date",
+                "tone": "green",
+                "text": ""
+              },
+              {
+                "text": "**# 部署 API**"
+              },
+              {
+                "text": "**## 发布流程**"
+              },
+              {
+                "text": "• 合并到 main 后构建并发布 API"
+              },
+              {
+                "text": "• 生产部署需要批准"
+              },
+              {
+                "text": "• 首先向 10% 的用户展示 15 分钟"
+              },
+              {
+                "text": "**## 数据库变更**"
+              },
+              {
+                "text": "• 数据库变更先于新流量执行"
+              },
+              {
+                "text": "• 等待数据库更改完成后发布"
+              },
+              {
+                "text": "**## 回滚**"
+              },
+              {
+                "text": "• 重新部署以前的版本"
+              },
+              {
+                "text": "**## 事故记录**"
+              },
+              {
+                "text": "• 9 月 24 日：发布延迟了 20 分钟，上线过早"
+              },
+              {
+                "text": "",
+                "meta": "up to date"
+              }
+            ]
+          },
+          "say": "之后，另一个客户端发起提问，可能是 AI 智能体，也可能是队友。",
+          "ms": 2000
+        },
+        {
+          "edges": {
+            "edge": "find",
+            "data": "search"
+          },
+          "say": "Hindsight 找到已生成且保持最新的页面。",
+          "ms": 1733.3333333333333
+        },
+        {
+          "edges": {
+            "edge": "find",
+            "back": true,
+            "data": "the page"
+          },
+          "ms": 1333.3333333333333
+        },
+        {
+          "edges": {
+            "edge": "ask",
+            "back": true,
+            "data": "the answer"
+          },
+          "show": {
+            "app": [
+              {
+                "tag": "question",
+                "tone": "gray",
+                "text": "“为什么发布挂起？”"
+              },
+              {
+                "tag": "answer",
+                "tone": "green",
+                "text": "数据库尚未就绪就上线了。现在发布会等待数据库变更完成。",
+                "mark": "✓"
+              }
+            ]
+          },
+          "say": "答案已经包含刚发生的事件，无需人工更新知识库。",
+          "ms": 2800
+        }
+      ]
+    }
+  ]
+}

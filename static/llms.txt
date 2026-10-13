@@ -1,0 +1,117 @@
+# Hindsight
+
+> 会学习的智能体记忆
+
+Hindsight 是一个智能体记忆系统，为 AI 智能体提供跨会话的持久化、结构化记忆。它从对话中提取事实、实体和关系，并支持时间推理、观点形成和多策略检索。
+
+## 链接 {#links}
+
+- [完整文档（llms-full.txt）](https://hindsight.vectorize.io/llms-full.txt)：供 LLM 使用的完整文档
+- [快速入门](https://hindsight.vectorize.io/developer/api/quickstart)：60 秒上手
+- [Python SDK](https://hindsight.vectorize.io/sdks/python)：Python 客户端库
+- [TypeScript SDK](https://hindsight.vectorize.io/sdks/nodejs)：Node.js/TypeScript 客户端
+- [API 参考](https://hindsight.vectorize.io/api-reference)：REST API 文档
+- [OpenAPI 规范](https://hindsight.vectorize.io/openapi.json)：机器可读的 API 规范
+- [MCP 服务器](https://hindsight.vectorize.io/sdks/mcp)：Model Context Protocol 集成
+- [GitHub](https://github.com/vectorize-io/hindsight)：源代码和问题
+
+## 核心操作 {#core-operations}
+
+- **记忆存储**：存储记忆（自动提取事实、实体和关系）
+- **记忆召回**：检索记忆（语义、关键词、图和时间搜索）
+- **反思**：深入分析，形成观点和洞察
+
+## 快速入门 {#quick-start}
+
+```bash
+pip install hindsight-client
+```
+
+```python
+from hindsight import HindsightClient
+
+client = HindsightClient(base_url="http://localhost:8888")
+
+# 记忆存储
+client.retain(bank_id="my-agent", content="Alice 在 Google 担任软件工程师")
+
+# 查询
+results = client.recall(bank_id="my-agent", query="Alice 从事什么工作？")
+
+# 反思
+response = client.reflect(bank_id="my-agent", query="向我介绍 Alice")
+```
+
+## 核心概念 {#key-concepts}
+
+### 记忆库 {#memory-banks}
+每个记忆库都是独立的记忆存储空间。每个用户或智能体使用一个记忆库。记忆库包含事实、实体、文档及其关系。
+
+### 记忆类型 {#memory-types}
+- 世界事实：通用知识
+- 经验事实：个人经历
+- 观点事实：带有置信度分数的信念
+
+### 持续变化的对话与文档 ID {#document-id-for-evolving-conversations}
+使用 `document_id` 将同一对话中的消息归为一组。以相同的 `document_id` 存储记忆时，会替换前一个版本（upsert），使记忆在对话演变过程中保持一致。
+
+```python
+client.retain(
+    bank_id="user-123",
+    content=messages,
+    document_id="session_abc"  # 相同 ID = 替换旧版本
+)
+```
+
+## API 端点 {#api-endpoints}
+
+基础 URL：`http://localhost:8888`
+
+| 方法 | 端点 | 说明 |
+|--------|----------|-------------|
+| POST | `/v1/default/banks/{bank_id}/memories` | 存储记忆 |
+| POST | `/v1/default/banks/{bank_id}/memories/recall` | 检索记忆 |
+| POST | `/v1/default/banks/{bank_id}/reflect` | 分析并形成观点 |
+| GET | `/v1/default/banks/{bank_id}/profile` | 获取记忆库配置 |
+| PUT | `/v1/default/banks/{bank_id}/profile` | 更新记忆库配置 |
+| GET | `/v1/default/banks` | 列出所有记忆库 |
+| POST | `/v1/default/banks` | 创建记忆库 |
+
+## 架构模式 {#architecture-patterns}
+
+### 每用户记忆 {#per-user-memory}
+每个用户使用一个记忆库。这是聊天机器人和助手最简单的模式。
+[指南](https://hindsight.vectorize.io/cookbook/per-user-memory)
+
+### 支持智能体与共享知识 {#support-agent--shared-knowledge}
+用户记忆库与共享文档记忆库。客户端协调对两个记忆库的查询，并合并结果。
+[指南](https://hindsight.vectorize.io/cookbook/support-agent-with-shared-knowledge)
+
+## 安装 {#installation}
+
+### Docker（推荐） {#docker-recommended}
+```bash
+docker run -p 8888:8888 -e HINDSIGHT_API_LLM_PROVIDER=openai -e HINDSIGHT_API_LLM_API_KEY=$OPENAI_API_KEY ghcr.io/vectorize-io/hindsight
+```
+
+### Python（嵌入式） {#python-embedded}
+```bash
+pip install hindsight-all
+```
+
+### 客户端 {#clients}
+```bash
+pip install hindsight-client          # Python
+npm install @vectorize-io/hindsight-client  # TypeScript
+```
+
+## MCP 集成 {#mcp-integration}
+
+Hindsight 提供 Model Context Protocol 服务器，供 AI 智能体直接集成：
+
+```bash
+pip install hindsight-mcp-server
+hindsight-mcp-server --api-url http://localhost:8888
+```
+
+提供的工具：`retain`、`recall`、`reflect`、`list_banks`、`create_bank`

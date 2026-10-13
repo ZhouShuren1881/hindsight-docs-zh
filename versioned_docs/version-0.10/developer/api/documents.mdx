@@ -1,0 +1,216 @@
+---
+sidebar_position: 8
+---
+
+# 文档 {#documents}
+
+跟踪和管理记忆库中的文档源。文档提供了可追溯性——了解记忆从何而来。
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import CodeSnippet from '@site/src/components/CodeSnippet';
+
+{/* 导入原始源文件 */}
+import documentsPy from '!!raw-loader!@site/examples/api/documents.py';
+import documentsMjs from '!!raw-loader!@site/examples/api/documents.mjs';
+import documentsSh from '!!raw-loader!@site/examples/api/documents.sh';
+import documentsGo from '!!raw-loader!@site/examples/api/documents.go';
+
+:::tip 先决条件
+确保您已完成[快速开始](./quickstart) 并理解[记忆存储的工作原理](./retain)。
+:::
+
+## 什么是文档？ {#what-are-documents}
+
+文档是已存储内容的容器，可以帮助您：
+
+- **追踪来源** — 知道记忆来自哪个 PDF、对话或文件
+- **更新内容** — 重新记忆存储文档以更新其事实
+- **批量删除** — 一次删除文档中的所有记忆
+- **整理记忆** — 按来源对相关事实进行分组
+
+## 分块 {#chunks}
+
+当您记忆存储内容时，Hindsight在提取事实之前将其分成块。这些块与提取的记忆一起存储，保留原始文本片段。
+
+**分块的重要性：**
+- **保留上下文** — 块包含生成事实的原始文本，当您需要确切的措辞时非常有用
+- **更丰富的记忆召回** — 在记忆召回中包含块，为匹配的事实提供周围的上下文
+
+:::tip 在记忆召回中包含块
+使用`include_chunks=True` 在记忆召回调用中获取原始文本块和事实结果。参见[记忆召回](./recall)了解详情。
+:::
+
+## 带文档 ID 的记忆存储 {#retain-with-document-id}
+
+将保留内容与文档关联：
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={documentsPy} section="document-retain" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={documentsMjs} section="document-retain" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={documentsSh} section="document-retain" language="bash" />
+</TabItem>
+<TabItem value="go" label="开始">
+<CodeSnippet code={documentsGo} section="document-retain" language="go" />
+</TabItem>
+</Tabs>
+
+## 更新文档 {#update-documents}
+
+使用相同的 `document_id` 重新存储文档会**替换**旧内容：
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={documentsPy} section="document-update" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={documentsMjs} section="document-update" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={documentsSh} section="document-update" language="bash" />
+</TabItem>
+<TabItem value="go" label="开始">
+<CodeSnippet code={documentsGo} section="document-update" language="go" />
+</TabItem>
+</Tabs>
+
+## 获取文档 {#get-document}
+
+检索文档的原始文本和元数据。这对于在记忆召回操作返回带有文档引用的记忆后扩展文档上下文很有用。
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={documentsPy} section="document-get" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={documentsMjs} section="document-get" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={documentsSh} section="document-get" language="bash" />
+</TabItem>
+<TabItem value="go" label="开始">
+<CodeSnippet code={documentsGo} section="document-get" language="go" />
+</TabItem>
+</Tabs>
+
+## 更新文档 {#update-document}
+
+更新现有文档上的可变字段，而无需重新处理内容。目前支持更新`tags`。
+
+`tags` 数组会**替换**文档的全部标签，而非合并。请发送期望保留的完整标签集合：未包含的标签会被删除，空数组会清除全部标签。若要删除单个标签，请先读取当前标签，移除目标标签，再发送其余标签。完全省略该字段不构成更新，会被拒绝并返回 `422`。
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={documentsPy} section="document-update-tags" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={documentsMjs} section="document-update-tags" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={documentsSh} section="document-update-tags" language="bash" />
+</TabItem>
+<TabItem value="go" label="开始">
+<CodeSnippet code={documentsGo} section="document-update-tags" language="go" />
+</TabItem>
+</Tabs>
+
+:::info 观察会重新整合
+标签变更时，基于该文档记忆整合出的观察会失效，并进入队列，在新标签下重新整合。其他文档中共同支撑这些观察的记忆也会被重置。
+
+这是保证正确性所必需的：整合根据标签集合确定记忆范围，因此基于旧标签构建的观察不再有效。若删除观察却不将共同来源记忆重新入队，那些共同支撑该观察的其他记忆就会失去对应的整合结果。重新入队的规模取决于与该文档记忆共同支撑观察的记忆数量；在来源高度交织的记忆库中，它可能是文档自身记忆数量的许多倍。
+
+标签以**集合**形式与文档当前标签比较。若更新后集合不变（包括仅调整数组顺序），则不会重新标记，也不会安排重新整合。因此，可重复执行的标签规范化操作只会在实际产生变更时承担重新整合成本。
+:::
+
+## 删除文档 {#delete-document}
+
+删除文档及其所有相关记忆：
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={documentsPy} section="document-delete" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={documentsMjs} section="document-delete" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={documentsSh} section="document-delete" language="bash" />
+</TabItem>
+<TabItem value="go" label="开始">
+<CodeSnippet code={documentsGo} section="document-delete" language="go" />
+</TabItem>
+</Tabs>
+
+:::warning
+删除文档会永久删除从中提取的所有记忆。此操作无法撤销。
+:::
+
+## 列出文档 {#list-documents}
+
+列出记忆库中的文档，并可选择按 ID、标签和时间进行过滤。
+
+`start_date=` 和 `end_date=` 按 `time_field=` 指定的时间戳将结果限定为半开区间 `[start, end)`。可选时间戳为 `created_at`（文档首次写入时）或 `updated_at`（最后一次写入时间，也是默认排序依据）。`time_field` 同时决定排序顺序，最新在前。
+
+因为过滤和排序遵循同一列，`total` 仅计算窗口内的文档，而不是整个记忆库。省略所有三个参数以保留默认列表。
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={documentsPy} section="document-list" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={documentsMjs} section="document-list" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={documentsSh} section="document-list" language="bash" />
+</TabItem>
+<TabItem value="go" label="开始">
+<CodeSnippet code={documentsGo} section="document-list" language="go" />
+</TabItem>
+</Tabs>
+
+### 过滤选项 {#filtering-options}
+
+|参数|说明|
+|---|---|
+|`q`|文档 ID 上不区分大小写的子字符串匹配。 `report` 匹配 `report-2024`，`annual-report`等|
+|`tags`|按文档标签过滤。接受多个值。|
+|`tags_match`|如何匹配标签（默认：`any_strict`）。见下文。|
+|`limit` / `offset`|分页。默认限制为 100。|
+
+**`tags_match` 模式：**
+
+|模式|行为|
+|---|---|
+|`any_strict` *（默认）*|文档必须包含指定标签中的**至少一个**，未标记的文档被排除。|
+|`any`|与 `any_strict` 相同，但也包含未标记的文档。|
+|`all_strict`|文档必须包含**所有**指定标签，未标记的文档被排除。|
+|`all`|与 `all_strict` 相同，但也包含未标记的文档。|
+
+## 文档响应格式 {#document-response-format}
+
+```json
+{
+  "id": "meeting-2024-03-15",
+  "bank_id": "my-bank",
+  "original_text": "Alice 提出了Q4 路线图...",
+  "content_hash": "abc123def456",
+  "memory_unit_count": 12,
+  "nodes_by_fact_type": {
+    "world": 5,
+    "experience": 4,
+    "observation": 3
+  },
+  "created_at": "2024-03-15T14:00:00Z",
+  "updated_at": "2024-03-15T14:00:00Z"
+}
+```
+
+## 后续步骤 {#next-steps}
+
+- [**操作**](./operations) — 监控后台任务
+- [**记忆库**](./memory-banks) — 配置记忆库设置

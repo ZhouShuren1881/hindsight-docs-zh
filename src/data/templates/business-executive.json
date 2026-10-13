@@ -1,0 +1,129 @@
+{
+  "version": "1",
+  "bank": {
+    "reflect_mission": "你是一位忙碌高管的记忆。召回客户、销售机会、项目交付与产品开发的当前状态，包括已作出的决策、尚待履行的承诺、新出现的风险，以及各项工作的负责人，让高管进入任何会议前都已掌握情况。",
+    "retain_mission": "提取决策及其决策者、行动事项及其负责人和截止日期、承诺与约定、交易或机会的阶段或价值变化、项目交付状态与阻碍、产品开发进度与反馈、财务数字与目标，以及涉及的个人与组织。优先提取具体结果、状态变化与下一步行动，而非讨论与闲聊。",
+    "enable_observations": true,
+    "observations_mission": "综合业务的持久状态：每个客户或账户及其关系、每个开放机会的阶段与风险、每个项目的交付状态与阻碍、产品方向及其背后的决策，以及所有领域尚待履行的承诺。",
+    "disposition_literalism": 5,
+    "disposition_skepticism": 3,
+    "disposition_empathy": 3,
+    "entities_allow_free_form": true,
+    "entity_labels": [
+      {
+        "key": "area",
+        "description": "记忆所涉及的业务领域。按内容的主要话题分类。",
+        "type": "value",
+        "optional": true,
+        "tag": true,
+        "values": [
+          {"value": "sales", "description": "客户、潜在客户、机会、销售管道、收入"},
+          {"value": "delivery", "description": "项目与客户交付、实施、里程碑"},
+          {"value": "product", "description": "产品开发、路线图、功能、用户反馈"},
+          {"value": "operations", "description": "内部运营、流程、工具、供应商"},
+          {"value": "people", "description": "招聘、团队、组织、绩效、关系"},
+          {"value": "finance", "description": "预算、预测、目标、支出、财务结果"},
+          {"value": "strategy", "description": "公司方向、优先事项、定位、合作伙伴关系"}
+        ]
+      },
+      {
+        "key": "deal_stage",
+        "description": "针对销售对话，所讨论机会的阶段。",
+        "type": "value",
+        "optional": true,
+        "tag": true,
+        "values": [
+          {"value": "lead", "description": "尚未评估的意向"},
+          {"value": "qualification", "description": "评估匹配度、预算与决策权"},
+          {"value": "proposal", "description": "已提交方案或报价"},
+          {"value": "negotiation", "description": "正在协商条款、定价或合同"},
+          {"value": "closed_won", "description": "已签约"},
+          {"value": "closed_lost", "description": "交易失败或已放弃"}
+        ]
+      },
+      {
+        "key": "status_signal",
+        "description": "内容中提到的项目、交付物或行动的健康状态信号。",
+        "type": "value",
+        "optional": true,
+        "tag": false,
+        "values": [
+          {"value": "on_track", "description": "按计划推进"},
+          {"value": "at_risk", "description": "存在进度滑落风险"},
+          {"value": "blocked", "description": "问题解决前无法继续"},
+          {"value": "delayed", "description": "进度落后"},
+          {"value": "completed", "description": "已完成或已交付"}
+        ]
+      }
+    ]
+  },
+  "mental_models": [
+    {
+      "id": "sales-pipeline",
+      "name": "销售管道",
+      "source_query": "有哪些开放的销售机会？各自的客户、阶段、价值、关键风险和下一步是什么？哪些交易最近发生了阶段变化，为什么？",
+      "max_tokens": 2048,
+      "trigger": {
+        "refresh_after_consolidation": true
+      }
+    },
+    {
+      "id": "project-delivery",
+      "name": "项目交付状态",
+      "source_query": "有哪些正在进行的项目与客户交付？各自的状态、即将到来的里程碑、阻碍与负责人是什么？",
+      "max_tokens": 2048,
+      "trigger": {
+        "refresh_after_consolidation": true
+      }
+    },
+    {
+      "id": "product-development",
+      "name": "产品开发",
+      "source_query": "产品开发正在发生什么？哪些已发布或已计划，作出了哪些决策，哪些反复出现的反馈或请求正在影响路线图？",
+      "max_tokens": 1536,
+      "trigger": {
+        "refresh_after_consolidation": true
+      }
+    },
+    {
+      "id": "decisions-and-commitments",
+      "name": "决策与承诺",
+      "source_query": "作出了哪些决策，还有哪些承诺、行动事项或约定尚待完成？各自由谁负责，何时完成？",
+      "max_tokens": 1536,
+      "trigger": {
+        "refresh_after_consolidation": true
+      }
+    },
+    {
+      "id": "key-relationships",
+      "name": "关键人物与关系",
+      "source_query": "重要客户、利益相关者和团队成员有哪些？各自的角色是什么、关心什么，以及关系的当前状态如何？",
+      "max_tokens": 1536,
+      "trigger": {
+        "refresh_after_consolidation": true
+      }
+    }
+  ],
+  "directives": [
+    {
+      "name": "优先呈现决策、负责人和截止日期",
+      "content": "召回上下文时，先呈现已作出的决策、尚待履行的承诺，以及各事项的负责人和截止时间，再提供背景讨论。高管需要知道决定了什么，以及对谁有何期望。",
+      "priority": 10
+    },
+    {
+      "name": "跟踪状态随时间的变化",
+      "content": "记录交易阶段、项目状态或产品里程碑何时变化，以及促成变化的原因。变化轨迹与当前状态同样重要。",
+      "priority": 8
+    },
+    {
+      "name": "指出风险与阻碍",
+      "content": "主动呈现风险、阻碍与存在风险的事项。如果承诺进度落后或交易停滞，应主动说明，不必等待询问。",
+      "priority": 7
+    },
+    {
+      "name": "保留归属信息",
+      "content": "保留谁说了什么、决定了什么或承诺了什么。将陈述归属于对应人物及其来源会议或上下文，保持责任清晰。",
+      "priority": 6
+    }
+  ]
+}

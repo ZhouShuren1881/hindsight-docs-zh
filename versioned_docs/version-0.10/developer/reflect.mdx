@@ -1,0 +1,283 @@
+---
+sidebar_position: 4
+---
+
+import Figure from '@site/src/components/Figure';
+import reflectLoop from '@site/figures/reflect.json';
+import CodeSnippet from '@site/src/components/CodeSnippet';
+import memoryBanksPy from '!!raw-loader!@site/examples/api/memory-banks.py';
+
+# 反思：结合性格倾向的智能体推理 {#reflect-agentic-reasoning-with-disposition}
+
+调用 `reflect()` 时，Hindsight 会运行一个**智能体循环**，自主收集证据，并从记忆库性格倾向的视角进行推理，生成符合上下文的回答。
+
+<Figure doc={reflectLoop} />
+
+---
+
+## 工作方式 {#how-it-works}
+
+反思是一个**智能体系统**，会执行以下步骤：
+
+1. **自主收集证据** — 智能体决定需要哪些信息，并调用相应工具
+2. **使用分层检索** — 先查看心智模型，再查看观察，最后查看原始事实
+3. **应用性格倾向** — 根据记忆库的性格特征调整推理
+4. **执行适用的指令** — 包括全局规则和匹配当前反思标签范围的规则
+5. **引用来源** — 返回所使用的记忆和观察
+
+### 智能体循环 {#the-agentic-loop}
+
+反思智能体循环运行，可使用以下工具：
+
+| 工具 | 用途 | 优先级 |
+|------|------|--------|
+| `search_mental_models` | 用户整理的摘要；最佳匹配返回全文，其他匹配返回片段 | 最高（首先检查） |
+| `read_mental_models` | 读取以片段形式返回的页面全文 | 当片段看起来相关时 |
+| `search_observations` | 整合后的知识 | 高 |
+| `recall` | 原始事实（事实依据） | 回退选项 |
+| `expand` | 获取某条记忆的更多上下文 | 按需使用 |
+| `done` | 返回最终回答并结束 | 准备好时 |
+
+智能体：
+- 回答前**必须收集证据**（防护机制会阻止空回答）
+- **最多运行 10 次迭代**来查找相关信息
+- **验证引用** — 只能引用实际检索到的 ID
+
+### 分层检索策略 {#hierarchical-retrieval-strategy}
+
+智能体采用智能的检索层次：
+
+1. **[心智模型](/developer/api/mental-models)** — 针对常见查询预先计算、由用户整理的摘要
+2. **[观察](/developer/observations)** — 具有新鲜度感知的整合知识
+3. **原始事实** — 在观察过时时用于验证的事实依据
+
+**心智模型**是你为常见问题创建并保存的反思回答。它们首先被检查，因为它们代表明确整理过的知识。如何创建和管理心智模型，请参阅[心智模型 API](/developer/api/mental-models)。
+
+如果观察被标记为**过时**，智能体会自动根据当前事实验证它。
+
+---
+
+## 为什么使用反思？ {#why-reflect}
+
+大多数 AI 系统能够检索事实，却无法以一致的方式对这些事实进行**推理**。
+
+### 问题 {#the-problem}
+
+没有反思时：
+- **性格不一致：**同一问题每次得到不同回答
+- **没有知识综合：**系统不会连接相关事实
+- **缺少推理上下文：**回答无法体现积累的知识
+- **回答千篇一律：**所有 AI 听起来都一样
+
+### 价值 {#the-value}
+
+使用反思后：
+- **性格一致：**「注重细节、谨慎」的记忆库会强调风险和周密计划
+- **知识不断演进：**证据积累时，观察会得到强化和调整
+- **结合上下文推理：**「根据我对你们团队远程工作成功经验的了解……」
+- **行为有所区别：**客服机器人措辞委婉，代码审查助手表达直接
+
+### 何时使用反思 {#when-to-use-reflect}
+
+| 使用 `recall()` 的情况 | 使用 `reflect()` 的情况 |
+|-----------------------|------------------------|
+| 需要原始事实 | 需要经过推理的解读 |
+| 自行构建推理逻辑 | 希望回答与性格倾向一致 |
+| 需要最大控制权 | 希望记忆库自行「思考」 |
+| 简单事实查找 | 形成建议 |
+
+**示例：**
+- `recall("Alice")` → 返回关于 Alice 的所有事实和相关心智模型
+- `reflect("我们应该聘用 Alice 吗？")` → 智能体收集关于 Alice 的证据，推理其是否合适，并返回带引用的回答
+
+---
+
+## 性格倾向特征 {#disposition-traits}
+
+创建记忆库时，可以用三种特征配置其性格倾向。这些特征会影响记忆库在 `reflect()` 期间如何解读信息和推理：
+
+| 特征 | 量表 | 低（1） | 高（5） |
+|------|------|---------|---------|
+| **怀疑程度（Skepticism）** | 1-5 | 信任他人，按表面含义接受信息 | 持怀疑态度，质疑主张 |
+| **字面理解程度（Literalism）** | 1-5 | 灵活解读，理解言外之意 | 按字面含义解读 |
+| **共情程度（Empathy）** | 1-5 | 保持距离，专注事实 | 富有同理心，考虑情绪背景 |
+
+### 使命：用自然语言定义身份 {#mission-natural-language-identity}
+
+除了数值特征，还可以提供自然语言**使命**，描述记忆库的身份与推理背景：
+
+<CodeSnippet code={memoryBanksPy} section="bank-with-disposition" language="python" />
+
+反思使命界定智能体如何推理和回应：
+- 提供身份背景：智能体是谁，以及它关心什么
+- 塑造性格特征在实际中的应用方式
+- 让不同对话中的推理保持一致
+
+:::info 各操作的使命
+反思使命只影响 `reflect()`。要引导 `retain()` 提取什么，使用 [`retain_mission`](/developer/api/memory-banks#retain-configuration)。要控制哪些内容被综合为观察，使用 [`observations_mission`](/developer/api/memory-banks#observations-configuration)。
+:::
+
+---
+
+## 性格倾向塑造推理 {#disposition-shapes-reasoning}
+
+面对相同的远程工作事实，两个性格倾向不同的记忆库会给出不同看法：
+
+**记忆库 A**（低怀疑程度、高共情程度）：
+> 「远程工作带来灵活性，以及工作与生活的平衡。当团队可以选择工作环境时，他们似乎更开心，生产力也更高。」
+
+**记忆库 B**（高怀疑程度、低共情程度）：
+> 「关于远程工作的主张需要验证。实际的生产力指标是什么？这些个别经历中的好处未必能转化为可衡量的结果。」
+
+**相同事实 → 不同结论**，因为性格倾向会影响解读。
+
+---
+
+## 按场景选择性格倾向预设 {#disposition-presets-by-use-case}
+
+不同场景适合不同的性格倾向配置：
+
+| 场景 | 推荐特征 | 原因 |
+|------|----------|------|
+| **客户支持** | skepticism: 2, literalism: 2, empathy: 5 | 信任、灵活、善解人意 |
+| **代码审查** | skepticism: 4, literalism: 5, empathy: 2 | 质疑假设、精确、直接 |
+| **法律分析** | skepticism: 5, literalism: 5, empathy: 2 | 高度怀疑、严格解读 |
+| **心理咨询／教练** | skepticism: 2, literalism: 2, empathy: 5 | 提供支持、理解言外之意 |
+| **研究助手** | skepticism: 4, literalism: 3, empathy: 3 | 质疑主张、平衡解读 |
+
+---
+
+## 指令：硬性规则 {#directives-hard-rules}
+
+性格特征会*影响*推理风格，而**指令**是硬性规则，只要适用于当前反思范围，智能体就*必须*遵守。无标签指令是全局规则；带标签指令要求匹配反思标签。完整的匹配与默认行为表请参阅[记忆库：指令](/developer/api/memory-banks#directives)。
+
+### 何时使用指令 {#when-to-use-directives}
+
+对于绝不能违反的约束，使用指令：
+
+- **合规规则：**「绝不推荐具体股票或金融产品」
+- **隐私约束：**「绝不向第三方分享个人数据」
+- **风格要求：**「始终用正式英语回答」
+- **领域防护：**「陈述事实时始终引用来源」
+
+### 指令范围与标签 {#directive-scope-and-tags}
+
+指令的 `tags` 限定其适用范围，与记忆标签限定记忆范围的方式相同。无标签指令始终适用；带标签指令仅在 `reflect` 请求携带匹配标签时适用。因此，不带标签的 `reflect` 只应用无标签指令。在请求中设置 `apply_all_directives: true`，可以执行**所有**有效指令，不受标签限制。参阅[记忆库：指令范围与标签](/developer/api/memory-banks#directive-scope-and-tags)。
+
+### 指令与性格倾向 {#directives-vs-disposition}
+
+| 方面 | 性格倾向 | 指令 |
+|------|----------|------|
+| **性质** | 软性影响 | 硬性规则 |
+| **效果** | 塑造解读和语气 | 必须严格遵守 |
+| **违反** | 可以接受（因为只是倾向） | 不可接受 |
+| **示例** | 高怀疑程度 → 质疑主张 | 「绝不作出医疗诊断」 |
+
+:::tip
+用性格倾向设定个性和性格，用指令落实合规要求和防护规则。
+:::
+
+如何创建和管理指令，请参阅[记忆库：指令](/developer/api/memory-banks#directives)。
+
+---
+
+## 反思会返回什么 {#what-you-get-from-reflect}
+
+调用 `reflect()` 时：
+
+**返回：**
+- **回答文本** — 智能体根据性格倾向生成的回答
+- **based_on** — 使用的证据，包括为回答提供依据的记忆、心智模型和指令
+- **trace** — 工具调用、LLM 调用和访问过的观察（当 `include.tool_calls=True` 时）
+- **structured_output** — 提供 `response_schema` 时，返回解析后的回答
+- **usage** — Token 用量指标
+
+**示例：**
+```json
+{
+  "text": "根据 Alice 的机器学习专长和她在 Google 的工作经历，她非常适合担任研究团队负责人……",
+  "based_on": {
+    "memories": [
+      {"id": "mem-123", "text": "Alice 有 5 年机器学习经验", "type": "world"},
+      {"id": "mem-456", "text": "Alice 曾在 Google 从事搜索排序工作", "type": "experience"}
+    ],
+    "mental_models": [],
+    "directives": [
+      {"id": "dir-001", "name": "正式语言", "rules": ["始终用正式英语回答"]}
+    ]
+  },
+  "usage": {"input_tokens": 1500, "output_tokens": 500, "total_tokens": 2000}
+}
+```
+
+智能体会自动收集证据、验证引用，并生成有依据的回答。
+
+---
+
+## 结构化输出 {#structured-output}
+
+反思默认返回自然语言文本。传入 `response_schema`（带有 `properties` 映射的 JSON Schema **对象**），还可以获得同一回答的机器可读版本：
+
+```json
+{
+  "query": "Alice 与研究负责人职位的匹配程度如何？",
+  "response_schema": {
+    "type": "object",
+    "properties": {
+      "recommendation": { "type": "string" },
+      "strengths": { "type": "array", "items": { "type": "string" } },
+      "confidence": { "type": "number" }
+    },
+    "required": ["recommendation"]
+  }
+}
+```
+
+响应会同时包含自然语言文本和结构化视图：
+
+```json
+{
+  "text": "根据 Alice 的机器学习专长和她在 Google 的工作经历，她非常适合……",
+  "structured_output": {
+    "recommendation": "非常适合担任研究负责人",
+    "strengths": ["5 年机器学习经验", "在 Google 从事搜索排序工作"],
+    "confidence": 0.9
+  }
+}
+```
+
+**工作方式。**智能体首先通过推理生成自然语言回答，再执行第二轮处理，将回答提取为符合你提供的 schema 的 JSON。因此，`structured_output` 始终是 `text` 的忠实映射：你同时获得可读回答和可供程序使用的有类型对象。
+
+**提取失败时。**反思仍会返回 `200` 和自然语言回答，但不包含 `structured_output`，并通过 `structured_output_error` 字段说明原因（提供商错误、超时、无法解析的输出）。如果缺少 `structured_output` 却没有该错误字段，说明回答中没有符合 schema 的内容。这样，你可以只重试出错的情况，而不重试正常情况。
+
+**Schema 规则。**Schema 必须是至少包含一个属性的对象。每个属性的 `type` 必须是 `string`、`number`、`integer`、`boolean`、`array` 或 `object` 之一，`required` 列出属性名称。无效 schema 会在调用运行前被拒绝，因此格式错误会尽早失败，而不会静默返回空结果。
+
+### 心智模型的结构化输出 {#structured-output-for-mental-models}
+
+固定的心智模型可以在触发配置中携带自己的 `response_schema`。每次刷新都会在 Markdown 内容旁保存 `structured_output`，它从**最终存储的文档**中提取。这对增量模式的局部刷新尤其重要：结构化视图反映的是整个合并后的文档，而不是仅反映此次刷新改变的事实。
+
+### 构建 schema（无需代码） {#building-a-schema-no-code}
+
+控制台的反思视图和心智模型对话框包含**构建 schema（Build schema）**编辑器，提供**可视化（Visual）**模式（添加字段：名称、类型、是否必填、描述）和**代码（Code）**模式（原始 JSON）。页面本身只显示是否设置了 schema，所有编辑都在构建器中完成，因此除非你愿意，否则无需手写 JSON。
+
+---
+
+## 性格倾向为什么重要 {#why-disposition-matters}
+
+没有性格倾向时，所有 AI 助手听起来都一样。设置性格倾向后：
+
+- **客户支持机器人**可以委婉而富有同理心
+- **代码审查助手**可以直接而细致
+- **创意助手**可以对非传统想法持开放态度
+- **风险分析助手**可以保持适当的谨慎
+
+性格倾向使不同对话中的**性格保持一致**，观察则**随证据不断演进**。
+
+---
+
+## 后续步骤 {#next-steps}
+
+- [**观察**](./observations) — 如何整合知识
+- [**记忆存储**](./retain) — 如何存储丰富的事实
+- [**记忆召回**](./retrieval) — 多种搜索策略如何工作
+- [**反思 API**](./api/reflect) — 代码示例和参数

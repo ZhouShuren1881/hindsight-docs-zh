@@ -1,0 +1,693 @@
+---
+sidebar_position: 4
+---
+
+# 心智模型 {#mental-models}
+
+由用户整理的摘要，为常见查询提供高质量的预先计算答案。
+
+有关此 API 背后的概念，请参阅[心智模型](../mental-models)。
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import CodeSnippet from '@site/src/components/CodeSnippet';
+
+{/* 导入原始源文件 */}
+import mentalModelsPy from '!!raw-loader!@site/examples/api/mental-models.py';
+import mentalModelsMjs from '!!raw-loader!@site/examples/api/mental-models.mjs';
+import mentalModelsSh from '!!raw-loader!@site/examples/api/mental-models.sh';
+import mentalModelsGo from '!!raw-loader!@site/examples/api/mental-models.go';
+import Figure from '@site/src/components/Figure';
+import mentalModelsApi from '@site/figures/mental-models-api.json';
+import refreshModes from '@site/figures/refresh-modes.json';
+
+## 什么是心智模型？ {#what-are-mental-models}
+
+心智模型是你为记忆库整理并**保存的反思响应**。创建心智模型时，Hindsight 使用你指定的来源查询执行反思，并存储结果。之后调用反思时，会先检查这些预先计算的摘要，从而提供更快、更一致的答案。
+
+<Figure doc={mentalModelsApi} />
+
+### 为什么要使用心智模型？ {#why-use-mental-models}
+
+| 优点 | 说明 |
+|---------|-------------|
+| **一致性** | 常见问题每次都得到一致的答案 |
+| **速度** | 立即返回预先计算的响应 |
+| **质量** | 由你审阅并手动整理的摘要 |
+| **控制** | 准确定义关键主题应如何回答 |
+
+### 分层检索 {#hierarchical-retrieval}
+
+反思时，智能体按以下优先级检查信息来源：
+
+1. **心智模型** — 用户整理的摘要，优先级最高
+2. **观察** — 整合后的知识
+3. **原始事实** — 作为事实依据的记忆
+
+心智模型优先被检查，因为它们代表你明确整理过的知识。
+
+---
+
+## 创建心智模型 {#create-a-mental-model}
+
+创建心智模型时，会在后台执行反思操作并保存结果：
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={mentalModelsPy} section="create-mental-model" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={mentalModelsMjs} section="create-mental-model" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={mentalModelsSh} section="create-mental-model" language="bash" />
+</TabItem>
+<TabItem value="go" label="Go">
+<CodeSnippet code={mentalModelsGo} section="create-mental-model" language="go" />
+</TabItem>
+</Tabs>
+
+### 参数 {#parameters}
+
+| 参数 | 类型 | 必填 | 说明 |
+|-----------|------|----------|-------------|
+| `name` | string | 是 | 易于阅读的心智模型名称 |
+| `source_query` | string | 是 | 用于生成内容的查询 |
+| `id` | string | 否 | 自定义心智模型 ID，由小写字母、数字及连字符组成；省略时自动生成。 |
+| `tags` | list | 否 | 既限定反思时模型的可见范围，也过滤刷新时读取的来源记忆。默认使用 `all_strict` 匹配，因此只读取同时带有全部所列标签的记忆。参阅[标签与可见性](#tags-and-visibility)。 |
+| `max_tokens` | int | 否 | 心智模型内容的最大 token 数 |
+| `trigger` | object | 否 | 触发设置，参阅[自动刷新](#automatic-refresh)。 |
+
+---
+
+## 使用自定义 ID 创建 {#create-with-custom-id}
+
+为心智模型指定一个稳定、易读的 ID，就能用这个名称获取或更新它，而不必依赖自动生成的 UUID：
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={mentalModelsPy} section="create-mental-model-with-id" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={mentalModelsMjs} section="create-mental-model-with-id" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={mentalModelsSh} section="create-mental-model-with-id" language="bash" />
+</TabItem>
+<TabItem value="go" label="Go">
+<CodeSnippet code={mentalModelsGo} section="create-mental-model-with-id" language="go" />
+</TabItem>
+</Tabs>
+
+:::tip
+自定义 ID 必须由小写字母和数字组成，可以包含连字符，例如 `team-policies`、`q4-status`。如果该 ID 已存在，请求会被拒绝。
+:::
+
+---
+
+## 自动刷新 {#automatic-refresh}
+
+心智模型可以配置为在观察更新时**自动刷新**，无需人工操作即可与最新知识保持同步。
+
+### 触发设置 {#trigger-settings}
+
+| 设置 | 类型 | 默认值 | 说明 |
+|---------|------|---------|-------------|
+| `mode` | `"full"` \| `"delta"` | `"full"` | 刷新策略，参阅下方[刷新模式](#refresh-mode)。 |
+| `refresh_after_consolidation` | bool | false | 观察整合后自动刷新。 |
+| `refresh_cron` | string \| null | null | 用于定时刷新的 UTC 五字段 cron 表达式，例如 `"0 3 * * *"` 表示每天 UTC 03:00。 |
+| `min_refresh_interval_seconds` | int \| null | null | 此模型两次*自动*刷新之间的最短间隔秒数，参阅[限制自动刷新速率](#rate-limiting-automatic-refreshes)。`null` 使用记忆库或全局默认值。 |
+| `tags_match` | string \| null | null | 刷新时，模型的 `tags` 如何过滤来源记忆：`any`、`all`、`any_strict`、`all_strict` 或 `exact`。为 `null` 时，**带标签**的模型默认使用 `all_strict`，记忆必须带有模型的每个标签。设置为 `"any"` 则匹配带有*任意一个*标签的记忆。参阅[标签与可见性](#tags-and-visibility)。 |
+| `tag_groups` | list \| null | null | 高级布尔标签表达式，完全覆盖平面的 `tags` / `tags_match` 设置。参阅[记忆召回标签参考](./recall#tags)。 |
+| `fact_types` | list \| null | null | 限定刷新读取的事实类型，可选 `world`、`experience`、`observation`。`null` 表示三种都读取；不能设置为空列表。 |
+| `exclude_mental_models` | bool | false | 刷新时隐藏*所有*其他心智模型，避免从同级模型综合内容。 |
+| `exclude_mental_model_ids` | list \| null | null | 刷新时按 ID 隐藏指定心智模型。正在刷新的模型始终排除自身。 |
+| `include_chunks` | bool \| null | null | 覆盖刷新内部的记忆召回是否返回原始分块文本。`null` 使用记忆库或全局的 `recall_include_chunks` 默认值。 |
+| `recall_max_tokens` | int \| null | null | 覆盖刷新期间检索事实的 token 预算。`null` 使用记忆库或全局默认值。 |
+| `recall_chunks_max_tokens` | int \| null | null | 覆盖刷新期间检索原始分块的 token 预算。`null` 使用记忆库或全局默认值。 |
+| `reflect_search_observations_max_tokens` | int \| null | null | 覆盖刷新中 `search_observations` 调用的 token 预算。预算较小会舍弃排名最低的观察，缩小反思上下文。`null` 使用内置值 `5000`。刷新不读取记忆库的 `reflect_default_options`。 |
+| `reflect_search_observations_include_entities` | bool \| null | null | 覆盖 `search_observations` 是否附带解析后的实体名称，这些名称可能占工具载荷的一半以上。`null` 表示启用。刷新不读取记忆库的 `reflect_default_options`。 |
+| `budget` | string \| null | null | 刷新可执行的智能体步骤数，以服务器的 `reflect_max_iterations` 为基准：`low` 减半、`mid` 不变、`high` 加倍。`null` 表示 `mid`。刷新需要生成整篇文档，因此不继承临时反思默认的 `low`。 |
+| `response_schema` | object \| null | null | 结构化输出的 JSON Schema。设置后，每次刷新会在 Markdown 内容之外保存 `structured_output`。参阅下方[结构化输出](#structured-output)。 |
+| `keep_trace` | bool | false | 在 `reflect_response.trace` 中记录每次刷新如何得出结果。参阅[刷新故障排查](#troubleshoot-a-refresh)。 |
+
+启用 `refresh_after_consolidation` 后，每当记忆库的观察完成整合，心智模型就会重新生成，以反映最新的综合知识。
+
+设置 `refresh_cron` 后，Hindsight 在服务器的心智模型刷新周期中检查计划，仅当模型作用域内的记忆自上次刷新后发生变化时才刷新。`refresh_cron` 与 `refresh_after_consolidation` 互斥：模型可以在整合后刷新，或按固定 UTC 计划刷新，不能同时采用两者。
+
+模型上的 `last_refresh_failed_at`（知识树页面上也有此字段）记录刷新失败的时间，让列表视图无需逐个读取历史即可显示哪些模型已停止自动刷新。
+
+**刷新失败会暂停自动刷新。** 工作进程会重试失败的刷新（`HINDSIGHT_API_WORKER_MAX_RETRIES`，默认 `3` 次），之后停止。在某次刷新成功前，`refresh_after_consolidation` 与 `refresh_cron` 都不会再次为该模型排队。因此，无法成功的刷新（提示词超出模型限制、账户余额耗尽、增量编辑无法应用）只会花费几次尝试的成本，而不会在每个刷新周期重复产生 LLM 费用。失败会显示在模型的[历史记录](#history)中。修复原因后手动刷新，成功后即恢复自动刷新。`HINDSIGHT_API_REFLECT_WALL_TIMEOUT` 以与反思相同的方式限制整次刷新，被这一超时中断也视为失败。
+
+### 限制自动刷新速率 {#rate-limiting-automatic-refreshes}
+
+一次刷新包含完整的反思过程：检索与智能体 LLM 循环。持续导入内容的记忆库若启用 `refresh_after_consolidation`，每次小规模记忆存储都可能导致相关作用域内的模型重新构建。在写入频繁的记忆库中，即使只有几个模型，成本也会快速累积。
+
+`min_refresh_interval_seconds` 限制自动刷新的最高频率：
+
+```json
+{
+  "trigger": {
+    "refresh_after_consolidation": true,
+    "min_refresh_interval_seconds": 1800
+  }
+}
+```
+
+时间窗口内触发的刷新**不会被丢弃**，而是进入队列并等待窗口结束。等待期间的后续触发都会合并到同一项刷新中。因此，连续二十次记忆存储只需执行一次刷新，且仍会读取这二十次新增的全部内容。代价只是即时性：模型内容最多可能落后记忆一个配置间隔。
+
+这个最短间隔适用于两种自动触发方式（`refresh_after_consolidation` 与 `refresh_cron`），不适用于你主动请求的刷新。刷新端点、MCP 工具和控制平面的刷新按钮都会立即执行，并释放正在等待的刷新任务。
+
+可通过 `mental_model_min_refresh_interval_seconds` 设置记忆库级间隔，通过 `HINDSIGHT_API_MENTAL_MODEL_MIN_REFRESH_INTERVAL_SECONDS` 设置服务器级间隔。同时配置时，模型级设置优先，因此 `min_refresh_interval_seconds: 0` 可以让需要实时更新的单个模型不受记忆库级间隔限制。各级默认均为 `0`，即不限制。
+
+刷新等待期间，操作保持 `pending`，`next_retry_at` 设为窗口结束时间，因此 `GET /operations` 能准确显示任务在等待什么。
+
+### 结构化输出 {#structured-output}
+
+心智模型内容始终为 Markdown。设置 `trigger.response_schema` 可以*同时*提供机器可读视图：[JSON Schema](https://json-schema.org/) 必须为 **object**，且 `properties` 映射不能为空，支持嵌套对象与数组。每次刷新会在模型的 `reflect_response` 中保存 `structured_output`，与 Markdown 并存，让你同时获得正文和带类型的对象。
+
+```json
+{
+  "trigger": {
+    "response_schema": {
+      "type": "object",
+      "properties": {
+        "risk_level": { "type": "string" },
+        "open_questions": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["risk_level"]
+    }
+  }
+}
+```
+
+主要行为：
+
+- **从最终文档提取。** 结构化输出根据实际存储的内容解析。因此在 `delta` 模式中，它表示合并后的完整文档，而不只是本次刷新变化的事实。
+- **失败时明确报错。** 配置了 `response_schema` 但无法生成结构化输出时，刷新会**失败**，不会静默保存缺少结构化视图的内容。模型原有内容与 `structured_output` 均保留，可以重试刷新。
+- **请求时拒绝无效模式。** 模式必须为至少包含一个属性的对象，各属性的 `type` 必须是 `string`、`number`、`integer`、`boolean`、`array` 或 `object`。
+
+有关同一模式如何用于 `reflect` 端点，请参阅[反思 → `response_schema`](./reflect#response_schema)。模型的 `reflect_response` 中包含 `structured_output`，参阅[响应字段](#response-fields)。
+
+### 过时检查 {#staleness-gating}
+
+两种自动触发方式在调用 LLM 前执行相同检查：**模型解析后的作用域内，是否有比上次刷新更新的记忆？** 模型的 `tags` / `tags_match`、`tag_groups` 与 `fact_types` 均参与检查。因此，记忆库其他范围的活动不会触发重建；作用域无变化时，整个 cron 刷新周期都会跳过。尚待整合的记忆也计入，因为它们已经存储，作用域包含这些记忆的模型会被视为过时。
+
+**无标签写入不会使带标签的模型过时。** `tags_match: "any"` 或 `"all"` 允许刷新时*读取*无标签记忆，但过时检查只计算带有模型标签的写入。否则，混合有标签与无标签写入的记忆库中，这类模型几乎每次写入后都会被标记为过时（#4857）。使用这些模式的 `tag_groups` 叶节点也遵循此规则；显式选择无标签记忆的组（无标签的 `exact` 叶节点或 `not` 表达式）仍会计入这些记忆。无标签模型的作用域是整个记忆库，任何写入都会使它过时。
+
+所有可读取的 `is_stale` 都按同一规则计算：单个模型读取、列表、反思智能体看到的标志，以及[知识库树](./knowledge-pages)中的各页面标志。被标记为过时的模型，就是刷新实际会重写的模型。
+
+列表不会为每个模型单独执行一次查询，而是一起处理整页，因此无需近似判断。如果已从记忆库统计端点获得 `last_memory_write_at`，且模型的 `last_memory_seen_at` 大于或等于它，无需再次查询就能确定模型为最新：整个记忆库没有变化，该模型作用域也就没有变化。
+
+**过时检查无法检测删除。** 它检查模型上次读取记忆后，作用域内是否发生了*写入*。删除作用域内的记忆不会留下写入记录，因此不会触发过时标志。引用已删除事实的文档会继续报告为最新，直到其作用域内发生写入，或你手动刷新。
+
+**两个时间戳回答不同的问题。** `last_refreshed_at` 是实际时间，表示上次刷新完成的时刻。每次刷新完成都会推进它，包括读取作用域后发现没有新内容、保留文档不变的刷新。主动控制刷新的客户端可据此区分“已经刷新过”和“仍需调用”。`last_memory_seen_at` 表示数据位置，即上次刷新所见的最新作用域内记忆。作用域内没有新写入时，无论刷新多少次它都不变，因此适合用于过时比较。`last_refreshed_at` 很新而 `last_memory_seen_at` 很旧并不矛盾，只表示你刷新了一个没有新内容的文档。
+
+### 刷新读取的内容 {#what-a-refresh-reads}
+
+- **某一时点的快照。** 每次刷新以数据库时间设定截止点，只读取在该时刻或之前提交的记忆，因此不会只纳入刷新中途写入内容的一部分。之后记录的水位是刷新实际所见的最新作用域内记忆，而非 `now()`。快照之后才提交的写入仍被视为“更新”，会在下一轮读取，不会遗漏。
+- **`delta` 模式只读取新增内容。** 增量刷新只检索上次刷新后创建的记忆，让 LLM 读取真正的新信息，而非重读整个记忆库。
+- **累积事实依据。** 即使在增量模式下，`reflect_response.based_on` 也持续累积：本次事实与以前所有刷新所依据的事实合并，并按 ID 去重。文档以全部这些事实为依据，不只是最新一批。
+- **没有相关记忆就不修改内容。** 刷新未找到与主题相关的记忆时，内容保持不变，只推进水位，避免同一空窗口反复触发刷新。
+- **没有可读取内容时，完全不调用 LLM。** 智能体循环开始前，刷新先按模型设置检查可读取的内容：读取窗口内是否有作用域内的记忆（`tags` / `tags_match`、`tag_groups` 与 `fact_types` 均限定范围），或者是否存在同级心智模型，除非 `exclude_mental_models` 已排除它们。`full` 模式读取整个作用域，`delta` 模式读取 `last_memory_seen_at` 之后的内容。没有内容时，刷新立即完成，保留文档且不产生 LLM 费用。这常见于新建记忆库：页面一创建就刷新，此时尚未存储任何记忆。
+- **检索失败不等于结果为空。** 数据库、嵌入模型或重排序器不可用，导致检索步骤抛出异常时，刷新会**失败**，不会写入模型在缺少检索结果时生成的内容。原内容、`structured_output` 与水位都不变，重试仍读取同一窗口。必须区分：“已经检索，主题没有相关内容”是有效结果，可以写入；“无法检索”是失败，必须保留原内容。否则，检索器故障可能静默地用“我没有相关信息”替换数月积累的文档。
+
+### 刷新模式 {#refresh-mode}
+
+刷新生成新内容时，可以采用以下两种策略：
+
+- **`full`** *（默认）* — 每次从头重新生成全部内容。LLM 根据检索到的记忆综合出一份新文档，行为简单且可预测。适用于短文档、希望每次刷新都能重新组织结构的场景，或尚未确定最终结构的情况。
+
+- **`delta`** — 针对文档现有结构生成带类型的*编辑操作*，例如添加章节、追加条目、替换内容块或删除过时段落，再渲染结果。未被任何操作修改的内容会以**字节完全一致**的形式保留，不改写措辞、空白或列表样式。适用于长期维护的操作手册类心智模型，让文档在多次刷新中保持稳定，只改变实际变化的部分。
+
+<Figure doc={refreshModes} />
+
+#### 增量模式的工作原理 {#how-delta-mode-works}
+
+Hindsight 维护文档的权威**结构化**表示：有序章节列表，每章包含内容块列表。每个块是原样存储的 Markdown 片段，例如段落、列表、表格或代码块。你读取的 Markdown 由这一结构确定性地渲染生成。内容块不会被重新解释，因此刷新未触及的格式不会改变，表格仍然是表格。增量刷新不要求 LLM 重写文档，而是让它针对这一结构生成操作：
+
+| 操作 | 效果 |
+|---|---|
+| `add_section` / `remove_section` | 添加或删除整个章节 |
+| `rename_section` | 修改章节标题 |
+| `replace_section_blocks` | 替换章节的全部内容 |
+| `append_block` / `insert_block` | 在章节末尾，或指定内容块之后添加一个块 |
+| `replace_block` / `remove_block` | 修改或删除一个内容块 |
+
+未被任何操作提及的内容都会原样保留。未变化的正文不会重新生成后再核对，而是直接复制。这很重要，因为“保留未变化的内容”对 LLM 只是软约束：它本质上根据输入整体生成下一个 token，即使要求保留原文，多次刷新后措辞仍可能逐渐偏移。
+
+章节与内容块按 ID 定位，不按位置计数，避免因计数错误而修改错对象。失败处理有意采用保守策略：若操作引用不存在的章节或块，或内容块不属于操作指定的章节，就**丢弃**该操作，而不猜测目标；其他操作仍会执行。如果*所有*操作都引用缺失对象，会再请求模型一次，告知错误 ID 与文档实际存在的章节。刷新记录哪些操作被丢弃及原因，让你知道本轮哪些新信息未进入文档。
+
+增量模式在以下两种情况下自动回退到完整重新生成：
+1. 心智模型尚无内容，没有可供编辑的基线。
+2. `source_query` 自上次刷新后发生变化，主题改变，现有结构可能不再适用。
+
+**增量刷新不会用不完整的文档替换现有文档。** 增量检索只读取比上次刷新更新的记忆，因此这个窗口生成的答案仅涵盖主题近期的部分，是编辑文档的素材，而不是文档的替代品。如果无法应用任何编辑，例如提供商调用失败、响应无法解析或全部操作被拒绝，原内容会完整保留，刷新被标记为**失败**，而非完成。内容不会丢失，时间窗口不会推进，重试仍读取相同记忆。空答案也遵循此规则：已有内容的文档不会被空文档覆盖。增量刷新不会自行变成完整重写；若某模型的增量刷新持续失败，请将其 `mode` 改为 `full`。
+
+| 用例 | 建议模式 | 原因 |
+|----------|-----------------|-----|
+| 技能或操作手册文档 | `delta` | 章节需要在多次刷新中保持稳定，仅具体规则变化 |
+| 入职摘要 | `delta` | 新增团队成员不应重组整篇文档 |
+| 实时仪表板 | `full` | 每次刷新都生成新的完整快照 |
+| 简短常见问题摘要 | `full` | 全文重新生成成本低，结果清晰 |
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={mentalModelsPy} section="create-mental-model-with-trigger" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={mentalModelsMjs} section="create-mental-model-with-trigger" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={mentalModelsSh} section="create-mental-model-with-trigger" language="bash" />
+</TabItem>
+<TabItem value="go" label="Go">
+<CodeSnippet code={mentalModelsGo} section="create-mental-model-with-trigger" language="go" />
+</TabItem>
+</Tabs>
+
+### 何时使用自动刷新 {#when-to-use-automatic-refresh}
+
+| 用例 | 自动刷新 | 原因 |
+|----------|-------------------|-----|
+| **实时仪表板** | ✅ 启用 | 状态应始终保持最新 |
+| **策略摘要** | ❌ 禁用 | 策略变化不频繁，宜手动刷新 |
+| **用户偏好** | ✅ 启用 | 偏好会随新交互变化 |
+| **常见问题答案** | ❌ 禁用 | 答案经过整理，更新前应审阅 |
+
+:::tip
+需要保持最新的心智模型可以启用自动刷新；若希望内容发布前先审阅修改，则禁用自动刷新。
+:::
+
+---
+
+## 列出心智模型 {#list-mental-models}
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={mentalModelsPy} section="list-mental-models" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={mentalModelsMjs} section="list-mental-models" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={mentalModelsSh} section="list-mental-models" language="bash" />
+</TabItem>
+<TabItem value="go" label="Go">
+<CodeSnippet code={mentalModelsGo} section="list-mental-models" language="go" />
+</TabItem>
+</Tabs>
+
+---
+
+## 获取心智模型 {#get-a-mental-model}
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={mentalModelsPy} section="get-mental-model" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={mentalModelsMjs} section="get-mental-model" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={mentalModelsSh} section="get-mental-model" language="bash" />
+</TabItem>
+<TabItem value="go" label="Go">
+<CodeSnippet code={mentalModelsGo} section="get-mental-model" language="go" />
+</TabItem>
+</Tabs>
+
+### 返回详细程度 {#detail-levels}
+
+**列表**与**获取单个模型**端点都接受可选查询参数 `detail`，控制返回的数据量。它能减小响应，尤其适合上下文预算有限的智能体启动流程或 MCP 客户端。
+
+| 级别 | 返回字段 | 用例 |
+|-------|----------------|----------|
+| `metadata` | `id`、`bank_id`、`name`、`tags`、`is_stale`、`last_refreshed_at`、`last_memory_seen_at`、`created_at` | 模型清单：“有哪些模型？” |
+| `content` | 全部元数据字段，以及 `source_query`、`content`、`max_tokens`、`trigger` | 智能体启动：“模型说了什么？” |
+| `full` | 全部字段，包括 `reflect_response` | 深入检查：“哪些证据支持这个模型？” |
+
+两个端点的默认值不同：
+
+- **列表**默认使用 `metadata`，**不返回每个模型的综合内容**。列表用于索引；若默认返回全部内容，单次请求就能批量读取整个记忆库的知识。因此，返回内容必须显式启用。
+- **获取单个模型**默认使用 `full`，因为你已明确指定要读取哪个模型。
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={mentalModelsPy} section="mental-model-detail" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={mentalModelsMjs} section="mental-model-detail" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={mentalModelsSh} section="mental-model-detail" language="bash" />
+</TabItem>
+<TabItem value="go" label="Go">
+<CodeSnippet code={mentalModelsGo} section="mental-model-detail" language="go" />
+</TabItem>
+</Tabs>
+
+MCP 工具 `get_mental_model` 支持 `detail` 参数。`list_mental_models` 不接受该参数，始终只返回元数据（包括 `is_stale`）；智能体通过 `get_mental_model` 读取指定模型的内容。
+
+:::tip
+如果智能体启动流程确实需要每个模型的文本，可以在列表端点显式设置 `detail=content`。它包含理解模型所需的信息，同时省略较大的 `reflect_response` 来源链。在模型较多的记忆库中，来源链可能超过 200KB。
+:::
+
+:::note 升级说明
+列表端点此前默认使用 `full`。现在，如果调用方省略 `detail`，从列表条目读取 `content`、`source_query`、`max_tokens` 或 `trigger` 会得到 `null`。需要这些字段时，请显式传入 `detail=content`。
+:::
+
+### 响应字段 {#response-fields}
+
+| 字段 | 类型 | 详细级别 | 说明 |
+|-------|------|-------------|-------------|
+| `id` | string | metadata | 心智模型的唯一 ID |
+| `bank_id` | string | metadata | 记忆库 ID |
+| `name` | string | metadata | 易于阅读的名称 |
+| `tags` | list | metadata | 用于过滤的标签 |
+| `last_refreshed_at` | string | metadata | 上次刷新完成的实际时间。每次完成刷新都会推进，包括未发现新内容的刷新。回答“是否已经刷新过？” |
+| `last_memory_seen_at` | string | metadata | 上次刷新所见的最新作用域内记忆。与统计端点的 `last_memory_write_at` 比较，用于判断“是否落后于数据？” |
+| `created_at` | string | metadata | 心智模型的创建时间 |
+| `source_query` | string | content | 用于生成内容的查询 |
+| `content` | string | content | 生成的心智模型文本 |
+| `max_tokens` | int | content | 心智模型内容的最大 token 数 |
+| `trigger` | object | content | 触发设置，参阅[自动刷新](#automatic-refresh)。 |
+| `reflect_response` | object | full | 完整反思响应，包括 `based_on` 中的来源事实 |
+
+---
+
+## 刷新心智模型 {#refresh-a-mental-model}
+
+重新执行来源查询，以当前知识更新心智模型：
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={mentalModelsPy} section="refresh-mental-model" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={mentalModelsMjs} section="refresh-mental-model" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={mentalModelsSh} section="refresh-mental-model" language="bash" />
+</TabItem>
+<TabItem value="go" label="Go">
+<CodeSnippet code={mentalModelsGo} section="refresh-mental-model" language="go" />
+</TabItem>
+</Tabs>
+
+以下情况适合刷新：
+- 新存储的记忆影响了该主题
+- 观察已更新
+- 你希望确认心智模型反映当前知识
+
+**刷新请求会合并。** 每个模型同时最多只有一项等待中的刷新。如果已有刷新排队且尚未开始，此调用会返回*那项*操作，而不再排队相同的第二项操作。排队中的刷新执行时会读取模型的当前状态，已经涵盖刚提出的请求；照常轮询返回的 `operation_id` 即可。已经*运行中*的刷新不会复用，因为它可能在最新修改前就读取了模型，此时会在它之后排队一项新操作。
+
+**同一模型的刷新依次执行。** 刷新不会重叠，排在运行中任务之后的刷新会等前一项结束再开始。因此模型一次只由一项刷新写入，不会由最后结束的任务决定结果。这是模型级限制；不同模型仍可以并行刷新，并行数量取决于可用工作进程。
+
+---
+
+## 刷新故障排除 {#troubleshoot-a-refresh}
+
+刷新结果不符合预期时，例如内容未变化、改错了内容或增量编辑没有应用，只看保存的文档无法知道原因。以下两种工具可以解释刷新过程。
+
+### 试运行：预览刷新 {#dry-run-preview-a-refresh-before-it-happens}
+
+`POST /mental-models/{id}/dry-run-refresh` 执行真实流水线，报告刷新*将会*做什么，但不写入内容、结构化文档、水位或 `last_refreshed_at`。由于不持久化任何内容，增量试运行读取的窗口与下一次真实刷新相同，重复试运行也读取相同窗口。
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={mentalModelsPy} section="dry-run-refresh" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={mentalModelsMjs} section="dry-run-refresh" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={mentalModelsSh} section="dry-run-refresh" language="bash" />
+</TabItem>
+<TabItem value="go" label="Go">
+<CodeSnippet code={mentalModelsGo} section="dry-run-refresh" language="go" />
+</TabItem>
+</Tabs>
+
+响应可以回答已存储文档无法说明的问题：
+
+| 字段 | 说明 |
+|-------|-------------------|
+| `requested_mode` / `effective_mode` | 刷新是否按配置的模式运行 |
+| `mode_fallback_reason` | 未应用增量编辑的原因：`no_baseline_content`、`source_query_changed`、`structured_doc_unreadable`、`delta_ops_failed` 或 `delta_ops_all_skipped`（所有操作均被拒绝） |
+| `scope` | 实际用于过滤记忆的标签、匹配模式与事实类型，而非模型上存储的配置 |
+| `window` | 读取的 `created_after` / `created_before` 边界，以及将要保存的水位 |
+| `facts.retrieved` 与 `facts.used` | 检索返回的数量，与反思智能体判断相关并实际使用的数量 |
+| `delta_operations` | 生成、应用和跳过的编辑操作 |
+| `diff` | 已存储内容与将要写入内容之间的统一差异 |
+| `outcome` / `would_persist` | 真实刷新是否会写入、保留内容或失败 |
+| `warnings` | 用自然语言说明需要注意的情况 |
+
+试运行有意不接受参数。它使用生产刷新流水线，只跳过两项写入：内容（以及关联的结构化文档与历史条目），和推进 `last_refreshed_at` 的水位。不能另行配置其运行方式，否则试运行就不能准确预测真实刷新。要预览其他配置，请先通过 `PATCH` 修改模型，再次试运行。
+
+:::warning
+试运行与真实刷新执行相同的 LLM 调用，因此消耗相同的 token，耗时也相同，并按刷新操作进行验证和计费。
+and takes the same time. It is validated and billed like a refresh.
+:::
+
+### 保留追踪：记录每次刷新 {#keep-traces-record-every-refresh-as-it-happens}
+
+试运行只解释你主动执行的那次刷新。`refresh_after_consolidation` 或 `refresh_cron` 触发的刷新可能无人观察，等你发现文档有问题时，生成它的运行过程已经结束。
+
+设置 `trigger.keep_trace`，即可在 `reflect_response.trace` 中记录该模型每次刷新（包括定时刷新）的相同推理过程：
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={mentalModelsPy} section="keep-trace" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={mentalModelsMjs} section="keep-trace" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={mentalModelsSh} section="keep-trace" language="bash" />
+</TabItem>
+<TabItem value="go" label="Go">
+<CodeSnippet code={mentalModelsGo} section="keep-trace" language="go" />
+</TabItem>
+</Tabs>
+
+只保留最近一次刷新的追踪，即使刷新失败也会记录。失败时追踪尤其重要，因为失败的刷新不会留下其他可检查的结果。
+
+#### 追踪包含的内容 {#what-a-trace-contains}
+
+追踪结构有意与[反思](./reflect)追踪一致，记录智能体执行的调用，以及刷新特有的决策。它保存在心智模型记录中，每次获取模型都会读取，因此不会包含能够从其他位置推导的信息。
+
+| 字段 | 内容 |
+|-------|----------|
+| `effective_mode` | 实际运行的模式为 `full` 还是 `delta` |
+| `mode_fallback_reason` | 请求增量模式却未应用的原因：`no_baseline_content`、`source_query_changed`、`structured_doc_unreadable`、`delta_ops_failed`、`delta_ops_all_skipped` |
+| `outcome` | `content_written`、`content_preserved_no_new_facts`、`refresh_failed_empty_candidate` 或 `refresh_failed_delta_not_applied`（编辑未应用，文档保留，刷新失败）。操作记录还可能包含发生在执行过程之外的两种结果：`refresh_failed_structured_output` 与 `refresh_failed_error`（检索工具抛出异常、智能体未生成答案，或出现其他未预见的错误）。 |
+| `tool_calls[]` | 每次调用的 `tool`、智能体的 `reason`、完整 `input`、`result_count`、`duration_ms`，以及所属 `iteration` |
+| `llm_calls[]` | 每次调用的 `scope`（`agent_1`、`agent_2` 等，或 `final`）与 `duration_ms` |
+| `delta_operations` | 增量模式生成的操作，以及 `applied` 与 `skipped` |
+| `usage` | 本次运行所有 LLM 调用的 token 数 |
+| `recorded_at`、`duration_ms`、`warnings[]` | 运行时间、耗时，以及需要人工注意的情况 |
+
+#### 追踪有意省略的内容 {#what-a-trace-deliberately-omits}
+
+- **工具输出。** 只保留 `result_count`。记忆召回载荷很大，且每次获取模型都会读取追踪，保存完整载荷会让记录不断膨胀。数量已足以判断工具是否返回空结果。需要原始提示词与响应时，请使用 [LLM 请求追踪](../monitoring)，它们会独立存储，并按自己的保留期限过期。
+- **证据。** 刷新生成文档所依据的事实已经以反思使用的格式存储在 `reflect_response.based_on` 中，追踪不再重复保存。
+- **解析后的作用域与时间窗口。** 它们描述模型当前配置会读取什么，而非过去运行做了什么，因此由试运行返回，不在每次刷新时保存。
+
+这让存储的追踪保持较小：典型运行只占几 KB，主要是工具输入。
+
+---
+
+## 清除心智模型 {#clear-a-mental-model}
+
+清除心智模型内容，让下一次刷新从头进行**完整重新综合**，无论模型配置的触发模式是什么。
+
+这适合在多次增量刷新中逐渐积累偏差的模型。每次增量刷新只读取上次之后的新事实，细小误差可能随时间累积。先清除再刷新，可以基于全部事实建立干净的新基线。
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={mentalModelsPy} section="clear-mental-model" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={mentalModelsMjs} section="clear-mental-model" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={mentalModelsSh} section="clear-mental-model" language="bash" />
+</TabItem>
+<TabItem value="go" label="Go">
+<CodeSnippet code={mentalModelsGo} section="clear-mental-model" language="go" />
+</TabItem>
+</Tabs>
+
+清除操作同步执行，将内容重置为空字符串，保留模型配置（名称、来源查询和触发设置）。内容为空后，下一次 `/refresh` 始终执行完整重新生成，即使模型的触发模式为 `delta`。
+
+:::tip
+对于长期维护的增量模式心智模型，可考虑定期清除并刷新，例如每 48 小时一次，以保持准确，同时继续受益于两次完整刷新之间的增量更新。
+:::
+
+---
+
+## 更新心智模型 {#update-a-mental-model}
+
+更新心智模型名称：
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={mentalModelsPy} section="update-mental-model" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={mentalModelsMjs} section="update-mental-model" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={mentalModelsSh} section="update-mental-model" language="bash" />
+</TabItem>
+<TabItem value="go" label="Go">
+<CodeSnippet code={mentalModelsGo} section="update-mental-model" language="go" />
+</TabItem>
+</Tabs>
+
+---
+
+## 删除心智模型 {#delete-a-mental-model}
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={mentalModelsPy} section="delete-mental-model" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={mentalModelsMjs} section="delete-mental-model" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={mentalModelsSh} section="delete-mental-model" language="bash" />
+</TabItem>
+<TabItem value="go" label="Go">
+<CodeSnippet code={mentalModelsGo} section="delete-mental-model" language="go" />
+</TabItem>
+</Tabs>
+
+---
+
+## 标签和可见性 {#tags-and-visibility}
+
+心智模型与记忆使用相同的标签系统。模型标签同时控制刷新时**读取哪些记忆**，以及反思时**何时可见**。
+
+### 标签如何影响心智模型刷新 {#how-tags-affect-mental-model-refresh}
+
+:::warning
+添加模型标签会缩小刷新可读取的来源记忆范围。如果尚无记忆带有这些标签，即使直接对同一查询调用 `reflect` 可以回答，刷新也可能返回空内容，例如 `"I cannot find any information…"`。请先为相关记忆补齐标签，或通过 `trigger.tags_match` / `trigger.tag_groups` 覆盖默认行为。
+:::
+
+手动或自动刷新心智模型时，都会通过内部反思调用重新生成内容。模型有标签时，默认使用 `all_strict` 匹配，只读取带有模型**全部**标签的记忆，无标签记忆会被排除。
+
+```
+心智模型标签：["user:alice"]
+
+刷新时读取：
+  ✅ "Alice 偏好异步沟通"       — 带有 "user:alice"
+  ✅ "团队使用 Slack 发布通知" — 带有 "user:alice"，还带有其他标签
+  ❌ "公司政策：周五不开会"     — 无标签，被排除
+  ❌ "Bob 不喜欢长时间会议"     — 没有 "user:alice" 标签
+```
+
+因此，带有 `["user:alice"]` 的心智模型也会读取带有 `["user:alice", "team"]` 的记忆。记忆的额外标签不会使其失去匹配资格，只要求模型自身的标签全部存在。
+
+#### 使用 `tags_match` 覆盖默认值 {#overriding-the-default-with-tagsmatch}
+
+默认 `all_strict` 对单标签模型最安全，但对于**多标签**模型，如果每条记忆只带一个标签，可能过滤掉全部记忆。例如模型标签为 `["projects", "mental-model"]`，来源记忆却只带 `["project:status"]`、`["tooling"]` 等较具体的标签，没有一条记忆包含模型的*全部*标签，刷新就会返回空内容。
+
+若要匹配带有模型**任意一个**标签的记忆，即与 `recall` 和 `reflect` 的默认模式一致，可在创建时将 `trigger.tags_match` 设置为 `"any"`：
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={mentalModelsPy} section="create-mental-model-tags-match" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={mentalModelsMjs} section="create-mental-model-tags-match" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={mentalModelsSh} section="create-mental-model-tags-match" language="bash" />
+</TabItem>
+<TabItem value="go" label="Go">
+<CodeSnippet code={mentalModelsGo} section="create-mental-model-tags-match" language="go" />
+</TabItem>
+</Tabs>
+
+MCP 工具 `create_mental_model` 将同一选项作为顶层 `tags_match` 参数提供。可用模式为 `any`、`all`、`any_strict`、`all_strict` 与 `exact`；准确语义请参阅[记忆召回标签参考](./recall#tags)。
+
+### 标签如何影响反思过程中的心智模型查找 {#how-tags-affect-mental-model-lookup-during-reflect}
+
+调用带标签的 `reflect` 时，同一组标签会过滤智能体可见的心智模型。只有模型标签与反思请求的标签有交集，模型才可见。
+
+标签匹配模式（`any`、`any_strict`、`all`、`all_strict`）的详细说明与示例，请参阅[记忆召回标签参考](./recall#tags)。
+
+### 列出心智模型的标签 {#listing-mental-model-tags}
+
+`GET /v1/default/banks/{bank_id}/tags` 接受查询参数 `source`，选择要列出的标签空间：
+
+- `source=memories` *（默认）* — 记忆单元上的标签。
+- `source=mental_models` — 此记忆库中心智模型上的标签。
+
+使用 `mental_models` 来源，可以为心智模型标签提供自动补全或过滤界面，与通常规模更大的记忆标签集合区分。
+
+---
+
+## 历史 {#history}
+
+每当心智模型内容通过刷新或手动更新发生变化，旧版本都会附带时间戳保存。可通过历史端点获取完整变更记录：
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={mentalModelsPy} section="get-mental-model-history" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={mentalModelsMjs} section="get-mental-model-history" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={mentalModelsSh} section="get-mental-model-history" language="bash" />
+</TabItem>
+<TabItem value="go" label="Go">
+<CodeSnippet code={mentalModelsGo} section="get-mental-model-history" language="go" />
+</TabItem>
+</Tabs>
+
+### 响应 {#response}
+
+端点返回历史条目列表，按从新到旧排序：
+
+| 字段 | 类型 | 说明 |
+|-------|------|-------------|
+| `previous_content` | string \| null | 此次更改之前的内容。无法获取时为 `null`，失败记录始终为 `null`。 |
+| `changed_at` | string | 更改发生时间的 ISO 8601 时间戳 |
+| `kind` | `"refresh_failed"` \| absent | 仅**失败记录**（拒绝写入的刷新）包含此字段，版本快照中不存在。 |
+| `outcome` | string \| absent | 失败记录中的操作结果，例如 `refresh_failed_error`。 |
+| `failure_reason` | string \| absent | 失败记录中拒绝写入的原因：`retrieval_failed`、`no_answer`、`unexpected_error`、`empty_candidate`、`structured_doc_unreadable`、`delta_ops_failed`、`delta_ops_all_skipped`、`delta_not_applied`、`structured_output_failed`。 |
+| `error_message` | string \| absent | 失败记录中操作报告的异常。 |
+
+每个版本条目保存**更改之前的内容**及更改时间。当前内容由标准的[获取心智模型](#get-a-mental-model)端点返回。
+
+**失败也会被记录。** 拒绝写入的刷新不会产生新版本。过去，这种刷新在模型上完全不留痕迹：连续一周刷新失败的文档，看起来与从未刷新过的文档相同，存储的 `reflect_response` 仍描述最后一次*成功*运行。现在，这些运行会追加包含原因与异常的失败记录。通过 `kind` 区分条目：只需要版本的客户端可过滤掉包含 `kind` 的失败记录；需要判断模型是否最新的客户端，可检查最新条目是否为失败。
+
+保留限制按条目类别分别计算，连续失败不会挤掉版本历史。每类各自受 `HINDSIGHT_API_MENTAL_MODEL_HISTORY_MAX_ENTRIES` 限制。刷新每次重试都会记录一条。
+
+:::note
+默认启用历史记录。设置 `HINDSIGHT_API_ENABLE_MENTAL_MODEL_HISTORY=false` 可禁用；通过 `HINDSIGHT_API_MENTAL_MODEL_HISTORY_MAX_ENTRIES` 调整每个模型保留的版本数，默认 `50`。
+:::
+
+---
+
+## 用例 {#use-cases}
+
+| 用例 | 示例 |
+|----------|---------|
+| **常见问题答案** | 预先生成常见客户问题的答案 |
+| **入职摘要** | “新团队成员应知道哪些内容？” |
+| **状态报告** | “项目当前状态如何？”，每周刷新 |
+| **策略摘要** | “我们的安全策略是什么？” |
+
+---
+
+## 后续步骤 {#next-steps}
+
+- [**反思**](./reflect) — 智能体循环如何使用心智模型
+- [**观察**](/developer/observations) — 如何整合知识
+- [**操作**](./operations) — 跟踪异步创建心智模型

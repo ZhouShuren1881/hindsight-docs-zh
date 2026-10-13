@@ -1,0 +1,84 @@
+---
+sidebar_position: 2
+---
+
+import CodeSnippet from '@site/src/components/CodeSnippet';
+import nodejsSdkMjs from '!!raw-loader!@site/examples/api/nodejs-sdk.mjs';
+
+# TypeScript / JavaScript 客户端 {#typescript--javascript-client}
+
+Hindsight API 的官方 TypeScript / JavaScript 客户端。支持**Node.js** 和 **Deno**。
+
+## 安装 {#installation}
+
+### Node.js {#nodejs}
+
+```bash
+npm install @vectorize-io/hindsight-client
+```
+
+### Deno {#deno}
+
+无需安装，直接通过 `npm:` 说明符导入：
+
+```typescript
+import { HindsightClient } from "npm:@vectorize-io/hindsight-client";
+```
+
+## 快速入门 {#quick-start}
+
+<CodeSnippet code={nodejsSdkMjs} section="quickstart" language="typescript" />
+
+## 客户端初始化 {#client-initialization}
+
+<CodeSnippet code={nodejsSdkMjs} section="client-init" language="typescript" />
+
+## 核心操作 {#core-operations}
+
+### 版本和功能检查 {#version-and-feature-checks}
+
+<CodeSnippet code={nodejsSdkMjs} section="get-version" language="typescript" />
+
+### 记忆存储（存储记忆） {#retain-store-memory}
+
+<CodeSnippet code={nodejsSdkMjs} section="retain" language="typescript" />
+
+### 批量记忆存储 {#retain-batch}
+
+<CodeSnippet code={nodejsSdkMjs} section="retain-batch" language="typescript" />
+
+### 记忆召回（搜索） {#recall-search}
+
+<CodeSnippet code={nodejsSdkMjs} section="recall" language="typescript" />
+
+### 反思（生成响应） {#reflect-generate-response}
+
+<CodeSnippet code={nodejsSdkMjs} section="reflect" language="typescript" />
+
+## 记忆库管理 {#bank-management}
+
+### 创建记忆库 {#create-bank}
+
+<CodeSnippet code={nodejsSdkMjs} section="create-bank" language="typescript" />
+
+### 列出记忆 {#list-memories}
+
+<CodeSnippet code={nodejsSdkMjs} section="list-memories" language="typescript" />
+
+## 文档管理 {#document-management}
+
+### 获取文档 {#get-document}
+
+<CodeSnippet code={nodejsSdkMjs} section="get-document" language="typescript" />
+
+### 列出文档 {#list-documents}
+
+<CodeSnippet code={nodejsSdkMjs} section="list-documents" language="typescript" />
+
+### 更新文档 {#update-document}
+
+<CodeSnippet code={nodejsSdkMjs} section="update-document" language="typescript" />
+
+### 删除文档 {#delete-document}
+
+<CodeSnippet code={nodejsSdkMjs} section="delete-document" language="typescript" />

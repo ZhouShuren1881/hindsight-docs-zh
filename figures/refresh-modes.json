@@ -1,0 +1,626 @@
+{
+  "title": "刷新模式：完全刷新与增量刷新",
+  "speed": 2200,
+  "elements": [
+    {
+      "id": "cfg",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "心智模型"
+        },
+        {
+          "type": "subtitle",
+          "text": "配置"
+        }
+      ],
+      "width": 200
+    },
+    {
+      "id": "reflect",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "反思"
+        },
+        {
+          "type": "subtitle",
+          "text": "针对来源查询"
+        }
+      ],
+      "width": 196
+    },
+    {
+      "id": "ops",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "delta 编辑"
+        },
+        {
+          "type": "subtitle",
+          "text": "LLM 发出操作"
+        }
+      ],
+      "width": 196
+    },
+    {
+      "id": "g1",
+      "type": "group",
+      "label": {
+        "title": "Hindsight 工作进程·刷新"
+      },
+      "children": [
+        "reflect",
+        "ops"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 48,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "mem",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "记忆"
+        },
+        {
+          "type": "subtitle",
+          "text": "在模型范围内"
+        }
+      ],
+      "width": 220
+    },
+    {
+      "id": "doc",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "团队概况"
+        },
+        {
+          "type": "subtitle",
+          "text": "存储的文档"
+        }
+      ],
+      "width": 220
+    },
+    {
+      "id": "g2",
+      "type": "group",
+      "label": {
+        "title": "记忆库"
+      },
+      "children": [
+        "mem",
+        "doc"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 36,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "g0",
+      "type": "group",
+      "children": [
+        "cfg",
+        "g1",
+        "g2"
+      ],
+      "layout": {
+        "direction": "row",
+        "gap": 44,
+        "align": "center"
+      }
+    },
+    {
+      "id": "go",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "cfg"
+      },
+      "end": {
+        "id": "reflect"
+      },
+      "label": {
+        "text": "刷新"
+      }
+    },
+    {
+      "id": "read",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "reflect"
+      },
+      "end": {
+        "id": "mem"
+      },
+      "label": {
+        "text": "读取"
+      }
+    },
+    {
+      "id": "draft",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "reflect"
+      },
+      "end": {
+        "id": "ops"
+      },
+      "label": {
+        "text": "新发现"
+      }
+    },
+    {
+      "id": "baseline",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "doc"
+      },
+      "end": {
+        "id": "ops"
+      },
+      "label": {
+        "text": "当前章节"
+      },
+      "quiet": true
+    },
+    {
+      "id": "apply",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "ops"
+      },
+      "end": {
+        "id": "doc"
+      },
+      "label": {
+        "text": "应用"
+      }
+    },
+    {
+      "id": "rewrite",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "reflect"
+      },
+      "end": {
+        "id": "doc"
+      },
+      "label": {
+        "text": "重写"
+      },
+      "quiet": true
+    }
+  ],
+  "scenes": [
+    {
+      "label": "full",
+      "caption": "",
+      "beats": [
+        {
+          "edges": {
+            "edge": "go",
+            "data": "mode: full"
+          },
+          "show": {
+            "cfg": [
+              {
+                "tag": "mental model",
+                "tone": "gray",
+                "text": "团队概况"
+              },
+              {
+                "tag": "source query",
+                "tone": "gray",
+                "text": "“团队中有哪些人，他们做什么工作？”"
+              },
+              {
+                "tag": "trigger.mode",
+                "tone": "gray",
+                "text": "\"full\"（默认）",
+                "mono": true
+              }
+            ],
+            "doc": [
+              {
+                "tag": "people",
+                "tone": "orange",
+                "text": "Alice：研究团队，Google"
+              },
+              {
+                "tag": "research",
+                "tone": "orange",
+                "text": "检索质量研究"
+              },
+              {
+                "tag": "ml project",
+                "tone": "orange",
+                "text": "Bob领导它"
+              }
+            ]
+          },
+          "say": "完整模式为默认模式，每次刷新都会重新生成整篇文档。"
+        },
+        {
+          "edges": {
+            "edge": "read",
+            "data": "whole scope"
+          },
+          "show": {
+            "mem": [
+              {
+                "tag": "jan",
+                "tone": "gray",
+                "text": "Alice：Google的研究团队",
+                "mark": "read"
+              },
+              {
+                "tag": "feb",
+                "tone": "gray",
+                "text": "Bob 领导 ML 项目",
+                "mark": "read"
+              },
+              {
+                "tag": "sep",
+                "tone": "blue",
+                "text": "Carol 加入 ML 项目",
+                "mark": "read"
+              }
+            ],
+            "reflect": [
+              {
+                "text": "窗口：整个模型作用域"
+              },
+              {
+                "text": "读取 3 条记忆"
+              }
+            ]
+          },
+          "say": "读取模型作用域内的全部记忆，包括新旧内容。"
+        },
+        {
+          "edges": {
+            "edge": "rewrite",
+            "data": "new document"
+          },
+          "show": {
+            "doc": [
+              {
+                "tag": "people",
+                "tone": "orange",
+                "text": "Alice 在Google的研究组工作",
+                "mark": "rewritten"
+              },
+              {
+                "tag": "research",
+                "tone": "orange",
+                "text": "检索质量研究",
+                "mark": "rewritten"
+              },
+              {
+                "tag": "ml project",
+                "tone": "orange",
+                "text": "由Bob领导，与Carol一起",
+                "mark": "rewritten"
+              }
+            ]
+          },
+          "say": "LLM 生成新文档。Carol 加入其中，但未变化的章节也会被重新措辞，多次刷新后细小偏移不断积累。",
+          "ms": 3600
+        }
+      ]
+    },
+    {
+      "label": "delta",
+      "caption": "",
+      "beats": [
+        {
+          "edges": {
+            "edge": "go",
+            "data": "mode: delta"
+          },
+          "show": {
+            "cfg": [
+              {
+                "tag": "mental model",
+                "tone": "gray",
+                "text": "团队概况"
+              },
+              {
+                "tag": "source query",
+                "tone": "gray",
+                "text": "“团队中有哪些人，他们做什么工作？”"
+              },
+              {
+                "tag": "trigger.mode",
+                "tone": "gray",
+                "text": "\"delta\"",
+                "mono": true
+              }
+            ],
+            "doc": [
+              {
+                "tag": "people",
+                "tone": "orange",
+                "text": "Alice：研究团队，Google"
+              },
+              {
+                "tag": "research",
+                "tone": "orange",
+                "text": "检索质量研究"
+              },
+              {
+                "tag": "ml project",
+                "tone": "orange",
+                "text": "Bob领导它"
+              }
+            ]
+          },
+          "say": "增量模式编辑文档，而非重写。"
+        },
+        {
+          "edges": {
+            "edge": "read",
+            "data": "since Feb"
+          },
+          "show": {
+            "mem": [
+              {
+                "tag": "jan",
+                "tone": "gray",
+                "text": "Alice：Google的研究团队",
+                "mark": "seen"
+              },
+              {
+                "tag": "feb",
+                "tone": "gray",
+                "text": "Bob 领导 ML 项目",
+                "mark": "seen"
+              },
+              {
+                "tag": "sep",
+                "tone": "blue",
+                "text": "Carol 加入 ML 项目",
+                "mark": "new"
+              },
+              {
+                "text": "last_memory_seen_at = 二月",
+                "mono": true
+              }
+            ],
+            "reflect": [
+              {
+                "text": "窗口：last_memory_seen_at 之后"
+              },
+              {
+                "text": "读取 1 条新记忆"
+              }
+            ]
+          },
+          "say": "只读取比上次刷新所见的最新记忆更新的内容。",
+          "ms": 3000
+        },
+        {
+          "edges": [
+            {
+              "edge": "draft",
+              "data": "Carol joined ML"
+            },
+            {
+              "edge": "baseline",
+              "data": "3 sections"
+            }
+          ],
+          "show": {
+            "ops": [
+              {
+                "text": "append_block",
+                "mono": true,
+                "meta": "ML project"
+              },
+              {
+                "text": "“Carol 加入了 ML 项目。”"
+              }
+            ]
+          },
+          "say": "第二次 LLM 调用将新发现与现有章节比较，返回编辑操作，而非文档全文。",
+          "ms": 3200
+        },
+        {
+          "edges": {
+            "edge": "apply",
+            "data": "1 operation"
+          },
+          "show": {
+            "doc": [
+              {
+                "tag": "people",
+                "tone": "orange",
+                "text": "Alice：研究团队，Google",
+                "mark": "="
+              },
+              {
+                "tag": "research",
+                "tone": "orange",
+                "text": "检索质量研究",
+                "mark": "="
+              },
+              {
+                "tag": "ml project",
+                "tone": "orange",
+                "text": "Bob领导它",
+                "mark": "="
+              },
+              {
+                "text": "+ Carol 加入 ML 项目",
+                "mark": "new"
+              }
+            ],
+            "mem": [
+              {
+                "tag": "jan",
+                "tone": "gray",
+                "text": "Alice：Google的研究团队"
+              },
+              {
+                "tag": "feb",
+                "tone": "gray",
+                "text": "Bob 领导 ML 项目"
+              },
+              {
+                "tag": "sep",
+                "tone": "blue",
+                "text": "Carol 加入 ML 项目"
+              },
+              {
+                "text": "last_memory_seen_at = 九月",
+                "mono": true
+              }
+            ]
+          },
+          "say": "应用编辑操作，未触及的章节逐字节保留，水位推进到 9 月。",
+          "ms": 3600
+        }
+      ]
+    },
+    {
+      "label": "delta 回退",
+      "caption": "",
+      "beats": [
+        {
+          "edges": {
+            "edge": "go",
+            "data": "mode: delta"
+          },
+          "show": {
+            "cfg": [
+              {
+                "tag": "mental model",
+                "tone": "gray",
+                "text": "团队概况"
+              },
+              {
+                "tag": "source query",
+                "tone": "gray",
+                "text": "“谁在做什么，从什么时候开始？”  ← 已编辑"
+              },
+              {
+                "tag": "trigger.mode",
+                "tone": "gray",
+                "text": "\"delta\"",
+                "mono": true
+              }
+            ],
+            "doc": [
+              {
+                "tag": "people",
+                "tone": "orange",
+                "text": "Alice：研究团队，Google"
+              },
+              {
+                "tag": "research",
+                "tone": "orange",
+                "text": "检索质量研究"
+              },
+              {
+                "tag": "ml project",
+                "tone": "orange",
+                "text": "Bob领导它"
+              }
+            ]
+          },
+          "say": "增量编辑需要稳定的编辑对象。这里的来源查询发生了变化。"
+        },
+        {
+          "show": {
+            "reflect": [
+              {
+                "text": "回退：full",
+                "mark": "!"
+              },
+              {
+                "text": "source_query_changed",
+                "mono": true
+              }
+            ]
+          },
+          "say": "主题改变，旧结构可能不再适用，刷新回退到完整重写。模型尚无内容时也会如此。",
+          "ms": 3200
+        },
+        {
+          "edges": [
+            {
+              "edge": "read",
+              "data": "whole scope"
+            }
+          ],
+          "show": {
+            "mem": [
+              {
+                "tag": "jan",
+                "tone": "gray",
+                "text": "Alice：Google的研究团队",
+                "mark": "read"
+              },
+              {
+                "tag": "feb",
+                "tone": "gray",
+                "text": "Bob 领导 ML 项目",
+                "mark": "read"
+              },
+              {
+                "tag": "sep",
+                "tone": "blue",
+                "text": "Carol 加入 ML 项目",
+                "mark": "read"
+              }
+            ]
+          },
+          "say": "像完整模式一样读取整个作用域……"
+        },
+        {
+          "edges": {
+            "edge": "rewrite",
+            "data": "new document"
+          },
+          "show": {
+            "doc": [
+              {
+                "tag": "people",
+                "tone": "orange",
+                "text": "Alice 自一月起，Bob 自二月起，Carol 自九月起",
+                "mark": "rewritten"
+              },
+              {
+                "tag": "work",
+                "tone": "orange",
+                "text": "研究：Alice·ML：Bob、Carol",
+                "mark": "rewritten"
+              }
+            ]
+          },
+          "say": "……为新问题生成新文档。下次刷新又可以对这份文档进行增量编辑。",
+          "ms": 3400
+        }
+      ]
+    }
+  ]
+}

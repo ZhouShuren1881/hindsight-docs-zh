@@ -1,0 +1,1376 @@
+{
+  "title": "Hindsight 的作用",
+  "speed": 2200,
+  "elements": [
+    {
+      "id": "agent",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "你的AI智能体"
+        }
+      ],
+      "minCardHeight": 148,
+      "width": 196
+    },
+    {
+      "id": "retain",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "记忆存储"
+        },
+        {
+          "type": "subtitle",
+          "text": "LLM 提取"
+        }
+      ]
+    },
+    {
+      "id": "semantic",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "语义"
+        },
+        {
+          "type": "subtitle",
+          "text": "意义"
+        }
+      ]
+    },
+    {
+      "id": "keyword",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "关键字"
+        },
+        {
+          "type": "subtitle",
+          "text": "准确的单词"
+        }
+      ]
+    },
+    {
+      "id": "graph",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "图"
+        },
+        {
+          "type": "subtitle",
+          "text": "通过实体"
+        }
+      ]
+    },
+    {
+      "id": "temporal",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "时间"
+        },
+        {
+          "type": "subtitle",
+          "text": "按时间"
+        }
+      ]
+    },
+    {
+      "id": "recall",
+      "type": "group",
+      "label": {
+        "title": "记忆召回"
+      },
+      "children": [
+        "semantic",
+        "keyword",
+        "graph",
+        "temporal"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 10,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "reflect",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "反思"
+        },
+        {
+          "type": "subtitle",
+          "text": "智能体循环"
+        }
+      ],
+      "minCardHeight": 103,
+      "width": 200
+    },
+    {
+      "id": "api",
+      "type": "group",
+      "label": {
+        "title": "Hindsight API"
+      },
+      "children": [
+        "retain",
+        "recall",
+        "reflect"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 24,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "docs",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "文档"
+        }
+      ]
+    },
+    {
+      "id": "chunks",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "分块"
+        }
+      ]
+    },
+    {
+      "id": "sources",
+      "type": "group",
+      "label": {
+        "title": "来源"
+      },
+      "children": [
+        "docs",
+        "chunks"
+      ],
+      "layout": {
+        "direction": "row",
+        "gap": 40,
+        "align": "center"
+      }
+    },
+    {
+      "id": "vectors",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "向量"
+        }
+      ],
+      "minCardHeight": 28
+    },
+    {
+      "id": "fulltext",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "全文"
+        }
+      ],
+      "minCardHeight": 28
+    },
+    {
+      "id": "egraph",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "实体图"
+        }
+      ],
+      "minCardHeight": 73
+    },
+    {
+      "id": "time",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "日期"
+        }
+      ],
+      "minCardHeight": 28
+    },
+    {
+      "id": "indexes",
+      "type": "group",
+      "label": {
+        "title": "索引"
+      },
+      "children": [
+        "vectors",
+        "fulltext",
+        "egraph",
+        "time"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 10,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "facts",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "事实"
+        },
+        {
+          "type": "subtitle",
+          "text": "世界事实 · 经验事实"
+        }
+      ],
+      "minCardHeight": 163,
+      "width": 200
+    },
+    {
+      "id": "obs",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "观察"
+        },
+        {
+          "type": "subtitle",
+          "text": "巩固信念"
+        }
+      ],
+      "minCardHeight": 118,
+      "width": 200
+    },
+    {
+      "id": "g1",
+      "type": "group",
+      "children": [
+        "facts",
+        "obs"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 40,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "memories",
+      "type": "group",
+      "label": {
+        "title": "记忆"
+      },
+      "children": [
+        "indexes",
+        "g1"
+      ],
+      "layout": {
+        "direction": "row",
+        "gap": 48,
+        "align": "center"
+      }
+    },
+    {
+      "id": "mm",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "心智模型"
+        }
+      ]
+    },
+    {
+      "id": "kp",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "知识页面"
+        }
+      ]
+    },
+    {
+      "id": "synth",
+      "type": "group",
+      "label": {
+        "title": "合成"
+      },
+      "children": [
+        "mm",
+        "kp"
+      ],
+      "layout": {
+        "direction": "row",
+        "gap": 40,
+        "align": "center"
+      }
+    },
+    {
+      "id": "bank",
+      "type": "group",
+      "label": {
+        "title": "记忆库"
+      },
+      "children": [
+        "sources",
+        "memories",
+        "synth"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 36,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "consolidate",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "整合"
+        },
+        {
+          "type": "subtitle",
+          "text": "事实 → 观察"
+        }
+      ]
+    },
+    {
+      "id": "refresh",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "刷新"
+        },
+        {
+          "type": "subtitle",
+          "text": "观察 → 页面"
+        }
+      ]
+    },
+    {
+      "id": "g2",
+      "type": "group",
+      "label": {
+        "title": "Hindsight 工作进程"
+      },
+      "children": [
+        "consolidate",
+        "refresh"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 100,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "g0",
+      "type": "group",
+      "children": [
+        "agent",
+        "api",
+        "bank",
+        "g2"
+      ],
+      "layout": {
+        "direction": "row",
+        "gap": 40,
+        "align": "center"
+      }
+    },
+    {
+      "id": "call-retain",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "agent"
+      },
+      "end": {
+        "id": "retain"
+      },
+      "label": {
+        "text": "retain()"
+      }
+    },
+    {
+      "id": "call-recall",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "agent"
+      },
+      "end": {
+        "id": "recall"
+      },
+      "label": {
+        "text": "recall()"
+      }
+    },
+    {
+      "id": "call-reflect",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "agent"
+      },
+      "end": {
+        "id": "reflect"
+      },
+      "label": {
+        "text": "reflect()"
+      }
+    },
+    {
+      "id": "retain-docs",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "retain"
+      },
+      "end": {
+        "id": "docs"
+      }
+    },
+    {
+      "id": "docs->chunks",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "docs"
+      },
+      "end": {
+        "id": "chunks"
+      }
+    },
+    {
+      "id": "extract",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "chunks"
+      },
+      "end": {
+        "id": "facts"
+      },
+      "label": {
+        "text": "摘录"
+      }
+    },
+    {
+      "id": "s-idx",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "semantic"
+      },
+      "end": {
+        "id": "vectors"
+      }
+    },
+    {
+      "id": "k-idx",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "keyword"
+      },
+      "end": {
+        "id": "fulltext"
+      }
+    },
+    {
+      "id": "g-idx",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "graph"
+      },
+      "end": {
+        "id": "egraph"
+      }
+    },
+    {
+      "id": "t-idx",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "temporal"
+      },
+      "end": {
+        "id": "time"
+      }
+    },
+    {
+      "id": "to-facts",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "indexes"
+      },
+      "end": {
+        "id": "facts"
+      }
+    },
+    {
+      "id": "to-obs",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "indexes"
+      },
+      "end": {
+        "id": "obs"
+      }
+    },
+    {
+      "id": "reflect-recall",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "reflect"
+      },
+      "end": {
+        "id": "recall"
+      }
+    },
+    {
+      "id": "reflect-synth",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "reflect"
+      },
+      "end": {
+        "id": "synth"
+      }
+    },
+    {
+      "id": "expand",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "reflect"
+      },
+      "end": {
+        "id": "sources"
+      },
+      "label": {
+        "text": "展开"
+      },
+      "quiet": true
+    },
+    {
+      "id": "new-facts",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "facts"
+      },
+      "end": {
+        "id": "consolidate"
+      },
+      "label": {
+        "text": "新事实"
+      }
+    },
+    {
+      "id": "write-obs",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "consolidate"
+      },
+      "end": {
+        "id": "obs"
+      }
+    },
+    {
+      "id": "trigger",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "consolidate"
+      },
+      "end": {
+        "id": "refresh"
+      },
+      "label": {
+        "text": "完成后"
+      }
+    },
+    {
+      "id": "rewrite",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "refresh"
+      },
+      "end": {
+        "id": "synth"
+      },
+      "label": {
+        "text": "重写"
+      }
+    }
+  ],
+  "scenes": [
+    {
+      "label": "retain()",
+      "caption": "",
+      "beats": [
+        {
+          "edges": {
+            "edge": "call-retain",
+            "data": "the conversation"
+          },
+          "show": {
+            "agent": [
+              {
+                "tag": "user",
+                "tone": "gray",
+                "text": "“Alice于三月加入Google，她热爱研究团队。”"
+              },
+              {
+                "tag": "agent",
+                "tone": "gray",
+                "text": "“注意了，我会推荐她参加 ML 项目。”"
+              }
+            ]
+          },
+          "say": "智能体发送发生的事情，例如对话、文档或会话记录。"
+        },
+        {
+          "edges": "retain-docs",
+          "show": {
+            "docs": [
+              {
+                "tag": "chat",
+                "tone": "gray",
+                "text": "9 月 22 日",
+                "meta": "2 messages"
+              }
+            ]
+          },
+          "say": "原始文本保存为文档。"
+        },
+        {
+          "edges": "docs->chunks",
+          "show": {
+            "chunks": [
+              {
+                "tag": "#1",
+                "tone": "gray",
+                "text": "“Alice 在三月份加入了Google，她喜欢……”"
+              }
+            ]
+          },
+          "say": "文档切分为分块，以便之后返回准确的原始段落。"
+        },
+        {
+          "edges": "extract",
+          "light": [
+            "retain"
+          ],
+          "show": {
+            "facts": [
+              {
+                "tag": "world",
+                "tone": "blue",
+                "text": "Alice 在Microsoft工作",
+                "meta": "Jan 2025"
+              },
+              {
+                "tag": "world",
+                "tone": "blue",
+                "text": "Alice加入Google",
+                "meta": "Mar 2026",
+                "mark": "new"
+              },
+              {
+                "tag": "experience",
+                "tone": "purple",
+                "text": "我建议 Alice 参与 ML 项目",
+                "mark": "new"
+              }
+            ]
+          },
+          "say": "LLM 提取事实：关于他人的世界事实，以及关于智能体自身行动的经验事实。记忆库此前已知 Alice 在 Microsoft 工作。",
+          "ms": 3200
+        },
+        {
+          "show": {
+            "vectors": [
+              {
+                "text": "2 个嵌入"
+              }
+            ],
+            "fulltext": [
+              {
+                "text": "Alice · Google · 研究",
+                "mono": true
+              }
+            ],
+            "egraph": [
+              {
+                "type": "graph",
+                "nodes": [
+                  "Alice",
+                  "Google",
+                  "ML project"
+                ],
+                "links": [
+                  [
+                    "Alice",
+                    "Google"
+                  ],
+                  [
+                    "Alice",
+                    "ML project"
+                  ]
+                ],
+                "lit": []
+              }
+            ],
+            "time": [
+              {
+                "text": "2026 年 3 月 · 2026 年 9 月"
+              }
+            ]
+          },
+          "say": "每个事实通过四种方式建立索引：语义、词语、关联实体，以及发生时间。",
+          "ms": 3200
+        },
+        {
+          "edges": {
+            "edge": "call-retain",
+            "back": true,
+            "data": "✓ stored"
+          },
+          "show": {
+            "agent": [
+              {
+                "tag": "user",
+                "tone": "gray",
+                "text": "“Alice于三月加入Google，她热爱研究团队。”"
+              },
+              {
+                "tag": "agent",
+                "tone": "gray",
+                "text": "“注意了，我会推荐她参加 ML 项目。”"
+              },
+              {
+                "tag": "result",
+                "tone": "green",
+                "text": "已存储",
+                "mark": "✓"
+              }
+            ]
+          },
+          "say": "retain() 完成，其余工作在后台进行。",
+          "ms": 1800
+        },
+        {
+          "edges": "new-facts",
+          "show": {
+            "consolidate": [
+              {
+                "text": "2 个新事实"
+              },
+              {
+                "tag": "conflict",
+                "tone": "orange",
+                "text": "Microsoft vs Google"
+              }
+            ],
+            "obs": [
+              {
+                "text": "Alice 在Microsoft工作",
+                "meta": "1 source",
+                "mark": "conflict"
+              }
+            ]
+          },
+          "say": "整合处理新事实，与记忆库已有观察核对。其中一条存在矛盾：Microsoft 还是 Google？",
+          "ms": 3000
+        },
+        {
+          "edges": "write-obs",
+          "show": {
+            "obs": [
+              {
+                "text": "Alice 在Google 的研究团队工作",
+                "meta": "2 sources",
+                "mark": "updated"
+              },
+              {
+                "tag": "resolved",
+                "tone": "orange",
+                "text": "Microsoft（2025 年 1 月）→ Google（2026 年 3 月）"
+              }
+            ],
+            "consolidate": [
+              {
+                "text": "2 个新事实"
+              },
+              {
+                "tag": "resolved",
+                "tone": "green",
+                "text": "状态改变：更新，保留历史"
+              }
+            ]
+          },
+          "say": "更新已有观察而非另建一条：Alice 于 3 月从 Microsoft 转到 Google。两个事实均保留为来源，因此历史不会丢失。",
+          "ms": 3800
+        },
+        {
+          "edges": "trigger",
+          "show": {
+            "refresh": [
+              {
+                "text": "范围内的新记忆"
+              },
+              {
+                "text": "2 页现已过时"
+              }
+            ]
+          },
+          "say": "整合完成后，为配置了整合后刷新、且当前作用域内有新记忆的心智模型与知识页面排队刷新……"
+        },
+        {
+          "edges": "rewrite",
+          "show": {
+            "mm": [
+              {
+                "tag": "model",
+                "tone": "orange",
+                "text": "团队概况",
+                "meta": "+ Alice",
+                "mark": "↻"
+              }
+            ],
+            "kp": [
+              {
+                "tag": "page",
+                "tone": "orange",
+                "text": "人物 / Alice.md",
+                "mark": "↻"
+              }
+            ]
+          },
+          "say": "……每个模型与页面通过反思重新运行自身问题，并改写内容。",
+          "ms": 3000
+        }
+      ]
+    },
+    {
+      "label": "recall()",
+      "caption": "",
+      "beats": [
+        {
+          "edges": {
+            "edge": "call-recall",
+            "data": "“Where does Alice work?”"
+          },
+          "show": {
+            "agent": [
+              {
+                "tag": "query",
+                "tone": "gray",
+                "text": "“Alice在哪里工作？”"
+              }
+            ]
+          },
+          "say": "recall() 找到与查询相关的记忆。"
+        },
+        {
+          "edges": [
+            {
+              "edge": "s-idx",
+              "data": "≈ works at"
+            },
+            {
+              "edge": "k-idx",
+              "data": "“Alice”"
+            },
+            {
+              "edge": "g-idx",
+              "data": "Alice → Google"
+            }
+          ],
+          "show": {
+            "vectors": [
+              {
+                "text": "“加入Google”",
+                "meta": "0.82",
+                "mark": "✓"
+              }
+            ],
+            "fulltext": [
+              {
+                "text": "“Alice”·“工作”",
+                "meta": "4 hits",
+                "mark": "✓"
+              }
+            ],
+            "egraph": [
+              {
+                "type": "graph",
+                "nodes": [
+                  "Alice",
+                  "Google",
+                  "ML project"
+                ],
+                "links": [
+                  [
+                    "Alice",
+                    "Google"
+                  ],
+                  [
+                    "Alice",
+                    "ML project"
+                  ]
+                ],
+                "lit": [
+                  "Alice",
+                  "Google"
+                ]
+              }
+            ],
+            "time": [
+              {
+                "text": "查询中没有日期",
+                "meta": "skipped"
+              }
+            ]
+          },
+          "say": "各搜索同时运行，分别使用语义、精确词语与实体图索引。只有查询提及日期时才执行时间搜索。",
+          "ms": 3400
+        },
+        {
+          "edges": [
+            {
+              "edge": "to-facts",
+              "data": "facts"
+            },
+            {
+              "edge": "to-obs",
+              "data": "observations"
+            }
+          ],
+          "show": {
+            "facts": [
+              {
+                "tag": "world",
+                "tone": "blue",
+                "text": "Alice加入Google",
+                "meta": "Mar 2026",
+                "mark": "✓"
+              },
+              {
+                "tag": "experience",
+                "tone": "purple",
+                "text": "我建议 Alice 参与 ML 项目",
+                "mark": "✓"
+              },
+              {
+                "tag": "world",
+                "tone": "blue",
+                "text": "Alice 在Microsoft工作",
+                "meta": "Jan 2025"
+              }
+            ],
+            "obs": [
+              {
+                "text": "Alice 在Google 的研究团队工作",
+                "meta": "2 sources",
+                "mark": "✓"
+              },
+              {
+                "tag": "resolved",
+                "tone": "orange",
+                "text": "Microsoft（2025 年 1 月）→ Google（2026 年 3 月）"
+              }
+            ]
+          },
+          "say": "事实与观察使用相同索引，因此两者都会返回。合并并重新排序后，旧的 Microsoft 事实排名低于截取范围。",
+          "ms": 3200
+        },
+        {
+          "edges": {
+            "edge": "call-recall",
+            "back": true,
+            "data": "3 memories, ranked"
+          },
+          "show": {
+            "agent": [
+              {
+                "tag": "query",
+                "tone": "gray",
+                "text": "“Alice在哪里工作？”"
+              },
+              {
+                "tag": "1",
+                "tone": "green",
+                "text": "Alice 在Google研究团队工作"
+              },
+              {
+                "tag": "2",
+                "tone": "green",
+                "text": "Alice加入Google",
+                "meta": "Mar 2026"
+              },
+              {
+                "tag": "3",
+                "tone": "green",
+                "text": "我建议 Alice 进行 ML"
+              }
+            ]
+          },
+          "say": "智能体获得排序后的记忆，可直接放入提示词。",
+          "ms": 3200
+        }
+      ]
+    },
+    {
+      "label": "reflect()",
+      "caption": "",
+      "beats": [
+        {
+          "edges": {
+            "edge": "call-reflect",
+            "data": "“Is Alice a good fit…?”"
+          },
+          "show": {
+            "agent": [
+              {
+                "tag": "question",
+                "tone": "gray",
+                "text": "“Alice 适合 ML 项目吗？”"
+              }
+            ]
+          },
+          "say": "reflect() 对记忆库中的知识进行推理，回答问题。"
+        },
+        {
+          "edges": {
+            "edge": "reflect-synth",
+            "data": "search_mental_models"
+          },
+          "show": {
+            "reflect": [
+              {
+                "text": "1. search_mental_models",
+                "mono": true,
+                "mark": "✓"
+              }
+            ],
+            "mm": [
+              {
+                "tag": "model",
+                "tone": "orange",
+                "text": "团队概况",
+                "meta": "Alice: research, ML",
+                "mark": "✓"
+              }
+            ],
+            "kp": [
+              {
+                "tag": "page",
+                "tone": "orange",
+                "text": "人物 / Alice.md",
+                "mark": "✓"
+              }
+            ]
+          },
+          "say": "智能体循环决定检索什么，先读取最充分整理的知识：心智模型与知识页面。",
+          "ms": 3000
+        },
+        {
+          "edges": {
+            "edge": "reflect-recall",
+            "data": "search_observations"
+          },
+          "show": {
+            "reflect": [
+              {
+                "text": "1. search_mental_models",
+                "mono": true,
+                "mark": "✓"
+              },
+              {
+                "text": "2. search_observations",
+                "mono": true,
+                "mark": "…"
+              }
+            ]
+          },
+          "say": "随后使用与记忆召回相同的索引搜索观察。若新事实尚待整合，观察结果会被标记为过时。",
+          "ms": 1800
+        },
+        {
+          "edges": [
+            "s-idx",
+            "k-idx",
+            "g-idx"
+          ],
+          "ms": 1400
+        },
+        {
+          "edges": "to-obs",
+          "show": {
+            "reflect": [
+              {
+                "text": "1. search_mental_models",
+                "mono": true,
+                "mark": "✓"
+              },
+              {
+                "text": "2. search_observations",
+                "mono": true,
+                "mark": "✓"
+              }
+            ],
+            "obs": [
+              {
+                "text": "Alice 在Google 的研究团队工作",
+                "meta": "up to date",
+                "mark": "cited"
+              },
+              {
+                "tag": "resolved",
+                "tone": "orange",
+                "text": "Microsoft（2025 年 1 月）→ Google（2026 年 3 月）"
+              }
+            ]
+          },
+          "ms": 2400
+        },
+        {
+          "edges": {
+            "edge": "reflect-recall",
+            "data": "recall(\"Alice\")"
+          },
+          "show": {
+            "reflect": [
+              {
+                "text": "1. search_mental_models",
+                "mono": true,
+                "mark": "✓"
+              },
+              {
+                "text": "2. search_observations",
+                "mono": true,
+                "mark": "✓"
+              },
+              {
+                "text": "3. recall",
+                "mono": true,
+                "mark": "…"
+              }
+            ]
+          },
+          "say": "再通过记忆召回读取原始事实，补充摘要省略的细节。",
+          "ms": 1800
+        },
+        {
+          "edges": [
+            "s-idx",
+            "k-idx",
+            "g-idx"
+          ],
+          "show": {
+            "egraph": [
+              {
+                "type": "graph",
+                "nodes": [
+                  "Alice",
+                  "Google",
+                  "ML project"
+                ],
+                "links": [
+                  [
+                    "Alice",
+                    "Google"
+                  ],
+                  [
+                    "Alice",
+                    "ML project"
+                  ]
+                ],
+                "lit": [
+                  "Alice",
+                  "ML project"
+                ]
+              }
+            ]
+          },
+          "ms": 1800
+        },
+        {
+          "edges": "to-facts",
+          "show": {
+            "reflect": [
+              {
+                "text": "1. search_mental_models",
+                "mono": true,
+                "mark": "✓"
+              },
+              {
+                "text": "2. search_observations",
+                "mono": true,
+                "mark": "✓"
+              },
+              {
+                "text": "3. recall",
+                "mono": true,
+                "mark": "✓"
+              }
+            ],
+            "facts": [
+              {
+                "tag": "world",
+                "tone": "blue",
+                "text": "Alice加入Google",
+                "meta": "Mar 2026",
+                "mark": "cited"
+              },
+              {
+                "tag": "experience",
+                "tone": "purple",
+                "text": "我建议 Alice 参与 ML 项目",
+                "mark": "cited"
+              }
+            ]
+          },
+          "ms": 2400
+        },
+        {
+          "edges": {
+            "edge": "expand",
+            "data": "expand → chunk"
+          },
+          "show": {
+            "reflect": [
+              {
+                "text": "1. search_mental_models",
+                "mono": true,
+                "mark": "✓"
+              },
+              {
+                "text": "2. search_observations",
+                "mono": true,
+                "mark": "✓"
+              },
+              {
+                "text": "3. recall",
+                "mono": true,
+                "mark": "✓"
+              },
+              {
+                "text": "4. expand",
+                "mono": true,
+                "mark": "✓"
+              }
+            ],
+            "chunks": [
+              {
+                "tag": "#1",
+                "tone": "gray",
+                "text": "“……她喜欢研究团队。”",
+                "mark": "read"
+              }
+            ]
+          },
+          "say": "需要准确措辞时，读取事实的来源分块或文档。",
+          "ms": 2800
+        },
+        {
+          "show": {
+            "reflect": [
+              {
+                "text": "1. search_mental_models",
+                "mono": true,
+                "mark": "✓"
+              },
+              {
+                "text": "2. search_observations",
+                "mono": true,
+                "mark": "✓"
+              },
+              {
+                "text": "3. recall",
+                "mono": true,
+                "mark": "✓"
+              },
+              {
+                "text": "4. expand",
+                "mono": true,
+                "mark": "✓"
+              },
+              {
+                "text": "5. done",
+                "mono": true,
+                "meta": "3 sources",
+                "mark": "✓"
+              }
+            ]
+          },
+          "say": "证据充分后停止，根据记忆库任务说明与性格倾向生成答案。只能引用实际找到的内容。",
+          "ms": 2600
+        },
+        {
+          "edges": {
+            "edge": "call-reflect",
+            "back": true,
+            "data": "answer + 3 sources"
+          },
+          "show": {
+            "agent": [
+              {
+                "tag": "question",
+                "tone": "gray",
+                "text": "“Alice 适合 ML 项目吗？”"
+              },
+              {
+                "tag": "answer",
+                "tone": "green",
+                "text": "“是的。她在三月份加入了Google的研究团队，很喜欢它，我已经推荐了她。”",
+                "meta": "3 sources"
+              }
+            ]
+          },
+          "say": "返回答案，并附带其依据的记忆。",
+          "ms": 3200
+        }
+      ]
+    }
+  ]
+}

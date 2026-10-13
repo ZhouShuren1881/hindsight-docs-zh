@@ -1,0 +1,2683 @@
+import CodeSnippet from '@site/src/components/CodeSnippet';
+import configurationPy from '!!raw-loader!@site/examples/api/configuration.py';
+import configurationSh from '!!raw-loader!@site/examples/api/configuration.sh';
+
+# 配置 {#configuration}
+
+通过环境变量配置 Hindsight 服务的完整参考。
+
+Hindsight 有两个服务，各自使用不同配置前缀：
+
+| 服务 | 前缀 | 说明 |
+|---------|--------|-------------|
+| **API 服务** | `HINDSIGHT_API_*` | 核心记忆引擎 |
+| **控制平面** | `HINDSIGHT_CP_*` | Web 界面 |
+
+---
+
+## API 服务 {#api-service}
+
+API 服务处理所有记忆操作（记忆存储、记忆召回、反思）。
+
+### 数据库 {#database}
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_DATABASE_URL` | PostgreSQL 连接字符串 | `pg0`（嵌入式） |
+| `HINDSIGHT_API_READ_DATABASE_URL` | 可选 PostgreSQL 只读副本 URL。设置后，召回查询（语义、BM25、图、时间）通过独立连接池路由到此 URL，分担主库负载。通常指向只读端点（例如 CNPG 的 `<cluster>-ro` 服务或 Aurora 读取端点）。 | 未设置（使用主库） |
+| `HINDSIGHT_API_MIGRATION_DATABASE_URL` | 迁移使用的直连 PostgreSQL URL，绕过连接池代理（例如 PgBouncer）。设置后，咨询锁和 Alembic 迁移使用此 URL，而非 `DATABASE_URL`。 | 回退到 `DATABASE_URL` |
+| `HINDSIGHT_API_DATABASE_SCHEMA` | 表所在的 PostgreSQL schema 名称 | `public` |
+| `HINDSIGHT_API_RUN_MIGRATIONS_ON_STARTUP` | API 启动时运行数据库迁移 | `true` |
+| `HINDSIGHT_API_MIGRATION_ISOLATION` | 在子进程而非调用进程中运行迁移：`true`（避免 Alembic 导入图及 psycopg2 同步引擎进入长期运行服务器进程）或 `false` | `false` |
+| `HINDSIGHT_API_MIGRATION_CONCURRENCY` | 并发迁移的租户 schema 数（仅 PostgreSQL）。每个 schema 独立进程运行，内部迁移始终顺序执行。每个工作进程有固定启动成本（新解释器约 1–2 秒），因此仅在 schema **很多**（大致数十或更多）或迁移慢/延迟高时划算；少量 schema 时比顺序更慢。每个工作进程使用约 3 个数据库连接，请让 `concurrency × 3` 不超过数据库剩余 `max_connections` 及 PgBouncer 池限制。`1` = 完全顺序。在 20k schema 的测量中，`concurrency=12` 将每次重启无变化重扫从约 60 分钟降至约 11 分钟（约 5 倍）。 | `1` |
+| `HINDSIGHT_API_EXTERNALLY_OWNED_ROUTINES` | 此部署自行安装的维护发现例程，逗号分隔（见[自行管理维护例程](#owning-a-maintenance-routine)）。迁移跳过列出的名称。 | 空（安装所有例程） |
+| `HINDSIGHT_API_DATABASE_BACKEND` | 数据库引擎后端：`postgresql` 或 `oracle`（Oracle 23ai） | `postgresql` |
+
+未提供时，服务器使用嵌入式 `pg0`，适合开发，但不推荐生产使用。
+
+调整嵌入式数据库时，通过查询字符串添加 PostgreSQL 设置：`pg0://hindsight?max_connections=300&shared_buffers=256MB`。这些设置在嵌入式数据库启动时应用，修改后需重启。
+
+要使用 Oracle Database 23ai，设置 `HINDSIGHT_API_DATABASE_BACKEND=oracle` 并使用 `oracle+oracledb://…` URL。完整设置说明见 [Oracle 数据库指南](./oracle)。
+
+`DATABASE_SCHEMA` 允许使用自定义 PostgreSQL schema，而非默认 `public`。适用于：
+- 希望将 Hindsight 表放在专用 schema 的多数据库设置
+- `public` schema 被保留或共享的托管平台（例如 Supabase）
+- 组织采用特定 schema 命名约定
+
+```bash
+# 示例：使用自定义 schema
+export HINDSIGHT_API_DATABASE_URL=postgresql://user:pass@host:5432/dbname
+export HINDSIGHT_API_DATABASE_SCHEMA=hindsight
+```
+
+schema 不存在时，迁移会自动创建，并在已配置 schema 中创建所有表。
+
+#### 自行管理维护例程 {#owning-a-maintenance-routine}
+
+后台维护循环通过四个 PostgreSQL 例程发现工作：`mental_models_with_cron`、`banks_needing_consolidation`、`schemas_with_expired_rows` 和 `schemas_with_expired_operations`。默认实现每次触发都扫描数据库中的每个 schema。大型多租户安装中，这会顺序遍历数千 schema，每个运行维护循环的进程每次触发都会重复。
+
+由于按名称调用，可以替换为适合自身安装的实现，通常使用行触发器维护注册表，让发现成本变成一次索引读取，而非扫描。列出替换的例程，迁移便不再操作它们：
+
+```bash
+export HINDSIGHT_API_EXTERNALLY_OWNED_ROUTINES=mental_models_with_cron,banks_needing_consolidation
+```
+
+从运行迁移进程的环境中读取，因此同样适用于 `hindsight-admin run-db-migration`、迁移 Job 和启动时迁移。
+
+否则，自定义替代实现只能保留到下次重新安装该例程的迁移：全部使用相同名称的 `CREATE OR REPLACE`，迁移会覆盖，且没有记录说明自定义实现被丢弃。
+
+需要了解：
+
+- **替代实现必须匹配默认签名。** 循环传入固定参数，读取固定返回列。
+- **不会验证替代实现是否存在。** 列出尚未安装的例程会保留此前内容；新数据库上则什么都没有，维护循环会因缺少函数失败，而非悄悄执行你希望避免的扫描。
+- **所有权不写入数据库。** 从列表移除名称后，下次迁移重新安装默认例程，不修复数据。
+- **默认空列表。** 未替换任何例程的安装不受影响。
+
+### 数据库连接池 {#database-connection-pool}
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_DB_POOL_MIN_SIZE` | 主连接池最小连接数 | `5` |
+| `HINDSIGHT_API_DB_POOL_MAX_SIZE` | 主连接池最大连接数 | `100` |
+| `HINDSIGHT_API_READ_DB_POOL_MIN_SIZE` | 只读副本连接池最小连接数（仅设置 `READ_DATABASE_URL` 时使用） | 回退到 `DB_POOL_MIN_SIZE` |
+| `HINDSIGHT_API_READ_DB_POOL_MAX_SIZE` | 只读副本连接池最大连接数（仅设置 `READ_DATABASE_URL` 时使用） | 回退到 `DB_POOL_MAX_SIZE` |
+| `HINDSIGHT_API_DB_COMMAND_TIMEOUT` | PostgreSQL 命令超时，单位秒（asyncpg 客户端） | `60` |
+| `HINDSIGHT_API_DB_ACQUIRE_TIMEOUT` | 获取连接超时，单位秒。限制调用方等待空闲连接的时长，超时后失败（由调用方重试）；`0` 无限等待。 | `30` |
+| `HINDSIGHT_API_DB_POOL_SLOW_ACQUIRE_THRESHOLD_SECONDS` | 获取连接超过此秒数时记录 `[DB POOL] Slow acquire` 警告。新连接本身较慢时（例如 TLS 连接 Aurora Serverless）可提高，`0` 禁用警告。 | `0.05` |
+| `HINDSIGHT_API_DB_STATEMENT_TIMEOUT` | 应用于每个池连接的 Postgres `statement_timeout`，单位秒，作为失控查询的服务器端保护。**不适用**于 Alembic 迁移（使用独立 psycopg2 引擎）。设为 `0` 禁用。 | `600` |
+| `HINDSIGHT_API_DB_MAX_PARALLEL_WORKERS_PER_GATHER` | 可选，将 Postgres `max_parallel_workers_per_gather` 应用于本进程每个池连接。不设置时使用服务器默认值。后台工作进程设为 `0`，让批量维护查询（整合、图维护）顺序运行，避免抢占延迟敏感流量共享的 CPU 核心。 | 未设置 |
+| `HINDSIGHT_API_DB_SESSION_SETUP_ON_ACQUIRE` | 是否在每次从池获取连接时重新应用上述会话设置（`statement_timeout`、`max_parallel_workers_per_gather`、三元组阈值、向量搜索调优，以及 `vchord` 文本搜索后端的搜索路径），而不仅首次打开时应用。除非已通过数据库角色或数据库本身固定相同设置（`ALTER ROLE … SET`），否则应保持开启：事务模式连接池代理下，获取连接可能关联到从未接受这些设置的服务器连接（直连时设置会保留，重新应用多余）。关闭且服务器未固定时，复用连接会静默不采用设置；`vchord` 召回则直接失败，而不只是降级。服务器已固定时，重复应用没有变化，只多耗每次获取连接的一次往返，繁忙的事务池代理部署可省掉。`application_name` 始终重新应用，不受此设置影响。 | `true` |
+| `HINDSIGHT_API_ENTITY_TRGM_SIMILARITY_THRESHOLD` | 应用于每个池连接的 Postgres `pg_trgm.similarity_threshold`，控制实体消歧 `%` 三元组匹配候选名称的相似程度。必须大于 `0` 且不超过 `1`。绝不低于 `HINDSIGHT_API_ENTITY_MERGE_MIN_SIMILARITY`，因为低于合并下限的候选不可能合并。提高到该下限之上可只考察更少、更接近的名称。 | `0.3` |
+| `HINDSIGHT_API_ENTITY_INTRABATCH_MERGE_SIMILARITY` | **同一次**记忆存储创建的两个新名称合并为单一实体的三元组相似度阈值（等价于 pg_trgm，在内存计算）。达到或超过时合并批次内表面形式变体，例如同一名称的不同表情、大小写或后缀。必须大于 `0` 且不超过 `1`。这是*合并*阈值，有意比上面的仅召回阈值更严格；提高接近 `1.0` 可仅合并几乎相同的形式。 | `0.5` |
+| `HINDSIGHT_API_ENTITY_MERGE_MIN_SIMILARITY` | 名称复用**现有**实体所需的最小三元组相似度，不论其他解析信号如何。位于上面的召回阈值（`0.15`，只决定*考虑*哪些候选）和下面的同批次合并阈值（`0.5`）之间。必须大于 `0` 且不超过 `1`。极短名称语料的三元组相似度不可避免较低（`Jon`/`John` 为 `0.29`），可降低；仅合并明显表面变体时提高。 | `0.3` |
+
+高并发负载请提高 `DB_POOL_MAX_SIZE`。每个并发召回/思考操作可能使用 2–4 个连接。
+
+手动运行迁移（例如启动 API 之前）可使用管理 CLI：
+
+```bash
+# 迁移基础 schema 和所有发现的租户 schema
+hindsight-admin run-db-migration
+
+# 或只迁移指定 schema：
+hindsight-admin run-db-migration --schema tenant_acme
+```
+
+### 向量扩展 {#vector-extension}
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_VECTOR_EXTENSION` | 向量索引算法：`pgvector`、`vchord`、`pgvectorscale` 或 `scann` | `pgvector` |
+| `HINDSIGHT_API_ANN_ITERATIVE_SCAN` | 允许向量索引扫描继续执行，直到满足查询 `LIMIT`，而非首批候选耗尽就停止。关闭时，召回永远无法返回超过首批候选数量的行；pgvector 上该数量为 `hnsw.ef_search`（200），因此增加召回预算只扩大 SQL，不增加结果。需要 pgvector 0.8.0+；旧服务器拒绝此设置，首次尝试后自动舍弃。这是运维关闭开关：设为 `false` 并重启即可精确恢复原检索深度，无需改代码。 | `true` |
+| `HINDSIGHT_API_ANN_MAX_SCAN_TUPLES` | 单次继续扫描可访问的元组数上限（`hnsw.max_scan_tuples`），控制迭代扫描成本。减少结果的过滤器（相似度下限、标签、日期范围）在索引扫描*之后*应用，因此高选择性查询会反复继续扫描；此值限制 CPU 消耗和内存占用（pgvector 否则用 `work_mem × hnsw.scan_mem_multiplier` 限制内存，此默认值不会逼近该上限）。降低可用检索深度换取低延迟；首次扫描不计入，因此即使 `1` 也保留原有深度。pgvector 自身默认 `20000`。关闭迭代扫描时忽略。 | `4000` |
+
+Hindsight 支持四种 PostgreSQL 向量扩展：
+
+#### **pgvector**（HNSW，默认） {#pgvector-hnsw---default}
+- 使用分层可导航小世界算法的内存索引
+- 适合多数嵌入模型和数据集规模
+- 中小型数据集（&lt;10M 向量）速度快
+- 大型数据集内存占用较高
+- 部署最广泛，支持最完善
+
+#### **pgvectorscale**（DiskANN，大规模推荐） ⭐ {#pgvectorscale-diskann---recommended-for-scale-}
+- 使用 StreamingDiskANN 算法的磁盘索引
+- 相比专用向量数据库，**p95 延迟降低 28 倍**，**吞吐量提高 16 倍**
+- 大规模场景**成本降低 60–75%**（SSD 比 RAM 便宜）
+- 流式检索模型提供更好的过滤性能
+- 针对大型数据集（10M+ 向量）优化
+- 同时支持 **pgvectorscale**（开源）和 **pg_diskann**（Azure）
+- **安装：**
+  - 开源/自托管：`CREATE EXTENSION vector; CREATE EXTENSION vectorscale CASCADE;`
+  - Azure PostgreSQL：`CREATE EXTENSION vector; CREATE EXTENSION pg_diskann CASCADE;`
+
+#### **vchord** (vchordrq)
+- 替代的高性能向量索引
+- 针对高维嵌入（3000+ 维）优化
+- 集成 BM25 搜索能力
+- 需要 `vchord` 扩展
+
+#### **scann** (AlloyDB ScaNN)
+- Google ScaNN 索引，可用于 **AlloyDB** 和 **AlloyDB Omni**
+- 使用 `AUTO` 模式下的单一全局向量索引（不使用按库部分索引）
+- **安装：**`CREATE EXTENSION vector; CREATE EXTENSION alloydb_scann CASCADE;`
+- **延迟构建索引**，直到表达到 **10,000 行已填充嵌入**；AlloyDB 无法在近乎空表上构建 ScaNN AUTO 索引。跨过阈值前，召回回退到顺序扫描；行数足够后，下次 API 启动时建立全局索引。
+- [`docker/docker-compose/alloydb/docker-compose.yaml`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/docker/docker-compose/alloydb/docker-compose.yaml) 提供可直接使用的 Docker Compose 栈，用于本地连接 AlloyDB Omni 运行 Hindsight。
+
+**何时使用 pgvectorscale（DiskANN）：**
+- 大型数据集（10M+ 向量） ⭐
+- 复杂过滤要求
+- 成本敏感部署
+- 需要高吞吐量的生产负载
+- 磁盘 I/O 不是瓶颈时
+
+**何时使用 pgvector（HNSW）：**
+- 中小型数据集（&lt;10M 向量）
+- 所有数据可放入内存时追求最快查询
+- 不带过滤器的简单最近邻查询
+- 偏好标准 PostgreSQL 部署
+
+**何时使用 vchord：**
+- 高维嵌入（3000+ 维）
+- 希望集成 BM25 搜索
+- 已使用 vchord 文本搜索
+
+**何时使用 scann：**
+- 运行在 Google **AlloyDB** 或 **AlloyDB Omni** 上
+- 希望使用 `AUTO` 模式调优的受管理 ScaNN
+
+#### 大规模部署限制向量索引 {#limiting-vector-indexes-on-large-deployments}
+
+在 `pgvector`、`pgvectorscale` 和 `vchord` 中，库内记忆按 `(bank, fact_type)` 建索引。默认每个库创建时就拥有自己的索引，适合多数部署，无需配置。
+
+数千记忆库时便不合适。这些索引都位于同一共享表，PostgreSQL 为该表规划查询时，会检查并锁定**每个**索引。因此某个库的索引成本由其他所有库的搜索承担。超过数千库后，规划明显变慢，最终锁表空间耗尽，读取和删除库*都会*失败。
+
+设置最小大小即可解决：只有库足够大、能从索引获益时才建立独立索引。阈值以下，PostgreSQL 通过 `(bank_id, fact_type)` B-tree 加 top-N 排序回答相同搜索，对小库而言更快且是*精确*搜索，而非近似，所以小库没有损失。索引数改为与**大型**库数量成正比，而非所有库数量，库总数不再成为限制。
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_VECTOR_INDEX_MIN_ROWS` | 某种事实类型获得独立向量索引前，库内该类型所需记忆数。`0`（默认）**关闭**阈值，每个库创建时就建索引。数千库部署可从 `10000` 开始。记忆由自定义存储拥有的库，无论该值多少均不适用：这里没有行，因此不添加按库索引，也不移除已有索引（见[管理 CLI](./admin-cli.md) 的 `repair-bank`）。 | `0` |
+| `HINDSIGHT_API_VECTOR_INDEX_MAINTENANCE_MIN_INTERVAL_SECONDS` | 同一个库两次索引维护的最短间隔，防止大小在阈值附近波动时反复创建/删除相同索引。阈值关闭时不使用。 | `900` |
+
+**关闭阈值时（默认）**，索引在创建库的事务中建立，因为库为空，所以即时完成；删除库时移除。不会检查库大小，也没有后台操作。
+
+**设置阈值时**，创建库、导入和导入归档均不建立索引，因此请求永不等待索引 DDL。可能使库跨越阈值的写入会将后台 `vector_index_maintenance` 操作入队：库增长超过阈值时创建索引，明显缩小到阈值以下时移除（两点间的间隔避免边界反复变化）。这些操作会显示在库操作列表中。
+
+恢复、升级或切换扩展后，需要不等待写入就执行协调时，运行：
+
+```bash
+hindsight-admin repair-bank --all
+```
+
+两种模式都适用：关闭阈值时重建缺失索引，设置阈值时还会移除不再符合条件的索引。
+
+**切换扩展：**
+
+需要切换到其他扩展时：
+1. 将 `HINDSIGHT_API_VECTOR_EXTENSION` 设置为目标扩展（`pgvector`、`vchord`、`pgvectorscale` 或 `scann`）
+2. 数据库已有数据时，会收到错误及迁移说明（注意：即使有数据，也允许切换**到** `scann`；现有索引删除，表至少有 10,000 行嵌入后重建为 ScaNN）
+3. 空数据库在启动时自动重新创建索引
+
+**了解更多：**
+- [HNSW 与 DiskANN 对比](https://www.tigerdata.com/learn/hnsw-vs-diskann)
+- [pgvectorscale GitHub](https://github.com/timescale/pgvectorscale)
+
+### 文本搜索扩展 {#text-search-extension}
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_TEXT_SEARCH_EXTENSION` | 文本搜索后端：`native`、`vchord`、`pg_textsearch`、`pgroonga` 或 `pg_search` | `native` |
+| `HINDSIGHT_API_TEXT_SEARCH_EXTENSION_NATIVE_LANGUAGE` | `native` 后端使用的 PostgreSQL 文本搜索词典（例如 `english`、`french`、`simple`、`zhparser`） | `english` |
+| `HINDSIGHT_API_TEXT_SEARCH_EXTENSION_PG_SEARCH_TOKENIZER` | 创建 BM25 索引时使用的 ParadeDB `pg_search` 分词器。为空时使用 ParadeDB 默认分词器 `unicode_words`。 | 未设置 |
+| `HINDSIGHT_API_TEXT_SEARCH_EXTENSION_PG_SEARCH_FUNCTION_SCHEMA` | 包含 ParadeDB `pg_search` 函数（`score`、`boolean`、`match`）的 schema。默认 `paradedb`；托管 PostgreSQL 将函数安装在自定义 schema 时，设为 `pgsearch` 或其他有效标识符。 | `paradedb` |
+| `HINDSIGHT_API_BM25_MAX_QUERY_TERMS` | 原生 PostgreSQL BM25 `tsquery` 的词项数上限。长查询 OR 连接所有归一化 token，而原生排序没有 IDF，会重排每个匹配项，因此常见词无限制查询可能扫描、排序库内大量内容并超时。超过上限时，保留**选择性最高**的词，即整个租户中文档频率最低的词，通过 `pg_stats` 免费读取（autovacuum 维护，无需重建索引），避免直接截断丢失高信息量词项。`0` 恢复历史无限制行为；只限制 `native` 后端（其他 BM25 后端接收原始查询，通过自身原生索引运算符排序）。 | `16` |
+| `HINDSIGHT_API_BM25_SELECTIVE_TERMS` | 上述上限裁剪查询时，是否保留**选择性最高**词项（`pg_stats` 中最低文档频率），而非前 N 项。统计存在时，`true` 对召回更好且无额外成本；`false` 取消目录读取并按位置裁剪。上限为 `0` 时忽略。 | `true` |
+| `HINDSIGHT_API_LLM_OUTPUT_LANGUAGE` | 设置后，强制所有 LLM 生成内容（存储事实、整合观察、反思回答）使用该语言。自由格式，例如 `Spanish`、`Japanese`。 | 未设置 |
+
+Hindsight 支持五种 BM25 关键词检索后端：
+- **native**：PostgreSQL 内置全文搜索（`tsvector` + GIN），语言可配置。
+- **vchord**：VectorChord BM25，使用 `llmlingua2` 多语言分词器。
+- **pg_textsearch**：Timescale 的 pg_textsearch 扩展，仅支持英语。
+- **pgroonga**：pgroonga 全文搜索，开箱支持多语言及中日韩文字。
+- **pg_search**：ParadeDB pg_search，真正 BM25，唯一兼容 Citus 的后端。
+
+记忆库也可以都不用：[`enable_text_search`](#recall-pipeline-stages) 可按库关闭关键词分支，仅使用向量搜索。此时该库不使用表中任何设置。
+
+切换后端：设置 `HINDSIGHT_API_TEXT_SEARCH_EXTENSION`。有现有数据时会收到错误和迁移说明；空数据库在启动时自动重建列/索引。
+
+`HINDSIGHT_API_TEXT_SEARCH_EXTENSION_PG_SEARCH_TOKENIZER` 仅在 `HINDSIGHT_API_TEXT_SEARCH_EXTENSION=pg_search` 且创建 BM25 索引时应用。现有数据库更改此设置需要重建 `pg_search` 索引或重新创建数据库。支持值为：空/未设置、`unicode_words`、`simple`、`whitespace`、`literal`、`literal_normalized`、`chinese_compatible`、`icu`、`jieba`、`source_code`、`chinese_lindera`/`lindera(chinese)`、`japanese_lindera`/`lindera(japanese)`、`korean_lindera`/`lindera(korean)`、`ngram(min,max)`、`edge_ngram(min,max)`。
+
+非英语记忆库（尤其是中日韩语言）及语言/提取语言取舍，参见[多语言支持](./multilingual)。
+
+### LLM 提供方 {#llm-provider}
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_LLM_PROVIDER` | 提供方：`openai`、`openai-responses`、`openai-codex`、`claude-code`、`cursor`、`github-copilot`、`anthropic`、`gemini`、`groq`、`minimax`、`deepseek`、`zai`、`opencode-go`、`meta`、`nous`、`xai-oauth`、`fireworks`、`ollama`、`ollama-cloud`、`lmstudio`、`llamacpp`、`vertexai`、`bedrock`、`litellm`、`litellmrouter`、`volcano`、`openrouter`、`requesty`、`none` | `openai` |
+| `HINDSIGHT_API_LLM_API_KEY` | 需要密钥的提供方使用的 API 密钥；`github-copilot` 不使用 | - |
+| `HINDSIGHT_API_LLM_MODEL` | 模型名称 | `gpt-5-mini` |
+| `HINDSIGHT_API_LLM_BASE_URL` | 自定义 LLM 端点 | 提供方默认值 |
+| `HINDSIGHT_API_LLM_MAX_CONCURRENT` | 最大并发 LLM 请求数 | `32` |
+| `HINDSIGHT_API_LLM_MAX_RETRIES` | LLM API 调用最大重试次数 | `3` |
+| `HINDSIGHT_API_LLM_INITIAL_BACKOFF` | 首次重试退避秒数（指数退避） | `1.0` |
+| `HINDSIGHT_API_LLM_MAX_BACKOFF` | 最大重试退避秒数上限 | `60.0` |
+| `HINDSIGHT_API_LLM_TIMEOUT` | LLM 请求超时，单位秒。所有提供方均将其视为单次请求的**总**截止时间，包括读取流式响应：即使后端不断发送字节，也会在截止时终止，不无限读取。提供方确实较慢时可提高；下方逐操作变量会覆盖它。 | `120` |
+| `HINDSIGHT_API_LLM_CONNECT_TIMEOUT` | LLM 请求**连接**阶段（TCP + TLS 握手）上限，单位秒。读取、写入和连接池阶段仍使用完整 `HINDSIGHT_API_LLM_TIMEOUT` 预算。单独限制连接，使不可访问或卡住端点数秒内失败，而非消耗整个请求超时。实际值取此值与请求超时的较小者。`0` 禁用上限，四个阶段使用同一值。适用于 Hindsight 创建 HTTP 客户端的所有提供方（所有兼容 OpenAI 后端、`openai-responses`、`anthropic`、`openai-codex`、`xai-oauth`、`fireworks`、`nous`、`llamacpp`）；`litellm`/`litellmrouter` 与 `gemini`/`vertexai` 自行管理传输，采用单一总超时；`claude-code`/`cursor`/`github-copilot` 调用 CLI 而非 socket。 | `10` |
+| `HINDSIGHT_API_LLM_HTTP_LOG_LEVEL` | `httpx` 和 `httpcore` 日志级别。设为 `DEBUG` 可跟踪 LLM 请求传输阶段（`connect_tcp`、`send_request_headers`、`receive_response_headers`），区分从未发出就卡住的请求与发出后未获响应的请求。日志详细，仅用于诊断。 | `WARNING` |
+| `HINDSIGHT_API_LLM_REASONING_EFFORT` | 支持此功能的提供方/模型的推理强度（例如 `none`、`low`、`medium`、`high`、`xhigh`）。设置后按原值发送，不依赖模型名称，可控制自托管推理模型（vLLM、Ollama、llama.cpp、TGI）的思考 token 量；`none` 往往是唯一移除思考块的值。未设置时完全不发送参数，使用模型自身默认强度。`openai` 及所有兼容提供方、`openai-responses`、`openai-codex`、`xai`、`llamacpp`、`litellm`/`litellmrouter`（按目标提供方转换）均遵循。原生 `gemini`/`vertexai`、`anthropic`、`claude-code`、`cursor` 没有推理强度控制，设置后启动时警告；需要应用时通过 `litellm` 访问。 | 未设置（模型自身默认值） |
+| `HINDSIGHT_API_LLM_TEMPERATURE` | 内部 LLM 调用采样温度的全局覆盖。可设 `[0.0, 2.0]` 内数字，或 `none`（也接受 `default`/`off`/空）以完全**省略**温度参数；拒绝显式温度的模型需要这样做，例如只接受默认值的 Azure `gpt-5.5`。下方逐操作变量覆盖此设置。 | 逐操作默认值 |
+| `HINDSIGHT_API_LLM_TEMPERATURE_VERIFICATION` | 启动连接检查温度。`[0.0, 2.0]` 数字或 `none`（省略）。覆盖 `HINDSIGHT_API_LLM_TEMPERATURE`。 | `0.0` |
+| `HINDSIGHT_API_LLM_TEMPERATURE_RETAIN` | 记忆存储事实提取温度。`[0.0, 2.0]` 数字或 `none`（省略）。覆盖 `HINDSIGHT_API_LLM_TEMPERATURE`。 | `0.1` |
+| `HINDSIGHT_API_LLM_TEMPERATURE_REFLECT` | 反思思考步骤温度。`[0.0, 2.0]` 数字或 `none`（省略）。覆盖 `HINDSIGHT_API_LLM_TEMPERATURE`。 | `0.9` |
+| `HINDSIGHT_API_LLM_TEMPERATURE_CONSOLIDATION` | 整合温度（心智模型增量和去重）。`[0.0, 2.0]` 数字或 `none`（省略）。覆盖 `HINDSIGHT_API_LLM_TEMPERATURE`。 | `0.0` |
+| `HINDSIGHT_API_LLM_VISION` | 配置的 LLM 是否能读取图像，覆盖提供方自行报告。未设置时各提供方自行决定：Anthropic、Gemini、OpenAI 报告支持，`none` 不支持，网关型后端（LiteLLM、Ollama、LM Studio、OpenRouter、兼容 OpenAI 代理）报告*未知*，因为目录混合视觉和纯文本模型。携带[内联附件](#inline-attachments-in-retain)的存储请求在不支持或未知时均以 `422` 拒绝，防止静默丢弃附件、文档看似已存储却遗漏调用方关心的信息。网关后使用视觉模型时设为 `true`；模型名虽看似支持但实际端点拒绝图像时设为 `false`。 | 由提供方决定 |
+| `HINDSIGHT_API_VLM_PROVIDER` | **视觉槽位**提供方：仅用于携带[内联附件](#inline-attachments-in-retain)的记忆存储文本块。所有纯文本块继续使用存储 LLM，因此多数文档为文本的库不必为全部内容承担视觉模型费用。未设置时附件使用存储 LLM。 | 记忆存储 LLM |
+| `HINDSIGHT_API_VLM_API_KEY` | 视觉槽位 API 密钥。 | 记忆存储 LLM 的值 |
+| `HINDSIGHT_API_VLM_MODEL` | 视觉槽位模型。`HINDSIGHT_API_LLM_VISION` 和 `422` 视觉检查作用于此模型，因为附件实际传给它。 | 记忆存储 LLM 的值 |
+| `HINDSIGHT_API_VLM_BASE_URL` | 视觉槽位基础 URL。设置 `HINDSIGHT_API_VLM_PROVIDER` 而未设置此项时，采用该提供方默认值，绝不继承记忆存储提供方主机，以免用错误密钥将请求发往错误端点。 | 提供方默认值 |
+| `HINDSIGHT_API_LLM_SEND_BANK_AS_USER` | 为发出的 LLM 和嵌入调用添加 `user=<bank_id>`，让网关（OpenRouter 用量统计、LiteLLM、Helicone）按库归属费用。启用后将库 ID 作为最终用户标识发送给上游提供方。 | `false` |
+| `HINDSIGHT_API_LLM_GROQ_SERVICE_TIER` | Groq 服务等级：`on_demand`、`flex`、`auto` | `auto` |
+| `HINDSIGHT_API_LLM_OPENAI_SERVICE_TIER` | OpenAI 服务等级：`flex` 节省 50% 成本（OpenAI Flex Processing） | 无（默认） |
+| `HINDSIGHT_API_LLM_BEDROCK_SERVICE_TIER` | Bedrock 服务等级：`flex` 节省 50% 成本（尽力推理）、`priority`（保证吞吐量）、`reserved`（预置容量） | 未设置（默认等级） |
+| `HINDSIGHT_API_LLM_GEMINI_SERVICE_TIER` | Gemini 服务等级：`flex` 节省 50% 成本（尽力推理） | 未设置（默认等级） |
+| `HINDSIGHT_API_LLM_EXTRA_BODY` | 额外请求体参数 JSON 字典（例如 `temperature`、`top_p`、`max_tokens`），合并到每次 LLM 调用。适用于兼容 OpenAI、Fireworks、Anthropic、Gemini/VertexAI 和 LiteLLM（含 Bedrock/Router）提供方。各自按原生参数空间合并，请使用相应字段名（例如 OpenAI/Anthropic 的 `max_tokens`，Gemini 的 `max_output_tokens`）。原生 Ollama 结构化输出路径特殊，见下文说明。也适用于自定义模型服务器（例如 vLLM `chat_template_kwargs`）。 | `null` |
+| `HINDSIGHT_API_LLM_DEFAULT_HEADERS` | 作为 `default_headers` 传给提供方 SDK 客户端的 JSON 字典。用于通过代理/请求追踪中间件路由（例如 Cloudflare AI Gateway、Helicone、企业代理）。已接入 Anthropic、兼容 OpenAI、Fireworks、Nous、OpenAI Responses API，以及 LiteLLM 后端（`litellm`、`litellmrouter`、`bedrock`）；其他提供方可选择接入。 | `null` |
+| `HINDSIGHT_API_LLM_CACHE_AFFINITY` | 在兼容 OpenAI、Fireworks 和 Nous 提供方上，将一次对话固定到一个后端提示词缓存。服务器缓存按后端服务器保存，相同对话必须到达同一服务器才能命中。`xai_conv_id` 发送 xAI 文档中的 `x-grok-conv-id` 头；`openai_prompt_cache_key` 发送 OpenAI `prompt_cache_key` 字段；`auto` 按基础 URL 主机选择（x.ai / grok.com &rarr; `xai_conv_id`；原生 OpenAI 或 openai.com 主机 &rarr; `openai_prompt_cache_key`；其他包括 Azure OpenAI &rarr; `none`）；`none` 不发送。ID 为操作追踪 ID，同一次记忆存储/反思/整合的所有 LLM 调用共享。`auto` 使用允许列表，不作尽力探测，因此未知兼容后端（vLLM、ollama、groq、openrouter、自定义代理）的请求字节与此前完全相同；设为 `none` 完全禁用。Anthropic 和 Gemini/Vertex 自行缓存，忽略此项。 | `auto` |
+| `HINDSIGHT_API_LLM_STRICT_SCHEMA` | 通过 `json_schema` 的 `strict: true` 强制语法约束结构化输出，替代“提示词中 schema + `json_object`”软路径。类型化 Pydantic 响应模型直接序列化到 OpenAI 严格子集：每个对象拒绝额外属性、所有声明属性必需、可空字段仍可空。适用于输出正文前导语、Markdown JSON 围栏或无效 JSON 的较弱自托管模型，否则解析失败会卡住存储/整合。适用于兼容 OpenAI 后端（OpenAI、LM Studio、Ollama、Volcano、llama.cpp、vLLM）、Codex、LiteLLM；Gemini 始终原生强制 `response_schema`，没有严格模式的提供方忽略。LM Studio、Ollama、Volcano 最常见：软路径甚至跳过 `json_object`（不可靠支持），小模型原始输出不受约束；启用此标志可修复这些后端存储时的 `JSONDecodeError`。 | `false` |
+| `HINDSIGHT_API_LLM_STRICT_SCHEMA_RETAIN` | 仅为记忆存储（事实提取）覆盖 `HINDSIGHT_API_LLM_STRICT_SCHEMA`，适用于流式和批量提取路径。 | 继承全局值 |
+| `HINDSIGHT_API_LLM_STRICT_SCHEMA_REFLECT` | 为反思结构化输出提取及心智模型增量刷新覆盖 `HINDSIGHT_API_LLM_STRICT_SCHEMA`。 | 继承全局值 |
+| `HINDSIGHT_API_LLM_STRICT_SCHEMA_CONSOLIDATION` | 仅为整合覆盖 `HINDSIGHT_API_LLM_STRICT_SCHEMA`（批量整合调用及观察去重）。 | 继承全局值 |
+| `HINDSIGHT_API_LLM_SUPPORTS_MAX_ITEMS` | LLM 后端是否接受结构化输出 schema 中的 JSON Schema `maxItems` / `minItems`。Bedrock Converse 等拒绝这些关键词的后端设为 `false`；整合仍在解析后执行观察数量上限。 | `true` |
+| `HINDSIGHT_API_LLM_SUPPORTS_STRING_PATTERN` | LLM 后端是否接受结构化输出 schema 中的 JSON Schema `pattern`。为 `true` 时，存储将 `occurred_start` / `occurred_end` 约束为 ISO 时间戳，防止语法约束模型在时间戳字符串内推理，造成日期损坏并将整个完成预算耗在未终止响应上。默认 `false`，因为支持有限，拒绝时请求直接硬失败 400：Bedrock schema 允许列表不含此关键词，OpenAI 严格模式也拒绝不支持的关键词。不执行也不拒绝的后端无法获益。 | `false` |
+| `HINDSIGHT_API_LLM_STRUCTURED_OUTPUT_FORCED_TOOL` | 在 LiteLLM 后端（`litellm`、`litellmrouter`、`bedrock`）通过单一强制工具调用请求结构化输出，将响应 schema 作为工具参数，替代 `response_format`。后端直接拒绝 `response_format` 时设为 `true`。Bedrock Claude 与区域有关：`ap-southeast-2`（`au.*` 推理配置档）以 `Extra inputs are not permitted` 拒绝转换后的 Converse `outputConfig`，相同模型在 `us-east-1`（`us.*`）则接受，无需设置。两者均已验证。模型未调用工具时仍按原方式解析文本。其他提供方忽略。 | `false` |
+| `HINDSIGHT_API_LLM_OPENAI_COMPATIBLE_JSON_MODE` | 兼容 OpenAI 后端是否在非严格结构化输出软路径中遵循 `response_format={"type": "json_object"}`。未设置时由提供方决定：LM Studio、Ollama、Volcano 仅在提示词中放 schema，llama.cpp 遵循 `HINDSIGHT_API_LLAMACPP_NO_GRAMMAR`，其他提供方还发送 `json_object`。`provider=openai` 指向无法约束输出的本地服务器时可设为 `false`：部分服务器改写提示词，思考模型可能反复处理改写直到超时。此设置不会让模型自动写 JSON，只省略服务器错误处理的请求参数，模型仍需遵循提示词 schema。`true` 强制在原本跳过的后端使用 `json_object`。 | 由提供方决定 |
+| `HINDSIGHT_API_LLM_CODEX_HOME` | `openai-codex` 提供方凭据目录，包含用于认证的 `auth.json`。覆盖 Hindsight LLM 调用所用进程级 `CODEX_HOME`。因为 `CODEX_HOME` 是进程级，设置此项及逐成员 `HINDSIGHT_API_LLM_<n>_CODEX_HOME` 可在一个进程运行两个独立授权 ChatGPT 配置档，使包含两个 Codex 成员的[多 LLM 链](#multi-llm-strategies-failover--round-robin)可在账户间故障转移。 | 未设置（`CODEX_HOME`，否则 `~/.codex`） |
+| `HINDSIGHT_API_LLM_OLLAMA_NUM_CTX` | 可选原生 Ollama `num_ctx` 覆盖。未设置使用模型/服务器默认值，仅需要更大上下文窗口时设正整数。设置后自由文本调用（含启动连接探测）也通过原生 `/api/chat`，因为兼容 OpenAI 端点无法表达上下文大小，见下文。 | 未设置 |
+| `HINDSIGHT_API_LLM_GEMINI_SAFETY_SETTINGS` | Gemini/VertexAI 内容安全过滤所用 `{category, threshold}` 字典列表，JSON 编码 | `null` |
+| `HINDSIGHT_API_LLM_PROMPT_CACHE_ENABLED` | 通过提供方显式提示词缓存复用固定系统前缀，按缓存输入价格计费（Gemini/Vertex `CachedContent`）。缓存前缀由所有库共享，失败时软回退到无缓存调用。`false` 禁用，见[模型](./models#provider-capabilities)。 | `true` |
+| `HINDSIGHT_API_REFLECT_PROMPT_CACHE_ENABLED` | 仅针对反思，在智能体工具循环中逐步推进上下文缓存，让每轮按缓存输入价格复用完整先前对话（系统 + 工具 + 所有先前工具结果），而非仅静态前缀。需要 `HINDSIGHT_API_LLM_PROMPT_CACHE_ENABLED`。逐反思缓存是临时的，反思结束时删除。设为 `false` 可让反思无缓存运行，同时其他操作仍缓存；Gemini 目前这样更便宜，因为创建每个缓存按完整输入价格加存储计费，而每个滚动缓存恰好只读一次。 | `true` |
+| `HINDSIGHT_API_LLM_DEBUG_DUMP_4XX` | 诊断：启用后，任意 LLM `4xx` 时，提供方记录 `[LLM_4XX_DUMP]`，包含实际组装请求：序列化请求配置（响应 schema + 生成参数，移除消息正文）及限制长度的逐消息预览，便于检查难以复现的被拒请求。已接入所有远程提供方（Gemini/Vertex、兼容 OpenAI 含 Fireworks/Nous、Anthropic、LiteLLM 含 Router、Codex）。默认关闭，正常运行应保持关闭。 | `false` |
+
+`HINDSIGHT_API_LLM_PROVIDER=ollama` 时，除非显式设置，否则 Hindsight 不再发送旧原生 API 默认值 `num_ctx=16384`。要保留旧请求行为，设置 `HINDSIGHT_API_LLM_OLLAMA_NUM_CTX=16384`；否则 Ollama 使用模型 Modelfile 或服务器默认值。
+
+**Hindsight 何时使用 Ollama 原生 API。** 结构化输出调用始终使用原生 `/api/chat` 强制 schema。设置 `HINDSIGHT_API_LLM_OLLAMA_NUM_CTX` 后，自由文本调用也走此路径，因为 Ollama 兼容 OpenAI 处理器只解析固定字段，丢弃其余字段；在 `/v1/chat/completions` 无法表达 `num_ctx`，嵌套在 `options` 中也不行。共享 Ollama 主机上这很关键：加载模型实例以上下文大小为键，使用服务器默认值会重载模型，并为所有其他消费者重新调优。
+
+**原生 Ollama 路径的 `HINDSIGHT_API_LLM_EXTRA_BODY`。** 原生请求体有*两层*，区别于 SDK 将所有内容扁平放在顶层的兼容 OpenAI 端点。原生路径相应拆分 `extra_body`：
+
+- **原生顶层字段**（`think`、`keep_alive` 等）直接传入。例如 gpt-oss 模型结构化提取需要思考级别，可设置 `HINDSIGHT_API_LLM_EXTRA_BODY='{"think": "low"}'`（默认禁用思考）。
+- **生成参数**（`seed`、`top_p`、`top_k`、`num_ctx`、`temperature` 等）位于 Ollama 的 `options` 对象中，需嵌套：`HINDSIGHT_API_LLM_EXTRA_BODY='{"options": {"seed": 42, "top_p": 0.9}}'`。兼容 OpenAI 端点中，相同参数位于顶层。
+
+**提供方示例**
+
+```bash
+# Groq（推荐快速推理）
+export HINDSIGHT_API_LLM_PROVIDER=groq
+export HINDSIGHT_API_LLM_API_KEY=gsk_xxxxxxxxxxxx
+export HINDSIGHT_API_LLM_MODEL=openai/gpt-oss-20b
+# 免费套餐用户：遇到 service_tier 错误时覆盖为 on_demand
+# export HINDSIGHT_API_LLM_GROQ_SERVICE_TIER=on_demand
+
+# OpenAI
+export HINDSIGHT_API_LLM_PROVIDER=openai
+export HINDSIGHT_API_LLM_API_KEY=sk-xxxxxxxxxxxx
+export HINDSIGHT_API_LLM_MODEL=gpt-4o
+# 可选：使用 Flex Processing 节省 50% 成本（延迟可变）
+# export HINDSIGHT_API_LLM_OPENAI_SERVICE_TIER=flex
+
+# OpenAI Responses API (/v1/responses)
+export HINDSIGHT_API_LLM_PROVIDER=openai-responses
+export HINDSIGHT_API_LLM_API_KEY=sk-xxxxxxxxxxxx
+export HINDSIGHT_API_LLM_MODEL=gpt-5.6
+# 使用 OpenAI Responses API，而非 chat/completions。
+# 支持推理与函数工具并存，反思工具调用搜索循环可使用真正的推理强度。
+# 推荐用于在 chat/completions 中拒绝将 reasoning_effort 与工具一起使用的
+# 推理模型（gpt-5.x、o 系列），例如 gpt-5.6-terra。
+# export HINDSIGHT_API_LLM_REASONING_EFFORT=high
+
+# Gemini
+export HINDSIGHT_API_LLM_PROVIDER=gemini
+export HINDSIGHT_API_LLM_API_KEY=xxxxxxxxxxxx
+export HINDSIGHT_API_LLM_MODEL=gemini-2.0-flash
+# 可选：使用 Gemini Flex 节省 50% 成本（尽力推理）
+# export HINDSIGHT_API_LLM_GEMINI_SERVICE_TIER=flex
+
+# Anthropic
+export HINDSIGHT_API_LLM_PROVIDER=anthropic
+export HINDSIGHT_API_LLM_API_KEY=sk-ant-xxxxxxxxxxxx
+export HINDSIGHT_API_LLM_MODEL=claude-sonnet-4-20250514
+
+# Vertex AI（Google Cloud，使用原生 genai SDK）
+export HINDSIGHT_API_LLM_PROVIDER=vertexai
+export HINDSIGHT_API_LLM_MODEL=gemini-2.0-flash-001
+export HINDSIGHT_API_LLM_VERTEXAI_PROJECT_ID=your-gcp-project-id
+export HINDSIGHT_API_LLM_VERTEXAI_REGION=us-central1
+# 可选：使用 ADC（gcloud auth application-default login）或提供服务账户密钥：
+# export HINDSIGHT_API_LLM_VERTEXAI_SERVICE_ACCOUNT_KEY=/path/to/service-account-key.json
+
+# Ollama（本地，无需 API 密钥）
+export HINDSIGHT_API_LLM_PROVIDER=ollama
+export HINDSIGHT_API_LLM_BASE_URL=http://localhost:11434/v1
+export HINDSIGHT_API_LLM_MODEL=llama3
+
+# Ollama Cloud（托管 Ollama 端点，需要 API 密钥）
+export HINDSIGHT_API_LLM_PROVIDER=ollama-cloud
+export HINDSIGHT_API_LLM_API_KEY=your-ollama-cloud-api-key
+export HINDSIGHT_API_LLM_MODEL=gemma3:12b
+
+# LM Studio（本地，无需 API 密钥）
+export HINDSIGHT_API_LLM_PROVIDER=lmstudio
+export HINDSIGHT_API_LLM_BASE_URL=http://localhost:1234/v1
+export HINDSIGHT_API_LLM_MODEL=your-local-model
+
+# llama.cpp（内置本地推理，无需外部服务器）
+export HINDSIGHT_API_LLM_PROVIDER=llamacpp
+# 无需 API 密钥、基础 URL 或外部服务器。
+# 首次运行自动下载 Gemma 4 E2B（约 3.5 GB GGUF）。
+# 所有配置选项见下方“内置 llama.cpp”章节。
+
+# 兼容 OpenAI 的端点（Chat Completions API，/v1/chat/completions）
+export HINDSIGHT_API_LLM_PROVIDER=openai
+export HINDSIGHT_API_LLM_BASE_URL=https://your-endpoint.com/v1
+export HINDSIGHT_API_LLM_API_KEY=your-api-key
+export HINDSIGHT_API_LLM_MODEL=your-model-name
+
+# 兼容 OpenAI 的端点（Responses API，/v1/responses）
+# 与上方相同，但访问 /v1/responses 而非 /v1/chat/completions。
+export HINDSIGHT_API_LLM_PROVIDER=openai-responses
+export HINDSIGHT_API_LLM_BASE_URL=https://your-endpoint.com/v1
+export HINDSIGHT_API_LLM_API_KEY=your-api-key
+export HINDSIGHT_API_LLM_MODEL=your-model-name
+
+# OpenAI Codex（ChatGPT Plus/Pro 订阅，使用 OAuth，无需 API 密钥）
+export HINDSIGHT_API_LLM_PROVIDER=openai-codex
+export HINDSIGHT_API_LLM_MODEL=gpt-5.4-mini
+# 无需 API 密钥，使用 ~/.codex/auth.json 中的 OAuth 令牌。
+# 长期运行服务请将 CODEX_HOME 设为专用认证目录，
+# 避免与其他 Codex 进程共享刷新令牌而导致失效。
+# 见模型文档“为长期运行服务隔离 Codex 身份验证”。
+# export CODEX_HOME=/var/lib/hindsight/codex
+# 逐提供方覆盖 CODEX_HOME。配合下方带索引的
+# HINDSIGHT_API_LLM_<n>_CODEX_HOME，可在一个进程中
+# 运行两个独立授权的 ChatGPT 配置档。
+# export HINDSIGHT_API_LLM_CODEX_HOME=/var/lib/hindsight/codex-a
+
+# Claude Code（Claude Pro/Max 订阅，使用 OAuth）
+export HINDSIGHT_API_LLM_PROVIDER=claude-code
+export HINDSIGHT_API_LLM_MODEL=claude-sonnet-4-5-20250929
+# 无需 API 密钥，使用 claude auth login 凭据。
+# 将 HINDSIGHT_API_LLM_API_KEY 设为 claude setup-token 生成的令牌，可改用密钥认证。
+
+# Cursor（Cursor 订阅，无界面模式调用 cursor-agent CLI）
+export HINDSIGHT_API_LLM_PROVIDER=cursor
+export HINDSIGHT_API_LLM_MODEL=auto  # 或 cursor-agent --list-models 中的任意 ID
+# 无需 API 密钥，使用 cursor-agent login 凭据。
+# 设置 HINDSIGHT_API_LLM_API_KEY（或 CURSOR_API_KEY）可改用密钥认证。
+# 智能体 CLI 一轮耗时 15-30 秒，明显超过反思默认 30 秒，
+# 请提高超时，否则反思首轮耗在超时重试上。
+export HINDSIGHT_API_LLM_TIMEOUT=300
+export HINDSIGHT_API_REFLECT_LLM_TIMEOUT=180
+# CLI 未提供响应格式或工具定义标志，Hindsight 通过提示词
+# 模拟结构化输出和工具调用，再解析返回 JSON。可靠性低于原生 schema，
+# 因此最依赖工具调用的反思操作应选择更强的明确模型，而非 auto。
+
+# 火山引擎（字节跳动，兼容 OpenAI）
+export HINDSIGHT_API_LLM_PROVIDER=volcano
+export HINDSIGHT_API_LLM_API_KEY=your-api-key
+export HINDSIGHT_API_LLM_BASE_URL=https://ark.cn-beijing.volces.com/api/v3
+export HINDSIGHT_API_LLM_MODEL=doubao-pro-32k
+
+# OpenRouter（兼容 OpenAI，访问 100+ 模型）
+export HINDSIGHT_API_LLM_PROVIDER=openrouter
+export HINDSIGHT_API_LLM_API_KEY=your-openrouter-api-key
+export HINDSIGHT_API_LLM_MODEL=qwen/qwen3.5-9b
+# 结构化输出调用（事实提取、整合）发送 provider.require_parameters=true，
+# 因此 OpenRouter 仅路由到支持 response_format 的上游。
+# HINDSIGHT_API_LLM_EXTRA_BODY 中的 provider 键（例如 only）保留且优先。
+
+# Requesty（兼容 OpenAI 的网关）
+export HINDSIGHT_API_LLM_PROVIDER=requesty
+export HINDSIGHT_API_LLM_API_KEY=your-requesty-api-key
+export HINDSIGHT_API_LLM_MODEL=openai/gpt-4o-mini
+
+# DeepSeek（兼容 OpenAI，`https://api.deepseek.com`）
+export HINDSIGHT_API_LLM_PROVIDER=deepseek
+export HINDSIGHT_API_LLM_API_KEY=sk-xxxxxxxxxxxx
+export HINDSIGHT_API_LLM_MODEL=deepseek-v4-flash
+# 说明：
+# - deepseek-v4-flash 在 API 层默认使用思考模式（视为 deepseek-reasoner）。
+#   Hindsight 透明处理，反思智能体不会因
+#   “deepseek-reasoner does not support this tool_choice”崩溃。
+# - 更高质量推理路径使用 deepseek-v4-pro。
+# - 非思考别名使用 deepseek-chat（更快、更便宜）。
+
+# z.ai（智谱 GLM 系列，兼容 OpenAI，`https://z.ai`）
+export HINDSIGHT_API_LLM_PROVIDER=zai
+export HINDSIGHT_API_LLM_API_KEY=your-zai-api-key
+export HINDSIGHT_API_LLM_MODEL=glm-4.5-flash  # 付费套餐也可使用 glm-4.5-air
+# 默认 base_url：`https://api.z.ai/api/coding/paas/v4`（需要时通过 HINDSIGHT_API_LLM_BASE_URL 覆盖）
+
+# opencode-go（兼容 OpenAI）
+export HINDSIGHT_API_LLM_PROVIDER=opencode-go
+export HINDSIGHT_API_LLM_API_KEY=your-opencode-go-api-key
+export HINDSIGHT_API_LLM_MODEL=deepseek-v4-flash
+# 默认 base_url：`https://opencode.ai/zen/go/v1`（需要时通过 HINDSIGHT_API_LLM_BASE_URL 覆盖）
+
+# Meta Model API（Muse Spark，兼容 OpenAI，`https://ai.developer.meta.com`）
+export HINDSIGHT_API_LLM_PROVIDER=meta
+export HINDSIGHT_API_LLM_API_KEY=your-meta-model-api-key
+export HINDSIGHT_API_LLM_MODEL=muse-spark-1.3
+# 默认 base_url：`https://api.meta.ai/v1`（需要时通过 HINDSIGHT_API_LLM_BASE_URL 覆盖）
+# Muse Spark 始终推理：HINDSIGHT_API_LLM_REASONING_EFFORT 不设置，
+# 或设 minimal/low/medium/high/xhigh。none 会被 HTTP 400 拒绝。
+# 推理 token 计入输出预算，因此逐操作 token 上限应保留足够余量。
+# 每次回答前都推理，调用较慢，反思默认 30 秒不足以完成最终综合，重试后失败。
+# 使用此提供方时提高反思和全局超时：
+export HINDSIGHT_API_REFLECT_LLM_TIMEOUT=300
+export HINDSIGHT_API_LLM_TIMEOUT=300
+
+# Nous Portal（兼容 OpenAI，无需 API 密钥，使用 hermes portal 登录）
+export HINDSIGHT_API_LLM_PROVIDER=nous
+export HINDSIGHT_API_LLM_MODEL=deepseek/deepseek-v4-flash
+# 无需 API 密钥，从 ~/.hermes/auth.json 读取轮换 JWT（先运行 hermes portal）。
+# 默认 base_url：`https://inference-api.nousresearch.com/v1`（可通过 HINDSIGHT_API_LLM_BASE_URL 覆盖）
+# 登录流程见模型指南“Nous Portal 设置”。
+
+# SuperGrok 订阅（设备代码 OAuth，无需 API 密钥）。这是订阅通道，
+# 不属于 xAI API 支持；用 API 密钥访问 api.x.ai 时使用
+# HINDSIGHT_API_LLM_PROVIDER=openai 和 HINDSIGHT_API_LLM_BASE_URL=https://api.x.ai/v1。
+export HINDSIGHT_API_LLM_PROVIDER=xai-oauth
+export HINDSIGHT_API_LLM_MODEL=grok-4.5
+# 无需 API 密钥，从 ~/.hindsight/xai_oauth.json 读取 OAuth 授权。
+# 登录一次：python -m hindsight_api.engine.providers.xai_oauth_auth login
+# 默认 base_url：https://api.x.ai/v1
+# 登录流程见模型指南“SuperGrok 订阅设置”。
+
+# AWS Bedrock（原生支持，无需 API 密钥，使用 AWS 凭据）
+export HINDSIGHT_API_LLM_PROVIDER=bedrock
+export HINDSIGHT_API_LLM_MODEL=us.amazon.nova-2-lite-v1:0
+export AWS_ACCESS_KEY_ID=your-access-key
+export AWS_SECRET_ACCESS_KEY=your-secret-key
+export AWS_REGION_NAME=us-east-1
+# 可选：使用 Flex 等级节省 50% 成本（延迟可变）
+# export HINDSIGHT_API_LLM_BEDROCK_SERVICE_TIER=flex
+
+# LiteLLM（通过 LiteLLM SDK 使用 100+ 提供方）
+# 通过 LiteLLM 使用 Azure OpenAI
+export HINDSIGHT_API_LLM_PROVIDER=litellm
+export HINDSIGHT_API_LLM_API_KEY=your-azure-api-key
+export HINDSIGHT_API_LLM_MODEL=azure/gpt-4o
+
+# 通过 LiteLLM 使用 Together AI
+export HINDSIGHT_API_LLM_PROVIDER=litellm
+export HINDSIGHT_API_LLM_API_KEY=your-together-api-key
+export HINDSIGHT_API_LLM_MODEL=together_ai/meta-llama/Llama-3-70b-chat-hf
+
+# 无 LLM（仅存储文本块和语义搜索，无需 API 密钥）
+export HINDSIGHT_API_LLM_PROVIDER=none
+# 记忆存储自动使用 chunks 模式（不提取事实）
+# 召回正常工作（语义搜索、BM25、图检索）
+# 反思返回 HTTP 400（需要 LLM）
+# 整合/观察禁用
+```
+
+:::tip OpenAI Codex、Claude Code 和 Vertex AI 设置
+**OpenAI Codex**（ChatGPT Plus/Pro）、**Claude Code**（Claude Pro/Max）及 **Vertex AI**（Google Cloud）的详细设置见[模型文档](./models#openai-codex-setup-chatgpt-pluspro)。
+:::
+
+### SuperGrok OAuth (`xai-oauth`)
+
+`HINDSIGHT_API_LLM_PROVIDER=xai-oauth` 通过设备代码 OAuth 使用 SuperGrok 订阅认证，而非 API 密钥。先运行一次 `python -m hindsight_api.engine.providers.xai_oauth_auth login`；授权保存到磁盘并自动刷新。下方变量均可选，默认值匹配厂商自身客户端，普通部署无需设置。
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_XAI_OAUTH_TOKEN_PATH` | OAuth 授权存储位置。登录和刷新均遵循，因此更改整个存储位置，而非只覆盖读取。 | `~/.hindsight/xai_oauth.json` |
+| `HINDSIGHT_API_XAI_OAUTH_BASE_URL` | 部署级端点覆盖，优先于可能为其他代理设置的 `HINDSIGHT_API_LLM_BASE_URL`。 | `https://api.x.ai/v1` |
+| `HINDSIGHT_API_XAI_OAUTH_CLIENT_ID` | 登录和刷新使用的 OAuth 客户端 ID。 | xAI 发布的 Grok CLI 客户端 |
+| `HINDSIGHT_API_XAI_OAUTH_SCOPE` | 登录请求的范围字符串。 | 厂商默认值 |
+| `HINDSIGHT_API_XAI_OAUTH_REFRESH_SKEW_SECONDS` | 过期前多久应刷新令牌。较少调用提供方的部署（cron 或网关）可提高。 | `60` |
+| `HINDSIGHT_API_XAI_OAUTH_REFRESH_TIMEOUT_SECONDS` | 发现、设备代码和刷新调用的逐请求超时。 | `20` |
+| `HINDSIGHT_API_XAI_OAUTH_DEBUG_HEADERS` | 非 2xx 响应时记录允许列表中的响应头（`via`、`x-request-id`、`cf-ray`、`server`、`date`）。仅用于诊断，绝不记录凭据、cookie 或正文。 | `false` |
+
+这是订阅通道，不是 xAI API 密钥支持。用 API 密钥访问 `api.x.ai` 时，使用 `HINDSIGHT_API_LLM_PROVIDER=openai` 和 `HINDSIGHT_API_LLM_BASE_URL=https://api.x.ai/v1`。
+
+### LLM 路由器（LiteLLM Router） {#llm-router-litellm-router}
+
+`HINDSIGHT_API_LLM_PROVIDER=litellmrouter` 通过 [LiteLLM Router](https://docs.litellm.ai/docs/routing) 运行默认 LLM。配置 JSON 原样转发；回退链、负载均衡、速率限制、路由策略及其他键见 [LiteLLM Router 文档](https://docs.litellm.ai/docs/routing)。Hindsight 始终对 `model_name: "default"` 发起补全，因此至少包含一个该名称的条目。
+
+| 变量 | 说明 |
+|----------|-------------|
+| `HINDSIGHT_API_LLM_LITELLMROUTER_CONFIG` | 传给 `litellm.Router(**config)` 的 JSON 对象。提供方为 `litellmrouter` 时必需。 |
+| `HINDSIGHT_API_{RETAIN,REFLECT,CONSOLIDATION}_LLM_LITELLMROUTER_CONFIG` | 逐操作覆盖。未设置时回退到默认配置。 |
+
+```bash
+export HINDSIGHT_API_LLM_PROVIDER=litellmrouter
+export HINDSIGHT_API_LLM_LITELLMROUTER_CONFIG='{
+  "model_list": [
+    {"model_name": "default",  "litellm_params": {"model": "openai/gpt-4o-mini", "api_key": "sk-..."}},
+    {"model_name": "fallback", "litellm_params": {"model": "anthropic/claude-sonnet-4-5", "api_key": "sk-ant-..."}}
+  ],
+  "fallbacks": [{"default": ["fallback"]}]
+}'
+```
+
+配置属于凭据字段，记忆库配置 API 永不返回。Hindsight 已重试调用，可在 Router 设置 `"num_retries": 0` 避免双重重试。路由器模式不支持批量 API。
+
+### 多 LLM 策略（故障转移 / 轮询） {#multi-llm-strategies-failover--round-robin}
+
+在主 LLM 之外，**按索引**配置额外 LLM，再选择跨成员路由策略。相比 LiteLLM Router，此方式不依赖提供方：成员可混合任意提供方，各自完整配置。
+
+不带索引的 `HINDSIGHT_API_LLM_*` 配置是**主提供方**（成员 1）。额外成员从 1 编号：
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_LLM_<n>_PROVIDER` | 额外成员 `n` 的提供方（`n` = 1、2、…）。此变量存在即定义成员，索引必须从 1 连续。 | - |
+| `HINDSIGHT_API_LLM_<n>_API_KEY` | 成员 `n` 的 API 密钥（除无需密钥的提供方外均必需）。 | - |
+| `HINDSIGHT_API_LLM_<n>_MODEL` | 成员 `n` 的模型。 | 提供方默认值 |
+| `HINDSIGHT_API_LLM_<n>_BASE_URL` | 成员 `n` 的基础 URL。 | 提供方默认值 |
+| `HINDSIGHT_API_LLM_<n>_REASONING_EFFORT` | 成员 `n` 的推理强度。 | `HINDSIGHT_API_LLM_REASONING_EFFORT` |
+| `HINDSIGHT_API_LLM_<n>_EXTRA_BODY` / `_DEFAULT_HEADERS` | 逐成员 JSON 覆盖。 | - |
+| `HINDSIGHT_API_LLM_<n>_BEDROCK_SERVICE_TIER` / `_GEMINI_SERVICE_TIER` | 逐成员服务等级。 | - |
+| `HINDSIGHT_API_LLM_<n>_VERTEXAI_PROJECT_ID` / `_VERTEXAI_REGION` / `_VERTEXAI_SERVICE_ACCOUNT_KEY` | 逐成员 Vertex AI 项目、区域、服务账户密钥路径（`vertexai` 成员使用）。各项未设置时回退到全局 `HINDSIGHT_API_LLM_VERTEXAI_*`。 | 全局值 / `us-central1` / ADC |
+| `HINDSIGHT_API_LLM_<n>_CODEX_HOME` | 逐成员 Codex 凭据目录，包含成员认证的 `auth.json`（用于 `openai-codex` 成员）。设置后两个 Codex 成员可使用独立授权的 ChatGPT 配置档；否则各成员解析同一存储。回退到全局 `HINDSIGHT_API_LLM_CODEX_HOME`，再到 `CODEX_HOME`，最后 `~/.codex`。 | 全局值 / `CODEX_HOME` / `~/.codex` |
+| `HINDSIGHT_API_LLM_<n>_LITELLMROUTER_CONFIG` | 逐成员 LiteLLM Router 配置 JSON（用于 `litellmrouter` 成员）。未设置回退到全局 `HINDSIGHT_API_LLM_LITELLMROUTER_CONFIG`。 | - |
+| `HINDSIGHT_API_LLM_<n>_TIMEOUT` | 逐成员请求超时，单位秒。未设置回退到操作超时。 | 操作超时 |
+| `HINDSIGHT_API_LLM_<n>_MAX_RETRIES` | 逐成员重试预算。未设置回退到操作 `MAX_RETRIES`；`0` 有效，表示立即故障转移。 | 操作 `MAX_RETRIES` |
+| `HINDSIGHT_API_LLM_STRATEGY` | 跨链 JSON 路由策略。未设置 = 单一主 LLM（行为不变）。 | - |
+
+策略 JSON 支持三种模式：
+
+- `{"mode": "failover"}`：按顺序尝试成员（主提供方优先），成员自身重试后仍失败时进入下一个。
+- `{"mode": "round-robin"}`：逐请求轮换起始成员以分散负载，失败后继续尝试其他成员。添加 `"weights": [3, 1, ...]`（正整数，每成员一个，主提供方优先）可进行**非均衡**轮换。
+- `{"mode": "metadata", "routes": [...]}`：**仅记忆存储**，根据每个存储条目的 `metadata` 选择成员。见下方[元数据路由](#metadata-routing)。
+
+```bash
+# 主提供方 OpenAI，故障时依次转移到 Groq 和 Anthropic
+export HINDSIGHT_API_LLM_PROVIDER=openai
+export HINDSIGHT_API_LLM_API_KEY=sk-...
+export HINDSIGHT_API_LLM_1_PROVIDER=groq
+export HINDSIGHT_API_LLM_1_API_KEY=gsk-...
+export HINDSIGHT_API_LLM_2_PROVIDER=anthropic
+export HINDSIGHT_API_LLM_2_API_KEY=sk-ant-...
+export HINDSIGHT_API_LLM_STRATEGY='{"mode": "failover"}'
+
+# 加权轮询：主提供方使用频率为成员 1 的 3 倍
+export HINDSIGHT_API_LLM_STRATEGY='{"mode": "round-robin", "weights": [3, 1]}'
+```
+
+#### 元数据路由 {#metadata-routing}
+
+`{"mode": "metadata"}` 将每个存储条目发送给自身元数据选择的链成员，让一个部署可用不同模型提取不同文档：
+
+```bash
+export HINDSIGHT_API_LLM_PROVIDER=openai
+export HINDSIGHT_API_LLM_API_KEY=sk-...
+export HINDSIGHT_API_LLM_1_PROVIDER=ollama
+export HINDSIGHT_API_LLM_1_MODEL=qwen3:8b
+export HINDSIGHT_API_LLM_STRATEGY='{
+  "mode": "metadata",
+  "routes": [{"key": "classification", "value": "sensitive", "member": 1}]
+}'
+```
+
+存储 `{"content": "...", "metadata": {"classification": "sensitive"}}` 时，在本地 `qwen3:8b` 提取事实；其余使用主提供方。
+
+- **逐条目按声明顺序匹配，首次匹配优先。** 未匹配任何路由的条目使用成员 `0`（主提供方）。
+- **按字符串比较值**，因为存储元数据为自由 JSON，而路由值来自环境变量：`"member": 1` 匹配元数据 `1` 和 `"1"`。列表任一项匹配即匹配，例如 `{"labels": ["pii", "eu"]}` 匹配 `labels` = `pii` 的路由。
+- **不持久保存选择。** 构建条目提取提示词时决定，因此路由更改只影响后续存储。重新处理文档重放原始元数据，也按相同规则重新路由。
+- **每个存储条目对应一个提取提示词**，因此批次可混合不同路由条目，各自进入自己的成员。
+
+**此功能的边界。** 元数据路由决定*哪个模型提取文档*，不是数据边界：路由文档的提取事实与其他内容存于同一库，召回、反思、整合、心智模型刷新和试运行提取仍使用主 LLM。若必须完全避免将文档内容发送给某提供方，请使用独立库及记忆库级 LLM 配置。
+
+还有两项限制：
+
+- **`update_mode: "append"` 按追加调用提供的元数据路由**，而非已存储文档的元数据。追加会将已有正文与新文本一起重新提取，请重新提供相同元数据，确保使用同一成员。
+- 此模式**不支持批量存储**。`HINDSIGHT_API_RETAIN_BATCH_ENABLED=true` 将某操作全部条目作为一个作业提交给一个成员，无法逐条目路由，因此启动时拒绝组合使用。
+
+**逐操作链。** 每种操作可通过 `RETAIN` / `REFLECT` / `CONSOLIDATION` / `MENTAL_MODEL_REFRESH` 前缀定义自己的成员和策略（例如 `HINDSIGHT_API_RETAIN_LLM_1_PROVIDER`、`HINDSIGHT_API_RETAIN_LLM_STRATEGY`）。未配置索引成员或策略的逐操作槽位继承全局链；`MENTAL_MODEL_REFRESH` 例外，继承反思链。
+
+带索引成员属于凭据字段，记忆库配置 API 永不返回，仅服务器级可配置（不可逐库设置）。**批量存储**按声明顺序使用第一个支持批量的成员，不一定是主提供方，因此主提供方没有批量 API 时，只要有一个成员支持，仍可用 `HINDSIGHT_API_RETAIN_BATCH_ENABLED=true`。该成员服务整个批次（提交、轮询、获取均指向持有作业的账户），不会像交互存储/反思/整合调用一样故障转移。进行中批次绑定提交账户，工作进程中途重启后，即使链已重排或扩展，仍在相同账户恢复。批次仍运行时移除成员或轮换 API 密钥，会使操作明确报错，而非轮询不同账户。
+
+**链内重试。** 故障转移链本身就是重试：成员失败后尝试下一个。先重试非末尾成员只会延迟移交；若因饱和失败，立即重试往往同样失败。末尾成员相反：没有后续成员可转移，重试预算是短暂错误与请求失败之间唯一缓冲，也是遵循 `Retry-After` 有价值的地方。单一操作级 `MAX_RETRIES` 无法表达两者，因此设置 `HINDSIGHT_API_LLM_MAX_RETRIES=0` 快速转移，并通过 `HINDSIGHT_API_LLM_<n>_MAX_RETRIES` 为末尾成员提供独立预算。
+
+### 内置 llama.cpp {#built-in-llamacpp}
+
+`llamacpp` 提供方以受管理子进程运行 llama.cpp 服务器，无需外部 LLM 服务器。首次运行自动将默认 GGUF 模型（约 3.5 GB）下载到 `~/.hindsight/models`。需要 `local-llm` 可选依赖：`pip install 'hindsight-api-slim[local-llm]'`。
+
+:::warning Docker 镜像中不可用
+已发布 `ghcr.io/vectorize-io/hindsight` 镜像有意不包含 llama.cpp，因此无法在其中运行 `HINDSIGHT_API_LLM_PROVIDER=llamacpp`，会立即失败并说明原因。
+
+Docker 本地推理请将 llama.cpp 作为独立容器运行，通过 `HINDSIGHT_API_LLM_PROVIDER=openai` 和 `HINDSIGHT_API_LLM_BASE_URL` 让 Hindsight 指向其兼容 OpenAI API。可直接运行的设置见 [`docker/docker-compose/local-llm/`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/docker/docker-compose/local-llm)。
+:::
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_LLAMACPP_MODEL_PATH` | GGUF 模型文件路径。未设置时从 HuggingFace 自动下载 `gemma-4-E2B-it-Q4_K_M`。 | 自动下载 |
+| `HINDSIGHT_API_LLAMACPP_GPU_LAYERS` | 卸载到 GPU 的层数。`-1` = 全部层（推荐），`0` = 仅 CPU。 | `-1` |
+| `HINDSIGHT_API_LLAMACPP_CONTEXT_SIZE` | 上下文窗口 token 数。 | `8192` |
+| `HINDSIGHT_API_LLAMACPP_CHAT_FORMAT` | 聊天模板格式。`null` = 从 GGUF 元数据自动检测（推荐）。 | 自动检测 |
+| `HINDSIGHT_API_LLAMACPP_NO_GRAMMAR` | 禁用 JSON 语法强制。推理更快，JSON 输出可靠性较低。 | `false` |
+| `HINDSIGHT_API_LLAMACPP_EXTRA_ARGS` | 传给 llama.cpp 服务器的空格分隔额外 CLI 参数（例如 `--n_threads 8 --type_k 1`）。 | - |
+
+```bash
+# 最小设置（自动下载模型，使用 GPU）
+export HINDSIGHT_API_LLM_PROVIDER=llamacpp
+
+# 自定义模型及调优
+export HINDSIGHT_API_LLM_PROVIDER=llamacpp
+export HINDSIGHT_API_LLM_MAX_CONCURRENT=2
+export HINDSIGHT_API_LLAMACPP_MODEL_PATH=~/.hindsight/models/my-model.gguf
+export HINDSIGHT_API_LLAMACPP_CONTEXT_SIZE=16384
+export HINDSIGHT_API_LLAMACPP_NO_GRAMMAR=true  # 更快，JSON 可靠性较低
+export HINDSIGHT_API_LLAMACPP_EXTRA_ARGS="--n_threads 8"
+```
+
+:::note
+llama.cpp 服务器由所有 LLM 操作（记忆存储、反思、整合）共享。设置 `HINDSIGHT_API_LLM_MAX_CONCURRENT=2`，让存储和整合并行运行而不互相阻塞。
+
+自动下载模型保存到 `~/.hindsight/models`。请将目录放在持久存储上，否则重启时丢失，每次都要重新下载完整模型。
+:::
+
+### 逐操作 LLM 配置 {#per-operation-llm-configuration}
+
+不同记忆操作需求不同。**记忆存储**（事实提取）适合结构化输出强的模型；**反思**（推理/回答生成）可以使用更轻量、更快的模型。为各操作配置独立模型，可以优化成本和性能。
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_RETAIN_LLM_PROVIDER` | 记忆存储操作的 LLM 提供方 | 回退到 `HINDSIGHT_API_LLM_PROVIDER` |
+| `HINDSIGHT_API_RETAIN_LLM_API_KEY` | 记忆存储 LLM 的 API 密钥 | 回退到 `HINDSIGHT_API_LLM_API_KEY` |
+| `HINDSIGHT_API_RETAIN_LLM_MODEL` | 记忆存储操作的模型 | 回退到 `HINDSIGHT_API_LLM_MODEL` |
+| `HINDSIGHT_API_RETAIN_LLM_BASE_URL` | 记忆存储 LLM 的基础 URL | 回退到 `HINDSIGHT_API_LLM_BASE_URL` |
+| `HINDSIGHT_API_RETAIN_LLM_MAX_CONCURRENT` | 存储 LLM 并发请求额外上限，与全局共同生效。未设置 → 仅全局上限。 | 未设置 |
+| `HINDSIGHT_API_RETAIN_LLM_MAX_RETRIES` | 存储最大重试次数 | 回退到 `HINDSIGHT_API_LLM_MAX_RETRIES` |
+| `HINDSIGHT_API_RETAIN_LLM_INITIAL_BACKOFF` | 存储重试首次退避（秒） | 回退到 `HINDSIGHT_API_LLM_INITIAL_BACKOFF` |
+| `HINDSIGHT_API_RETAIN_LLM_MAX_BACKOFF` | 存储重试最大退避上限（秒） | 回退到 `HINDSIGHT_API_LLM_MAX_BACKOFF` |
+| `HINDSIGHT_API_RETAIN_LLM_TIMEOUT` | 存储请求超时（秒） | 回退到 `HINDSIGHT_API_LLM_TIMEOUT` |
+| `HINDSIGHT_API_RETAIN_LLM_REASONING_EFFORT` | 存储操作推理强度 | 回退到 `HINDSIGHT_API_LLM_REASONING_EFFORT` |
+| `HINDSIGHT_API_RETAIN_LLM_EXTRA_BODY` | 存储操作额外请求体参数（JSON 字典） | 回退到 `HINDSIGHT_API_LLM_EXTRA_BODY` |
+| `HINDSIGHT_API_RETAIN_LLM_CACHE_AFFINITY` | 存储操作提示词缓存亲和模式 | 回退到 `HINDSIGHT_API_LLM_CACHE_AFFINITY` |
+| `HINDSIGHT_API_REFLECT_LLM_PROVIDER` | 反思操作的 LLM 提供方 | 回退到 `HINDSIGHT_API_LLM_PROVIDER` |
+| `HINDSIGHT_API_REFLECT_LLM_API_KEY` | 反思 LLM 的 API 密钥 | 回退到 `HINDSIGHT_API_LLM_API_KEY` |
+| `HINDSIGHT_API_REFLECT_LLM_MODEL` | 反思操作的模型 | 回退到 `HINDSIGHT_API_LLM_MODEL` |
+| `HINDSIGHT_API_REFLECT_LLM_BASE_URL` | 反思 LLM 的基础 URL | 回退到 `HINDSIGHT_API_LLM_BASE_URL` |
+| `HINDSIGHT_API_REFLECT_LLM_MAX_CONCURRENT` | 反思 LLM 并发请求额外上限，与全局共同生效。未设置 → 仅全局上限。 | 未设置 |
+| `HINDSIGHT_API_REFLECT_LLM_MAX_RETRIES` | 反思最大重试次数 | 回退到 `HINDSIGHT_API_LLM_MAX_RETRIES` |
+| `HINDSIGHT_API_REFLECT_LLM_INITIAL_BACKOFF` | 反思重试首次退避（秒） | 回退到 `HINDSIGHT_API_LLM_INITIAL_BACKOFF` |
+| `HINDSIGHT_API_REFLECT_LLM_MAX_BACKOFF` | 反思重试最大退避上限（秒） | 回退到 `HINDSIGHT_API_LLM_MAX_BACKOFF` |
+| `HINDSIGHT_API_REFLECT_LLM_TIMEOUT` | 反思请求超时（秒）。调用方保持 HTTP 请求等待，反思顺序执行多个 LLM 调用，因此默认比全局更短，单次卡住调用不能超过调用方等待时间。 | `30`，或显式设置的 `HINDSIGHT_API_LLM_TIMEOUT` |
+| `HINDSIGHT_API_REFLECT_LLM_REASONING_EFFORT` | 反思操作推理强度 | 回退到 `HINDSIGHT_API_LLM_REASONING_EFFORT` |
+| `HINDSIGHT_API_REFLECT_LLM_EXTRA_BODY` | 反思操作额外请求体参数（JSON 字典） | 回退到 `HINDSIGHT_API_LLM_EXTRA_BODY` |
+| `HINDSIGHT_API_REFLECT_LLM_CACHE_AFFINITY` | 反思操作提示词缓存亲和模式 | 回退到 `HINDSIGHT_API_LLM_CACHE_AFFINITY` |
+| `HINDSIGHT_API_REFLECT_MAX_COMPLETION_TOKENS` | 反思最终综合调用的传输层输出上限（`max_completion_tokens`）。未设置表示无上限，模型自然结束，反思/心智模型 `max_tokens` 通过提示词及事后重写控制*可见*长度，不截断提供方调用。思考模型推理 token 消耗原始预算，此硬上限会在词语中途截断页面。仅需综合调用硬性成本上限时设置整数。 | 未设置（无上限） |
+| `HINDSIGHT_API_CONSOLIDATION_LLM_PROVIDER` | 观察整合的 LLM 提供方 | 回退到 `HINDSIGHT_API_LLM_PROVIDER` |
+| `HINDSIGHT_API_CONSOLIDATION_LLM_API_KEY` | 整合 LLM 的 API 密钥 | 回退到 `HINDSIGHT_API_LLM_API_KEY` |
+| `HINDSIGHT_API_CONSOLIDATION_LLM_MODEL` | 整合操作模型 | 回退到 `HINDSIGHT_API_LLM_MODEL` |
+| `HINDSIGHT_API_CONSOLIDATION_LLM_BASE_URL` | 整合 LLM 基础 URL | 回退到 `HINDSIGHT_API_LLM_BASE_URL` |
+| `HINDSIGHT_API_CONSOLIDATION_LLM_MAX_CONCURRENT` | 整合 LLM 并发请求额外上限，与全局共同生效。未设置 → 仅全局上限。 | 未设置 |
+| `HINDSIGHT_API_CONSOLIDATION_LLM_MAX_RETRIES` | 整合最大重试次数 | 回退到 `HINDSIGHT_API_LLM_MAX_RETRIES` |
+| `HINDSIGHT_API_CONSOLIDATION_LLM_INITIAL_BACKOFF` | 整合重试首次退避（秒） | 回退到 `HINDSIGHT_API_LLM_INITIAL_BACKOFF` |
+| `HINDSIGHT_API_CONSOLIDATION_LLM_MAX_BACKOFF` | 整合重试最大退避上限（秒） | 回退到 `HINDSIGHT_API_LLM_MAX_BACKOFF` |
+| `HINDSIGHT_API_CONSOLIDATION_LLM_TIMEOUT` | 整合请求超时（秒） | 回退到 `HINDSIGHT_API_LLM_TIMEOUT` |
+| `HINDSIGHT_API_CONSOLIDATION_LLM_REASONING_EFFORT` | 整合操作推理强度 | 回退到 `HINDSIGHT_API_LLM_REASONING_EFFORT` |
+| `HINDSIGHT_API_CONSOLIDATION_LLM_EXTRA_BODY` | 整合操作额外请求体参数（JSON 字典） | 回退到 `HINDSIGHT_API_LLM_EXTRA_BODY` |
+| `HINDSIGHT_API_CONSOLIDATION_LLM_CACHE_AFFINITY` | 整合操作提示词缓存亲和模式 | 回退到 `HINDSIGHT_API_LLM_CACHE_AFFINITY` |
+| `HINDSIGHT_API_MENTAL_MODEL_REFRESH_LLM_PROVIDER` | 自动心智模型刷新的 LLM 提供方 | 回退到 `HINDSIGHT_API_REFLECT_LLM_PROVIDER` |
+| `HINDSIGHT_API_MENTAL_MODEL_REFRESH_LLM_API_KEY` | 刷新 LLM 的 API 密钥 | 回退到 `HINDSIGHT_API_REFLECT_LLM_API_KEY` |
+| `HINDSIGHT_API_MENTAL_MODEL_REFRESH_LLM_MODEL` | 自动刷新模型 | 回退到 `HINDSIGHT_API_REFLECT_LLM_MODEL` |
+| `HINDSIGHT_API_MENTAL_MODEL_REFRESH_LLM_BASE_URL` | 刷新 LLM 的基础 URL | 回退到 `HINDSIGHT_API_REFLECT_LLM_BASE_URL` |
+| `HINDSIGHT_API_MENTAL_MODEL_REFRESH_LLM_MAX_CONCURRENT` | 刷新 LLM 并发请求额外上限，与全局共同生效。未设置 → 仅全局上限。 | 未设置 |
+| `HINDSIGHT_API_MENTAL_MODEL_REFRESH_LLM_MAX_RETRIES` | 刷新最大重试次数 | 回退到 `HINDSIGHT_API_REFLECT_LLM_MAX_RETRIES` |
+| `HINDSIGHT_API_MENTAL_MODEL_REFRESH_LLM_INITIAL_BACKOFF` | 刷新重试首次退避（秒） | 回退到 `HINDSIGHT_API_REFLECT_LLM_INITIAL_BACKOFF` |
+| `HINDSIGHT_API_MENTAL_MODEL_REFRESH_LLM_MAX_BACKOFF` | 刷新重试最大退避上限（秒） | 回退到 `HINDSIGHT_API_REFLECT_LLM_MAX_BACKOFF` |
+| `HINDSIGHT_API_MENTAL_MODEL_REFRESH_LLM_TIMEOUT` | 刷新请求超时（秒）。后台刷新没有等待中的用户，因此通常远高于反思超时。 | 回退到 `HINDSIGHT_API_LLM_TIMEOUT`, 绝不回退到 `HINDSIGHT_API_REFLECT_LLM_TIMEOUT`（其面向等待回答的调用方） |
+| `HINDSIGHT_API_MENTAL_MODEL_REFRESH_LLM_REASONING_EFFORT` | 自动刷新推理强度 | 回退到 `HINDSIGHT_API_REFLECT_LLM_REASONING_EFFORT` |
+| `HINDSIGHT_API_MENTAL_MODEL_REFRESH_LLM_EXTRA_BODY` | 刷新额外请求体参数（JSON 字典） | 回退到 `HINDSIGHT_API_REFLECT_LLM_EXTRA_BODY` |
+| `HINDSIGHT_API_MENTAL_MODEL_REFRESH_LLM_CACHE_AFFINITY` | 刷新提示词缓存亲和模式 | 回退到 `HINDSIGHT_API_REFLECT_LLM_CACHE_AFFINITY` |
+
+**自动心智模型刷新。** 整合后执行的后台刷新使用与交互反思相同的智能体，因此默认使用反思 LLM，无需设置上述字段。`MENTAL_MODEL_REFRESH_LLM_*` 的存在，是因为单 GPU 自托管机器上两者的取舍相反：交互反思偏好推理模型（用户等待的是质量）；后台刷新偏好快速无思考模型，避免超过总超时、在推理链上耗尽完成 token 预算，或并行运行时让交互解码速度减半。各字段回退到对应 `REFLECT_LLM_*`，再回退到全局 `LLM_*`，全部不设置时行为与以前完全相同。
+
+:::tip 何时使用逐操作配置
+- **记忆存储**：使用结构化输出强的模型（例如 GPT-4o、Claude），准确提取事实
+- **反思**：使用更快、更便宜模型（例如 GPT-4o-mini、Groq）进行推理和回答生成
+- **心智模型刷新**：共享/本地硬件上使用无思考或更便宜托管模型，避免后台工作破坏交互反思稳定性
+- **记忆召回**：不使用 LLM（纯检索），无需配置
+:::
+
+**示例：为记忆存储和反思使用不同模型**
+
+```bash
+# 默认 LLM（作为后备）
+export HINDSIGHT_API_LLM_PROVIDER=openai
+export HINDSIGHT_API_LLM_API_KEY=sk-xxxxxxxxxxxx
+export HINDSIGHT_API_LLM_MODEL=gpt-4o
+
+# 存储使用 GPT-4o（结构化输出强）
+export HINDSIGHT_API_RETAIN_LLM_MODEL=gpt-4o
+
+# 反思使用更快、更便宜模型
+export HINDSIGHT_API_REFLECT_LLM_PROVIDER=groq
+export HINDSIGHT_API_REFLECT_LLM_API_KEY=gsk_xxxxxxxxxxxx
+export HINDSIGHT_API_REFLECT_LLM_MODEL=llama-3.3-70b-versatile
+```
+
+**示例：为限流 API 调整重试行为**
+
+```bash
+# 适用于限流严格的 Anthropic（每分钟 10k 输出 tokens）
+export HINDSIGHT_API_LLM_PROVIDER=anthropic
+export HINDSIGHT_API_LLM_API_KEY=sk-ant-xxxxxxxxxxxx
+export HINDSIGHT_API_LLM_MODEL=claude-sonnet-4-20250514
+
+# 减少存储并发请求，避免限流
+export HINDSIGHT_API_RETAIN_LLM_MAX_CONCURRENT=3
+
+# 减少重试，尽快失败
+export HINDSIGHT_API_RETAIN_LLM_MAX_RETRIES=3
+
+# 或增加退避时间，等待限流窗口结束
+export HINDSIGHT_API_RETAIN_LLM_INITIAL_BACKOFF=2.0  # 从 2 秒开始，而非 1 秒
+export HINDSIGHT_API_RETAIN_LLM_MAX_BACKOFF=120.0    # 上限 2 分钟，而非 1 分钟
+```
+
+:::note 逐操作并发与全局上限共同生效
+`HINDSIGHT_API_RETAIN_LLM_MAX_CONCURRENT`、`HINDSIGHT_API_REFLECT_LLM_MAX_CONCURRENT`、`HINDSIGHT_API_CONSOLIDATION_LLM_MAX_CONCURRENT` 和 `HINDSIGHT_API_MENTAL_MODEL_REFRESH_LLM_MAX_CONCURRENT` 在 `HINDSIGHT_API_LLM_MAX_CONCURRENT` *基础上*增加额外限制。存储调用同时占用存储和全局额度；没有逐操作上限的反思仅受全局限制。
+
+要为限流提供方上的实时聊天/反思预留余量，请将存储和整合上限设为低于全局值，例如全局=4、存储=1、整合=1，预留两个不被存储/整合占用的槽位。心智模型刷新上限涵盖后台刷新、试运行和增量操作，与反思上限独立；限制它可避免共享硬件上的后台任务挤占交互反思。
+
+与逐操作超时及重试/退避设置不同，`*_LLM_MAX_CONCURRENT` 上限是进程全局信号量，仅启动时从环境读取。只可服务器级配置，不可按租户/记忆库覆盖，修改需重启。
+:::
+
+### 嵌入 {#embeddings}
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_EMBEDDINGS_PROVIDER` | 提供方：`local`、`onnx`、`tei`、`openai`、`openai-codex`、`openrouter`、`requesty`、`cohere`、`google`、`zeroentropy`、`litellm` 或 `litellm-sdk` | `local` |
+| `HINDSIGHT_API_EMBEDDINGS_MAX_INPUT_TOKENS` | 适用于**所有**提供方：嵌入前将每段文本截断到此 token 数（使用 `HINDSIGHT_API_TOKENIZER_ENCODING` 近似计数），避免超长内容导致嵌入调用永久失败。预算包含完整载荷，也包含非对称模型需要的客户端前缀。默认匹配几乎所有远程嵌入模型输入限制（OpenAI `text-embedding-3-*`、Bedrock Titan V2、Cohere v3、标准 llama.cpp 上下文）。模型限制不同时设为实际值，`0` 不限制。**上限按 Hindsight token 计数，而非提供方 token。** 模型采用其他分词器时（例如 `BAAI/bge-m3`、`nomic-embed-text`，或 TEI/兼容 OpenAI 端点后的多数开源模型），相同文本在提供方侧可能达到约 2 倍 token，尤其代码、日志或压缩文本。截到 8192 仍可能超限并报 400。应换算：将真实上限除以内容中一个 Hindsight token 对应的模型 token 数，例如 8192-token 模型嵌入代码时用 `4096`。（弃用别名：`HINDSIGHT_API_EMBEDDINGS_LITELLM_SDK_MAX_INPUT_TOKENS`。） | `8192` |
+| `HINDSIGHT_API_EMBEDDINGS_QUERY_PREFIX` | 为每个搜索文本在嵌入前添加的前缀。端点使用期望搜索指令的非对称模型时设置，例如 `google/embeddinggemma-300m` 的 `task: search result \| query: `，或 E5 的 `query: `。适用于仅接受普通文本的提供方（`tei`、`openai`、`openai-codex`、`openrouter`、`requesty`、`litellm`、`litellm-sdk`）；不需要前缀的提供方见下文。保留末尾空格。 | -（无前缀） |
+| `HINDSIGHT_API_EMBEDDINGS_PASSAGE_PREFIX` | 为每个已存储记忆/文档在嵌入前添加的前缀，例如 `google/embeddinggemma-300m` 的 `title: none \| text: `，或 E5 的 `passage: `。适用提供方同上，保留末尾空格。 | -（无前缀） |
+| `HINDSIGHT_API_EMBEDDINGS_LOCAL_MODEL` | 本地提供方模型。自带搜索文本和存储文本指令的模型（例如 Qwen3-Embedding 系列）会自动应用指令，见下文。 | `BAAI/bge-small-en-v1.5` |
+| `HINDSIGHT_API_EMBEDDINGS_LOCAL_TRUST_REMOTE_CODE` | 允许加载自定义代码模型（有安全风险，默认禁用） | `false` |
+| `HINDSIGHT_API_EMBEDDINGS_LOCAL_FORCE_CPU` | 即使 CUDA/XPU 可用，也强制本地嵌入使用 CPU | `false` |
+| `HINDSIGHT_API_EMBEDDINGS_ONNX_MODEL_ID` | ONNX 提供方的 Hugging Face 模型仓库，用于自动下载及分词器后备。 | `intfloat/multilingual-e5-small` |
+| `HINDSIGHT_API_EMBEDDINGS_ONNX_MODEL_PATH` | ONNX 图本地路径。未设置时，从 `HINDSIGHT_API_EMBEDDINGS_ONNX_MODEL_ID` 下载 `HINDSIGHT_API_EMBEDDINGS_ONNX_FILE`。 | - |
+| `HINDSIGHT_API_EMBEDDINGS_ONNX_TOKENIZER_NAME_OR_PATH` | Hugging Face 分词器仓库或本地分词器目录。使用 `HINDSIGHT_API_EMBEDDINGS_ONNX_MODEL_PATH` 时需设置。 | 回退到 `HINDSIGHT_API_EMBEDDINGS_ONNX_MODEL_ID` |
+| `HINDSIGHT_API_EMBEDDINGS_ONNX_FILE` | Hugging Face 仓库中的 ONNX 文件路径。存在常规 `_data` 后缀外部数据边车时，也会下载。 | `onnx/model.onnx` |
+| `HINDSIGHT_API_EMBEDDINGS_ONNX_DIMENSIONS` | 预期嵌入维度。加载模型返回不同大小时启动失败。 | 自动检测 |
+| `HINDSIGHT_API_EMBEDDINGS_ONNX_MAX_TOKENS` | ONNX 嵌入的最大分词长度。 | `512` |
+| `HINDSIGHT_API_EMBEDDINGS_ONNX_POOLING` | token 嵌入池化策略：`mean` 或 `cls`。ONNX 图返回预先池化的二维嵌入时忽略。 | `mean` |
+| `HINDSIGHT_API_EMBEDDINGS_ONNX_NORMALIZE` | 存储前对 ONNX 向量进行 L2 归一化。 | `true` |
+| `HINDSIGHT_API_EMBEDDINGS_ONNX_QUERY_PREFIX` | ONNX 嵌入前应用于查询/搜索文本的前缀。E5 模型保留 `query: `，MiniLM/BGE 等非 E5 模型设空。 | `query: ` |
+| `HINDSIGHT_API_EMBEDDINGS_ONNX_PASSAGE_PREFIX` | ONNX 嵌入前应用于已存储记忆/文档文本的前缀。E5 模型保留 `passage: `，MiniLM/BGE 等非 E5 模型设空。 | `passage: ` |
+| `HINDSIGHT_API_EMBEDDINGS_ONNX_OUTPUT_NAME` | 导出的 ONNX 图提供池化嵌入输出时，可选指定请求的输出名称。 | - |
+| `HINDSIGHT_API_EMBEDDINGS_ONNX_BATCH_SIZE` | 每次 ONNX 前向计算的文本数。提供方运行在进程内，因此调用方嵌入大列表（例如导入）时，此值限制激活张量及峰值内存。 | `32` |
+| `HINDSIGHT_API_EMBEDDINGS_ONNX_CPU_MEM_ARENA` | 启用 ONNX Runtime CPU 内存 arena。arena 缓存释放的内存块且从不归还，因此进程整个生命周期的 RSS 保持最高水位。 | `false` |
+| `HINDSIGHT_API_EMBEDDINGS_ONNX_DEVICE` | ONNX Runtime 执行设备。`cuda` 需显式选择，并在自定义镜像安装兼容 `onnxruntime-gpu`；CUDA 提供方不可用时启动失败。 | `cpu` |
+| `HINDSIGHT_API_EMBEDDINGS_ONNX_CUDA_DEVICE_ID` | ONNX 设备为 `cuda` 时，传给 `CUDAExecutionProvider` 的 NVIDIA 设备 ID。 | `0` |
+| `HINDSIGHT_API_EMBEDDINGS_TEI_URL` | TEI 服务器 URL | - |
+| `HINDSIGHT_API_EMBEDDINGS_TEI_BATCH_SIZE` | 每个 TEI `/embed` 请求最多文本数，也是客户端并发分发单位（见 `HINDSIGHT_API_EMBEDDINGS_MAX_CONCURRENT_REQUESTS`）。TEI 自身的 `--max-client-batch-size`（默认 32）是硬验证限制，而非软上限；超过服务器值时请求失败，不自动缩小。 | `32` |
+| `HINDSIGHT_API_EMBEDDINGS_OPENAI_API_KEY` | OpenAI API 密钥（回退到 `HINDSIGHT_API_LLM_API_KEY`） | - |
+| `HINDSIGHT_API_EMBEDDINGS_OPENAI_MODEL` | OpenAI 嵌入模型 | `text-embedding-3-small` |
+| `HINDSIGHT_API_EMBEDDINGS_OPENAI_BASE_URL` | 兼容 OpenAI API 的自定义基础 URL（例如 Azure OpenAI） | - |
+| `HINDSIGHT_API_EMBEDDINGS_OPENAI_BATCH_SIZE` | `openai`/`openrouter` 每次 `embeddings.create` 调用最大输入数。上游限制更严格时降低（例如 DashScope 上限 10）。 | `100` |
+| `HINDSIGHT_API_EMBEDDINGS_OPENAI_DIMENSIONS` | 可选 OpenAI `text-embedding-3` 请求输出维度（例如 `384`，匹配已有 pgvector schema） | - |
+| `HINDSIGHT_API_EMBEDDINGS_MAX_CONCURRENT_REQUESTS` | 远程提供方在一次 `encode()` 调用中保持进行中的嵌入请求数，决定嵌入服务吞吐量。同一 TEI 服务器一个并行请求约 903 文本/秒，八个约 2,080。适用于所有远程提供方（`tei`、`openai`、`cohere`、`zeroentropy`、`litellm`、`litellm-sdk`、`google` 等），进程内 `local`/`onnx` 不受影响。服务或配额无法承担并行时降低。 | `8` |
+| `HINDSIGHT_API_EMBEDDINGS_MAX_RETRIES` | 远程嵌入调用短暂失败（5xx、超时、连接错误）后的额外重试次数。`0` 禁用。适用于自身不重试的 `litellm`、`litellm-sdk`、`google`（Gemini API / Vertex AI）、`cohere`、`zeroentropy`，包括 Gemini `429 RESOURCE_EXHAUSTED` 配额响应；4xx 身份验证/验证错误永不重试。（`tei` 和 `openai` 系列使用自身内置重试。） | `4` |
+| `HINDSIGHT_API_EMBEDDINGS_INITIAL_BACKOFF` | 嵌入重试首次退避秒数（每次翻倍，带抖动） | `0.5` |
+| `HINDSIGHT_API_EMBEDDINGS_MAX_BACKOFF` | 嵌入重试退避上限，单位秒 | `4.0` |
+| `HINDSIGHT_API_EMBEDDINGS_RETRY_BUDGET` | 单次 `encode()` 可用于重试（失败尝试 + 退避）的墙钟时间上限，单位秒，防止降级提供方阻塞同步召回。 | `15.0` |
+| `HINDSIGHT_API_EMBEDDINGS_OPENROUTER_API_KEY` | 嵌入用 OpenRouter API 密钥（先回退到 `HINDSIGHT_API_OPENROUTER_API_KEY`，再到 `HINDSIGHT_API_LLM_API_KEY`） | - |
+| `HINDSIGHT_API_EMBEDDINGS_REQUESTY_API_KEY` | 嵌入用 Requesty API 密钥（先回退到 `HINDSIGHT_API_REQUESTY_API_KEY`，再到 `HINDSIGHT_API_LLM_API_KEY`） | - |
+| `HINDSIGHT_API_EMBEDDINGS_REQUESTY_MODEL` | Requesty 嵌入模型 | `openai/text-embedding-3-small` |
+| `HINDSIGHT_API_EMBEDDINGS_OPENROUTER_MODEL` | OpenRouter 嵌入模型 | `perplexity/pplx-embed-v1-0.6b` |
+| `HINDSIGHT_API_EMBEDDINGS_ZEROENTROPY_API_KEY` | ZeroEntropy 嵌入 API 密钥 | - |
+| `HINDSIGHT_API_EMBEDDINGS_ZEROENTROPY_MODEL` | ZeroEntropy 嵌入模型 | `zembed-1` |
+| `HINDSIGHT_API_EMBEDDINGS_ZEROENTROPY_BASE_URL` | 兼容 ZeroEntropy API 的自定义基础 URL | `https://api.zeroentropy.dev` |
+| `HINDSIGHT_API_EMBEDDINGS_ZEROENTROPY_DIMENSIONS` | `zembed-1` 输出维度。支持 `2560`、`1280`、`640`、`320`、`160`、`80`、`40` | `1280` |
+| `HINDSIGHT_API_EMBEDDINGS_ZEROENTROPY_ENCODING_FORMAT` | 响应编码：`float` 或 `base64`。存储前均解码为浮点向量。 | `float` |
+| `HINDSIGHT_API_EMBEDDINGS_ZEROENTROPY_BATCH_SIZE` | ZeroEntropy 每次嵌入请求最大输入数 | `100` |
+| `HINDSIGHT_API_EMBEDDINGS_ZEROENTROPY_LATENCY` | 可选延迟模式：`fast` 或 `slow`。未设置时采用 ZeroEntropy 默认路由。 | - |
+| `HINDSIGHT_API_EMBEDDINGS_COHERE_API_KEY` | Cohere 嵌入 API 密钥（回退到 `HINDSIGHT_API_COHERE_API_KEY`） | - |
+| `HINDSIGHT_API_EMBEDDINGS_COHERE_MODEL` | Cohere 嵌入模型 | `embed-english-v3.0` |
+| `HINDSIGHT_API_EMBEDDINGS_COHERE_BASE_URL` | 兼容 Cohere API 的自定义基础 URL（例如 Azure 托管） | - |
+| `HINDSIGHT_API_EMBEDDINGS_COHERE_OUTPUT_DIMENSIONS` | Cohere 输出嵌入维度（例如 `256`、`512`、`1024`）。设置后覆盖模型默认维度。 | - |
+| `HINDSIGHT_API_EMBEDDINGS_LITELLM_API_BASE` | 嵌入用 LiteLLM 代理基础 URL（回退到 `HINDSIGHT_API_LITELLM_API_BASE`） | `http://localhost:4000` |
+| `HINDSIGHT_API_EMBEDDINGS_LITELLM_API_KEY` | 嵌入用 LiteLLM 代理 API 密钥（可选，取决于代理配置；回退到 `HINDSIGHT_API_LITELLM_API_KEY`） | - |
+| `HINDSIGHT_API_EMBEDDINGS_LITELLM_MODEL` | LiteLLM 嵌入模型（使用提供方前缀，例如 `cohere/embed-english-v3.0`） | `text-embedding-3-small` |
+| `HINDSIGHT_API_EMBEDDINGS_LITELLM_DIMENSIONS` | 已配置 LiteLLM 模型返回的向量宽度。设置后跳过启动维度探测，代理仍在启动时 API 也能启动。只是声明宽度，不请求该维度（不发给代理）；值错误时首次嵌入调用明确报错。 | - |
+| `HINDSIGHT_API_EMBEDDINGS_LITELLM_SDK_API_KEY` | LiteLLM SDK API 密钥，直接访问嵌入提供方（可选，使用环境凭据的提供方可省略，例如 IAM 的 AWS Bedrock） | - |
+| `HINDSIGHT_API_EMBEDDINGS_LITELLM_SDK_MODEL` | LiteLLM SDK 嵌入模型（使用提供方前缀，例如 `cohere/embed-english-v3.0`） | `cohere/embed-english-v3.0` |
+| `HINDSIGHT_API_EMBEDDINGS_LITELLM_SDK_MODEL_ID` | **仅 Bedrock。** 实际调用目标与 `..._MODEL` 不同时设置，通常为[应用推理配置档](https://docs.aws.amazon.com/bedrock/latest/userguide/inference-profiles-support.html) ARN；服务控制策略拒绝对原始模型 ID 执行 `bedrock:InvokeModel` 时需要。LiteLLM 根据 `..._MODEL` 选择 Bedrock 请求/响应结构，因此保留可识别 ID（例如 `bedrock/amazon.titan-embed-text-v2:0`），ARN 放在此处。 | - |
+| `HINDSIGHT_API_EMBEDDINGS_LITELLM_SDK_API_BASE` | LiteLLM SDK 嵌入自定义基础 URL（可选） | - |
+| `HINDSIGHT_API_EMBEDDINGS_LITELLM_SDK_OUTPUT_DIMENSIONS` | 可选输出嵌入维度（取决于提供方，例如 Gemini 嵌入模型 `768`） | - |
+| `HINDSIGHT_API_EMBEDDINGS_LITELLM_SDK_ENCODING_FORMAT` | 嵌入响应编码格式。设为空字符串可省略参数（Voyage AI、Gemini 需要）。 | `float` |
+| `HINDSIGHT_API_EMBEDDINGS_GEMINI_API_KEY` | Gemini 嵌入 API 密钥（回退到 `HINDSIGHT_API_LLM_API_KEY`） | - |
+| `HINDSIGHT_API_EMBEDDINGS_GEMINI_MODEL` | Gemini 嵌入模型。Gemini API 和 Vertex AI 均支持 `gemini-embedding-2` 系列（例如 `gemini-embedding-2-preview`），Hindsight 将每段文本作为独立输入，让多模态模型逐事实返回向量，而非将批次融合为一个嵌入。 | `gemini-embedding-001` |
+| `HINDSIGHT_API_EMBEDDINGS_GEMINI_BATCH_SIZE` | 每次 `embed_content` 请求最大文本数，也是客户端并发分发单位（见 `HINDSIGHT_API_EMBEDDINGS_MAX_CONCURRENT_REQUESTS`） | `100` |
+| `HINDSIGHT_API_EMBEDDINGS_GEMINI_OUTPUT_DIMENSIONALITY` | 输出嵌入维度（Gemini 支持可配置维度） | `768` |
+| `HINDSIGHT_API_EMBEDDINGS_GEMINI_FORCE_IPV4` | 强制 Gemini 嵌入客户端使用仅 IPv4 的 HTTP 传输。适合 IPv6 出站故障环境（例如部分 Docker/VPC 配置），避免 AAAA DNS 记录导致长时间挂起。 | `false` |
+| `HINDSIGHT_API_EMBEDDINGS_VERTEXAI_PROJECT_ID` | 嵌入用 Vertex AI 项目 ID（回退到 `HINDSIGHT_API_LLM_VERTEXAI_PROJECT_ID`） | - |
+| `HINDSIGHT_API_EMBEDDINGS_VERTEXAI_REGION` | 嵌入用 Vertex AI 区域（回退到 `HINDSIGHT_API_LLM_VERTEXAI_REGION`） | - |
+| `HINDSIGHT_API_EMBEDDINGS_VERTEXAI_SERVICE_ACCOUNT_KEY` | Vertex AI 嵌入服务账户密钥（回退到 `HINDSIGHT_API_LLM_VERTEXAI_SERVICE_ACCOUNT_KEY`） | - |
+
+嵌入提供方选择、凭据、基础 URL、模型、维度、编码格式、批量大小和延迟模式均为静态服务器级设置，不能按库进行分层覆盖。上述 ONNX 设置也为静态，与已有 `embeddings_local_*` 一致。
+
+:::note 对搜索文本和存储文本采用不同处理的模型
+
+部分嵌入模型训练时，搜索前有简短指令，存储文本前没有指令或采用其他指令。`local` 提供方自动应用模型自带指令，无需配置。默认 `BAAI/bge-small-en-v1.5` 不带指令，因此现有部署不变；`Qwen/Qwen3-Embedding-*` 仅为搜索提供指令，这是准确检索所需的设计。
+
+少见但需留意的是也为**存储**文本提供指令的模型。切换后，新记忆索引方式变化，已有记忆按旧方式索引，比较效果会较差。采用此类模型后，请重建库索引（导出再导入）。仅搜索侧指令（上文所有列出模型均属此类）无需重建。
+
+多数提供方无法像 `local` 一样发现指令。接受普通文本并返回向量的远程端点——`tei`、`litellm`、`litellm-sdk`，以及兼容 OpenAI `/embeddings` URL 后的任何服务（`llama-server`、`infinity-emb`、vLLM 等）——只接收文本，需要通过 `HINDSIGHT_API_EMBEDDINGS_QUERY_PREFIX` 和 `HINDSIGHT_API_EMBEDDINGS_PASSAGE_PREFIX` 自行提供指令。未设置则原样发送文本，符合对称托管模型预期。
+
+两个提供方无需配置且忽略这两项：`local`（应用模型自身提示词）和 `zeroentropy`（告知 API 嵌入哪一侧）。`onnx` 有自己的两项 `HINDSIGHT_API_EMBEDDINGS_ONNX_QUERY_PREFIX` / `..._PASSAGE_PREFIX`，默认 E5 指令。
+
+:::
+
+#### 本地 ONNX 嵌入 {#local-onnx-embeddings}
+
+ONNX 提供方通过 ONNX Runtime 在进程内运行嵌入模型。构建自己的 API 环境时安装可选依赖：
+
+```bash
+pip install 'hindsight-api-slim[local-onnx]'
+# 或在本仓库中：
+uv sync --project hindsight-api-slim --extra local-onnx
+```
+
+CUDA 执行需显式启用。仅环境具备兼容 `onnxruntime-gpu` wheel 和 CUDA/cuDNN 运行时时，设置 `HINDSIGHT_API_EMBEDDINGS_ONNX_DEVICE=cuda`。官方镜像有意保留 CPU 运行时，未使用此功能时不增加体积。Docker 部署可采用 [`docker/docker-compose/cuda-onnx/`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/docker/docker-compose/cuda-onnx) 可构建示例，将 GPU wheel 安装到基于 slim 镜像的私有镜像：
+
+```bash
+docker compose -f docker/docker-compose/cuda-onnx/docker-compose.yaml up --build
+```
+
+示例接受 `BASE_IMAGE`、`ONNXRUNTIME_GPU_VERSION` 和 `HINDSIGHT_API_EMBEDDINGS_ONNX_CUDA_DEVICE_ID`，选择版本、运行时和设备。要求 CUDA 但提供方不可用，或初始化会话未启用 CUDA 时，Hindsight 启动失败，不静默回退 CPU。示例在私有镜像安装 CUDA/cuDNN 库，主机需要兼容 NVIDIA 驱动及 GPU 透传。正常图分区下，个别算子仍可能在 CPU 执行。依赖隔离、未发布检出构建和真实 GPU 测试见[示例 README](https://github.com/vectorize-io/hindsight/tree/v0.10.3/docker/docker-compose/cuda-onnx)。
+
+可设置 `HINDSIGHT_API_EMBEDDINGS_ONNX_MODEL_ID`，让 Hindsight 启动时从 Hugging Face 下载模型；也可预先将 ONNX 图和分词器文件下载到 Hindsight 仓库根目录下。
+
+```bash
+cd /path/to/hindsight
+mkdir -p models
+
+MODEL_ID=intfloat/multilingual-e5-small
+MODEL_DIR=models/intfloat__multilingual-e5-small
+
+uv run --project hindsight-api-slim --extra local-onnx python - <<'PY'
+import os
+from huggingface_hub import snapshot_download
+
+snapshot_download(
+    repo_id=os.environ["MODEL_ID"],
+    local_dir=os.environ["MODEL_DIR"],
+    allow_patterns=[
+        "onnx/model.onnx",
+        "onnx/model.onnx_data",
+        "*.json",
+        "*.txt",
+        "*.model",
+    ],
+)
+PY
+```
+
+然后使用相对于仓库根目录的路径启动 Hindsight：
+
+```bash
+export HINDSIGHT_API_EMBEDDINGS_PROVIDER=onnx
+export HINDSIGHT_API_EMBEDDINGS_ONNX_MODEL_PATH=./models/intfloat__multilingual-e5-small/onnx/model.onnx
+export HINDSIGHT_API_EMBEDDINGS_ONNX_TOKENIZER_NAME_OR_PATH=./models/intfloat__multilingual-e5-small
+export HINDSIGHT_API_EMBEDDINGS_ONNX_DIMENSIONS=384
+export HINDSIGHT_API_EMBEDDINGS_ONNX_QUERY_PREFIX="query: "
+export HINDSIGHT_API_EMBEDDINGS_ONNX_PASSAGE_PREFIX="passage: "
+```
+
+Docker 部署挂载相同模型目录，并使用容器路径：
+
+```yaml
+services:
+  hindsight:
+    volumes:
+      - ./models:/app/models:ro
+    environment:
+      HINDSIGHT_API_EMBEDDINGS_PROVIDER: onnx
+      HINDSIGHT_API_EMBEDDINGS_ONNX_MODEL_PATH: /app/models/intfloat__multilingual-e5-small/onnx/model.onnx
+      HINDSIGHT_API_EMBEDDINGS_ONNX_TOKENIZER_NAME_OR_PATH: /app/models/intfloat__multilingual-e5-small
+      HINDSIGHT_API_EMBEDDINGS_ONNX_DIMENSIONS: "384"
+      HINDSIGHT_API_EMBEDDINGS_ONNX_QUERY_PREFIX: "query: "
+      HINDSIGHT_API_EMBEDDINGS_ONNX_PASSAGE_PREFIX: "passage: "
+```
+
+特定模型示例：
+
+```bash
+# sentence-transformers/all-MiniLM-L6-v2：384 维，无 E5 前缀
+export HINDSIGHT_API_EMBEDDINGS_ONNX_MODEL_ID=sentence-transformers/all-MiniLM-L6-v2
+export HINDSIGHT_API_EMBEDDINGS_ONNX_DIMENSIONS=384
+export HINDSIGHT_API_EMBEDDINGS_ONNX_QUERY_PREFIX=""
+export HINDSIGHT_API_EMBEDDINGS_ONNX_PASSAGE_PREFIX=""
+
+# intfloat/multilingual-e5-small：384 维，保留 E5 前缀
+export HINDSIGHT_API_EMBEDDINGS_ONNX_MODEL_ID=intfloat/multilingual-e5-small
+export HINDSIGHT_API_EMBEDDINGS_ONNX_DIMENSIONS=384
+export HINDSIGHT_API_EMBEDDINGS_ONNX_QUERY_PREFIX="query: "
+export HINDSIGHT_API_EMBEDDINGS_ONNX_PASSAGE_PREFIX="passage: "
+
+# sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2：384 维，无 E5 前缀
+export HINDSIGHT_API_EMBEDDINGS_ONNX_MODEL_ID=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+export HINDSIGHT_API_EMBEDDINGS_ONNX_DIMENSIONS=384
+export HINDSIGHT_API_EMBEDDINGS_ONNX_QUERY_PREFIX=""
+export HINDSIGHT_API_EMBEDDINGS_ONNX_PASSAGE_PREFIX=""
+
+# BAAI/bge-m3：1024 维，无 E5 前缀；将 onnx/model.onnx_data 放在 model.onnx 旁
+export HINDSIGHT_API_EMBEDDINGS_ONNX_MODEL_ID=BAAI/bge-m3
+export HINDSIGHT_API_EMBEDDINGS_ONNX_DIMENSIONS=1024
+export HINDSIGHT_API_EMBEDDINGS_ONNX_QUERY_PREFIX=""
+export HINDSIGHT_API_EMBEDDINGS_ONNX_PASSAGE_PREFIX=""
+```
+
+:::warning
+不要在同一向量索引混用不同模型嵌入。由 `local` 切换到 `onnx`，或更换 ONNX 模型时，即使向量维度相同，也必须为现有记忆/文档重新生成嵌入。例如 `BAAI/bge-small-en-v1.5` 和 `intfloat/multilingual-e5-small` 都生成 384 维向量，但其嵌入空间语义不可比较。
+:::
+
+:::warning
+默认 ONNX 查询/文档前缀（`query: ` 和 `passage: `）用于 E5 模型。MiniLM、BGE 等非 E5 模型请清空两个前缀变量，否则会为未按此格式训练的模型添加 E5 文本。
+:::
+
+#### 常见问题：嵌入环境变量包含提供方名称 {#common-pitfall-provider-specific-embedding-env-var-names}
+
+嵌入环境变量的键名包含提供方部分：
+
+`HINDSIGHT_API_EMBEDDINGS_{PROVIDER}_{PARAMETER}`
+
+例如，`HINDSIGHT_API_EMBEDDINGS_PROVIDER=openai` 时：
+
+| 错误 | 正确 |
+|---|---|
+| `HINDSIGHT_API_EMBEDDINGS_BASE_URL` | `HINDSIGHT_API_EMBEDDINGS_OPENAI_BASE_URL` |
+| `HINDSIGHT_API_EMBEDDINGS_MODEL` | `HINDSIGHT_API_EMBEDDINGS_OPENAI_MODEL` |
+| `HINDSIGHT_API_EMBEDDINGS_API_KEY` | `HINDSIGHT_API_EMBEDDINGS_OPENAI_API_KEY` |
+
+这不同于 LLM 变量，后者使用 `HINDSIGHT_API_LLM_{PARAMETER}`，没有提供方部分。
+
+:::warning
+嵌入键命名错误时，Hindsight 可能回退到默认 OpenAI 嵌入设置（例如 `text-embedding-3-small`），并在错误端点上因身份验证失败。
+:::
+
+#### DeepSeek 与嵌入 {#deepseek-and-embeddings}
+
+DeepSeek 支持作为 **LLM** 提供方，但**没有**嵌入端点。LLM 使用 DeepSeek 时，请使用其他嵌入提供方（例如 `local`、`openai`、`cohere`、`google`）。
+
+```bash
+# 本地（默认），使用 SentenceTransformers
+export HINDSIGHT_API_EMBEDDINGS_PROVIDER=local
+export HINDSIGHT_API_EMBEDDINGS_LOCAL_MODEL=BAAI/bge-small-en-v1.5
+
+# 本地自定义模型，需要 trust_remote_code
+# 警告：仅为可信模型启用 trust_remote_code（有安全风险）
+# export HINDSIGHT_API_EMBEDDINGS_LOCAL_MODEL=your-custom-model
+# export HINDSIGHT_API_EMBEDDINGS_LOCAL_TRUST_REMOTE_CODE=true
+
+# OpenAI：云端嵌入
+export HINDSIGHT_API_EMBEDDINGS_PROVIDER=openai
+export HINDSIGHT_API_EMBEDDINGS_OPENAI_API_KEY=***  # 或复用 HINDSIGHT_API_LLM_API_KEY
+export HINDSIGHT_API_EMBEDDINGS_OPENAI_MODEL=text-embedding-3-small  # 默认 1536 维
+# export HINDSIGHT_API_EMBEDDINGS_OPENAI_DIMENSIONS=384  # 可选，降低输出大小
+
+# OpenAI Codex OAuth：使用现有 ChatGPT/Codex 登录，无需 API 密钥
+export HINDSIGHT_API_EMBEDDINGS_PROVIDER=openai-codex
+export HINDSIGHT_API_EMBEDDINGS_OPENAI_MODEL=text-embedding-3-small  # 默认 1536 维
+# export HINDSIGHT_API_EMBEDDINGS_OPENAI_DIMENSIONS=384  # 可选，降低输出大小
+
+# Azure OpenAI：通过 Azure 端点嵌入
+export HINDSIGHT_API_EMBEDDINGS_PROVIDER=openai
+export HINDSIGHT_API_EMBEDDINGS_OPENAI_API_KEY=your-azure-api-key
+export HINDSIGHT_API_EMBEDDINGS_OPENAI_MODEL=text-embedding-3-small
+export HINDSIGHT_API_EMBEDDINGS_OPENAI_BASE_URL=https://your-resource.openai.azure.com/openai/deployments/your-deployment
+
+# TEI：HuggingFace Text Embeddings Inference（生产环境推荐）
+export HINDSIGHT_API_EMBEDDINGS_PROVIDER=tei
+export HINDSIGHT_API_EMBEDDINGS_TEI_URL=http://localhost:8080
+
+# OpenRouter：访问 100+ 嵌入模型
+export HINDSIGHT_API_EMBEDDINGS_PROVIDER=openrouter
+export HINDSIGHT_API_EMBEDDINGS_OPENROUTER_API_KEY=your-openrouter-api-key  # 或复用 HINDSIGHT_API_LLM_API_KEY
+export HINDSIGHT_API_EMBEDDINGS_OPENROUTER_MODEL=perplexity/pplx-embed-v1-0.6b
+
+# ZeroEntropy - zembed-1
+export HINDSIGHT_API_EMBEDDINGS_PROVIDER=zeroentropy
+export HINDSIGHT_API_EMBEDDINGS_ZEROENTROPY_API_KEY=your-api-key
+export HINDSIGHT_API_EMBEDDINGS_ZEROENTROPY_MODEL=zembed-1
+export HINDSIGHT_API_EMBEDDINGS_ZEROENTROPY_DIMENSIONS=1280
+# export HINDSIGHT_API_EMBEDDINGS_ZEROENTROPY_ENCODING_FORMAT=base64  # 可选
+# export HINDSIGHT_API_EMBEDDINGS_ZEROENTROPY_LATENCY=fast  # 可选
+
+# Cohere：云端嵌入
+export HINDSIGHT_API_EMBEDDINGS_PROVIDER=cohere
+export HINDSIGHT_API_EMBEDDINGS_COHERE_API_KEY=your-api-key
+export HINDSIGHT_API_EMBEDDINGS_COHERE_MODEL=embed-english-v3.0  # 1024 维
+# 可选：覆盖输出维度（支持 Matryoshka 的模型）
+# export HINDSIGHT_API_EMBEDDINGS_COHERE_OUTPUT_DIMENSIONS=512
+
+# Azure 托管 Cohere：通过自定义端点嵌入
+export HINDSIGHT_API_EMBEDDINGS_PROVIDER=cohere
+export HINDSIGHT_API_EMBEDDINGS_COHERE_API_KEY=your-azure-api-key
+export HINDSIGHT_API_EMBEDDINGS_COHERE_MODEL=embed-english-v3.0
+export HINDSIGHT_API_EMBEDDINGS_COHERE_BASE_URL=https://your-azure-cohere-endpoint.com
+
+# LiteLLM 代理：多个提供方的统一网关
+export HINDSIGHT_API_EMBEDDINGS_PROVIDER=litellm
+export HINDSIGHT_API_EMBEDDINGS_LITELLM_API_BASE=http://localhost:4000
+export HINDSIGHT_API_EMBEDDINGS_LITELLM_API_KEY=your-litellm-key  # 可选
+export HINDSIGHT_API_EMBEDDINGS_LITELLM_MODEL=text-embedding-3-small  # 或 cohere/embed-english-v3.0
+# export HINDSIGHT_API_EMBEDDINGS_LITELLM_DIMENSIONS=1536  # 可选：声明宽度，跳过启动探测
+
+# Google：Gemini API（API 密钥认证）
+export HINDSIGHT_API_EMBEDDINGS_PROVIDER=google
+export HINDSIGHT_API_EMBEDDINGS_GEMINI_API_KEY=xxxxxxxxxxxx  # 或复用 HINDSIGHT_API_LLM_API_KEY
+export HINDSIGHT_API_EMBEDDINGS_GEMINI_MODEL=gemini-embedding-001  # 768 维（默认）
+# export HINDSIGHT_API_EMBEDDINGS_GEMINI_OUTPUT_DIMENSIONALITY=768  # 可配置：256、512、768、1024 等
+
+# Google：Vertex AI 认证（设置项目 ID 时自动检测）
+export HINDSIGHT_API_EMBEDDINGS_PROVIDER=google
+export HINDSIGHT_API_EMBEDDINGS_GEMINI_MODEL=gemini-embedding-001
+export HINDSIGHT_API_EMBEDDINGS_VERTEXAI_PROJECT_ID=your-gcp-project-id  # 回退到 HINDSIGHT_API_LLM_VERTEXAI_PROJECT_ID
+# export HINDSIGHT_API_EMBEDDINGS_VERTEXAI_REGION=us-central1  # 回退到 HINDSIGHT_API_LLM_VERTEXAI_REGION
+# export HINDSIGHT_API_EMBEDDINGS_VERTEXAI_SERVICE_ACCOUNT_KEY=/path/to/key.json  # 回退到 LLM 配置，或使用 ADC
+
+# LiteLLM SDK：无需代理服务器直接访问 API（推荐）
+export HINDSIGHT_API_EMBEDDINGS_PROVIDER=litellm-sdk
+export HINDSIGHT_API_EMBEDDINGS_LITELLM_SDK_API_KEY=your-provider-api-key
+export HINDSIGHT_API_EMBEDDINGS_LITELLM_SDK_MODEL=cohere/embed-english-v3.0
+# 可选：提供方支持时请求特定输出维度
+# export HINDSIGHT_API_EMBEDDINGS_LITELLM_SDK_OUTPUT_DIMENSIONS=768
+# 可选（任意提供方）：输入截断后的 token 上限。
+# 默认 8192；设为模型真实限制，0 不限制文本
+# export HINDSIGHT_API_EMBEDDINGS_MAX_INPUT_TOKENS=8192
+
+# 支持的 LiteLLM SDK 嵌入提供方：
+# - cohere/embed-english-v3.0（1024 维）
+# - openai/text-embedding-3-small（1536 维）
+# - together_ai/togethercomputer/m2-bert-80M-8k-retrieval
+# - huggingface/sentence-transformers/all-MiniLM-L6-v2
+# - voyage/voyage-2
+```
+
+#### 嵌入维度 {#embedding-dimensions}
+
+Hindsight 启动时自动检测模型嵌入维度，并相应调整数据库 schema。默认模型 `BAAI/bge-small-en-v1.5` 生成 384 维向量，OpenAI 模型生成 1536 或 3072 维。
+
+`litellm-sdk` 设置 `HINDSIGHT_API_EMBEDDINGS_LITELLM_SDK_OUTPUT_DIMENSIONS` 时，底层提供方支持 LiteLLM `dimensions` 参数则启动采用该输出大小，否则行为不变。仍遵循下方相同的维度更改规则。
+
+`zeroentropy` 的 zembed-1 支持 `2560`、`1280`、`640`、`320`、`160`、`80`、`40` 维。ZeroEntropy API 默认 `2560`，Hindsight 默认 `1280`，以兼容默认 pgvector HNSW。使用 DiskANN/pgvectorscale 或 ScaNN 等支持更高维索引的向量扩展时，可使用 `2560`。
+
+:::warning 维度更改
+已存储记忆后，改变嵌入维度会造成数据丢失。需要切换不同维度模型时：
+
+1. **空数据库**：启动时自动调整 schema
+2. **现有数据**：先删除所有记忆，或使用维度相同的模型
+
+支持的 OpenAI 嵌入维度：
+- `text-embedding-3-small`：1536 维
+- `text-embedding-3-large`：3072 维
+- `text-embedding-ada-002`：1536 维（旧版）
+
+Google `gemini-embedding-001` 原生生成 3072 维，但支持配置输出维度。通过 `HINDSIGHT_API_EMBEDDINGS_GEMINI_OUTPUT_DIMENSIONALITY` 控制大小（默认 768）。
+
+ZeroEntropy `zembed-1` 支持 Matryoshka 维度：`2560`、`1280`、`640`、`320`、`160`、`80`、`40`。Hindsight 为该提供方默认使用 `1280`。
+:::
+
+### 重排序器 {#reranker}
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_RERANKER_PROVIDER` | 提供方：`local`、`tei`、`cohere`、`openrouter`、`zeroentropy`、`siliconflow`、`typesafe`、`alibaba`、`google`、`flashrank`、`litellm`、`litellm-sdk`、`jina-mlx` 或 `rrf` | `local` |
+| `HINDSIGHT_API_RERANKER_MAX_TOKENS_PER_CANDIDATE` | 适用于**所有**提供方。设置后，重排序前将每个候选截断为此 token 数（tiktoken 近似计数）。应低于模型上下文窗口（例如 1024-token 模型用 `900`），文档很长时可进一步降低以限制请求大小，防止纯 CPU 重排服务器内存耗尽。每个回退成员有独立 `HINDSIGHT_API_RERANKER_<n>_MAX_TOKENS_PER_CANDIDATE`。默认关闭。（弃用别名：`HINDSIGHT_API_RERANKER_LITELLM_MAX_TOKENS_PER_DOC`。） | - |
+| `HINDSIGHT_API_RERANKER_MAX_RETRIES` | 远程重排序短暂失败（5xx、超时、连接错误、`429` 配额）后的额外重试次数。`0` 禁用。适用于所有远程提供方，`tei` 有自己的重试循环除外；进程内提供方（`local`、`flashrank`、`jina-mlx`、`rrf`）不受影响。4xx 身份验证/验证错误永不重试。 | `3` |
+| `HINDSIGHT_API_RERANKER_INITIAL_BACKOFF` | 重排序重试首次退避秒数（每次翻倍，带抖动） | `0.5` |
+| `HINDSIGHT_API_RERANKER_MAX_BACKOFF` | 重排序重试退避上限，单位秒 | `4.0` |
+| `HINDSIGHT_API_RERANKER_RETRY_BUDGET` | 一次重排序重试（失败尝试 + 退避）的墙钟时间上限，单位秒。比嵌入预算更短，因为检索已在同一请求中消耗时间。配置回退链时，每个成员耗尽自己的预算后才进入下一成员。 | `10.0` |
+| `HINDSIGHT_API_RERANKER_SEND_BANK_AS_HEADER` | 为远程重排请求添加 `X-Hindsight-Bank-Id: <bank_id>`。仅可信端点启用，因为会传输当前记忆库 ID。覆盖 TEI、兼容 Cohere HTTP、LiteLLM 代理和 SDK 传输。 | `false` |
+| `HINDSIGHT_API_RERANKER_LOCAL_MODEL` | 本地提供方模型 | `cross-encoder/ms-marco-MiniLM-L-6-v2` |
+| `HINDSIGHT_API_RERANKER_LOCAL_MAX_CONCURRENT` | 本地重排序最大并发数，避免高负载下 CPU 过度争用 | `4` |
+| `HINDSIGHT_API_RERANKER_LOCAL_TRUST_REMOTE_CODE` | 允许加载自定义代码模型（有安全风险，默认禁用） | `false` |
+| `HINDSIGHT_API_RERANKER_LOCAL_FORCE_CPU` | 即使 CUDA/XPU 可用，也强制本地重排使用 CPU | `false` |
+| `HINDSIGHT_API_RERANKER_LOCAL_FP16` | 本地重排半精度（FP16）推理。CUDA 上更快，质量相同。默认禁用，因为部分 CPU 缺少原生 FP16 支持。 | `false` |
+| `HINDSIGHT_API_RERANKER_LOCAL_BUCKET_BATCHING` | 分批前按 token 长度排序配对，减少填充浪费。各模型快 36–54%，设计保证质量相同。 | `false` |
+| `HINDSIGHT_API_RERANKER_LOCAL_BATCH_SIZE` | 本地重排 `predict()` 批量大小。最佳值依硬件和模型而定，较小批次可能快于较大批次。 | `32` |
+| `HINDSIGHT_API_RERANKER_LOCAL_TIMEOUT` | 对一次召回候选评分的墙钟时间上限。到期时，未评分候选按重排前 RRF 顺序排在已评分项之后，召回仍返回。应远高于正常重排耗时，这是 CPU 上过大本地模型的保护阀，而非延迟目标。`0` 禁用。 | `300` |
+| `HINDSIGHT_API_RERANKER_TEI_URL` | TEI 服务器 URL | - |
+| `HINDSIGHT_API_RERANKER_TEI_BATCH_SIZE` | TEI 重排批量大小 | `128` |
+| `HINDSIGHT_API_RERANKER_TEI_MAX_CONCURRENT` | TEI 重排请求最大并发数 | `8` |
+| `HINDSIGHT_API_RERANKER_TEI_HTTP_TIMEOUT` | TEI 重排 HTTP 请求超时（秒）。高负载下使用较慢 CPU 重排时可提高。 | `30.0` |
+| `HINDSIGHT_API_RERANKER_OPENROUTER_API_KEY` | OpenRouter 重排 API 密钥（先回退到 `HINDSIGHT_API_OPENROUTER_API_KEY`，再到 `HINDSIGHT_API_LLM_API_KEY`） | - |
+| `HINDSIGHT_API_RERANKER_OPENROUTER_MODEL` | OpenRouter 重排模型 | `cohere/rerank-v3.5` |
+| `HINDSIGHT_API_RERANKER_OPENROUTER_TIMEOUT` | OpenRouter 重排 HTTP 请求超时（秒）。 | `60.0` |
+| `HINDSIGHT_API_RERANKER_OPENROUTER_BASE_URL` | 重排端点 URL，可指向兼容 Cohere 网关/代理进行计量 | `https://openrouter.ai/api/v1/rerank` |
+| `HINDSIGHT_API_RERANKER_COHERE_API_KEY` | Cohere 重排 API 密钥（回退到 `HINDSIGHT_API_COHERE_API_KEY`） | - |
+| `HINDSIGHT_API_RERANKER_COHERE_MODEL` | Cohere 重排模型 | `rerank-english-v3.0` |
+| `HINDSIGHT_API_RERANKER_COHERE_BASE_URL` | 任何兼容 Cohere `/rerank` 端点的自定义基础 URL（Azure AI Foundry、Jina、Voyage、自托管 BGE 等）。设置后，`cohere` 绕过 Cohere SDK，通过 HTTP 直接调用端点。 | - |
+| `HINDSIGHT_API_RERANKER_COHERE_TIMEOUT` | Cohere 重排请求超时（秒）。同时作用于原生 SDK 和 `HINDSIGHT_API_RERANKER_COHERE_BASE_URL` 启用的兼容 HTTP 路径。 | `60.0` |
+| `HINDSIGHT_API_RERANKER_LITELLM_API_BASE` | LiteLLM 重排代理基础 URL（回退到 `HINDSIGHT_API_LITELLM_API_BASE`） | `http://localhost:4000` |
+| `HINDSIGHT_API_RERANKER_LITELLM_API_KEY` | LiteLLM 重排代理 API 密钥（可选，依赖代理配置；回退到 `HINDSIGHT_API_LITELLM_API_KEY`） | - |
+| `HINDSIGHT_API_RERANKER_LITELLM_MODEL` | LiteLLM **代理**重排模型（使用提供方前缀，例如 `cohere/rerank-english-v3.0`） | `cohere/rerank-english-v3.0` |
+| `HINDSIGHT_API_RERANKER_LITELLM_TIMEOUT` | LiteLLM 代理重排 HTTP 请求超时（秒）。 | `60.0` |
+| `HINDSIGHT_API_RERANKER_LITELLM_SDK_API_KEY` | LiteLLM **SDK** 直接重排 API 密钥，无需代理 | - |
+| `HINDSIGHT_API_RERANKER_LITELLM_SDK_MODEL` | LiteLLM SDK 重排模型（例如 `deepinfra/Qwen3-reranker-8B`） | `cohere/rerank-english-v3.0` |
+| `HINDSIGHT_API_RERANKER_LITELLM_SDK_API_BASE` | LiteLLM SDK 自定义 API 基础 URL（可选） | - |
+| `HINDSIGHT_API_RERANKER_LITELLM_SDK_TIMEOUT` | LiteLLM SDK 重排请求超时（秒）。 | `60.0` |
+| `HINDSIGHT_API_RERANKER_ZEROENTROPY_API_KEY` | ZeroEntropy 重排 API 密钥 | - |
+| `HINDSIGHT_API_RERANKER_ZEROENTROPY_MODEL` | ZeroEntropy 重排模型（`zerank-2`、`zerank-2-small`） | `zerank-2` |
+| `HINDSIGHT_API_RERANKER_ZEROENTROPY_BASE_URL` | 兼容 ZeroEntropy API 自定义基础 URL（例如模拟服务器、代理或自托管部署） | `https://api.zeroentropy.dev` |
+| `HINDSIGHT_API_RERANKER_ZEROENTROPY_TIMEOUT` | ZeroEntropy 重排 HTTP 请求超时（秒）。 | `60.0` |
+| `HINDSIGHT_API_RERANKER_SILICONFLOW_API_KEY` | SiliconFlow 重排 API 密钥 | - |
+| `HINDSIGHT_API_RERANKER_SILICONFLOW_MODEL` | SiliconFlow 重排模型（例如 `BAAI/bge-reranker-v2-m3`） | `BAAI/bge-reranker-v2-m3` |
+| `HINDSIGHT_API_RERANKER_SILICONFLOW_BASE_URL` | SiliconFlow `/rerank` 端点基础 URL | `https://api.siliconflow.cn/v1` |
+| `HINDSIGHT_API_RERANKER_SILICONFLOW_TIMEOUT` | SiliconFlow 重排 HTTP 请求超时（秒）。 | `60.0` |
+| `HINDSIGHT_API_RERANKER_TYPESAFE_API_KEY` | TypeSafe 重排 API 密钥 | - |
+| `HINDSIGHT_API_RERANKER_TYPESAFE_MODEL` | TypeSafe 用于判断相关性的模型 | `jev-latest` |
+| `HINDSIGHT_API_RERANKER_TYPESAFE_BASE_URL` | TypeSafe API 基础 URL | `https://api.typesafe.ai` |
+| `HINDSIGHT_API_RERANKER_TYPESAFE_TIMEOUT` | TypeSafe 重排 HTTP 请求超时（秒）。 | `60.0` |
+| `HINDSIGHT_API_RERANKER_TYPESAFE_MAX_CONCURRENT` | 最大进行中 TypeSafe 请求数。 | `24` |
+| `HINDSIGHT_API_RERANKER_TYPESAFE_PRUNE_CANDIDATES` | 添加第二个问题，在相关性结束处截断排序列表，仅返回相关候选。会缩减召回结果，见下方说明。 | `false` |
+| `HINDSIGHT_API_RERANKER_ALIBABA_API_KEY` | 阿里云 DashScope 重排 API 密钥 | - |
+| `HINDSIGHT_API_RERANKER_ALIBABA_MODEL` | DashScope 重排模型 | `qwen3-rerank` |
+| `HINDSIGHT_API_RERANKER_ALIBABA_TIMEOUT` | 阿里云 DashScope 重排 HTTP 请求超时（秒）。 | `60.0` |
+| `HINDSIGHT_API_RERANKER_GOOGLE_PROJECT_ID` | Discovery Engine 重排使用的 Google Cloud 项目 ID（回退到 `HINDSIGHT_API_LLM_VERTEXAI_PROJECT_ID`） | - |
+| `HINDSIGHT_API_RERANKER_GOOGLE_MODEL` | Google Discovery Engine 排序模型 | `semantic-ranker-default-004` |
+| `HINDSIGHT_API_RERANKER_GOOGLE_SERVICE_ACCOUNT_KEY` | 服务账户 JSON 密钥路径（回退到 `HINDSIGHT_API_LLM_VERTEXAI_SERVICE_ACCOUNT_KEY`）。未设置使用 ADC。 | - |
+| `HINDSIGHT_API_RERANKER_GOOGLE_TIMEOUT` | Google Discovery Engine 重排 HTTP 请求超时（秒）。 | `60.0` |
+| `HINDSIGHT_API_RERANKER_FLASHRANK_MODEL` | 用于快速 CPU 重排的 FlashRank 模型 | `ms-marco-MiniLM-L-12-v2` |
+| `HINDSIGHT_API_RERANKER_FLASHRANK_CACHE_DIR` | FlashRank 模型缓存目录 | 系统默认值 |
+| `HINDSIGHT_API_RERANKER_FLASHRANK_CPU_MEM_ARENA` | 启用 FlashRank 的 ONNX Runtime CPU 内存 arena。`true` 预分配永不缩小的内存 arena，导致 RSS 单调增长。`false` 以每次调用分配稍慢换取有界 RSS。 | `false` |
+| `HINDSIGHT_API_RERANKER_FLASHRANK_BATCH_SIZE` | FlashRank 每次前向计算评分的段落数。每次分配 `batch × heads × seq²` 大小注意力张量，批次按最长段落填充，因此长候选下提高此值会显著增加峰值内存。大型库中重排成为内存上限时降低。 | `32` |
+| `HINDSIGHT_API_RERANKER_JINA_MLX_MODEL_PATH` | 下载的 `jina-reranker-v3-mlx` 模型本地路径，未设置时自动从 HuggingFace 下载 | - |
+
+:::note Apple Silicon：本地提供方使用 CPU
+
+本地嵌入和重排模型绝不使用 PyTorch MPS（Metal）后端。它按输入张量形状缓存内核及分配器池，且从不释放，可变长度负载会无限增长（空闲实例曾达到约 20 GB），并发推理还会因 Metal 验证断言终止进程。此前用于显式启用的 `HINDSIGHT_API_EMBEDDINGS_LOCAL_ALLOW_MPS` 和 `HINDSIGHT_API_RERANKER_LOCAL_ALLOW_MPS` 已移除；现在设置只记录警告，无效果。Apple Silicon GPU 重排请使用 `HINDSIGHT_API_RERANKER_PROVIDER=jina-mlx`。CUDA 和 Intel XPU 不受影响，仍自动选择。
+
+:::
+
+#### 重排序器故障转移链 {#reranker-failover-chain}
+
+重排序属于细化阶段，但默认重排服务不可访问时会连带使召回失败。**按索引**配置额外重排提供方，Hindsight 按顺序尝试：成员失败（超时、连接错误、HTTP 错误或不可用响应）时由下一个处理请求。
+
+不带索引的 `HINDSIGHT_API_RERANKER_*` 是**主提供方**（成员 0）。额外成员从 1 编号，成员 `n` 的所有设置都带同一索引：上述表中任何 `<SETTING>` 对应 `HINDSIGHT_API_RERANKER_<n>_<SETTING>`。
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_RERANKER_<n>_PROVIDER` | 后备成员 `n` 的提供方（`n` = 1、2、…）。变量存在即定义成员，索引必须从 1 连续。未设置 = 无回退（默认）。 | - |
+| `HINDSIGHT_API_RERANKER_<n>_<SETTING>` | 成员 `n` 的其他任意重排设置，例如 `HINDSIGHT_API_RERANKER_1_TEI_URL`、`HINDSIGHT_API_RERANKER_1_COHERE_API_KEY`、`HINDSIGHT_API_RERANKER_1_TEI_HTTP_TIMEOUT`。 | 与主提供方相同的内置默认值 |
+
+带索引成员**独立**读取，不继承主提供方，也不继承共享提供方密钥（`HINDSIGHT_API_COHERE_API_KEY` 等），因此必须为所需每个设置加索引。未设置项回退到与主提供方相同的内置默认值。链级设置（`HINDSIGHT_API_RERANKER_MAX_CANDIDATES`、`HINDSIGHT_API_RERANKER_SEND_BANK_AS_HEADER`）仍为全局，不加索引。
+
+```bash
+# 主提供方：不保证始终在线的自托管重排器。
+export HINDSIGHT_API_RERANKER_PROVIDER=tei
+export HINDSIGHT_API_RERANKER_TEI_URL=http://workstation:8081
+
+# 成员 1：作为回退的托管重排器。
+export HINDSIGHT_API_RERANKER_1_PROVIDER=cohere
+export HINDSIGHT_API_RERANKER_1_COHERE_API_KEY=...
+
+# 成员 2：最后手段，不重排，保留融合顺序而非失败。
+export HINDSIGHT_API_RERANKER_2_PROVIDER=rrf
+```
+
+以 `rrf` 结束链可使召回**失败时继续返回**：结果按检索阶段产生的顺序返回，等同未配置重排，而非请求失败。没有 `rrf` 成员（或所有成员均失效）时仍抛错，这是默认行为。
+
+说明：
+
+- 每次请求按顺序尝试成员，没有熔断器，因此失效成员会在每次请求中耗尽自身超时，再尝试下一成员。不可靠主提供方应采用较短超时（`HINDSIGHT_API_RERANKER_TEI_HTTP_TIMEOUT` 和逐提供方 `*_TIMEOUT`）。
+- 启动时初始化失败的成员只记录日志，不导致致命失败；下次到达该成员的请求会重试初始化。
+- 不同提供方分数不可比较（部分返回校准后的 `[0, 1]` 相关性，部分为 logits），后备成员处理的请求分数可能不同于主提供方。故障转移记录为 `WARNING`。
+- 带索引成员属于凭据字段，记忆库配置 API 永不返回，仅服务器级配置，不可逐库设置。
+
+:::tip TEI 重排器容量配置
+
+TEI 为重排请求每段文本预留一个槽位，池满后直接拒绝请求。因此启动时至少配置 `HINDSIGHT_API_RERANKER_TEI_MAX_CONCURRENT × HINDSIGHT_API_RERANKER_TEI_BATCH_SIZE` 个槽位。上述默认值需 1024，TEI 自身默认仅 512：
+
+```bash
+text-embeddings-router --max-concurrent-requests 2048 ...
+```
+
+低于此阈值时，大量召回流量会使重排器拒绝本来有能力处理的工作。拒绝后带退避重试，因此池过小表现为召回变慢，而非报错。
+
+:::
+
+```bash
+# 本地（默认），使用 SentenceTransformers CrossEncoder
+export HINDSIGHT_API_RERANKER_PROVIDER=local
+export HINDSIGHT_API_RERANKER_LOCAL_MODEL=cross-encoder/ms-marco-MiniLM-L-6-v2
+
+# 本地自定义模型，需要 trust_remote_code（例如 jina-reranker-v2）
+# 警告：仅为可信模型启用 trust_remote_code（有安全风险）
+export HINDSIGHT_API_RERANKER_PROVIDER=local
+export HINDSIGHT_API_RERANKER_LOCAL_MODEL=jinaai/jina-reranker-v2-base-multilingual
+export HINDSIGHT_API_RERANKER_LOCAL_TRUST_REMOTE_CODE=true
+
+# TEI：高性能推理
+export HINDSIGHT_API_RERANKER_PROVIDER=tei
+export HINDSIGHT_API_RERANKER_TEI_URL=http://localhost:8081
+
+# OpenRouter：通过 OpenRouter 访问重排模型
+export HINDSIGHT_API_RERANKER_PROVIDER=openrouter
+export HINDSIGHT_API_RERANKER_OPENROUTER_API_KEY=your-openrouter-api-key  # 或复用 HINDSIGHT_API_LLM_API_KEY
+export HINDSIGHT_API_RERANKER_OPENROUTER_MODEL=cohere/rerank-v3.5
+
+# Cohere：云端重排
+export HINDSIGHT_API_RERANKER_PROVIDER=cohere
+export HINDSIGHT_API_RERANKER_COHERE_API_KEY=your-api-key
+export HINDSIGHT_API_RERANKER_COHERE_MODEL=rerank-english-v3.0
+
+# 任意兼容 Cohere 的 /rerank 端点（Azure AI Foundry、Jina、Voyage、自托管 BGE 等）
+#
+# 设置 HINDSIGHT_API_RERANKER_COHERE_BASE_URL，让 cohere 提供方
+# 从 Cohere SDK 切换到使用标准 Cohere 重排传输格式的普通 HTTP 客户端：
+#   请求：POST {base_url}（或 {base_url}/rerank，取决于主机）
+#             Authorization: Bearer <api_key>
+#             {"model": "...", "query": "...", "documents": [...], "return_documents": false}
+#   响应：{"results": [{"index": 0, "relevance_score": 0.9}, ...]}
+#
+# 实现此契约的服务均可使用。Azure AI Foundry 的 base_url 为完整调用 URL；
+# SiliconFlow 也可使用下方专用 siliconflow 提供方。
+export HINDSIGHT_API_RERANKER_PROVIDER=cohere
+export HINDSIGHT_API_RERANKER_COHERE_API_KEY=your-api-key
+export HINDSIGHT_API_RERANKER_COHERE_MODEL=rerank-english-v3.0  # 端点提供的任意模型
+export HINDSIGHT_API_RERANKER_COHERE_BASE_URL=https://your-cohere-compatible-endpoint.com
+
+# ZeroEntropy：云端重排（领先准确率）
+export HINDSIGHT_API_RERANKER_PROVIDER=zeroentropy
+export HINDSIGHT_API_RERANKER_ZEROENTROPY_API_KEY=your-api-key
+export HINDSIGHT_API_RERANKER_ZEROENTROPY_MODEL=zerank-2  # 或 zerank-2-small
+# export HINDSIGHT_API_RERANKER_ZEROENTROPY_BASE_URL=https://your-custom-endpoint.com  # 可选
+
+# SiliconFlow：通过兼容 Cohere 的 /rerank 端点云端重排
+export HINDSIGHT_API_RERANKER_PROVIDER=siliconflow
+export HINDSIGHT_API_RERANKER_SILICONFLOW_API_KEY=your-api-key
+export HINDSIGHT_API_RERANKER_SILICONFLOW_MODEL=BAAI/bge-reranker-v2-m3
+# export HINDSIGHT_API_RERANKER_SILICONFLOW_BASE_URL=https://api.siliconflow.cn/v1  # 默认
+
+# TypeSafe：类型化决策模型 Jev 判断相关性，而非 /rerank 端点
+export HINDSIGHT_API_RERANKER_PROVIDER=typesafe
+export HINDSIGHT_API_RERANKER_TYPESAFE_API_KEY=your-api-key
+# export HINDSIGHT_API_RERANKER_TYPESAFE_MODEL=jev-latest              # 默认
+# export HINDSIGHT_API_RERANKER_TYPESAFE_PRUNE_CANDIDATES=true          # 同时裁剪不相关候选
+
+# 阿里云 DashScope：通过兼容 Cohere 的 /reranks 端点使用 qwen3-rerank
+export HINDSIGHT_API_RERANKER_PROVIDER=alibaba
+export HINDSIGHT_API_RERANKER_ALIBABA_API_KEY=your-dashscope-api-key  # 或设置 DASHSCOPE_API_KEY
+export HINDSIGHT_API_RERANKER_ALIBABA_MODEL=qwen3-rerank  # 默认，可省略
+
+# LiteLLM 代理：多个重排提供方的统一网关（需运行 LiteLLM 代理服务器）
+export HINDSIGHT_API_RERANKER_PROVIDER=litellm
+export HINDSIGHT_API_RERANKER_LITELLM_API_BASE=http://localhost:4000
+export HINDSIGHT_API_RERANKER_LITELLM_API_KEY=your-litellm-key  # 可选
+export HINDSIGHT_API_RERANKER_LITELLM_MODEL=cohere/rerank-english-v3.0  # 或 voyage/rerank-2、together_ai/...
+
+# LiteLLM SDK：无需代理直接访问 API（推荐简化设置）
+export HINDSIGHT_API_RERANKER_PROVIDER=litellm-sdk
+export HINDSIGHT_API_RERANKER_LITELLM_SDK_API_KEY=your-deepinfra-api-key
+export HINDSIGHT_API_RERANKER_LITELLM_SDK_MODEL=deepinfra/Qwen3-reranker-8B  # 或 cohere/rerank-english-v3.0 等
+
+# Google Discovery Engine：云端语义重排
+export HINDSIGHT_API_RERANKER_PROVIDER=google
+export HINDSIGHT_API_RERANKER_GOOGLE_PROJECT_ID=your-gcp-project-id
+export HINDSIGHT_API_RERANKER_GOOGLE_SERVICE_ACCOUNT_KEY=/path/to/service-account.json  # 可选，未设置使用 ADC
+export HINDSIGHT_API_RERANKER_GOOGLE_MODEL=semantic-ranker-default-004  # 或 semantic-ranker-fast-004
+
+# Jina MLX：Apple Silicon 原生重排（无需 GPU/云端）
+# 首次使用自动从 HuggingFace Hub 下载模型（约 1.2 GB）。
+export HINDSIGHT_API_RERANKER_PROVIDER=jina-mlx
+```
+
+#### LiteLLM 代理与 SDK {#litellm-proxy-vs-sdk}
+
+- **`litellm`**：需要独立 LiteLLM 代理服务器，适合集中配置、限流和缓存。
+- **`litellm-sdk`**：无需代理直接访问 API，设置更简单、延迟更低、基础设施更少。
+
+两者支持相同提供方：
+- **Cohere** (`cohere/rerank-english-v3.0`, `cohere/rerank-multilingual-v3.0`)
+- **DeepInfra** (`deepinfra/Qwen3-reranker-8B`, `deepinfra/bge-reranker-v2-m3`)
+- **Together AI** (`together_ai/Salesforce/Llama-Rank-V1`)
+- **HuggingFace** (`huggingface/BAAI/bge-reranker-v2-m3`)
+- **Voyage AI** (`voyage/rerank-2`)
+- **Jina AI** (`jina_ai/jina-reranker-v2`)
+- **AWS Bedrock** (`bedrock/...`)
+
+#### TypeSafe
+
+TypeSafe 不是 `/rerank` 端点，而是针对*状态*评估类型化*问题*。此提供方提出两个问题。
+
+**排序：一个问题处理整个候选池。** Choice 为每个选项返回概率，总和为 1；Hindsight 将候选作为选项，直接从答案读取排序，无论候选多少都只需一次调用。一起判断时，模型只需确定哪个优于哪个，无需孤立地把每个候选固定到绝对尺度。200 问题 LoCoMo 数据集上，recall@1 为 0.94，而逐候选一次调用为 0.87，调用数仅三十分之一。
+
+Choice 最多接受 255 个选项，因此更大候选池分轮排序，再让各轮胜者互相排序。概率在单次调用内部归一化，不能简单拼接各轮结果。
+
+**裁剪：`HINDSIGHT_API_RERANKER_TYPESAFE_PRUNE_CANDIDATES=true`。** 第二个问题对排好序的短列表执行 Score，询问相关性延伸到哪个位置，超过该位置的全部舍弃。召回按顺序仅返回相关候选，不需要调阈值，由模型选择深度。
+
+使用 Score 而非向 Choice 增加“以上皆非”，因为 Score 等级*有序*，符合裁剪位置需求。Choice 中“以上皆非”只是概率质量的另一个竞争者，困难查询时往往直接获胜：200 个问题中 35 个完全无结果，Score 则没有空结果。
+
+有意不提供“没有相关内容”等级，因此始终至少保留一个候选。召回处理的是检索已判断为可能相关的候选池，一条调用方可忽略的弱记忆优于完全沉默。
+
+标志默认关闭，因为会显著缩减召回结果。消费方为 LLM 提示词（例如反思）且每条无关记忆都浪费上下文时，适合开启。
+
+**分数是位置，而非置信度。** Choice 概率是某个候选池内的份额，0.7 表示“这些候选中最佳”，并不表示“相关”，不同池不能比较。因此提供方返回排名位置，裁剪点之后的所有内容返回精确 `0.0`。
+
+#### Jina MLX（Apple Silicon） {#jina-mlx-apple-silicon}
+
+`jina-mlx` 使用为 Apple Silicon 优化的 [`jinaai/jina-reranker-v3-mlx`](https://huggingface.co/jinaai/jina-reranker-v3-mlx)。模型约 1.2 GB，首次启动自动从 HuggingFace Hub 下载并本地缓存。
+
+`mlx` 是 Apple Metal 框架，因此 `local-ml` 可选依赖仅在 Apple Silicon 安装它；Linux 构建仅支持 CPU，且比 `local` 慢。其他平台选择 `jina-mlx` 会启动失败，除非自行安装 `mlx`/`mlx-lm`。
+
+:::note 许可证
+`jina-reranker-v3-mlx` 使用 CC BY-NC 4.0 许可证。商业使用请联系 Jina AI。
+:::
+
+### 身份验证 {#authentication}
+
+默认 Hindsight 不使用身份验证。生产部署请通过内置租户扩展启用 API 密钥认证：
+
+```bash
+# 启用内置 API 密钥认证
+export HINDSIGHT_API_TENANT_EXTENSION=hindsight_api.extensions.builtin.tenant:ApiKeyTenantExtension
+export HINDSIGHT_API_TENANT_API_KEY=your-secret-api-key
+```
+
+启用后，所有请求必须在 `Authorization` 头中包含 API 密钥：
+
+```bash
+curl -H "Authorization: Bearer your-secret-api-key" \
+  http://localhost:8888/v1/default/banks
+```
+
+没有有效 API 密钥的请求收到 `401 Unauthorized`。
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_TENANT_EXTENSION` | 已加载租户扩展的点分路径。设为 `hindsight_api.extensions.builtin.tenant:ApiKeyTenantExtension`，要求每个请求提供 API 密钥。 | *（无，认证禁用）* |
+| `HINDSIGHT_API_TENANT_API_KEY` | 内置 API 密钥扩展检查的共享密钥。客户端以 `Authorization: Bearer <key>` 发送。 | *（无）* |
+| `HINDSIGHT_API_EXTENSION_PASSTHROUGH_HEADERS` | 复制到 `RequestContext.extra_headers` 供扩展读取的请求头，逗号分隔，不区分大小写匹配。空值表示扩展仅看到 `Authorization` 头。 | *（无）* |
+
+启用记忆防护时，策略 schema、检测器目录和审计轨迹见 `docs/developer/memory-defense/`。
+
+#### 向扩展转发额外请求头 {#forwarding-extra-headers-to-extensions}
+
+自定义 `TenantExtension` 通常仅通过 `RequestContext.api_key` 看到 `Authorization` 头。当 bearer 令牌标识的是*代理*而非调用方时并不足够，例如认证网关向 Hindsight 提供共享服务身份，在第二个头中携带逐调用方身份。
+
+列出需要转发的头：
+
+```bash
+export HINDSIGHT_API_EXTENSION_PASSTHROUGH_HEADERS=x-user-assertion,x-request-origin
+```
+
+HTTP 和 MCP 传输均通过 `RequestContext.extra_headers` 提供，键为小写名，并随请求上下文传到 `OperationValidatorExtension` 钩子。仅列出且实际存在于请求的头才会出现。默认未设置，因此未显式启用时扩展不接收额外头数据。
+
+**重复出现**的列出头会被丢弃并警告，不会选取某个值，防止重复头静默覆盖代理注入值。可信程度取决于 Hindsight 前面的代理：仅代理自行设置并移除客户端同名值的头才应列出。此设置为服务器级，不可按租户或库覆盖。
+
+:::tip 自定义身份验证
+高级认证（JWT、OAuth、多租户 schema）请实现自定义 `TenantExtension`。详情见[扩展文档](./extensions.md)。
+:::
+
+### 服务器 {#server}
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_HOST` | 绑定地址 | `0.0.0.0` |
+| `HINDSIGHT_API_PORT` | 服务器端口 | `8888` |
+| `HINDSIGHT_API_BASE_PATH` | 反向代理后的 API 基础路径（例如 `/hindsight`） | `""` （根路径） |
+| `HINDSIGHT_API_WORKERS` | uvicorn 工作进程数 | `1` |
+| `HINDSIGHT_API_ACCESS_LOG` | 启用 uvicorn 访问日志（`true`、`1`、`yes`、`on` 表示启用） | `false` |
+| `HINDSIGHT_API_DAEMON_LOG` | `--daemon` 重定向服务器 stdout/stderr 的位置。同机运行多个守护进程时，请按配置档独立设置，避免输出混入一个文件。 | `~/.hindsight/daemon.log` |
+| `HINDSIGHT_API_FREE_THREADING` | 自由线程解释器（`python3.14t`）上的行为：`strict` 在 GIL 仍启用时拒绝启动，`warn` 记录并继续，`off` 禁用检查。未设置由解释器决定，自由线程构建为 `strict`，普通构建为 `off`。 | 取决于解释器 |
+| `HINDSIGHT_API_LOG_LEVEL` | 日志级别：`debug`、`info`、`warning`、`error` | `info` |
+| `HINDSIGHT_API_LOG_FORMAT` | 日志格式：`text` 或 `json`（云平台结构化日志） | `text` |
+| `HINDSIGHT_API_LOG_JSON_FIELDS` | 输出 JSON 日志字段的逗号分隔允许列表（例如 `severity,message,tenant`）。可用：`severity`、`message`、`timestamp`、`logger`、`tenant`、`exception`。空值 = 所有字段。 | `""` （全部） |
+| `HINDSIGHT_API_MCP_ENABLED` | 在 `/mcp/{bank_id}/` 启用 MCP 服务器 | `true` |
+| `HINDSIGHT_API_GZIP_MIN_SIZE` | 执行 gzip 的最小响应大小（字节）。压缩召回响应约消耗其 CPU 的 5%，因此 CPU 而非带宽受限部署可提高到典型响应大小以上。负值完全禁用压缩。 | `1024` |
+| `HINDSIGHT_API_LOOP_LAG_REPORT_SECONDS` | 诊断：每 N 秒（最少 1）记录事件循环延迟百分位（`[loop-lag]`），区分慢 await 与超负荷循环。`0` 禁用探测。 | `0` |
+| `HINDSIGHT_API_LOOP_LAG_METRIC` | 每个事件循环延迟样本写入 `hindsight_event_loop_lag_seconds` 直方图（每 50 ms 采样），独立于上述日志。繁忙但未阻塞的循环仅在此显现：召回阶段计时仍快，请求却等待循环。 | `false` |
+| `HINDSIGHT_API_METRICS_WORKER_LABEL` | `--workers N` 时各工作进程有独立指标但共享端口，`/metrics` 抓取随机到达一个进程，计数跨进程跳跃（每次切换被速率计算视为重置），饱和进程可能不可见。启用后，每个进程每 5 秒发布快照，`/metrics` 返回所有存活工作进程序列，标记 `api_worker="<slot>"`（`0..N-1`）。仍一个端口、一个抓取目标，额外标签是唯一可见变化。 | `false` |
+| `HINDSIGHT_API_TOKENIZER_ENCODING` | 所有 token 计数和分块边界使用的词表（召回预算、块大小、提示词适配、嵌入截断）。`o200k_base` 匹配当前 OpenAI 模型，非拉丁文本计数更接近实际收费；`cl100k_base` 复现默认变化前的计数。服务器级设置，只有统一计数的库才可比较 token 预算。其他随附词表：`o200k_harmony`。 | `o200k_base` |
+| `HINDSIGHT_API_MODEL_INIT_TIMEOUT` | 启动模型/连接初始化的墙钟时间上限（秒）。嵌入、交叉编码器或 LLM 验证阻塞时（例如离线模型下载或不可访问提供方），服务器快速明确报错，而非永久挂起。首次正常模型下载耗时较长时可提高。 | `300` |
+| `HINDSIGHT_API_STARTUP_WAIT_SECONDS` | **仅 Docker 镜像。** 容器等待 API 响应 `/health` 的时长，超时则停止并重启。提高 `HINDSIGHT_API_MODEL_INIT_TIMEOUT` 超过默认值时，此等待也提高，避免首次缓慢下载被中断；设置此值可独立覆盖等待。 | `300`，或较长的 `HINDSIGHT_API_MODEL_INIT_TIMEOUT` + 30 秒 |
+
+### 出站代理 {#egress-proxy}
+
+出站调用（LLM 提供方和网关、远程嵌入和重排、文档解析器、Supabase 租户扩展）遵循标准代理环境变量：`HTTP_PROXY`、`HTTPS_PROXY`、`NO_PROXY`。没有 Hindsight 专用代理设置，请在进程启动前设置（pod 环境、systemd 单元、shell）。
+
+需要了解三点：
+
+- **代理 URL 本身必须为 `http://`。** API 自己的 HTTP 调用（嵌入、重排、解析器、直接网关）会忽略 `https://` 代理 URL 并警告，也会丢弃 `ALL_PROXY` / SOCKS。自带 HTTP 客户端的 SDK（OpenAI、Anthropic）会读取 `ALL_PROXY`，因此不要依赖它，明确设置 `HTTP_PROXY` 和 `HTTPS_PROXY`。
+- **将本地端点加入 `NO_PROXY`。** 不自动豁免任何主机，包括 `localhost`、`127.0.0.1`。配置代理并运行本地 Ollama、LM Studio、llama.cpp 或 TEI 时，必须列出这些主机，否则调用发送到代理。Hindsight 自行启动的 llama.cpp 也如此：就绪探测始终直连，但之后通过 OpenAI SDK 的补全遵循代理。
+- **`~/.netrc` 凭据也应用于目标主机**，而非仅代理。匹配提供方主机的 netrc 条目不会覆盖 Hindsight 发送的 `Authorization`，而是使调用直接报错 `Cannot combine AUTHORIZATION header with AUTH argument`。移除该条目，或将 `NETRC` 指向不包含它的文件。
+
+Webhook 投递有意忽略这些变量：SSRF 防护验证的是已解析地址，代理可能连接未检查的地址。
+
+### 检索 {#retrieval}
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_GRAPH_RETRIEVER` | 图检索算法 | `link_expansion` |
+| `HINDSIGHT_API_LINK_EXPANSION_PER_ENTITY_LIMIT` | `link_expansion` 中每个实体扩展的最大目标单元数（逐实体 LATERAL 扩展上限，限制高扇出实体）。 | `200` |
+| `HINDSIGHT_API_LINK_EXPANSION_TIMEOUT` | `link_expansion` 图扩展查询超时（秒）。超时后 world/experience 回退到语义+因果链接，观察扩展不返回图结果。 | `10` |
+| `HINDSIGHT_API_RECALL_MAX_CONCURRENT` | 每个工作进程最大并发召回操作数（背压） | `32` |
+| `HINDSIGHT_API_RECALL_CONNECTION_BUDGET` | 每个召回操作最大并发数据库连接数 | `4` |
+| `HINDSIGHT_API_ADMISSION_RECALL_MAX_IN_FLIGHT` | 每个工作进程请求排队前允许的并发召回数。`0` 根据进程 CPU 预算（cgroup 配额）除以 `HINDSIGHT_API_WORKERS` 派生，负值禁用通道。这是延迟目标而非容量限制：吞吐量不变，但过低抑制 I/O 受限工作，过高重新积累队列。 | `0` （派生） |
+| `HINDSIGHT_API_ADMISSION_RECALL_MAX_WAIT_MS` | 召回等待槽位的最长时间，之后以 503 + `Retry-After` 拒绝。客户端断开的排队请求立即释放位置。用于吸收突发；持续超容量时应降低，因为长队列只延迟相同拒绝。 | `30000` |
+| `HINDSIGHT_API_ADMISSION_REFLECT_MAX_IN_FLIGHT` | 同上，用于反思。 | `0` （派生） |
+| `HINDSIGHT_API_ADMISSION_REFLECT_MAX_WAIT_MS` | 同上，用于反思。 | `5000` |
+| `HINDSIGHT_API_ADMISSION_RETAIN_MAX_IN_FLIGHT` | 同上，用于记忆存储。仅作用于同步路径，异步存储操作入队即返回。 | `0` （派生） |
+| `HINDSIGHT_API_ADMISSION_RETAIN_MAX_WAIT_MS` | 同上，用于记忆存储。 | `2000` |
+| `HINDSIGHT_API_RECALL_MAX_QUERY_TOKENS` | 召回查询最大 token 长度。超长查询截断而非失败。`0` 禁用限制。 | `500` |
+| `HINDSIGHT_API_QUERY_ANALYZER_LANGUAGES` | 限制 `dateparser` 从召回查询提取时间约束时考虑的语言区域，使用逗号分隔语言代码（例如 `en` 或 `en,zh`）。空值保留所有受支持区域自动检测。限制语言显著加快速度（自动检测占召回 CPU 成本大头），也避免已知语言语料误判；但未列出语言的显式日期可能错误解析，而非只不产生约束，因此仅明确知道查询语言时设置。不影响中文，中文在 `dateparser` 前处理。 | _（空）_ |
+| `HINDSIGHT_API_RERANKER_MAX_CANDIDATES` | 每次召回最多重排候选数（RRF 预过滤其他候选） | `300` |
+| `HINDSIGHT_API_RERANKER_MAX_CANDIDATES_LOW` | 覆盖 `budget=low` 的重排候选上限（交叉编码器是大型召回的主要成本，降低以部分深度换取低延迟）。`0` 回退到 `HINDSIGHT_API_RERANKER_MAX_CANDIDATES`。 | `0` |
+| `HINDSIGHT_API_RERANKER_MAX_CANDIDATES_MID` | 覆盖 `budget=mid` 重排候选上限。`0` 回退到 `HINDSIGHT_API_RERANKER_MAX_CANDIDATES`。 | `0` |
+| `HINDSIGHT_API_RERANKER_MAX_CANDIDATES_HIGH` | 覆盖 `budget=high` 重排候选上限。`0` 回退到 `HINDSIGHT_API_RERANKER_MAX_CANDIDATES`。 | `0` |
+| `HINDSIGHT_API_SEMANTIC_MIN_SIMILARITY` | 语义检索返回候选的最小余弦相似度，必须在 `0` 和 `1` 之间。 | `0.3` |
+| `HINDSIGHT_API_GRAPH_SEED_MIN_SIMILARITY` | 记忆作为图检索种子的最小余弦相似度，独立于主语义检索阈值，必须在 `0` 和 `1` 之间。 | `0.3` |
+| `HINDSIGHT_API_TEMPORAL_SEMANTIC_MIN_SIMILARITY` | 时间检索入口及扩散邻居的最小余弦相似度，独立于主语义检索阈值，必须在 `0` 和 `1` 之间。 | `0.1` |
+| `HINDSIGHT_API_SEMANTIC_LINK_MIN_SIMILARITY` | 正常存储、流式存储及图维护重新连接时，建立语义链接的最小余弦相似度。直接控制语义图密度，必须在 `0` 和 `1` 之间。 | `0.7` |
+| `HINDSIGHT_API_BM25_MIN_SCORE` | 进入融合的行必须超过的最小 BM25 分数。排除某些后端（尤其 `vchord`）对所有文档排序而非预过滤匹配项时产生的零分、不匹配行。`0` 仅保留真实词项匹配，提高可要求更强匹配。 | `0` |
+| `HINDSIGHT_API_RECALL_MAX_CANDIDATES_PER_SOURCE` | 每个检索来源（语义、BM25、图、时间）贡献给 RRF 的候选上限，在全局重排上限前应用。防止某后端过度扩展，独占重排预算。`0` 禁用。 | `0` |
+| `HINDSIGHT_API_RECALL_STRATEGY_BOOSTS` | 提高某些召回来源相对其他来源的优先级，使用逗号分隔 `strategy:level`（例如强烈偏好图命中的 `graph:high`，或 `graph:high,bm25:low`）。策略：`semantic`、`bm25`、`graph`、`temporal`。等级：`low`（轻微，主要避免该来源候选在重排前被丢弃）、`medium`（中度）、`high`（强烈，占用重排候选预算的大部分）。截断前提升在排名空间执行，仅合并池超过 `HINDSIGHT_API_RERANKER_MAX_CANDIDATES` 时运行，不改写 RRF 分数。单一提升分支与另一个分支比较时，提升候选排名 `r` 满足 `r < divisor * s` 即超过另一候选排名 `s`（除数 `low` 2、`medium` 4、`high` 8）。这是单分支比较，不保证融合列表结果，也不依赖池大小。交叉编码器重排后，偏好候选获得加分：来源内排名 1 获得完整等级量，随排名衰减（排名 1：`low` 0.05、`medium` 0.2、`high` 0.5）。衰减复用同一除数作为初始尺度，`high` 到排名 9 减半。`temporal` 例外：排名主要按记忆日期与查询日期窗口中点距离决定，不能说明窗口内相关性，因此时间来源产生的每个候选（包括链接记忆）无论排名都获完整加分。其他来源通过衰减减少深层命中的位移。所有来源的加分都不限制最终名次变化，不保证强直接匹配保持在前，两个分支加分可叠加。直通重排器（召回模式 `rrf`、`rrf` 提供方，或降级到 `rrf` 成员的回退链）跳过重排后加分。池在上限内时该设置无效；超出时只改变进入候选，最终顺序遵循原始 RRF 加近期、时间和证据乘数。仅列出的策略提升，省略策略保留正常权重。未写等级（`graph` 或 `graph:`）默认 `medium`。空值禁用。 | _（空）_ |
+| `HINDSIGHT_API_RECENCY_DECAY_FUNCTION` | 重排时近期提升的衰减形状，即如何按记忆年龄微调最终排名。`linear`（默认）从今天完整新鲜度直线衰减，到 `HINDSIGHT_API_RECENCY_DECAY_LINEAR_WINDOW_DAYS` 达到下限。`exponential` 按半衰期：`HINDSIGHT_API_RECENCY_DECAY_HALFLIFE_DAYS` 时中性（不加不减），更近期提升，更旧惩罚，平滑衰减而非硬截断。`none` 完全禁用，年龄不影响排序。 | `linear` |
+| `HINDSIGHT_API_RECENCY_DECAY_LINEAR_WINDOW_DAYS` | `linear` 衰减：从完整新鲜度降到最低值所需天数。仅 `HINDSIGHT_API_RECENCY_DECAY_FUNCTION=linear` 时使用。 | `365` |
+| `HINDSIGHT_API_RECENCY_DECAY_HALFLIFE_DAYS` | `exponential` 衰减：记忆达到中性的年龄（天），较新提升、较旧惩罚。较小值更积极偏好近期。仅 `HINDSIGHT_API_RECENCY_DECAY_FUNCTION=exponential` 时使用。 | `90` |
+| `HINDSIGHT_API_ENABLE_MENTAL_MODEL_HISTORY` | 记录各心智模型内容更改历史（旧内容 + 时间戳），每次更改在 `mental_model_history` 一行。`false` 完全禁用，不写历史行，不需要审计时减少存储。**关闭此功能应使用此项**，而非将数量上限设为零。 | `true` |
+| `HINDSIGHT_API_MENTAL_MODEL_MIN_REFRESH_INTERVAL_SECONDS` | 同一心智模型两次*自动*刷新（整合后触发及 cron）最短间隔秒数。过早触发不丢弃：刷新入队并等待窗口结束，期间所有后续触发合并成一次，因此小批量存储突发只付一次刷新成本，而非每次存储一次。持续导入且模型不必分钟级最新时可提高，等待中的刷新仍看到期间累积全部内容。显式刷新（API、MCP、控制平面）忽略下限立即运行，并释放合并的等待刷新。`0` 无下限。分层设置，可通过[配置 API](#hierarchical-configuration) 逐库覆盖，也可用模型 `trigger.min_refresh_interval_seconds` 覆盖（模型优先，显式 `0` 可使重要模型不受库级下限）。 | `0` |
+| `HINDSIGHT_API_KNOWLEDGE_PAGE_DEFAULT_TRIGGER` | 新知识页面默认刷新设置，JSON 对象合并到内置默认值（`{"mode": "delta", "fact_types": ["observation"], "exclude_mental_models": true, "refresh_after_consolidation": true}`）。仅设置要更改字段，例如 `{"refresh_cron": "0 * * * *"}` 改为每小时，而非每次整合后刷新。创建页面时传入的触发器仍优先，现有页面不变。可逐库配置。 | - |
+| `HINDSIGHT_API_MENTAL_MODEL_HISTORY_MAX_ENTRIES` | 每个心智模型保留的最大历史行数。每次刷新插入旧版本并删除超过上限的最早行，避免无界增长。`0` 或负值**移除上限**，每次刷新无限增长；完全关闭历史应设 `HINDSIGHT_API_ENABLE_MENTAL_MODEL_HISTORY=false`。 | `50` |
+
+五个依赖嵌入的阈值——主语义检索、图种子、时间检索、语义链接构建、观察去重——有不同准确率/召回率取舍，有意独立配置。默认保留针对 `BAAI/bge-small-en-v1.5` 校准的行为。更换模型时，即使两者都输出归一化向量，余弦相似度分布也可能变化，生产使用前请分别重新校准全部五项。
+
+更改 `HINDSIGHT_API_SEMANTIC_LINK_MIN_SIMILARITY` 不追溯历史，仅在正常存储、流式存储或图维护创建新链接时应用。提高阈值后，维护不删除低于新阈值的现有链接；降低后，已有足够语义链接的节点不重新计算。要让整个现有图符合新阈值，请重建图，或将来源数据重新导入新库。
+
+#### 图检索算法 {#graph-retrieval-algorithm}
+
+- **`link_expansion`**（默认）：通过实体共现、语义 kNN 和因果链接从语义种子快速扩展图，目标延迟低于 100ms。
+
+#### 召回预算映射 {#recall-budget-mapping}
+
+召回请求的 `budget`（`low` / `mid` / `high`，默认 `mid`）映射为所有检索方法（语义、BM25、图、时间）使用的整数 `thinking_budget`。以下设置控制映射，支持通过[配置 API](#hierarchical-configuration) 逐库覆盖。
+
+可选两种函数：
+
+- **`fixed`**（默认，保留旧行为）：`thinking_budget = recall_budget_fixed_<level>`，独立于 `max_tokens`。
+- **`adaptive`**：`thinking_budget = round(max_tokens * recall_budget_adaptive_<level>)`，限制到 `[recall_budget_min, recall_budget_max]`。调用方改变 `max_tokens`、希望检索广度随输出大小变化时适合。
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_RECALL_BUDGET_FUNCTION` | 映射函数：`fixed` 或 `adaptive`。 | `fixed` |
+| `HINDSIGHT_API_RECALL_BUDGET_FIXED_LOW` | `budget=low` 且函数 `fixed` 时，每种检索方法每种事实类型的条目数。 | `100` |
+| `HINDSIGHT_API_RECALL_BUDGET_FIXED_MID` | `budget=mid` 且函数 `fixed` 时，每种检索方法每种事实类型的条目数。 | `300` |
+| `HINDSIGHT_API_RECALL_BUDGET_FIXED_HIGH` | `budget=high` 且函数 `fixed` 时，每种检索方法每种事实类型的条目数。 | `1000` |
+| `HINDSIGHT_API_RECALL_BUDGET_ADAPTIVE_LOW` | `budget=low` 且函数 `adaptive` 时采用请求 `max_tokens` 的比例。 | `0.025` |
+| `HINDSIGHT_API_RECALL_BUDGET_ADAPTIVE_MID` | `budget=mid` 且函数 `adaptive` 时采用请求 `max_tokens` 的比例。 | `0.075` |
+| `HINDSIGHT_API_RECALL_BUDGET_ADAPTIVE_HIGH` | `budget=high` 且函数 `adaptive` 时采用请求 `max_tokens` 的比例。 | `0.25` |
+| `HINDSIGHT_API_RECALL_BUDGET_MIN` | 自适应函数限制后的下限。 | `20` |
+| `HINDSIGHT_API_RECALL_BUDGET_MAX` | 自适应函数限制后的上限。 | `2000` |
+
+#### 召回流水线阶段 {#recall-pipeline-stages}
+
+召回运行四个检索分支（语义、BM25、图、时间），再通过交叉编码器重排融合候选。每阶段增加延迟，没有关系或时间结构的库也会为无法利用的分支付费，例如按 `retain_extraction_mode: chunks` 导入、仅用于普通检索的库。
+
+以下设置关闭各阶段，均支持通过[配置 API](#hierarchical-configuration) 逐库覆盖，让某库精简运行，不改变部署其余库的召回方式。语义检索始终运行，是基础。
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_ENABLE_TEXT_SEARCH` | 运行关键词 BM25 分支。`false` 仅保留**纯向量搜索**，整个分支从查询省略，而非过滤为空，因此跳过 SQL、查询分词及 `pg_stats` 词项选择。也从知识页面搜索移除关键词分支。 | `true` |
+| `HINDSIGHT_API_ENABLE_TEMPORAL_RETRIEVAL` | 运行时间分支。`false` 也跳过为其提供约束的日期查询分析，没有约束则无过滤依据。 | `true` |
+| `HINDSIGHT_API_ENABLE_GRAPH_RETRIEVAL` | 运行实体/链接图遍历。`false` 跳过这些查询，不返回图结果。 | `true` |
+| `HINDSIGHT_API_ENABLE_RERANKING` | 交叉编码器重排融合候选。`false` 直接返回 RRF 融合顺序，更快但准确度较低。 | `true` |
+
+全部关闭后，召回只剩一次向量查询，这是最低延迟配置。
+
+禁用文本搜索不改变写入路径，仍维护 `search_vector` 和索引，因此无需重建索引即可重新开启。原本使用的[文本搜索后端](#text-search-extension)只是暂时不读取。
+
+##### 配合存储侧：普通检索（“RAG”）记忆库 {#pairing-with-the-retain-side-plain-retrieval-rag-banks}
+
+这些召回开关仅减少*读取*路径工作。用于普通检索的库也应对应配置导入路径，否则仍承担召回不再使用其输出的 LLM 成本：
+
+- **`retain_extraction_mode: chunks`** 完全跳过 LLM 事实提取，原样存储每块。获取任何 LLM 队列或锁之前就返回，因此真正移除存储 LLM 调用，而非只是缩短，通常这是导入主要成本。
+- **`enable_observations: false`** 跳过整合，即另一项后台 LLM 工作。
+
+一起配置后，库像传统向量存储：输入文本块，输出混合搜索，读写路径都无 LLM。一次调用设置两侧：
+
+<CodeSnippet code={configurationSh} section="plain-retrieval-bank" language="bash" />
+
+取舍涉及产品核心：不提取事实、实体或链接，就没有可检索图和时间结构，也没有可用于反思的心智模型。适合确实仅需普通检索的库，或公平比较 Hindsight 与基础向量存储，不应作为通用延迟修复方案。
+
+### 记忆存储 {#retain}
+
+控制记忆存储（导入）流水线。
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_RETAIN_MAX_COMPLETION_TOKENS` | 事实提取 LLM 调用最大完成 token 数 | `64000` |
+| `HINDSIGHT_API_RETAIN_CHUNK_SIZE` | 事实提取每块最大字符数。块越大，LLM 调用越少，但可能丢失上下文。 | `3000` |
+| `HINDSIGHT_API_RETAIN_STRUCTURED_CHUNK_SIZE` | 单条 JSONL 行或对话轮次保持完整的最大字符数。未设置使用 `HINDSIGHT_API_RETAIN_CHUNK_SIZE`，设置时必须为正整数。 | - |
+| `HINDSIGHT_API_RETAIN_ATTACHMENT_MAX_SIZE_MB` | 作为内联存储内容发送的单个附件解码后最大大小。高于主流提供方自身逐文件上限，因此正常内容先受提供方限制，滥用上传则在入口拒绝。 | `20` |
+| `HINDSIGHT_API_RETAIN_ATTACHMENT_MAX_COUNT` | 一个存储条目的最大内联附件数。较大文档请拆分为多个条目。 | `50` |
+| `HINDSIGHT_API_RETAIN_MAX_ATTACHMENTS_PER_CHUNK` | 一个提取块的最大附件数。`HINDSIGHT_API_RETAIN_CHUNK_SIZE` **仅计文本**，占位符只消耗约 22 字符，因此此项限制附件以匹配提供方逐请求上限。上下文较小模型可降低，可逐库配置。 | `8` |
+| `HINDSIGHT_API_RETAIN_EXTRACTION_MODE` | 事实提取模式：`concise`、`verbose`、`verbatim`、`chunks` 或 `custom` | `concise` |
+| `HINDSIGHT_API_RETAIN_MISSION` | 此库在提取时应关注什么。引导 LLM，不替换提取规则，适用于任意提取模式。 | - |
+| `HINDSIGHT_API_RETAIN_CUSTOM_INSTRUCTIONS` | 完整事实提取提示词覆盖（仅 `custom` 模式使用），彻底替换内置规则。 | - |
+| `HINDSIGHT_API_RETAIN_EXTRACT_CAUSAL_LINKS` | 提取事实间因果关系 | `true` |
+| `HINDSIGHT_API_RETAIN_OPTIONAL_FACT_DIMENSIONS` | 允许事实将 `when`/`where`/`who`/`why` 留空，而非写 `"N/A"`。schema 中四个键仍必需，值变为 `string \| null`，提示词不再指定占位符。小型自托管模型使用 `HINDSIGHT_API_LLM_STRICT_SCHEMA` 时可开启：所有属性必需可能让没有自己日期的事实仍输出某字符串，最可能借用文本中其他事件日期。默认关闭，因为对强模型并非中性：可省略 `why` 时，“用户要求我重构 X”可能成为独立 `world` 事实，而非作为智能体事实的理由。服务器级，不可逐库。 | `false` |
+| `HINDSIGHT_API_RETAIN_BATCH_ENABLED` | 通过 LLM Batch API 提取事实（节省 50% 成本，仅异步操作） | `false` |
+| `HINDSIGHT_API_RETAIN_MAX_CONCURRENT` | 存储数据库阶段最大并发数（HNSW 读取 + 写入），限制高并发导入的 I/O 争用。 | `4` |
+| `HINDSIGHT_API_RETAIN_SUBBATCH_CONCURRENCY` | 同一文档同时处理的子批次数。子批次大部分时间是存储往返，少量重叠可隐藏等待。`1` 让拆分器仅比处理领先一片，限制大文档驻留量。 | `1` |
+| `HINDSIGHT_API_RETAIN_WALL_TIMEOUT` | 工作进程中单个存储任务的墙钟时间上限（秒）。无限阻塞（锁争用、LLM 不可访问）时取消并标记 `failed`，可重试，而非占槽直到进程重启。应远高于最慢正常存储；`0` 禁用。 | `3600` |
+| `HINDSIGHT_API_RETAIN_BATCH_TOKENS` | 异步存储自动拆分的每个子批次最大字符数 | `10000` |
+| `HINDSIGHT_API_RETAIN_CHUNK_BATCH_SIZE` | 导入长文档时每个流式批次最大块数。每块约 17 个事实，默认 100 块约 1700 事实。大文档时降低以限制内存/LLM 压力，较小块可提高。可逐库配置。 | `100` |
+| `HINDSIGHT_API_RETAIN_MEMORY_BUDGET_MB` | 单个存储操作可持有的已提取未写入状态 MB 数。`HINDSIGHT_API_RETAIN_CHUNK_BATCH_SIZE` 限制在途块数，却不限制重量，每块携带提取出的任意事实数。因此此值用于估算工作进程容量，无论文档内容，单次存储峰值大致受其限制。需为 `WORKER_MAX_SLOTS` 并发存储预留预算。超过时提取等待写入追赶，而非继续增长。`0` 禁用，恢复仅按块数限制。 | `128` |
+| `HINDSIGHT_API_RETAIN_ENTITY_LOOKUP` | 存储如何寻找提取名称的现有实体*候选*：`trigram` 查询 pg_trgm 相似名索引，`full` 加载库中全部实体，保留精确或子串匹配名称。两者之后执行同样评分（见[实体消歧如何决定](#how-entity-resolution-decides)），因此不仅影响性能，还决定哪些名称能合并。 | `trigram` |
+| `HINDSIGHT_API_RETAIN_ENTITY_RESOLUTION_BATCH_SIZE` | 每个模糊候选查找查询的最大唯一名称数（PG 为 `trigram`，Oracle 为 `oracle_fuzzy`）。限制查询大小，避免宽存储批次在实体很多库上让单次 `unnest(...)` 连接超时。 | `100` |
+| `HINDSIGHT_API_RETAIN_ENTITY_RESOLUTION_MAX_CANDIDATES` | 每个实体提及最多评分候选数。模糊查找按三元组 / Jaro-Winkler 相似度，只保留各名最佳匹配，再评分。数千近似名称库中，无界候选让一次存储消耗数分钟 CPU，阻塞健康检查；约前 100 之后的匹配本来也不会胜出。仅该合并实体被重复创建时提高。 | `200` |
+| `HINDSIGHT_API_RETAIN_DEFAULT_STRATEGY` | 默认存储策略名称。设置后，没有显式 `strategy` 参数的存储调用均使用它。 | - |
+| `HINDSIGHT_API_RETAIN_BATCH_POLL_INTERVAL_SECONDS` | 已提交批量作业运行时，向 **LLM 提供方** Batch API 查询状态的等待间隔。不是工作进程或导入设置，不控制 Hindsight 领取待存储操作频率（见 [`HINDSIGHT_API_WORKER_POLL_INTERVAL_MS`](#distributed-workers)），仅提供方批量模式适用。`0` 不禁用，而是完全移除等待，在紧循环轮询提供方。 | `60` |
+| `HINDSIGHT_API_STORE_DOCUMENT_TEXT` | 在提取记忆之外持久化原始文本。`false` 跳过（`documents.original_text` 为 NULL，`chunks.chunk_text` 为空）。分层设置，可通过[配置 API](#hierarchical-configuration) 逐库覆盖，让最小化数据的库仅保留派生事实，其他库保留原文。 | `true` |
+| `HINDSIGHT_API_FAIL_ON_EXTRACTION_ERRORS` | `true` 时，存储累计任意事实提取错误即标记 `failed`（错误含数量），而非 `completed`，使静默丢弃事实表现为硬失败。默认保留原行为。静态、服务器级。 | `false` |
+
+> **支持批量的提供方。** `HINDSIGHT_API_RETAIN_BATCH_ENABLED=true` 仅适用于实现批量 API 的存储 LLM：`openai`、`groq`、`gemini`、`fireworks`。批量始终要求异步存储（`async=true`），同步存储启用批量会报错。其他提供方启动时快速失败。
+>
+> **Gemini** 使用 [Gemini Batch API](https://ai.google.dev/gemini-api/docs/batch-api)（输入和输出统一 50% 折扣，24 小时 SLA，通常数分钟）。只需 `HINDSIGHT_API_RETAIN_BATCH_ENABLED=true` 和 API 密钥 `gemini` 提供方，无额外设置；Vertex AI（`vertexai`）不支持批量。
+
+#### 存储内联附件 {#inline-attachments-in-retain}
+
+存储条目的 `content` 仍可为普通字符串，也可为有序文本、图像和文件块列表，让附件位于实际出现的位置：
+
+```json
+{
+  "content": [
+    {"type": "text",  "text": "重置 VPN 时，点击图中按钮："},
+    {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": "..."}},
+    {"type": "text",  "text": "……然后重新连接。"},
+    {"type": "file",  "source": {"type": "base64", "media_type": "application/pdf", "data": "..."},
+                      "filename": "escalation-policy.pdf"}
+  ]
+}
+```
+
+关键在*位置*。提取把交错文本和附件送到视觉模型，模型在介绍截图的句子旁读取截图，而非接收预先生成的说明。这与 Hindsight 处理文本的理念相同：提供原始内容，交给提取器。
+
+`image` 和 `file` 分开，是因为提供方也区分：Anthropic 有独立图像/文档块，OpenAI 有 `image_url` 和文件部分。保留你的区分，转换便无需只按媒体类型猜测。
+
+这不同于 [`POST /files/retain`](#file-processing)，后者将整个文件转为 Markdown，作为**独立**文档。希望解析而非直接视觉读取扫描 PDF/办公文档时仍适合，但会将内容与周围正文分开。
+
+**接受类型。** 接受任意格式正确的 `type/subtype`，没有允许列表。模型能否读取由模型决定，提供方拒绝格式时存储按其错误失败，比入口猜测更有信息。返回字节使用调用方声明的 Content-Type。
+
+:::warning
+声明类型原样返回，因此写入方存储的活跃内容（SVG 或 HTML）在获取时可能于数据平面来源执行。应将库写入权限视为等同于在该来源托管内容的能力。
+:::
+
+字节处理方式：
+
+- 以 sha256 哈希，并在所属文档下**按内容寻址**存储，相同字节始终相同 ID，一个文档内重复附件仅存一次，重新存储不变文档不执行操作。两个*不同*文档各自保留相同附件副本；有意不跨文档去重，删除文档时无需判断其他文档是否仍需字节。
+- 存储使用与上传文件相同后端：`native`（PostgreSQL）、`s3`、`gcs`、`azure`，见[文件存储](#file-storage)。
+- 文档文本在附件位置保留占位符（`⟦hs-att:...⟧`），因此分块、幂等、`update_mode=append` 和重新提取与纯文本行为完全相同。
+- 每次写入从文本派生附件集合，每个 `attachments` 行记录所属文档。因此删除文档或重新存储时不再包含附件，精确回收自身附件，所有后端一致，包括文档位于记忆存储的库。
+- 所有读取接口均随文本返回附件：召回的 `chunks[].attachments` 和每条记忆的 `attachments`，以及 get-document、get-chunk、get-memory、list-memories。每个附件提供经过记忆库授权的 `url`，返回原始字节。
+
+提取的**事实**不携带占位符，附件位置写 `[image: image/png]`，机器可读句柄随 `attachments` 提供。内容哈希不是知识。
+
+**记忆**的 `attachments` 只包含该事实实际来源的附件，而非其文本块的全部附件。它们与标签一样存于记忆本身（`memory_units.attachment_ids`），随记忆传递，不放在独立边表。提取每块一次调用，含截图的块也有周围文本；若使用块附件，调用产生的所有事实都会显示这些附件，例如把架构图当作值班策略段落的证据。因此会要求提取器说明各事实来自哪些附件；仅在周围文本陈述的事实完全没有 `attachments`。这种空值正是设计目的：记忆旁显示附件，意味着模型确实查看附件以生成该记忆。
+
+**文本块**的 `attachments` 保持原义：该块引用的全部附件，因为这是有关文本块，而非某个事实的问题。
+
+两种情况会直接以 `422` 拒绝存储，而非静默丢弃附件：
+
+- 存储 LLM 不支持视觉，或 Hindsight 无法确认，见 [`HINDSIGHT_API_LLM_VISION`](#llm-provider)。
+- `HINDSIGHT_API_RETAIN_BATCH_ENABLED=true`，批量路径直接构建提供方请求体，不处理交错内容。
+
+#### Fireworks 批量推理 {#fireworks-batch-inference}
+
+Fireworks AI 批量 API **不兼容** OpenAI `/v1/batches`，它是独立控制平面主机 `https://api.fireworks.ai` 上的专有账户级数据集/作业流程，区别于兼容 OpenAI 的推理主机 `https://api.fireworks.ai/inference/v1`。Hindsight 透明适配，启用批量与其他提供方相同，只多一个必需设置：Fireworks **账户 ID**。与已有 LiteLLM `fireworks_ai/...` 在线路径独立，后者不受影响。
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_FIREWORKS_ACCOUNT_ID` | Fireworks 账户 ID。`fireworks` 批量存储**必需**，控制平面端点为 `/v1/accounts/{account_id}/...`。静态、服务器级。 | - |
+| `HINDSIGHT_API_FIREWORKS_BATCH_BASE_URL` | Fireworks 批量控制平面主机。 | `https://api.fireworks.ai` |
+| `HINDSIGHT_API_FIREWORKS_BATCH_MAX_WAIT_SECONDS` | 批量作业最长等待时间，之后报失败。避免不支持批量的模型让作业永久 `PENDING`。 | `86400`（24 小时） |
+
+```bash
+# Fireworks 批量存储（节省 50% 成本，仅异步）
+export HINDSIGHT_API_RETAIN_LLM_PROVIDER=fireworks
+export HINDSIGHT_API_RETAIN_LLM_API_KEY=fw_xxxxxxxxxxxx
+export HINDSIGHT_API_RETAIN_LLM_MODEL=accounts/fireworks/models/llama-v3p1-8b-instruct
+export HINDSIGHT_API_FIREWORKS_ACCOUNT_ID=your-account-id
+export HINDSIGHT_API_RETAIN_BATCH_ENABLED=true
+```
+
+> **实体标签**（`entity_labels`）和**自由实体提取**（`entities_allow_free_form`）通过[记忆库配置 API](/developer/api/memory-banks#retain-configuration) 逐库配置，不是全局环境变量，各库可有独立受控词汇。详情见[实体标签](/developer/retain#entity-labels)。
+
+#### 实体消歧如何决定 {#how-entity-resolution-decides}
+
+将提取名称与库内现有实体匹配分为**两个阶段，各使用不同相似度度量**。调节上述阈值前需理解区别：最容易手工计算的数值，不是最终决定匹配的数值。
+
+**阶段 1：考虑哪些现有实体。** 默认 `trigram` 下，Postgres 返回小写规范名称与提取名称三元组相似的实体，由 [`HINDSIGHT_API_ENTITY_TRGM_SIMILARITY_THRESHOLD`](#database-connection-pool)（**`0.3`**）限制，且绝不低于 `HINDSIGHT_API_ENTITY_MERGE_MIN_SIMILARITY`，因为阶段 2 无论如何拒绝低于下限的项。按相似度最多保留 `HINDSIGHT_API_RETAIN_ENTITY_RESOLUTION_MAX_CANDIDATES` 个。`full` 则采用精确或子串匹配名称。标签实体不进入此阶段，只精确匹配。
+
+**阶段 2：是否复用其中一个。** 对每个候选评分，最佳者超过 **`0.6`** 即复用，否则创建新实体。
+
+| 信号 | 权重 | 衡量内容 |
+|--------|--------|------------------|
+| 名称相似度 | 最高 **0.5** | 两个小写名的字符序列比率（Python `difflib.SequenceMatcher`），**不是**阶段 1 的三元组相似度 |
+| 共现实体 | 最高 **0.3** | 同一事实提取的*其他*实体中，该候选已与多少个共现，各按选择性加权 |
+| 时间接近度 | 最高 **0.2** | 事实日期与候选 `last_seen` 的距离，7 天内线性衰减到零 |
+
+评分前，候选三元组相似度必须达到 `HINDSIGHT_API_ENTITY_MERGE_MIN_SIMILARITY`（**`0.3`**）。两个阶段度量不同，可能不一致，短名尤为明显：序列比率奖励任何共同字符段，因此 `Tigran` 与 `Iran` 得 `0.80`，高于本应合并的 `Alice`/`Alice Chen`（`0.67`）；三元组正确给出 `0.20` 与 `0.55`。没有下限时，其他信号合计可达 `0.5`，接近所需 `0.6`，仅稍微相似名称就可能因库历史被错误合并。
+
+评分前还检查两点。候选必须**逐词一致**：短名称每个词都应在长名称中找到对应（相同词、缩写或近似拼写）。否则全名相似度会让长共同词淹没完全不同短词：`John Smith` 与 `Jane Smith` 三元组为 `0.47`、序列比率 `0.80`，同姓两个人会合并。单词名豁免，因为上述下限已是词级检查。相反，候选三元组集合与名称*完全相同*时直接复用，不考虑其他信号：pg_trgm 按词构造三元组，相同集合说明仅大小写、标点或装饰不同（`Wren 🎵` 与 `Wren`、`GPT-4` 与 `GPT 4`）。
+
+共现加权同样重要。成熟库中的 `user` 实体几乎与每个事实共现，共享它几乎不提供信息。共享实体按与其共现的不同实体数折扣；与一百个其他实体同时出现的伙伴，其价值只有仅与一个伙伴出现者的十分之一。
+
+因此三个阈值回答不同问题：
+
+| 阈值 | 默认值 | 问题 |
+|---|---|---|
+| `ENTITY_TRGM_SIMILARITY_THRESHOLD` | `0.3` | 哪些现有实体会被考虑？（不低于合并下限） |
+| `ENTITY_MERGE_MIN_SIMILARITY` | `0.3` | 哪些候选允许合并？ |
+| `ENTITY_INTRABATCH_MERGE_SIMILARITY` | `0.5` | 同次存储的哪些新名称折叠为一个？ |
+
+**无关实体被合并时**，提高 `HINDSIGHT_API_ENTITY_MERGE_MIN_SIMILARITY`。同名真实表面变体通常介于 `0.4` 和 `0.7`，默认值以上仍有空间。必须完全避免模糊匹配的名称，请作为[实体标签](/developer/retain#entity-labels)建模，或自行传入并设置 [`resolve_entities: false`](/developer/api/retain#resolve_entities)。
+
+**本该合并的变体仍分离时**，降低 `HINDSIGHT_API_ENTITY_MERGE_MIN_SIMILARITY`，短名称通常是原因，因为三元组相似度天然低。阶段 1 探测跟随下限降低，除非 `HINDSIGHT_API_ENTITY_TRGM_SIMILARITY_THRESHOLD` 更高；此前提高过时也需降低它。降低下限无效时，检查近似名称很多的库中，`HINDSIGHT_API_RETAIN_ENTITY_RESOLUTION_MAX_CANDIDATES` 是否截掉正确候选。
+
+#### 不存储原始文档文本 {#skip-storing-raw-document-text}
+
+默认保留全部存储内容的原文副本，便于以后读取来源、重新处理或导出。仅希望保留提取记忆（事实、实体、心智模型）而不保留源文本时，设置：
+
+```bash
+export HINDSIGHT_API_STORE_DOCUMENT_TEXT=false
+```
+
+禁用后完整存储流水线仍执行，分块、事实提取、嵌入和实体链接不变，因此**记忆质量和召回不受影响**（召回读取提取记忆，不读取原文）。区别仅在持久化内容：
+
+- `documents.original_text` 保存为 `NULL`，而非原始载荷。
+- 丢弃原始块文本（保存为空），保留块内容哈希，确保同文档增量重新存储仍正确去重。
+
+**禁用文本存储时拒绝 `update_mode="append"`。** 追加需要读取已存储原文并加入新内容；没有原文会静默丢弃旧内容，因此返回错误。请使用默认 `update_mode="replace"`。
+
+**禁用文本存储后受影响的功能**（因为需要读取源文本）：
+
+- **文档导出**不含原文，重新导入无法从原始载荷重新提取。
+- **读取文档来源**（get-document、list-chunks、get-chunk 及 MCP 对应接口）返回空内容。
+- **`include_chunks=true` 召回**返回空 `chunk_text`，事实不受影响，但无周围来源上下文。
+- **反思**不再提供获取来源块/文档的 `expand` 工具，`recall` 也不附加来源块，因为无文本可返回。基于提取记忆的反思其余行为不变。
+- **从已存储文本重新处理文档**不执行操作，因为没有内容。
+
+此设置是静态服务器级，不可逐库覆盖。
+
+#### 自定义记忆存储：如何选择 {#customizing-retain-when-to-use-what}
+
+存储流水线有五个自定义层次，请从满足需求的最简单方案开始：
+
+| 目标 | 使用设置 |
+|------|-----|
+| 引导关注或降低关注的主题 | `HINDSIGHT_API_RETAIN_MISSION` |
+| 每个事实提取更多细节 | `HINDSIGHT_API_RETAIN_EXTRACTION_MODE=verbose` |
+| 原样存储块，由 LLM 提取元数据 | `HINDSIGHT_API_RETAIN_EXTRACTION_MODE=verbatim` |
+| 原样存储块，零 LLM 成本 | `HINDSIGHT_API_RETAIN_EXTRACTION_MODE=chunks` |
+| 完全替换提取规则 | `HINDSIGHT_API_RETAIN_EXTRACTION_MODE=custom` + `HINDSIGHT_API_RETAIN_CUSTOM_INSTRUCTIONS` |
+
+**`HINDSIGHT_API_RETAIN_MISSION`：引导而非替换提取（推荐起点）**
+
+用自然语言告诉库提取时应关注什么。任务目标与内置规则一起注入提示词，缩小关注范围而不替换底层逻辑。适用于 `concise`、`verbose`、`verbatim`、`custom`，`chunks` 中忽略。
+
+```bash
+export HINDSIGHT_API_RETAIN_MISSION="关注技术决策、架构选择和团队成员专长。降低社交或个人信息的优先级。"
+```
+
+**`HINDSIGHT_API_RETAIN_EXTRACTION_MODE=verbose`：每个事实更多细节**
+
+需要包含完整上下文、关系和更多描述的丰富事实时使用，比 `concise` 慢且 token 更多。
+
+**`HINDSIGHT_API_RETAIN_EXTRACTION_MODE=verbatim`：原样存储文本块**
+
+每块存为单个记忆单元，完整保留原文，不摘要或改写。LLM 仍提取实体、时间和位置，让文本块完整索引并可检索。适用于 RAG 索引、文档导入或希望记忆中保留原文而非 LLM 摘要的基准测试。
+
+```bash
+export HINDSIGHT_API_RETAIN_EXTRACTION_MODE=verbatim
+```
+
+**`retain_strategies` / `retain_default_strategy`：逐调用提取策略**
+
+命名策略让不同内容类型用不同提取设置导入同一库。策略是应用于解析后库配置之上的一组分层字段覆盖。
+
+任何分层配置字段均可逐策略覆盖，包括 `retain_extraction_mode`、`retain_chunk_size`、`retain_structured_chunk_size`、`entity_labels`、`entities_allow_free_form`、`retain_mission` 等。
+
+通过记忆库配置 API 设置策略：
+
+```json
+{
+  "retain_default_strategy": "conversations",
+  "retain_strategies": {
+    "conversations": {
+      "retain_extraction_mode": "concise",
+      "retain_chunk_size": 3000,
+      "retain_structured_chunk_size": 12000
+    },
+    "documents": {
+      "retain_extraction_mode": "chunks",
+      "retain_chunk_size": 800,
+      "entity_labels": null,
+      "entities_allow_free_form": false
+    }
+  }
+}
+```
+
+然后存储时指定策略：
+
+<CodeSnippet code={configurationPy} section="retain-strategy" language="python" />
+
+调用未指定 `strategy` 时采用 `retain_default_strategy`。两者都未设置则直接应用库/全局配置。
+
+**`HINDSIGHT_API_RETAIN_EXTRACTION_MODE=chunks`：零 LLM 成本**
+
+每块原样存储，完全不调用 LLM。不提取实体，也无时间索引，只生成语义搜索嵌入。用户通过 `RetainContent.entities` 提供的实体是唯一来源。导入速度和成本比结构化元数据更重要时使用。
+
+```bash
+export HINDSIGHT_API_RETAIN_EXTRACTION_MODE=chunks
+```
+
+**`HINDSIGHT_API_RETAIN_EXTRACTION_MODE=custom` + `HINDSIGHT_API_RETAIN_CUSTOM_INSTRUCTIONS`：完全控制**
+
+完全替换内置选择规则。提示词结构部分（输出格式、时间处理、指代消歧）保持，只替换提取指导。
+
+`retain_mission` 不足、需要严格包含/排除逻辑时使用。
+
+```bash
+export HINDSIGHT_API_RETAIN_EXTRACTION_MODE=custom
+export HINDSIGHT_API_RETAIN_CUSTOM_INSTRUCTIONS="仅提取以下事实：
+✅ 技术决策及依据
+✅ 架构模式和设计选择
+✅ 性能指标和基准测试
+
+不要提取：
+❌ 问候或社交对话
+❌ 过程闲聊（\"让我看看\"、\"稍等\"）
+❌ 六个月后没有价值的内容"
+```
+
+### 文件处理 {#file-processing}
+
+文件上传和转换流水线配置，用于 `POST /v1/default/banks/{bank_id}/files/retain`。
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_ENABLE_FILE_UPLOAD_API` | 启用文件上传 API 端点 | `true` |
+| `HINDSIGHT_API_ENABLE_DOCUMENT_EXPORT_API` | 启用[文档导出](./api/memory-banks.mdx#document-export--import-superseded)端点（`GET /document-transfer`） | `true` |
+| `HINDSIGHT_API_ENABLE_DOCUMENT_IMPORT_API` | 启用[文档导入](./api/memory-banks.mdx#document-export--import-superseded)端点（`POST /document-transfer`） | `true` |
+| `HINDSIGHT_API_FILE_PARSER` | 服务器默认解析器或逗号分隔回退链（例如 `iris,markitdown`） | `markitdown` |
+| `HINDSIGHT_API_FILE_PARSER_ALLOWLIST` | 允许客户端请求的解析器，逗号分隔。未设置允许所有已注册解析器。 | — |
+| `HINDSIGHT_API_FILE_CONVERSION_MAX_BATCH_SIZE` | 每次上传请求最大文件数 | `10` |
+| `HINDSIGHT_API_FILE_CONVERSION_MAX_BATCH_SIZE_MB` | 每次请求最大总上传大小（MB） | `100` |
+| `HINDSIGHT_API_FILE_DELETE_AFTER_RETAIN` | 记忆提取完成后删除已存储文件 | `true` |
+
+#### 解析器选择 {#parser-selection}
+
+客户端可在 `POST /v1/default/banks/{bank_id}/files/retain` 请求体中传入 `parser` 覆盖默认值。服务器默认和逐请求字段均接受单一解析器名或有序**回退链**，按顺序尝试直到成功。
+
+```bash
+# 服务器默认：先 iris，失败后回退 markitdown
+export HINDSIGHT_API_FILE_PARSER=iris,markitdown
+
+# 限制客户端可请求解析器（可选，默认允许所有已注册解析器）
+export HINDSIGHT_API_FILE_PARSER_ALLOWLIST=markitdown,iris
+```
+
+```json
+// 逐请求覆盖（文件存储端点的 JSON 请求体）
+{
+  "parser": "iris",
+  "files_metadata": [
+    { "document_id": "report" },
+    { "document_id": "fallback_doc", "parser": ["iris", "markitdown"] }
+  ]
+}
+```
+
+请求允许列表之外的解析器时，客户端收到 HTTP 400。
+
+#### 解析器：markitdown（默认） {#parser-markitdown-default}
+
+通过 [Microsoft markitdown](https://github.com/microsoft/markitdown) 在本地将文件转成 Markdown，默认无需外部服务。
+
+**支持格式：**PDF、DOCX、DOC、PPTX、PPT、XLSX、XLS、图像（JPG、PNG，提取文字需可选 OCR）、音频（MP3、WAV，转录）、HTML、TXT、MD、CSV。
+
+图像任务可选使用兼容 OpenAI 的 OCR/视觉端点，默认禁用。未启用时，图像上传返回可操作的配置错误，而非低层解析器输出。启用后需显式配置 MarkItDown OCR API 密钥、基础 URL 和模型，不继承 `HINDSIGHT_API_LLM_*`，因为它直接使用 OpenAI SDK。端点必须实现 OpenAI Chat Completions，模型必须支持图像输入。
+
+OCR 路径使用 MarkItDown 图像转换钩子，适用于 JPG、PNG，以及使用 `llm_client` 的转换器内图像处理，但不会将扫描 PDF 页面栅格化为图像。没有文字层的扫描 PDF 通过默认 PDF 转换器仍可能提取不佳。扫描 PDF 或复杂布局请使用 `iris`、`llama_parse` 等支持 OCR 的文档解析器，或配置 `llama_parse,markitdown` 回退链。
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_FILE_PARSER_MARKITDOWN_OCR_ENABLED` | 通过兼容 OpenAI OCR/视觉端点启用 MarkItDown 图像 OCR | `false` |
+| `HINDSIGHT_API_FILE_PARSER_MARKITDOWN_OCR_API_KEY` | MarkItDown OCR API 密钥，启用时必需 | — |
+| `HINDSIGHT_API_FILE_PARSER_MARKITDOWN_OCR_BASE_URL` | 兼容 OpenAI Chat Completions 的基础 URL，OCR 启用时必需 | — |
+| `HINDSIGHT_API_FILE_PARSER_MARKITDOWN_OCR_MODEL` | 支持图像输入的 OCR/视觉模型，OCR 启用时必需 | — |
+| `HINDSIGHT_API_FILE_PARSER_MARKITDOWN_OCR_PROMPT` | 传给 MarkItDown 图像转换器的 OCR 提示词 | 内置 OCR 提示词 |
+| `HINDSIGHT_API_FILE_PARSER_MARKITDOWN_OCR_DEFAULT_HEADERS` | 传给 OCR OpenAI SDK 客户端 `default_headers` 的可选 JSON 字典（代理/请求追踪中间件） | `null` |
+
+```bash
+# 为 MarkItDown OCR 配置专用兼容 OpenAI 的 OCR/视觉端点
+export HINDSIGHT_API_FILE_PARSER=markitdown
+export HINDSIGHT_API_FILE_PARSER_MARKITDOWN_OCR_ENABLED=true
+export HINDSIGHT_API_FILE_PARSER_MARKITDOWN_OCR_API_KEY=your-vision-api-key
+export HINDSIGHT_API_FILE_PARSER_MARKITDOWN_OCR_BASE_URL=https://vision.example/v1
+export HINDSIGHT_API_FILE_PARSER_MARKITDOWN_OCR_MODEL=ocr-or-vision-model
+# 可选：代理/请求追踪自定义头
+# export HINDSIGHT_API_FILE_PARSER_MARKITDOWN_OCR_DEFAULT_HEADERS='{"X-Component-Id":"hindsight-ocr"}'
+```
+
+#### 解析器：iris {#parser-iris}
+
+通过 [Vectorize Iris](https://docs.vectorize.io/build-deploy/extract-information/understanding-iris/) 云端提取，远程 AI 服务为复杂文档提供更高质量。
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_FILE_PARSER_IRIS_TOKEN` | Vectorize API 令牌 | — |
+| `HINDSIGHT_API_FILE_PARSER_IRIS_ORG_ID` | Vectorize 组织 ID | — |
+
+**支持格式：**PDF、DOCX、DOC、PPTX、PPT、XLSX、XLS、图像（JPG、JPEG、PNG、GIF、BMP、TIFF、WEBP）、HTML、TXT、MD、CSV。
+
+```bash
+# 仅使用 iris 解析器
+export HINDSIGHT_API_FILE_PARSER=iris
+export HINDSIGHT_API_FILE_PARSER_IRIS_TOKEN=your-vectorize-token
+export HINDSIGHT_API_FILE_PARSER_IRIS_ORG_ID=your-org-id
+
+# 或先 iris，失败或拒绝文件类型时回退 markitdown
+export HINDSIGHT_API_FILE_PARSER=iris,markitdown
+```
+
+#### 解析器：llama_parse {#parser-llama_parse}
+
+通过 [LlamaParse](https://docs.cloud.llamaindex.ai/llamaparse)（LlamaIndex）云端提取，擅长表格、图表、多栏 PDF 等复杂布局。
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_FILE_PARSER_LLAMA_PARSE_API_KEY` | LlamaCloud API 密钥，通常以 `llx-` 开头 | — |
+
+**支持格式：**PDF、DOCX、PPTX、XLSX、HTML、EPUB、RTF、TXT 等，完整列表见 [LlamaParse 文档](https://docs.cloud.llamaindex.ai/llamaparse/features/supported_document_types)。
+
+```bash
+# 仅使用 llama_parse 解析器
+export HINDSIGHT_API_FILE_PARSER=llama_parse
+export HINDSIGHT_API_FILE_PARSER_LLAMA_PARSE_API_KEY=llx-your-api-key
+
+# 或先 llama_parse，再回退 markitdown
+export HINDSIGHT_API_FILE_PARSER=llama_parse,markitdown
+```
+
+```bash
+# 大规模文件导入提高批量上限
+export HINDSIGHT_API_FILE_CONVERSION_MAX_BATCH_SIZE=20
+export HINDSIGHT_API_FILE_CONVERSION_MAX_BATCH_SIZE_MB=500
+
+# 处理后保留文件，适合调试或重新处理
+export HINDSIGHT_API_FILE_DELETE_AFTER_RETAIN=false
+```
+
+### 文件存储 {#file-storage}
+
+文件存储 API 上传的文件在转换前保存到对象存储后端。请选择适合基础设施的后端。
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_FILE_STORAGE_TYPE` | 存储后端：`native`、`s3`、`gcs` 或 `azure` | `native` |
+| `HINDSIGHT_API_FILE_STORAGE_EXTENSION` | 指定自定义 `FileStorage` 实现的 `module.path:ClassName`，替代内置后端。其余 `HINDSIGHT_API_FILE_STORAGE_*` 变量以小写键配置字典传入。也必须实现 `delete_prefix`，否则删除库会在后端遗留文件。 | 未设置 |
+
+#### 原生存储（PostgreSQL） {#native-postgresql}
+
+文件以 `BYTEA` 存储于 `file_storage` 表，无需额外基础设施，适合开发和小规模部署。
+
+```bash
+# 原生存储为默认值，无需额外配置
+export HINDSIGHT_API_FILE_STORAGE_TYPE=native
+```
+
+#### S3 / 兼容 S3 {#s3--s3-compatible}
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_FILE_STORAGE_S3_BUCKET` | S3 桶名 | - |
+| `HINDSIGHT_API_FILE_STORAGE_S3_REGION` | AWS 区域 | - |
+| `HINDSIGHT_API_FILE_STORAGE_S3_ENDPOINT` | 自定义端点 URL（MinIO、Cloudflare R2、Tigris 等兼容 S3 存储） | AWS 默认值 |
+| `HINDSIGHT_API_FILE_STORAGE_S3_ACCESS_KEY_ID` | AWS 访问密钥 ID | - |
+| `HINDSIGHT_API_FILE_STORAGE_S3_SECRET_ACCESS_KEY` | AWS 机密访问密钥 | - |
+
+不提供 AWS 风格区域的兼容 S3 服务（MinIO、Cloudflare R2、Tigris），请设置 `HINDSIGHT_API_FILE_STORAGE_S3_REGION=auto`。SigV4 请求签名需要此值，但服务忽略。
+
+```bash
+# AWS S3
+export HINDSIGHT_API_FILE_STORAGE_TYPE=s3
+export HINDSIGHT_API_FILE_STORAGE_S3_BUCKET=my-hindsight-files
+export HINDSIGHT_API_FILE_STORAGE_S3_REGION=us-east-1
+export HINDSIGHT_API_FILE_STORAGE_S3_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+export HINDSIGHT_API_FILE_STORAGE_S3_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
+# 兼容 S3（MinIO、Cloudflare R2 等）
+export HINDSIGHT_API_FILE_STORAGE_TYPE=s3
+export HINDSIGHT_API_FILE_STORAGE_S3_BUCKET=my-bucket
+export HINDSIGHT_API_FILE_STORAGE_S3_REGION=auto
+export HINDSIGHT_API_FILE_STORAGE_S3_ENDPOINT=https://your-minio.example.com
+export HINDSIGHT_API_FILE_STORAGE_S3_ACCESS_KEY_ID=minioadmin
+export HINDSIGHT_API_FILE_STORAGE_S3_SECRET_ACCESS_KEY=minioadmin
+
+# Tigris（兼容 S3，单一全局端点）
+export HINDSIGHT_API_FILE_STORAGE_TYPE=s3
+export HINDSIGHT_API_FILE_STORAGE_S3_BUCKET=my-hindsight-bucket
+export HINDSIGHT_API_FILE_STORAGE_S3_REGION=auto
+export HINDSIGHT_API_FILE_STORAGE_S3_ENDPOINT=https://t3.storage.dev
+export HINDSIGHT_API_FILE_STORAGE_S3_ACCESS_KEY_ID=tid_your_access_key
+export HINDSIGHT_API_FILE_STORAGE_S3_SECRET_ACCESS_KEY=tsec_your_secret_key
+```
+
+#### Google Cloud Storage
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_FILE_STORAGE_GCS_BUCKET` | GCS 桶名 | - |
+| `HINDSIGHT_API_FILE_STORAGE_GCS_SERVICE_ACCOUNT_KEY` | 服务账户 JSON 密钥文件路径 | 未设置时使用 ADC |
+
+```bash
+export HINDSIGHT_API_FILE_STORAGE_TYPE=gcs
+export HINDSIGHT_API_FILE_STORAGE_GCS_BUCKET=my-hindsight-files
+# 可选：服务账户密钥文件，否则回退到 ADC
+export HINDSIGHT_API_FILE_STORAGE_GCS_SERVICE_ACCOUNT_KEY=/path/to/key.json
+```
+
+#### Azure Blob Storage
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_FILE_STORAGE_AZURE_CONTAINER` | Azure 容器名称 | - |
+| `HINDSIGHT_API_FILE_STORAGE_AZURE_ACCOUNT_NAME` | Azure 存储账户名称 | - |
+| `HINDSIGHT_API_FILE_STORAGE_AZURE_ACCOUNT_KEY` | Azure 存储账户密钥 | - |
+
+```bash
+export HINDSIGHT_API_FILE_STORAGE_TYPE=azure
+export HINDSIGHT_API_FILE_STORAGE_AZURE_CONTAINER=hindsight-files
+export HINDSIGHT_API_FILE_STORAGE_AZURE_ACCOUNT_NAME=mystorageaccount
+export HINDSIGHT_API_FILE_STORAGE_AZURE_ACCOUNT_KEY=base64encodedkey==
+```
+
+#### 存储后端对比 {#storage-backend-comparison}
+
+| 后端 | 适用场景 | 说明 |
+|---------|----------|-------|
+| `native` | 开发、小规模部署 | 无额外基础设施，存于 PostgreSQL |
+| `s3` | 生产、AWS 部署 | 适用于任意兼容 S3 存储 |
+| `gcs` | 生产、GCP 部署 | 支持 ADC 无密钥认证 |
+| `azure` | 生产、Azure 部署 | 使用账户密钥认证 |
+
+:::tip 生产环境推荐
+生产部署请使用 `s3`、`gcs` 或 `azure`，避免在 PostgreSQL 保存大型二进制文件。保持默认 `HINDSIGHT_API_FILE_DELETE_AFTER_RETAIN=true`，在记忆提取后删除文件，降低存储费用。
+:::
+
+### 观察（实验性） {#observations}
+
+观察是从多个事实整合而来、已去重且有证据支撑的知识。每条观察跟踪支持记忆和证据数，新证据到来时细化，而非覆盖。
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_ENABLE_OBSERVATIONS` | 启用观察整合 | `true` |
+| `HINDSIGHT_API_ENABLE_AUTO_CONSOLIDATION` | 存储、删除、更新后自动触发整合。`false` 时仅通过[整合端点](/developer/api/operations#consolidation) 显式触发，可逐库配置。 | `true` |
+| `HINDSIGHT_API_CONSOLIDATION_WALL_TIMEOUT` | 工作进程单次整合任务**没有取得进展**的最长秒数。每个提交的批次重置计时，因此大积压不被截断，只终止真正卡住的作业。取消并标记 `failed`（API 可重试，区别于 `processing`，协调扫描也可重新调度），而非占用预留槽位直到重启。`0` 禁用。 | `7200` |
+| `HINDSIGHT_API_CONSOLIDATION_RECONCILE_INTERVAL_SECONDS` | 后台扫描间隔，为存在未整合事实且无进行中整合的库重新调度，恢复因操作永久失败（例如 LLM 不可用）而未调度的事实。仅自动整合开启的库适用。`0` 禁用扫描，但仅停止*调度*新工作，不停止已入队*执行*，见下文。 | `300` |
+| `HINDSIGHT_API_MENTAL_MODEL_REFRESH_TICK_SECONDS` | 后台循环检查 cron 心智模型到期刷新的频率，仅是*检查*间隔，实际计划为逐模型 `trigger.refresh_cron`。到期且过时（上次刷新后范围内有新记忆）才刷新。也设置 **cron 精度下限**：默认 `* * * * *` 实际每 5 分钟而非每分钟触发。更细计划可降低，但跨租户扫描更频繁，见[后台维护](#background-maintenance)。`0` 禁用扫描，只停止新调度，不阻止已入队执行。 | `300` |
+| `HINDSIGHT_API_ENABLE_OBSERVATION_HISTORY` | 记录观察变化历史（旧文本/标签/日期 + 时间戳），每次变化在 `observation_history` 一行。`false` 完全禁用，不写历史。**关闭功能使用此项**，而非零上限。 | `true` |
+| `HINDSIGHT_API_OBSERVATION_HISTORY_MAX_ENTRIES` | 每条观察最大历史行数。更新时插入旧版本，删除超限最旧行，避免持续强化的观察无界增长。`0` 或负值**移除上限**，完全禁用应设 `HINDSIGHT_API_ENABLE_OBSERVATION_HISTORY=false`。 | `50` |
+| `HINDSIGHT_API_CONSOLIDATION_MAX_ATTEMPTS` | 整合 LLM 批量调用外层尝试次数，仅连接和限流类失败使用（尝试间退避）。格式或 schema 错误不重发，立即失败并拆小批次。提供方配额耗尽也不在此重试，而是整个作业重新调度到配额开放时。每次尝试还使用内部 `HINDSIGHT_API_CONSOLIDATION_LLM_MAX_RETRIES`，最坏每批调用数 = `MAX_ATTEMPTS × (LLM_MAX_RETRIES + 1)`。 | `3` |
+| `HINDSIGHT_API_CONSOLIDATION_BATCH_SIZE` | 每批加载记忆数（内部优化） | `50` |
+| `HINDSIGHT_API_CONSOLIDATION_MAX_MEMORIES_PER_ROUND` | 每轮整合最大记忆数。达到上限后让出工作槽位并重新入队，公平调度其他库。心智模型仅最后一轮刷新。`0` 无限制，可逐库配置。 | `100` |
+| `HINDSIGHT_API_CONSOLIDATION_MAX_TOKENS` | 整合查找相关观察时，召回最大 token 数 | `1024` |
+| `HINDSIGHT_API_CONSOLIDATION_MAX_COMPLETION_TOKENS` | 每个整合 LLM 批量调用请求的最大完成 token 数。默认未设置，各提供方保留隐含预算。提供方隐藏上限较低（例如 Bedrock 导入模型）导致输出截断时设置。 | `unset` |
+| `HINDSIGHT_API_CONSOLIDATION_LLM_BATCH_SIZE` | 单次整合发送给 LLM 的事实数。提高可减少调用、提升吞吐量，但提示词更大。`1` 禁用批量，可逐库配置。 | `8` |
+| `HINDSIGHT_API_CONSOLIDATION_DEDUP_THRESHOLD` | 新建或刚更新观察与已有近似相同观察协调的余弦相似度阈值。达到后进行专门一对一 LLM“合并或保留”调用，模型读取两段文本，尊重数字/否定/实体差异。捕获弱模型即使看到相同观察仍生成的近重复，以及更新把观察改成另一条近似版本的重复。`1.0` 禁用。仅 Postgres，Oracle 无论值多少均跳过协调。 | `0.97` |
+| `HINDSIGHT_API_CONSOLIDATION_LLM_PARALLELISM` | 单个整合操作并发处理的最大标签组数。各组先取得逐范围锁，写范围重叠时（例如 `per_tag` / `all_combinations` / 显式列表 `observation_scopes`）自动顺序执行，争用时实际并发低于上限。`1` 完全顺序。提高会按比例增大 LLM 峰值 QPS 及连接池占用，提供方限流严格或池小时降低。可逐库配置。 | `4` |
+| `HINDSIGHT_API_CONSOLIDATION_RECALL_BUDGET` | 整合内部召回预算（`low`、`mid`、`high`）。低预算减少候选行，降低大库峰值内存。 | `low` |
+| `HINDSIGHT_API_CONSOLIDATION_SOURCE_FACTS_MAX_TOKENS` | 整合提示词中随观察提供的来源事实总 token 预算。`-1` 无限制，可逐库配置。 | `4096` |
+| `HINDSIGHT_API_CONSOLIDATION_SOURCE_FACTS_MAX_TOKENS_PER_OBSERVATION` | 整合提示词中每条观察来源事实 token 上限。各观察独立最多此 token 数。`-1` 无限制，可逐库配置。 | `256` |
+| `HINDSIGHT_API_OBSERVATIONS_MISSION` | 此库应综合成哪些持久观察，替换内置整合规则；未设置使用服务器默认。 | - |
+| `HINDSIGHT_API_MAX_OBSERVATIONS_PER_SCOPE` | 每个标签范围最大观察数。达到后只更新或删除，不新建。逐标签范围应用（例如 `per_tag`），无标签观察不受限制。`-1` 无限制，可逐库配置。 | `-1` |
+| `HINDSIGHT_API_OBSERVATION_SCOPE_LIMITS` | **已弃用**，请用同时携带任务目标的 `CONSOLIDATION_STRATEGIES`。仍兼容，但在策略之后读取。逐范围覆盖 `MAX_OBSERVATIONS_PER_SCOPE`，JSON 数组 `{"scope": [tag-globs], "limit": int}`。`scope` 为 [fnmatch](https://docs.python.org/3/library/fnmatch.html) 模式列表，按*精确覆盖*匹配：每个标签必须匹配模式，每个模式也必须匹配标签。因此 `["shared"]` 匹配 `{shared}`，不匹配 `{run_1, shared}`。首个匹配规则优先，无匹配回退到库级上限。例如 `[{"scope": ["shared"], "limit": -1}, {"scope": ["run_*", "shared"], "limit": 50}]` 保持 `{shared}` 无限制，各 `{run_*, shared}` 上限 50。可逐库配置。 | - |
+| `HINDSIGHT_API_CONSOLIDATION_STRATEGIES` | 逐范围整合设置，JSON 策略数组 `{"scopes": [{"tags": [tag-globs], "tags_match": "all" \| "exact"}, ...], "observations_mission": str, "max_observations_per_scope": int, "consolidation_source_facts_max_tokens": int, "consolidation_source_facts_max_tokens_per_observation": int}`。每策略列出所管理范围，范围为 [fnmatch](https://docs.python.org/3/library/fnmatch.html) 模式列表，任意模式匹配标签则管理该次整合。`tags_match`：`"all"`（默认）要求模式中所有标签，允许其他标签；`"exact"` 恰好这些标签，无其他项。所有设置可选。**每个范围只用一个策略，列表中首次匹配者优先。** 该策略未设置项及无策略范围，使用库级 `OBSERVATIONS_MISSION`、`MAX_OBSERVATIONS_PER_SCOPE`、`CONSOLIDATION_SOURCE_FACTS_MAX_TOKENS` 和 `CONSOLIDATION_SOURCE_FACTS_MAX_TOKENS_PER_OBSERVATION`。替代 `OBSERVATION_SCOPE_LIMITS`，让单库按用户/团队/公司标签范围联合，各范围独立 LLM 调用，遵循不同目标。例如 `[{"scopes": [{"tags": ["company:*"]}], "observations_mission": "仅记录通用行业趋势，绝不列出特定公司、交易规模或融资阶段。"}]` 保留用户范围细节，公司范围保持通用。可逐库配置。 | - |
+
+:::note 禁用扫描只停止调度，不停止执行
+
+后台工作分为两个独立阶段，上述间隔只控制第一阶段：
+
+1. **调度**：维护循环周期扫描到期工作（需协调整合、刷新模型）并入队。`HINDSIGHT_API_CONSOLIDATION_RECONCILE_INTERVAL_SECONDS=0` 和 `HINDSIGHT_API_MENTAL_MODEL_REFRESH_TICK_SECONDS=0` 关闭扫描，不再入队*新*工作。
+2. **执行**：工作进程轮询器按自身频率（[`HINDSIGHT_API_WORKER_POLL_INTERVAL_MS`](#distributed-workers)，默认 500ms）领取并执行已有待处理工作，不受上述间隔影响，仍处理禁用扫描前入队的操作，包括重启后从旧运行恢复的操作。
+
+间隔设零可让*空闲*部署安静，但已有积压时仍整合和刷新。要完全停止后台执行，需禁用工作进程：
+
+```bash
+HINDSIGHT_API_WORKER_ENABLED=false
+```
+
+隔离负载进行基准测试或调试时很关键：仅将间隔设零，已排队整合或存储仍可能与测量并行，并被错误计入。
+
+:::
+
+#### 自定义观察：如何选择 {#customizing-observations-when-to-use-what}
+
+| 目标 | 使用设置 |
+|------|-----|
+| 默认：持久具体事实，无临时状态 | 不设置 |
+| 改变此库观察的*定义*（不同形态、不同用途） | `HINDSIGHT_API_OBSERVATIONS_MISSION` |
+
+**`HINDSIGHT_API_OBSERVATIONS_MISSION`：重新定义此库综合内容**
+
+默认观察是从记忆整合的持久具体信念，长期成立的知识（偏好、技能、关系、重复模式）。每条基于支持它的来源记忆，过滤短期状态。矛盾用时间标记跟踪，而非覆盖旧信念。
+
+设置 `HINDSIGHT_API_OBSERVATIONS_MISSION` 可完全替换此定义。用自然语言描述场景需要的观察，LLM 创建/更新时使用它代替默认规则。不设置保留服务器默认。
+
+:::tip 何时使用 observations_mission
+默认持久知识行为不匹配场景时使用，常见需求：
+- **更广泛事件摘要**，而非孤立事实
+- 按**时间段分组**（周、月）
+- **不同粒度**（每项目一条，而非每事实一条）
+- 对值得记住内容有**领域特定**定义
+:::
+
+**示例：每周事件摘要**
+
+```bash
+export HINDSIGHT_API_OBSERVATIONS_MISSION="观察是按周分组的项目事件综合摘要。每条应记录发生了什么、决定了什么、遇到什么阻碍，而非单个事实。将相关事件合并为连贯的每周叙述。"
+```
+
+**示例：以人为中心的知识**
+
+```bash
+export HINDSIGHT_API_OBSERVATIONS_MISSION="观察是有关具体具名人员的持久事实：偏好、技能、关系和行为模式。只为长期稳定且与具名个人相关的事实创建观察。"
+```
+
+**示例：支持工单模式**
+
+```bash
+export HINDSIGHT_API_OBSERVATIONS_MISSION="观察是客户支持交互中反复出现的模式：常见故障、频繁请求的功能、多个工单共同出现的痛点。"
+```
+
+### 反思 {#reflect}
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_REFLECT_MAX_ITERATIONS` | 强制回答前最多工具调用迭代数 | `10` |
+| `HINDSIGHT_API_REFLECT_MAX_CONTEXT_TOKENS` | 反思循环累积上下文 token 上限，达到后强制最终综合，避免大库 `context_length_exceeded`。LLM 窗口小于 128K 时降低。 | `100000` |
+| `HINDSIGHT_API_REFLECT_WALL_TIMEOUT` | 整个反思操作墙钟超时（秒），超出返回 HTTP 504。也限制工作进程整个心智模型刷新，超时取消并失败，避免占槽。 | `300` |
+| `HINDSIGHT_API_REFLECT_MISSION` | 全局反思任务目标（身份和推理框架），可通过配置 API 逐库覆盖。 | - |
+| `HINDSIGHT_API_REFLECT_SOURCE_FACTS_MAX_TOKENS` | 反思 `search_observations` 来源事实 token 预算。`-1` 禁用（默认），`0` 启用且无限制，`>0` 启用并限预算。分层，可逐库覆盖。 | `-1` |
+| `HINDSIGHT_API_REFLECT_DEFAULT_OPTIONS` | 默认反思选项 JSON，请求未设置时应用。心智模型刷新不读取，而是采用自身触发器，逐库默认由 `knowledge_page_default_trigger` 提供。`reflect_search_observations_max_tokens` 限制工具预算（减少会丢弃最低排名观察，缩小上下文），`reflect_search_observations_include_entities` 可关闭随观察附带的解析实体名称，它们可能占工具载荷一半以上。例如 `{"reflect_search_observations_max_tokens": 3000, "reflect_search_observations_include_entities": false}`。分层，可逐库覆盖。 | - |
+
+#### 内部记忆召回（反思和心智模型刷新使用） {#internal-recall-used-by-reflect-and-mental-model-refresh}
+
+控制反思智能体运行的召回工具（含心智模型刷新）。模型未指定预算时采用此值；模型显式请求优先，但仍受反思对模型 token 参数的约束。分层设置，可逐库通过配置 API 覆盖，也可逐模型用 `trigger.include_chunks`、`trigger.recall_max_tokens`、`trigger.recall_chunks_max_tokens` 覆盖。
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_RECALL_INCLUDE_CHUNKS` | 内部召回是否随事实返回原始块文本。`false` 跳过，节省提示词预算。 | `true` |
+| `HINDSIGHT_API_RECALL_MAX_TOKENS` | 内部召回返回事实的 token 预算。 | `2048` |
+| `HINDSIGHT_API_RECALL_CHUNKS_MAX_TOKENS` | 内部召回返回原始文本块的 token 预算。 | `1000` |
+
+#### 性格倾向 {#disposition}
+
+性格倾向控制记忆库反思时如何推理。各特质为 1–5，支持通过[配置 API](#hierarchical-configuration) 逐库覆盖。
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_DISPOSITION_SKEPTICISM` | 怀疑与信任程度（1=信任，5=怀疑） | `3` |
+| `HINDSIGHT_API_DISPOSITION_LITERALISM` | 按字面理解信息程度（1=灵活，5=字面） | `3` |
+| `HINDSIGHT_API_DISPOSITION_EMPATHY` | 考虑情感上下文程度（1=疏离，5=共情） | `3` |
+
+### MCP 服务器 {#mcp-server}
+
+MCP 服务器端点配置。
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_MCP_ENABLED` | 在 `/mcp/{bank_id}/` 启用 MCP 服务器 | `true` |
+| `HINDSIGHT_API_MCP_ENABLED_TOOLS` | 全局公开 MCP 工具允许列表，逗号分隔（空=所有工具） | - |
+| `HINDSIGHT_API_MCP_STATELESS` | 使用无状态 HTTP 传输（仅 POST）。`false` 启用有状态模式，支持 GET/SSE 服务器主动消息 | `false` |
+| `HINDSIGHT_API_MCP_AUTH_TOKEN` | MCP 认证 Bearer 令牌（可选） | - |
+| `HINDSIGHT_API_MCP_LOCAL_BANK_ID` | 本地 MCP 记忆库 ID | `mcp` |
+| `HINDSIGHT_API_MCP_INSTRUCTIONS` | 追加到存储/召回工具说明的额外指令 | - |
+
+**工具访问控制：**
+
+`HINDSIGHT_API_MCP_ENABLED_TOOLS` 限制服务器级注册工具，适用于只读部署或减少公开接口：
+
+```bash
+# 只提供 recall（只读部署）
+export HINDSIGHT_API_MCP_ENABLED_TOOLS=recall
+
+# 只提供 recall 和 reflect
+export HINDSIGHT_API_MCP_ENABLED_TOOLS=recall,reflect
+```
+
+可用工具名称： `retain`, `recall`, `reflect`, `list_banks`, `create_bank`, `list_mental_models`, `get_mental_model`, `create_mental_model`, `update_mental_model`, `delete_mental_model`, `refresh_mental_model`, `list_directives`, `create_directive`, `delete_directive`, `list_memories`, `get_memory`, `list_documents`, `get_document`, `delete_document`, `list_operations`, `get_operation`, `cancel_operation`, `list_tags`, `get_bank`, `get_bank_stats`, `update_bank`, `delete_bank`, `clear_memories`, `get_knowledge_base_tree`, `search_knowledge_base`, `get_knowledge_page`, `create_knowledge_folder`, `create_knowledge_page`, `update_knowledge_node`, `delete_knowledge_node`.
+
+也可通过[配置 API](#hierarchical-configuration) 逐库覆盖：
+
+<CodeSnippet code={configurationSh} section="mcp-tools-per-bank" language="bash" />
+
+设置库级 `mcp_enabled_tools` 后，列表外工具调用时返回明确错误，仍出现在工具列表以兼容 MCP 协议。
+
+**MCP 身份验证：**
+
+默认 MCP 端点开放。生产部署可设置 `HINDSIGHT_API_MCP_AUTH_TOKEN` 要求 Bearer 令牌认证：
+
+```bash
+export HINDSIGHT_API_MCP_AUTH_TOKEN=your-secret-token
+```
+
+客户端必须在 `Authorization` 头包含令牌，详情见 [MCP 服务器文档](./mcp-server.md#authentication)。
+
+**本地 MCP 指令：**
+
+```bash
+# 示例：要求 MCP 也存储助手行为
+export HINDSIGHT_API_MCP_INSTRUCTIONS="也存储你采取的每个行动，包括工具调用和作出的决策。"
+```
+
+### 分布式工作进程 {#distributed-workers}
+
+后台任务处理配置。默认 API 内部处理任务，高吞吐部署请运行专用工作进程，详情见[服务 — 工作进程](./services#worker-service)。
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_WORKER_ENABLED` | 启用 API 进程内工作进程。`false` 停止领取和运行已入队后台操作（整合、存储、心智模型刷新）。停止执行需使用此项，而非维护间隔设置。 | `true` |
+| `HINDSIGHT_API_WORKER_ID` | 唯一工作进程标识符 | 主机名 |
+| `HINDSIGHT_API_WORKER_POLL_INTERVAL_MS` | 数据库轮询间隔，单位毫秒 | `500` |
+| `HINDSIGHT_API_WORKER_MAX_RETRIES` | 标记任务失败前的最大重试数 | `3` |
+| `HINDSIGHT_API_WORKER_TASK_RETRY_BACKOFF_SECONDS` | 短暂任务失败的重试间隔秒数 | `60` |
+| `HINDSIGHT_API_BACKPRESSURE_DEFER_SECONDS` | 存储因背压拒绝任务后，重试前等待时间。应足够长让积压真正消减，避免仍满时再次拒绝；也不能过长，让积压已清除仍等待。延迟不计入 `HINDSIGHT_API_WORKER_MAX_RETRIES`。 | `120` |
+| `HINDSIGHT_API_WORKER_HTTP_PORT` | 工作进程指标/健康检查 HTTP 端口（仅 worker CLI） | `8889` |
+| `HINDSIGHT_API_WORKER_MAX_SLOTS` | 每个工作进程最大并发任务数，所有操作类型合计 | `10` |
+| `HINDSIGHT_API_OPERATION_RETENTION_DAYS` | 完成、失败、取消操作整行的静态服务器级保留窗口，含任务载荷和结果元数据。默认 `0` 无限保留；正天数启用自动清理。 | `0` |
+| `HINDSIGHT_API_OPERATION_CLEANUP_BATCH_SIZE` | 每轮清理每个租户 schema 最多删除的过期终态操作行数，与间隔共同决定积压清理速率，必须正整数。 | `1000` |
+| `HINDSIGHT_API_OPERATION_CLEANUP_INTERVAL_SECONDS` | 清理周期频率。每轮消耗一次跨租户发现往返，因此多租户部署的主要成本调节项，见[后台维护](#background-maintenance)。`0` 禁用。 | `900` |
+| `HINDSIGHT_API_WORKER_CONSOLIDATION_RESERVED_SLOTS` | `WORKER_MAX_SLOTS` 内为整合预留的最少槽位，保证容量的下限，**非**按类型上限，仍保留库级顺序约束。见下文。 | `2` |
+| `HINDSIGHT_API_WORKER_CONSOLIDATION_BANK_PRIORITY` | 整合调度的逐库优先级，见下文 | _（未设置）_ |
+| `HINDSIGHT_API_WORKER_RETAIN_RESERVED_SLOTS` | `WORKER_MAX_SLOTS` 内为 retain 预留的最少槽位。 | `0` |
+| `HINDSIGHT_API_WORKER_FILE_CONVERT_RETAIN_RESERVED_SLOTS` | `WORKER_MAX_SLOTS` 内为 file_convert_retain 预留的最少槽位。 | `0` |
+| `HINDSIGHT_API_WORKER_REFRESH_MENTAL_MODEL_RESERVED_SLOTS` | `WORKER_MAX_SLOTS` 内为 refresh_mental_model 预留的最少槽位。 | `0` |
+| `HINDSIGHT_API_WORKER_GRAPH_MAINTENANCE_RESERVED_SLOTS` | `WORKER_MAX_SLOTS` 内为 graph_maintenance 预留的最少槽位。 | `0` |
+| `HINDSIGHT_API_WORKER_IMPORT_DOCUMENTS_RESERVED_SLOTS` | `WORKER_MAX_SLOTS` 内为 import_documents 预留的最少槽位。 | `0` |
+| `HINDSIGHT_API_WORKER_EXPORT_BANK_RESERVED_SLOTS` | `WORKER_MAX_SLOTS` 内为 export_bank 预留的最少槽位。 | `0` |
+| `HINDSIGHT_API_WORKER_IMPORT_BANK_RESERVED_SLOTS` | `WORKER_MAX_SLOTS` 内为 import_bank 预留的最少槽位。 | `0` |
+| `HINDSIGHT_API_WORKER_<TYPE>_MAX_SLOTS` | `..._RESERVED_SLOTS` 的**弃用**别名，`<TYPE>` 为 `CONSOLIDATION`、`RETAIN`、`FILE_CONVERT_RETAIN`、`REFRESH_MENTAL_MODEL`、`GRAPH_MAINTENANCE`、`IMPORT_DOCUMENTS`。名称有误导，始终设置预留下限，不是上限。仍兼容但警告，未来移除。与 `..._RESERVED_SLOTS` 同时设置会报错。 | _（未设置）_ |
+
+终态操作整行使用统一保留窗口。完成时不清除任务载荷：失败/取消操作重试需要它，完成操作的 `include_payload=true` 则是显式调试接口。一起保留载荷、结果元数据、进度和状态，避免部分历史。终态行 `updated_at` 超过窗口后，维护循环按 schema 有界批量清理，与其他扫描一起运行。仅 PostgreSQL，Oracle 不运行维护循环。待处理和处理中行永不被此清理删除。
+
+:::note 工作槽位预留是下限，不是上限
+`..._RESERVED_SLOTS` 在 `WORKER_MAX_SLOTS` 中为某类型保证*最少*槽位，防止饱和池挤占。**不是**逐类型上限。预留总数不能超过 `WORKER_MAX_SLOTS`，否则启动 `ValueError`。剩余容量（`WORKER_MAX_SLOTS - sum of reservations`）构成所有类型先到先用的**共享池**；预留已满的类型**继续使用共享池**，实际最高可达 `WORKER_MAX_SLOTS`，不论预留多少。
+
+例如：`MAX_SLOTS=10`、`CONSOLIDATION_RESERVED_SLOTS=2`、`RETAIN_RESERVED_SLOTS=3`、`REFRESH_MENTAL_MODEL_RESERVED_SLOTS=2` → 共享池 = `10 - (2+3+2) = 3`。
+
+默认（`MAX_SLOTS=10`、`CONSOLIDATION_RESERVED_SLOTS=2`、其他为 `0`），2 个始终预留整合，8 个共享；整合仍可溢出共享池直到 10。设 `CONSOLIDATION_RESERVED_SLOTS=0` 释放预留到共享池。无论哪个池领取槽位，都保留同库不能同时两项整合的约束。
+
+旧 `..._MAX_SLOTS` 是 `..._RESERVED_SLOTS` 的弃用别名，虽叫 MAX，设置的始终是预留下限。仍工作但警告，请迁移。
+:::
+
+:::note 整合记忆库优先级
+`HINDSIGHT_API_WORKER_CONSOLIDATION_BANK_PRIORITY` 控制槽位可用时优先领取哪些库的整合。格式为逗号分隔 `bank-pattern:priority`，数字越高优先级越高。模式支持 `*` 通配，单独 `*` 为未列出库的默认，省略则默认 `1`。
+
+示例：
+```
+HINDSIGHT_API_WORKER_CONSOLIDATION_BANK_PRIORITY="shadow-*:10,staging-*:5,*:1"
+```
+
+即使任务提交较晚，`shadow-*` 也始终先整合。适合库规模不对称部署，避免大库被大量小库轮流占据有限槽位而饿死。无论优先级，都保留每库最多一个并发整合。未设置按 `created_at` 顺序领取（默认）。
+:::
+
+### 性能优化 {#performance-optimization}
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_SKIP_LLM_VERIFICATION` | 启动时跳过 LLM 连接检查 | `false` |
+
+#### 记忆库统计缓存 {#bank-stats-cache}
+
+`get_bank_stats` 聚合 `memory_links` 并连接 `memory_units`，数百万行库可能扫描数秒。结果有意近似，用于 UI 组件及 `reflect` 新鲜度提示，因此按 `(schema, bank)` 缓存几十秒，也将并发未命中合并为一个在途查询。高并发或大库可调节：
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_BANK_STATS_CACHE_TTL_SECONDS` | `get_bank_stats` 结果缓存有效期（秒）。`0` 禁用，每次调用运行查询。 | `60` |
+| `HINDSIGHT_API_BANK_STATS_CACHE_MAX_ENTRIES` | LRU 淘汰前最大缓存 `(schema, bank)` 条目数，限制多库部署内存。 | `1024` |
+
+#### 原生线程池 {#native-thread-pools}
+
+本地嵌入/重排进程内运行时，BLAS/ML 库（OpenBLAS、OpenMP、MKL）各按主机 CPU 数创建线程池。Hindsight 已通过自身线程池并行处理请求，原生池导致 CPU 超配，多核主机可累积远超 100 原生线程，增加内存并在争用下损害吞吐量。因此默认将各原生池限制为 **16 线程**或*可用* CPU 数，取较小者；限制大主机失控增长，同时保留调用内并行。
+
+“可用”CPU 是进程实际预算，取 CPU 亲和性集合、cgroup 配额（`--cpus` / cpuset）、主机核心数的最小值。容器中尤为重要，否则 BLAS 仍按*主机*核心建池，64 核主机上 `--cpus=4` 容器会生成远超可运行数量的线程。
+
+可将以下任一变量设为目标线程数。显式值始终优先，默认只在未设置时应用：
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `OMP_NUM_THREADS` | OpenMP 工作线程数（torch、ONNX Runtime、部分 BLAS 构建） | `min(16, 可用 CPU 数)` |
+| `OPENBLAS_NUM_THREADS` | OpenBLAS 工作线程数（numpy 默认 BLAS） | `min(16, 可用 CPU 数)` |
+| `MKL_NUM_THREADS` | Intel MKL 工作线程数（使用 MKL 的 numpy/torch） | `min(16, 可用 CPU 数)` |
+| `NUMEXPR_NUM_THREADS` | numexpr 表达式引擎线程数 | `min(16, 可用 CPU 数)` |
+
+处理大量并发请求的服务器可降低至 `1`，偏好请求级并行并减少线程；低并发大批本地模型负载可保留默认，利用调用内并行。必须启动前在环境设置，库加载时只读一次，不可逐租户/库覆盖。
+
+### Webhooks
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_WEBHOOK_URL` | 投递事件的全局 webhook URL | -（禁用） |
+| `HINDSIGHT_API_WEBHOOK_SECRET` | Webhook 载荷 HMAC 签名密钥 | -（无签名） |
+| `HINDSIGHT_API_WEBHOOK_EVENT_TYPES` | 通过 webhook 投递的事件类型，逗号分隔 | `consolidation.completed` |
+| `HINDSIGHT_API_WEBHOOK_ALLOWED_HOSTS` | 除公共地址外，允许作为 webhook 目标的主机或 IP/CIDR，逗号分隔。私有、回环、链路本地范围（含云元数据地址）默认阻止，除非在此列出。 | -（仅公共地址） |
+| `HINDSIGHT_API_WEBHOOK_EXPOSE_RESPONSE_BODY` | 在投递历史 API 返回原始上游响应正文。默认关闭，防止暴露内部内容；状态码始终返回。 | `false` |
+
+:::warning Webhook 目标受 SSRF 防护
+URL 由调用方提供，因此默认拒绝私有、回环、链路本地地址（例如 `169.254.169.254`、`127.0.0.1`、`10.0.0.0/8`），且不返回上游正文。使用 `HINDSIGHT_API_WEBHOOK_ALLOWED_HOSTS` 允许特定内部目标（例如本地测试 `127.0.0.1`），仅信任这些目标并需正文调试时启用 `HINDSIGHT_API_WEBHOOK_EXPOSE_RESPONSE_BODY=true`。
+:::
+
+### 审计日志 {#audit-logging}
+
+审计将操作（存储、召回、反思、库配置更新、[记忆防护](memory-defense/index.md) 脱敏/拦截等）写入 `audit_log`，可通过 `/audit-logs` 查询。
+
+**默认禁用审计日志。** `HINDSIGHT_API_AUDIT_LOG_ENABLED=false` 时表为空，无论活动如何，接口返回 `{"total": 0, "items": []}`。设为 `true` 并重启 API 开始捕获事件。
+
+**可以逐库启停。** `audit_log_enabled` 支持通过[配置 API](#hierarchical-configuration) 或控制平面 **Configuration（配置）→ Audit Logging（审计日志）** 开关覆盖。双向有效：服务器默认 `false` 时某库可开启，默认 `true` 时可关闭，未覆盖采用默认。与环境变量不同，逐库更改立即生效，无需重启。
+
+动作允许列表和保留窗口仍为服务器级，因为保留扫描跨所有租户，不限定库。
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_AUDIT_LOG_ENABLED` | 是否写审计事件，分层设置，可逐库通过配置 API 覆盖。 | `false` |
+| `HINDSIGHT_API_AUDIT_LOG_ACTIONS` | 审计动作类型允许列表，逗号分隔（空=所有符合条件动作） | `""` |
+| `HINDSIGHT_API_AUDIT_LOG_RETENTION_DAYS` | 审计条目保留天数，`-1` 永久。 | `-1` |
+
+### LLM 请求追踪 {#llm-request-tracing}
+
+记录 Hindsight 所有存储、反思和整合 LLM 调用到 `llm_requests`，通过 `/llm-requests` 逐库查询。每行含输入消息、模型输出、token 用量（输入/输出/缓存/总量，来自提供方响应）、结束原因、提供方/模型、计时和调用元数据。**失败也记录**（`status = "error"` 加错误），便于调试行为及失败原因。捕获接入 OpenTelemetry GenAI 记录路径，与 OTLP Span 导出共享 `record_llm_call`，保持提供方报告详情一致。
+
+**默认启用 LLM 请求追踪**，保留 1 天。完全禁用请设 `HINDSIGHT_API_LLM_TRACE_ENABLED=false` 并重启，表将保持空，接口始终返回 `{"total": 0, "items": []}`。
+
+> **注意：**追踪包含完整提示词和模型输出，可能含敏感记忆且很大。可用 `HINDSIGHT_API_LLM_TRACE_MAX_CHARS` 限制各载荷长度，缩短 `HINDSIGHT_API_LLM_TRACE_RETENTION_DAYS`，或在敏感环境关闭。
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_LLM_TRACE_ENABLED` | LLM 请求追踪总开关，必须 `true` 才记录。 | `true` |
+| `HINDSIGHT_API_LLM_TRACE_SCOPES` | 追踪调用范围允许列表，逗号分隔（例如 `retain_extract_facts,reflect`，空=所有范围） | `""` |
+| `HINDSIGHT_API_LLM_TRACE_RETENTION_DAYS` | 追踪行保留天数，`-1` 永久。 | `1` |
+| `HINDSIGHT_API_LLM_TRACE_MAX_CHARS` | 超出此字符数的输入/输出截断，保留行并保存截断预览。 | `50000` |
+
+### 后台维护 {#background-maintenance}
+
+每个 API/工作进程的单一周期循环执行定期维护：`audit_log` / `llm_requests` 保留扫描、终态操作清理、整合协调及 cron 心智模型刷新。
+
+每个进程都运行，不选举领导者，设计上安全：扫描是幂等删除，两项入队工作在插入事务内针对进行中操作去重。但大规模下有成本：每项先跨租户发现，探测所有含相关表的 schema，每个进程都承担。成本随租户数增长，实际发现工作不增长，因此大型多租户部署**关键在频率设置**。
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_RETENTION_SWEEP_INTERVAL_SECONDS` | 跨租户删除过期 `audit_log` / `llm_requests` 的频率。保留窗口按天，因此只影响过期行多久消失。`0` 禁用。 | `3600` |
+| `HINDSIGHT_API_OPERATION_CLEANUP_INTERVAL_SECONDS` | 清理过期终态操作行的频率，保留窗口及批量大小见[分布式工作进程](#distributed-workers)。`0` 禁用。 | `900` |
+| `HINDSIGHT_API_MAINTENANCE_START_JITTER_SECONDS` | 进程执行**首次**维护前随机延迟上限。首次触发所有作业都到期，没有错峰则同时部署或滚动重启的全部进程同一时刻扫描。`0` 禁用抖动，确定性启动。 | `60` |
+
+:::tip 多租户调优
+
+几百租户时默认频率影响不大，数万租户时每轮发现扫描成为主要成本，按*天*保留的作业没必要每分钟探测所有 schema。先提高最频繁的两项：`HINDSIGHT_API_OPERATION_CLEANUP_INTERVAL_SECONDS` 和 `HINDSIGHT_API_MENTAL_MODEL_REFRESH_TICK_SECONDS`，保留抖动，避免重启后全体对齐。
+
+:::
+
+### 编程方式配置 {#programmatic-configuration}
+
+也可通过 `MemoryEngine.from_env()` 编程配置 API：
+
+```python
+from hindsight_api import MemoryEngine
+
+memory = MemoryEngine.from_env()
+await memory.initialize()
+```
+
+---
+
+## 可观测性与追踪 {#observability--tracing}
+
+Hindsight 为 LLM 调用提供基于 OpenTelemetry 的可观测性，遵循 GenAI 语义约定。
+
+### OpenTelemetry 追踪 {#opentelemetry-tracing}
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_OTEL_TRACES_ENABLED` | 为 LLM 调用启用分布式追踪 | `false` |
+| `HINDSIGHT_API_OTEL_EXPORTER_OTLP_ENDPOINT` | OTLP 端点 URL（例如 Grafana LGTM、Langfuse 等） | - |
+| `HINDSIGHT_API_OTEL_EXPORTER_OTLP_HEADERS` | OTLP 导出器请求头，格式 `key1=value1,key2=value2` | - |
+| `HINDSIGHT_API_OTEL_SERVICE_NAME` | 追踪服务名，适用于 API 和独立工作进程；工作进程未设置时默认 `hindsight-worker`。 | `hindsight-api` |
+| `HINDSIGHT_API_OTEL_DEPLOYMENT_ENVIRONMENT` | 部署环境名称（例如 development、staging、production） | `development` |
+| `HINDSIGHT_API_METRICS_INCLUDE_BANK_ID` | OTel 指标属性包含 `bank_id`。仅少量库部署开启，高基数导致内存无界增长。 | `false` |
+| `HINDSIGHT_API_METRICS_INCLUDE_TENANT` | OTel 指标包含逐租户标签（`tenant`，即 schema）。仅少量租户开启，每租户一组序列乘以各直方图桶会造成无界内存增长。 | `false` |
+| `HINDSIGHT_API_RECALL_DIAGNOSTIC_PHASES` | 记录诊断召回阶段（`hindsight.recall.phase.duration` 的 `diagnostic="true"`），属于其他阶段子集，仅诊断时有用。繁忙召回路径可关闭，减少插桩开销。 | `true` |
+| `HINDSIGHT_API_RECALL_PHASE_SAMPLE_EVERY` | 每 N 次 `hindsight.recall.phase.duration` 记录一次。每个观察独立采样，百分位无偏，只有直方图计数缩小为 1/N。高召回率可提高（例如 `10`）降低指标 CPU。 | `1` |
+| `HINDSIGHT_API_METRICS_BACKLOG_ENABLED` | 公开异步队列深度及整合积压 Gauge（`hindsight_async_operations`、`hindsight_consolidation_backlog`、`hindsight_consolidation_failed`），后台周期逐 schema `COUNT`。 | `false` |
+| `OTEL_PYTHON_FASTAPI_EXCLUDED_URLS` | 从请求追踪排除的 URL 模式，逗号分隔 | `health,metrics` |
+
+**功能：**
+- 存在 `traceparent` 头时延续调用方追踪
+- 以事件记录完整提示词和生成内容
+- 跟踪输入/输出 token 用量
+- 模型及提供方信息
+- 通过结束原因跟踪错误
+- 遵循 OpenTelemetry GenAI 语义约定 v1.37+
+
+**兼容 OTLP 的后端：**
+
+使用标准 OTLP HTTP 协议，适用于任何兼容后端：
+- **Grafana LGTM**（本地开发推荐）：一体化 Tempo 追踪、Loki 日志、Mimir 指标及 Grafana 界面
+- **Langfuse**：面向 LLM 的可观测性和分析
+- **OpenLIT**：内置 LLM 仪表盘、成本跟踪
+- **DataDog、New Relic、Honeycomb**：商业平台
+
+**配置示例：**
+
+```bash
+# 启用追踪
+export HINDSIGHT_API_OTEL_TRACES_ENABLED=true
+
+# 配置端点（示例：OpenLIT Cloud）
+export HINDSIGHT_API_OTEL_EXPORTER_OTLP_ENDPOINT=https://otlp.openlit.io
+export HINDSIGHT_API_OTEL_EXPORTER_OTLP_HEADERS="Authorization=Bearer olit-xxx"
+
+# 可选：自定义服务名称和环境
+export HINDSIGHT_API_OTEL_SERVICE_NAME=hindsight-production
+export HINDSIGHT_API_OTEL_DEPLOYMENT_ENVIRONMENT=production
+```
+
+**本地开发：**
+
+本地开发推荐 Grafana LGTM，在一个容器中提供追踪、指标和日志：
+
+```bash
+./scripts/dev/start-grafana.sh
+```
+
+详细设置见 `scripts/dev/grafana/README.md`。
+
+其他选择：OpenLIT 见 `scripts/dev/openlit/README.md`，独立 Jaeger 见 `scripts/dev/jaeger/README.md`。
+
+### 运行时卡住诊断 {#runtime-stall-diagnostics}
+
+API 和工作进程在单一 asyncio 循环运行 `/health` 及全部任务，`/health` 还需数据库连接。因此存活探针失败可能有两种截然不同原因：同步工作**阻塞事件循环**（重启有帮助），或**连接池耗尽**使健康检查无法获取连接，即使循环空闲（重启通常无效）。这些诊断仅凭日志和指标区分两者，避免只看到无原因的重启。
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_LOOP_WATCHDOG_ENABLED` | 后台线程检测事件循环卡住，记录阻塞调用栈，并输出 `hindsight_event_loop_stalls` / `hindsight_event_loop_stall_duration`。 | `true` |
+| `HINDSIGHT_API_LOOP_WATCHDOG_STALL_THRESHOLD_MS` | 循环无响应至少此时长后记录卡住。 | `1000` |
+| `HINDSIGHT_API_LOOP_WATCHDOG_POLL_INTERVAL_MS` | 看门狗线程探测循环的频率。 | `250` |
+| `HINDSIGHT_API_DB_ACQUIRE_WARN_THRESHOLD_MS` | 获取池连接等待至少此时长时警告，并提供池统计。 | `1000` |
+
+获取连接路径还提供 `hindsight_db_pool_waiting`（当前排队调用方）和 `hindsight_db_pool_acquire_wait` 直方图。缓慢或失败 `/health` 响应额外携带 `db_acquire_ms`、`db_pool_waiting`、`db_pool_in_use`、`db_pool_max`，供排查。
+
+### CPU 性能分析 {#cpu-profiling}
+
+上面的看门狗回答“循环是否阻塞”，此功能回答下一问题：*什么在消耗 CPU？*，适用于可能无法附加调试器的进程。
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_PROFILE` | JSON 对象，未设置完全禁用分析。`{"every": 60, "top": 20}` | 未设置 |
+
+`every` 是报告间隔秒数，`top` 是每次报告行数。设置后，API 按间隔在正常日志流输出 CPU 报告：
+
+```
+HINDSIGHT_API_PROFILE='{"every": 60, "top": 20}'
+```
+
+```
+[profile] 线程 hindsight-loop-            1.41 核
+[profile] 线程 asyncio_                   0.37 核
+[profile] 过去 60 秒内活跃函数数：1598
+[profile] tottime=0.923 cumtime=1.833 ncalls=15842 <method 'encode' of 'builtins.CoreBPE' objects>
+[profile] tottime=0.691 cumtime=7.039 ncalls=1511590 <built-in method builtins.isinstance>
+```
+
+每行是带 `[profile]` 标签的日志记录，使用 `grep '\[profile\]'` 可重新拼出表。
+
+**有意输出到日志。** 目标场景是进程毫无说明地崩溃。未提前挂载卷时，容器内文件随容器消失；HTTP 端点又需要存活进程及可用路由，恰好崩溃进程无法提供。容器运行时保留旧容器 stdout（`kubectl logs --previous`），崩溃前最后报告仍可读取。每条报告写入即刷新，因为致命信号会丢失缓冲输出。
+
+#### 阅读报告 {#reading-the-report}
+
+每份报告先列出从 `/proc` 读取的逐线程 CPU，这是最终依据，不受分析器开销扭曲。两者不一致时以 `/proc` 为准，也可看工作分散在多个循环还是集中于一个。
+
+另外三点容易误导：
+
+- **`tottime` 是函数自身 CPU，`cumtime` 含所有调用。** `cumtime` 高的协程可能只是等待。曾按此排名将 ASGI 中间件归为循环 CPU 的 77%，实际移除后吞吐量仅变 13%。
+- **cProfile 大致让吞吐量减半，并高估频繁调用函数。** 应看排名，不看毫秒，重要结论须改变单一因素再测量。
+- **数值按窗口计算。** 每份是相对上次的增量，而非启动后的累计。
+
+#### 限制 {#limits}
+
+性能分析为进程级单实例。Python 3.12 起，分析器是全局监控工具，同一进程不能同时进行另一项分析（第二次尝试记录 `tool 2 is already in use` 并保持关闭）。能够附加进程时 `py-spy` 更合适，此功能为无法附加的情况而设。
+
+### 指标 {#metrics}
+
+Hindsight 在 `/metrics` 提供 Prometheus 指标，包括：
+- LLM 调用耗时和 token 用量
+- 操作耗时（存储/召回/反思）
+- HTTP 请求指标
+- 数据库连接池指标
+
+指标始终启用，可访问 `http://localhost:8888/metrics`。
+
+---
+
+## 控制平面 {#control-plane}
+
+控制平面是管理记忆库的 Web 界面。
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_CP_DATAPLANE_API_URL` | API 服务 URL | `http://localhost:8888` |
+| `HINDSIGHT_CP_DATAPLANE_API_KEY` | 控制平面向 API 每个请求发送的 Bearer 令牌，作为 `Authorization: Bearer <key>`。API 受认证保护时必需，公共 API 可省略。 | *（无，不发送 `Authorization` 头）* |
+| `HINDSIGHT_CP_ACCESS_KEY` | 保护控制平面界面的访问密钥，设置后登录必须输入。 | *（无，认证禁用）* |
+| `HINDSIGHT_CP_MAX_UPLOAD_SIZE` | 控制平面接收单次文件上传请求而不截断的最大大小。接受大小字符串（`100mb`、`1gb`）或字节数。需要上传超过默认文件时提高，并与 API `HINDSIGHT_API_FILE_CONVERSION_MAX_BATCH_SIZE_MB` 一致。 | `100mb` |
+| `NEXT_PUBLIC_BASE_PATH` | 反向代理后的控制平面基础路径（例如 `/hindsight`） | `""` （根路径） |
+
+```bash
+# 将控制平面指向远程 API 服务
+export HINDSIGHT_CP_DATAPLANE_API_URL=http://api.example.com:8888
+
+# 向受保护 API 服务认证
+export HINDSIGHT_CP_DATAPLANE_API_KEY=my-dataplane-bearer-token
+
+# 使用访问密钥保护控制平面
+export HINDSIGHT_CP_ACCESS_KEY=my-secret-key
+```
+
+### 分层配置 {#hierarchical-configuration}
+
+Hindsight 支持逐库分层配置覆盖：**全局（环境变量）→ 租户 → 记忆库**。
+
+#### 类型安全的配置访问 {#type-safe-config-access}
+
+为避免存在库级覆盖时误用全局默认，Hindsight 强制类型安全访问：
+
+**应用代码中：**
+```python
+from hindsight_api.config import get_config
+
+# ✅ 访问静态基础设施字段
+config = get_config()
+host = config.host  # 正确，静态字段
+port = config.port  # 正确，静态字段
+
+# ❌ 访问可逐库配置字段会报错
+chunk_size = config.retain_chunk_size  # ConfigFieldAccessError!
+```
+
+**错误消息：**
+```
+ConfigFieldAccessError: Field 'retain_chunk_size' is bank-configurable and cannot
+be accessed from global config. Use ConfigResolver.resolve_full_config(bank_id, context)
+to get bank-specific config.
+```
+
+**记忆库专用配置：**
+```python
+# 需要库级设置的内部代码
+from hindsight_api.config_resolver import ConfigResolver
+
+# 解析指定记忆库完整配置
+config = await config_resolver.resolve_full_config(bank_id, request_context)
+chunk_size = config.retain_chunk_size  # ✅ 使用库级值
+```
+
+此设计防止将全局默认误用为库级覆盖，使开发/编译阶段就能避免这类错误。
+
+#### 安全模型 {#security-model}
+
+出于安全考虑，配置字段分为：
+
+1. **可配置字段**：可逐库定制的安全行为设置：
+   - 存储：`retain_chunk_size`、`retain_structured_chunk_size`、`retain_extraction_mode`、`retain_mission`、`retain_custom_instructions`
+   - 观察：`enable_observations`、`enable_auto_consolidation`、`observations_mission`、`max_observations_per_scope`
+   - MCP 访问控制：`mcp_enabled_tools`
+2. **凭据字段**：绝不通过 API 公开或配置：
+   - API 密钥：`*_api_key`（所有 LLM API 密钥）
+   - 基础设施：`*_base_url`（所有基础 URL）
+3. **静态字段**：仅服务器级，不能覆盖：
+   - 基础设施：`database_url`、`port`、`host`、`worker_count`
+   - 提供方/模型选择：`llm_provider`、`llm_model`（需要预设，尚未实现）
+   - 性能调优：`llm_max_concurrent`、`llm_timeout`、检索设置和优化标志
+
+#### 并发配置写入 {#concurrent-config-writes}
+
+同一库的配置写入顺序执行。验证和持久化作为整体：先锁库行，根据当时实际已提交的覆盖重新验证，再合并。因此两个请求不能组合成彼此都未验证过的配置，例如一个提高 `retain_chunk_size`，另一个删除允许较大块的存储策略。
+
+无需处理冲突状态或实现重试。竞争中后执行的请求若不合法，收到与顺序到达相同的 `400` 验证错误；对新状态仍合法则成功。不受共同约束的字段独立合并，无关并发更新全部保留。
+
+#### 启用 API {#enabling-the-api}
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_ENABLE_BANK_CONFIG_API` | 允许客户端更改库级配置（`PATCH`/`DELETE .../config`）。读取始终允许。 | `true` |
+| `HINDSIGHT_API_ENABLE_BANK_LLM_HEALTH` | 启用逐库 LLM 连通性探测（`POST /v1/default/banks/{bank_id}/health/llm`），会实际调用提供方，因此**默认关闭**。仅返回状态，绝不返回提供方/模型/端点。 | `false` |
+| `HINDSIGHT_API_ENABLE_DRY_RUN_EXTRACT` | 启用提取试运行预览（`POST /v1/default/banks/{bank_id}/memories/dry-run-extract`），实际调用 LLM，仅提取，不存储。`false` 移除端点，返回 `404`。 | `true` |
+| `HINDSIGHT_API_DEFAULT_BANK_TEMPLATE` | 自动应用于每个新库的模板清单（JSON），见下文。 | _（未设置）_ |
+
+##### `HINDSIGHT_API_DEFAULT_BANK_TEMPLATE`
+
+服务器级默认记忆库模板。设置后，每个新库首次触及时（`PUT /v1/default/banks/{bank_id}`、`/import`、`/retain` 等）应用一次。值为 JSON 编码 `BankTemplateManifest`，格式与 `POST /v1/default/banks/{bank_id}/import` 相同，见记忆库模板 API 的 `bank`、`mental_models`、`directives`。
+
+优先级：模板字段成为库级覆盖，优先于对应 `HINDSIGHT_API_*` 环境默认（例如 `HINDSIGHT_API_RETAIN_EXTRACTION_MODE`）。用户之后仍可通过 `PATCH /v1/default/banks/{bank_id}/config` 覆盖单独字段。后续访问**不会**重新应用模板，因此显式覆盖不被替换。
+
+无效清单（错误 JSON、未知版本、schema 错误）会记录并忽略，库仍按普通默认创建，防止服务器配置错误卡住所有调用方。
+
+示例（环境变量要求紧凑单行 JSON）：
+
+```bash
+export HINDSIGHT_API_DEFAULT_BANK_TEMPLATE='{"version":"1","bank":{"reflect_mission":"帮助支持智能体记住客户交互。","retain_extraction_mode":"verbose","disposition_empathy":5},"directives":[{"name":"简洁表达","content":"始终简洁回答。","priority":10}]}'
+```
+
+#### API 端点 {#api-endpoints}
+
+- `GET /v1/default/banks/{bank_id}/config`：查看解析后配置（按权限过滤）
+- `PATCH /v1/default/banks/{bank_id}/config`：更新库级覆盖（仅允许字段）
+- `DELETE /v1/default/banks/{bank_id}/config`：恢复默认
+
+#### 权限系统 {#permission-system}
+
+租户扩展通过 `get_allowed_config_fields()` 控制库可修改字段：
+
+```python
+class CustomTenantExtension(TenantExtension):
+    async def get_allowed_config_fields(self, context, bank_id):
+        # 方案 1：允许全部可配置字段
+        return None
+
+        # 方案 2：仅允许指定字段
+        return {"retain_chunk_size", "retain_custom_instructions"}
+
+        # 方案 3：只读，不可修改
+        return set()
+```
+
+#### 示例 {#examples}
+
+<CodeSnippet code={configurationSh} section="bank-config-examples" language="bash" />
+
+**安全说明：**
+- 响应永不返回凭据（API 密钥、基础 URL）
+- 仅可配置字段可修改
+- 响应按租户权限过滤
+- 尝试设置凭据返回 400
+
+### 反向代理 / 子路径部署 {#reverse-proxy--subpath-deployment}
+
+在子路径部署 Hindsight（例如 `example.com/hindsight/`）：
+
+1. 将两个环境变量设置为相同路径：
+   ```bash
+   HINDSIGHT_API_BASE_PATH=/hindsight
+   NEXT_PUBLIC_BASE_PATH=/hindsight
+   ```
+
+2. 配置反向代理：
+   - 将 `/hindsight/*` 请求转发到 Hindsight
+   - 转发请求保留完整路径
+   - 设置适当代理头（X-Forwarded-Proto、X-Forwarded-For）
+
+**示例：Nginx 配置**
+
+```nginx
+location /hindsight/ {
+    proxy_pass http://localhost:8888/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+
+**示例：Traefik 配置**
+
+```yaml
+http:
+  routers:
+    hindsight:
+      rule: "PathPrefix(`/hindsight`)"
+      service: hindsight
+      middlewares:
+        - hindsight-stripprefix
+
+  middlewares:
+    hindsight-stripprefix:
+      stripPrefix:
+        prefixes:
+          - "/hindsight"
+
+  services:
+    hindsight:
+      loadBalancer:
+        servers:
+          - url: "http://localhost:8888"
+```
+
+**注意事项：**
+- 基础路径以 `/` 开头，不应以 `/` 结尾
+- API 和控制平面使用相同基础路径
+- 设置环境变量后重启两个服务
+- OpenAPI 文档位于 `<base-path>/docs`（例如 `/hindsight/docs`）
+
+**完整示例：**
+
+`docker/compose-examples/` 包含：
+- Nginx 配置（`simple.conf`、`api-and-control-plane.conf`）
+- Docker Compose 设置（`docker-compose.yml`、`reverse-proxy-only.yml`）
+- Traefik 及其他反向代理示例
+- 完整部署文档
+---
+
+## .env 文件示例 {#example-env-file}
+
+```bash
+# API 服务
+HINDSIGHT_API_DATABASE_URL=postgresql://hindsight:hindsight_dev@localhost:5432/hindsight
+# HINDSIGHT_API_DATABASE_SCHEMA=public  # 可选，默认 'public'
+HINDSIGHT_API_LLM_PROVIDER=groq
+HINDSIGHT_API_LLM_API_KEY=gsk_xxxxxxxxxxxx
+
+# 身份验证（可选，生产推荐）
+# HINDSIGHT_API_TENANT_EXTENSION=hindsight_api.extensions.builtin.tenant:ApiKeyTenantExtension
+# HINDSIGHT_API_TENANT_API_KEY=your-secret-api-key
+
+# 文件存储（可选，默认 PostgreSQL 原生存储）
+# HINDSIGHT_API_FILE_STORAGE_TYPE=s3
+# HINDSIGHT_API_FILE_STORAGE_S3_BUCKET=my-hindsight-files
+# HINDSIGHT_API_FILE_STORAGE_S3_REGION=us-east-1
+# HINDSIGHT_API_FILE_STORAGE_S3_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+# HINDSIGHT_API_FILE_STORAGE_S3_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
+# 控制平面
+HINDSIGHT_CP_DATAPLANE_API_URL=http://localhost:8888
+```
+
+---
+
+本页未覆盖的配置问题，请在 GitHub [提交 issue](https://github.com/vectorize-io/hindsight/issues)。

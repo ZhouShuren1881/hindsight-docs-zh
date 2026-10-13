@@ -1,0 +1,101 @@
+---
+sidebar_position: 4
+title: "使用 Hindsight 为 Vercel AI SDK 提供持久记忆 | 集成"
+description: "通过五个即用工具，为任意 Vercel AI SDK 应用添加长期记忆。支持存储对话、召回上下文、反思历史交互，适用于任意模型。"
+---
+
+# Vercel AI SDK
+
+`@vectorize-io/hindsight-ai-sdk` 将 [Hindsight](https://hindsight.vectorize.io) 记忆集成到 [Vercel AI SDK](https://ai-sdk.dev)，提供五个即用工具，用于存储、召回和反思长期记忆。
+
+[查看更新日志 →](/changelog/integrations/ai-sdk)
+
+import CodeSnippet from '@site/src/components/CodeSnippet';
+
+import aiSdkTs from '!!raw-loader!@site/examples/integrations/ai-sdk.ts';
+
+## 安装 {#installation}
+
+```bash
+npm install @vectorize-io/hindsight-ai-sdk @vectorize-io/hindsight-client ai
+```
+
+## 配置 {#setup}
+
+创建 Hindsight 客户端，将其与 `bankId` 一起传给 `createHindsightTools`。`bankId` 标识当前会话的记忆存储，通常使用用户 ID。
+
+<CodeSnippet code={aiSdkTs} section="setup" language="typescript" />
+
+:::tip 按请求设置记忆库 ID
+多用户应用应在请求处理函数内创建 `tools`，使每次请求绑定正确的 `bankId`。见下方 [Next.js 示例](#in-a-nextjs-route-handler)。
+:::
+
+## 用法 {#usage}
+
+### 使用 `generateText` {#with-generatetext}
+
+<CodeSnippet code={aiSdkTs} section="generate-text" language="typescript" />
+
+### 使用 `streamText` {#with-streamtext}
+
+<CodeSnippet code={aiSdkTs} section="stream-text" language="typescript" />
+
+### 使用 `ToolLoopAgent` {#with-toolloopagent}
+
+<CodeSnippet code={aiSdkTs} section="tool-loop-agent" language="typescript" />
+
+### 在 Next.js 路由处理函数中使用 {#in-a-nextjs-route-handler}
+
+<CodeSnippet code={aiSdkTs} section="next-api-route" language="typescript" />
+
+---
+
+## 工具参考 {#tools-reference}
+
+共注册五个工具。`bankId` 在创建时固定，智能体无法修改。
+
+| 工具 | 智能体提供的参数 | 构造函数控制的参数 |
+|------|------------------------|-------------------------------|
+| `retain` | `content`, `documentId`, `timestamp`, `context` | `async`, `tags`, `metadata` |
+| `recall` | `query`, `queryTimestamp` | `budget`, `types`, `maxTokens`, `includeEntities`, `includeChunks` |
+| `reflect` | `query`, `context` | `budget` |
+| `getMentalModel` | `mentalModelId` | — |
+| `getDocument` | `documentId` | — |
+
+**为何如此划分？** 要记住什么、搜索什么等语义输入由智能体决定；成本预算、标签策略和异步模式等基础设施问题由应用控制。
+
+---
+
+## 构造选项 {#constructor-options}
+
+除 `client` 和 `bankId` 外，所有选项均为可选。每个工具的选项按工具名称分组。
+
+<CodeSnippet code={aiSdkTs} section="constructor-options" language="typescript" />
+
+### `retain`
+
+| 选项 | 类型 | 默认值 | 说明 |
+|--------|------|---------|-------------|
+| `async` | `boolean` | `false` | 发出后即返回，不等待摄取完成 |
+| `tags` | `string[]` | — | 为每条存储记忆附加的标签 |
+| `metadata` | `Record<string, string>` | — | 为每条存储记忆附加的元数据 |
+| `description` | `string` | 内置 | 覆盖模型看到的工具说明 |
+
+### `recall`
+
+| 选项 | 类型 | 默认值 | 说明 |
+|--------|------|---------|-------------|
+| `budget` | `'low' \| 'mid' \| 'high'` | `'mid'` | 控制检索深度和延迟 |
+| `types` | `('world' \| 'experience' \| 'observation')[]` | 全部 | 将结果限制为指定事实类型 |
+| `maxTokens` | `number` | API 默认值 | 限制返回的总 token 数 |
+| `includeEntities` | `boolean` | `false` | 在结果中包含实体观察 |
+| `includeChunks` | `boolean` | `false` | 在结果中包含原始来源分块 |
+| `description` | `string` | 内置 | 覆盖模型看到的工具说明 |
+
+### `reflect`
+
+| 选项 | 类型 | 默认值 | 说明 |
+|--------|------|---------|-------------|
+| `budget` | `'low' \| 'mid' \| 'high'` | `'mid'` | 控制综合推理深度和延迟 |
+| `maxTokens` | `number` | API 默认值 | 响应的最大 token 数 |
+| `description` | `string` | 内置 | 覆盖模型看到的工具说明 |

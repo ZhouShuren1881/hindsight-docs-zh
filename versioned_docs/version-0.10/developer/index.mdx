@@ -1,0 +1,179 @@
+---
+sidebar_position: 1
+slug: /
+title: 概览
+hide_title: true
+hide_table_of_contents: true
+---
+
+import HomeHero from '@site/src/components/HomeHero';
+import HomeFlow from '@site/src/components/HomeFlow';
+import HomeBenchmarks from '@site/src/components/HomeBenchmarks';
+import SkillBanner from '@site/src/components/SkillBanner';
+import Figure from '@site/src/components/Figure';
+import whatHindsightDoes from '@site/figures/what-hindsight-does.json';
+
+{/* 本页通过 hide_title 隐藏自身的一级标题；它是站点首页，
+    首屏介绍中的标题才是访问者和爬虫应看到的一级标题。
+    侧栏和页面元信息仍使用 frontmatter 中的“概览”。 */}
+
+<HomeHero />
+
+## 基准测试 {#benchmarks}
+
+<HomeBenchmarks />
+
+{/* 此处只展示检索准确率。编程智能体图表在上方对应卡片中打开，
+    用于说明读者刚看到的使用方式，完整说明位于
+    /sdks/integrations/coding-agents。 */}
+
+## 为什么选择 Hindsight？ {#why-hindsight}
+
+智能体在会话之间会忘记一切。每次对话都从零开始，无法了解你是谁、聊过什么，或助手已经学到了什么。这不仅是实现细节，还从根本上限制了智能体的能力。
+
+**问题比看起来更复杂：**
+
+- **简单的向量搜索并不够**：“Alice 去年春天做了什么？”需要时间推理，而不仅是语义相似度。
+- **事实之间缺乏关联**：知道“Alice 在 Google 工作”和“Google 位于 Mountain View”，就应能回答“Alice 在哪里工作？”，即使从未直接存储过这个答案。
+- **智能体需要整合知识**：编程助手记住“用户偏好函数式编程”后，应将其整合为观察，并在提出建议时加以考虑。
+- **上下文很重要**：同一信息对于具有不同性格的记忆库，可能有不同的含义。
+
+Hindsight 通过专为智能体设计的记忆系统解决这些问题。
+
+{/* 此处直接渲染技能横幅，其他页面由 DocBreadcrumbs 包装组件渲染。
+    如果放在顶部，横幅会夹在导航和首屏之间，
+    带边框的条带会打断全宽布局。放在这里，
+    则能承接上一节提出的问题。 */}
+<SkillBanner />
+
+## 工作原理 {#how-it-works}
+
+{/* 此处为三类访问者提供入口：尚不了解智能体记忆的人、
+    寻找编程智能体插件的人，以及寻找 Hermes/OpenClaw 插件的人。
+    每类访问者都能在这里找到自己的使用方式。
+    卡片先回答“我能如何使用它”，
+    后续章节再解释具体原理。 */}
+<HomeFlow />
+
+### 记忆类型 {#memory-types}
+
+Hindsight 并非直接存储对话，而是将对话内容提取为带有类型的
+事实，再在这些事实的基础上构建知识：
+
+- **世界事实**：从外部获得的客观陈述。*“Alice 在 Google 工作。”*
+- **经历事实**：记忆库自身做过的事情。*“我向 Bob 推荐了 Python。”*
+- **观察**：由多个事实整合得到的认知，同时保留证据和
+  历史。*“用户以前热衷于 React，现在已转向 Vue。”*
+- **心智模型**：针对经常提出的问题，由你整理的摘要。
+- **知识页面**：记忆库为自身编写并持续更新的文档。
+
+事实并非孤立的列表。每条事实都与其提及的实体以及共享这些实体的
+其他事实建立关联，因此即使两个事实从未一起存储，
+也能用它们回答“Alice 在哪里工作？”。本页顶部的图展示了
+示例记忆库；将鼠标移到一条记忆上即可查看它的关联。
+
+### 多策略检索 {#multi-strategy-retrieval}
+
+`recall()` **并行**执行四种搜索，因为任何一种策略都无法
+应对所有问题：
+
+- **语义搜索**：关注含义而非措辞，因此“Alice 的工作”能匹配“Alice 是软件工程师”。
+- **关键词搜索（BM25）**：检索容易被嵌入表示混淆的名称和技术术语；提供五种可插拔的 Postgres 后端，其中一种支持 Citus 集群。
+- **图搜索**：利用实体关联，即使某条事实与查询没有共同词语，也能通过两跳关系找到它。
+- **时间搜索**：将时间表达式解析为时间窗口，再依据相关性选取结果，并使其*分布在整个时间范围内*，避免“2023 年发生了什么？”的结果全都来自 12 月。
+
+随后执行比任何单一搜索分支都更重要的处理：
+
+- **按排名而非分数融合**：获得多种策略共同支持的记忆优先，任何分支的评分尺度都不会压过其他分支。
+- **使用交叉编码器重排序**：同时读取查询和记忆。
+- **按 token 预算裁剪，而不是固定 top-k**：你指定可用于上下文的预算，Hindsight 将其填满；智能体以 token 而非结果数量规划预算。
+
+完整策略说明见[记忆召回](/developer/retrieval)。
+
+### 观察整合 {#observation-consolidation}
+
+后台工作进程持续将原始事实转化为持久的认知：
+
+- **去重**：将重叠事实合并为一条观察，避免重复堆积。
+- **有据可查**：每条观察都指向支持它的记忆，并保留准确引用和证据数量。
+- **逐步完善并保留历史**：新证据更新观察，历史记录保留下来，便于查看认知的变化。
+- **感知新鲜度**：记忆已存入但尚未整合时，`reflect` 会将受影响的观察视为过时，并在采信前与原始事实核对。
+
+### 知识页面 {#knowledge-pages}
+
+观察一次回答一个问题。**知识页面**则是记忆库为自身编写并持续更新的
+文档，例如“这里有哪些组件？”或“我们的错误处理约定是什么？”。
+随着整合过程在页面范围内产生新知识，
+页面内容会增量重写：
+
+- **可浏览的知识库**：页面按文件夹树组织，可浏览、可搜索，每页回答一个问题。
+- **由观察构建**：根据整合后的认知综合生成，而非原始对话，因此不是聊天记录摘要。
+- **不会相互引用**：页面不读取其他页面，避免引用形成反馈循环。
+- **可映射为真实文件**：`hindsight fs mount` 将目录树映射为磁盘上的普通 Markdown 文件，无需 SDK 即可使用 `grep`、编辑器或智能体文件工具。
+
+完整模型说明见[知识页面](/developer/knowledge-pages)。
+
+### 反思 {#reflect}
+
+`recall()` 返回记忆。`reflect()` 返回**答案**，它会围绕记忆库执行
+智能体循环，而非只做一次查询：
+
+- **自行收集证据**：智能体决定所需信息并调用工具，最多十轮；必须先检索到内容，才能作答。
+- **按优先级检查来源**：先读心智模型和知识页面，再读观察，最后读原始事实，从而先获得提炼后的答案，再查看原始记录。
+- **引用实际使用的内容**：只能引用真正检索到的 ID。
+
+两个记忆库对同一问题给出不同答案，源于各自的配置：
+
+- **使命**：以自然语言描述记忆库的身份，说明其优先关注什么。*“我是一名专注于机器学习的研究助手。我偏好简洁，而不是一味追求前沿。”*
+- **指令**：必须遵守的硬性规则。*“不要推荐具体股票。”*
+- **性格倾向**：怀疑程度、字面理解程度和共情程度，以 1～5 评分，影响它如何解释检索到的信息。
+
+这些配置只影响 `reflect`。无论提问者是谁，`recall` 都返回相同的记忆。
+
+循环过程详见[反思](/developer/reflect)。
+
+## 深入了解架构 {#architecture-deep-dive}
+
+以下动画完整展示上述流程：文档写入时会转化成什么，
+三个操作分别访问哪些内容，以及后台工作进程会改变什么。
+可以播放动画，也可以按自己的节奏逐步查看。
+
+<Figure doc={whatHindsightDoes} />
+
+## 集成 {#integrations}
+
+**编程智能体**：[一次安装](/sdks/integrations/coding-agents)即可将 20 多种
+运行工具（Claude Code、Codex CLI、Cursor CLI、opencode、Copilot CLI 等）连接到
+按代码仓库划分的记忆库。
+
+**个人智能体**：[Hermes](/sdks/integrations/hermes) 和
+[OpenClaw](/sdks/integrations/openclaw) 可将 Hindsight 安装为记忆
+提供程序：每轮回答前召回相关内容，回答后存储
+对话信息。Hermes 桌面应用可直接
+[在设置中配置](/sdks/integrations/hermes-desktop)，无需终端。
+
+其他框架、MCP 服务器和工具均可在
+[集成中心](/integrations)找到。
+
+## 后续步骤 {#next-steps}
+
+### 入门 {#getting-started}
+- [**快速开始**](/developer/api/quickstart)：安装并在 60 秒内启动。
+- [**RAG 与 Hindsight 对比**](/developer/rag-vs-hindsight)：通过真实示例了解与传统 RAG 的区别。
+
+### 核心概念 {#core-concepts}
+- [**记忆存储**](/developer/retain)：如何以多维事实存储记忆。
+- [**记忆召回**](/developer/retrieval)：四路并行搜索如何检索记忆。
+- [**反思**](/developer/reflect)：使命、指令和性格倾向如何影响推理。
+
+### API 方法 {#api-methods}
+- [**记忆存储**](/developer/api/retain)：将信息存入记忆库。
+- [**记忆召回**](/developer/api/recall)：搜索和检索记忆。
+- [**反思**](/developer/api/reflect)：利用记忆进行智能体推理。
+- [**心智模型**](/developer/api/mental-models)：为常见查询整理摘要。
+- [**记忆库**](/developer/api/memory-banks)：配置使命、指令和性格倾向。
+- [**文档**](/developer/api/documents)：管理文档来源。
+- [**操作**](/developer/api/operations)：监控异步任务。
+
+### 部署 {#deployment}
+- [**服务器配置**](/developer/installation)：使用 Docker Compose、Helm 或 pip 部署。

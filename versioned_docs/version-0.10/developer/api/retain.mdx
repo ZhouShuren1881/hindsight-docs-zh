@@ -1,0 +1,389 @@
+---
+sidebar_position: 2
+---
+
+# 摄取数据 {#ingest-data}
+
+将文档、对话和原始内容存入 Hindsight，自动提取并创建记忆。
+
+调用 **记忆存储** 时，Hindsight 不只是保存原始文本，还会分析内容、提取有意义的事实、识别实体并构建关联知识图谱，将非结构化信息转化为结构化、可查询的记忆。
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import CodeSnippet from '@site/src/components/CodeSnippet';
+
+{/* 导入原始示例源文件 */}
+import retainPy from '!!raw-loader!@site/examples/api/retain.py';
+import retainMjs from '!!raw-loader!@site/examples/api/retain.mjs';
+import retainSh from '!!raw-loader!@site/examples/api/retain.sh';
+import retainGo from '!!raw-loader!@site/examples/api/retain.go';
+
+:::info 记忆存储的工作原理
+事实提取、实体解析和图构建详见[记忆存储架构](/developer/retain)。
+:::
+
+:::tip 前置条件
+请先完成[快速开始](./quickstart)，安装客户端并启动服务器。
+:::
+
+## 存储文档 {#store-a-document}
+
+一次 retain 调用可以接受一个或多个**条目（item）**。每个条目都是一段原始内容，例如对话、文档或笔记，Hindsight 会将其分析并拆解为一条或多条记忆。内容本身不会原样保存，实际存储的是 LLM 提取出的结构化事实。
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={retainPy} section="retain-basic" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={retainMjs} section="retain-basic" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={retainSh} section="retain-basic" language="bash" />
+</TabItem>
+<TabItem value="go" label="Go">
+<CodeSnippet code={retainGo} section="retain-basic" language="go" />
+</TabItem>
+</Tabs>
+
+### 存储对话 {#retaining-a-conversation}
+
+完整对话应作为一个条目存储。只要能明确表达谁在何时说了什么，LLM 就能解析纯文本、JSON、Markdown 或其他结构化格式。下面使用简单的 `姓名（时间戳）：文本` 格式。
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={retainPy} section="retain-conversation" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={retainMjs} section="retain-conversation" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={retainSh} section="retain-conversation" language="bash" />
+</TabItem>
+<TabItem value="go" label="Go">
+<CodeSnippet code={retainGo} section="retain-conversation" language="go" />
+</TabItem>
+</Tabs>
+
+对话增长、收到新消息时，使用相同的 `document_id` 再次存储完整的更新内容。Hindsight 会删除旧版本并重新处理，使记忆始终反映对话的最新状态。
+
+---
+
+## 参数 {#parameters}
+
+### content
+
+要存储的原始文本。这是唯一的必填字段。Hindsight 将内容分块，逐块交给 LLM 提取事实，存储生成的结构化事实，而非原文。一个 `content` 值可能根据其信息量产生多条记忆。
+
+### timestamp
+
+内容描述的事件实际发生的时间，支持三种形式：
+
+| 值 | 行为 |
+|-------|-----------|
+| 省略 / `null` | 默认使用摄取时的当前时间。 |
+| ISO 8601 字符串，例如 `"2024-01-15T10:30:00Z"` | 使用指定的日期时间。 |
+| `"unset"` | **不附加任何时间戳**。适用于参考文档、书籍或虚构内容等没有真实事件时间的信息。 |
+
+时间戳会注入 LLM 的事实提取提示词，帮助模型解析相对时间。例如，内容提到“上周一”时，模型以指定时间戳为基准推算实际日期。传入 `"unset"` 后，提示词显示 `Event Date: Unknown`，使模型能为每条事实的 `when` 字段正确返回 `N/A`。真实时间戳也能让“去年春天发生了什么？”这样的时间召回查询正确工作。
+
+### context
+
+描述来源或情境的简短标签，例如 `"团队会议"`、`"slack"` 或 `"支持工单"`。它直接注入 LLM 提示词，影响事实提取方式。同一句话在不同上下文中可能有完全不同的含义：“项目被终止”出现在“绩效评估”和“产品路线图”上下文中，会产生不同的记忆。
+
+持续提供上下文，是提高记忆质量最有效的做法之一。
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={retainPy} section="retain-with-context" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={retainMjs} section="retain-with-context" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={retainSh} section="retain-with-context" language="bash" />
+</TabItem>
+<TabItem value="go" label="Go">
+<CodeSnippet code={retainGo} section="retain-with-context" language="go" />
+</TabItem>
+</Tabs>
+
+### metadata
+
+为条目提供上下文的任意字符串键值对，例如 `{"source": "slack", "channel": "engineering", "thread_id": "T123"}`。元数据会纳入事实提取提示词，LLM 可借助文档标题或来源等额外信息提高准确性。它也存储在每个记忆单元上，并随召回结果返回，便于客户端筛选或静态补充信息，无需额外查询，例如将记忆关联回来源 URL、线程 ID 或应用特定标识符。
+
+值以字符串形式存储和返回。值为 `null` 的键会被丢弃，不会出现在召回记忆中；若需要保留该键，请发送空字符串。
+
+### document_id
+
+由调用方提供的字符串，将一个或多个条目归入同一逻辑文档。它是实现 retain **幂等性**的关键。
+
+提供 `document_id` 时，Hindsight 会更新或插入文档。如果记忆库已存在该 ID 的文档，会先删除文档及其关联记忆，再处理和插入新内容。因此可以安全地对更新内容重复调用 retain，例如消息增加后的聊天线程，而不会累积重复记忆。
+
+省略 `document_id` 时，Hindsight 会生成随机 UUID，重复摄取同一内容会产生重复记忆。未指定 `document_id` 的条目如何分组，取决于请求的其他条目：
+
+| 请求 | 结果 |
+|---------|--------|
+| 所有条目均无 `document_id` | 所有条目进入**同一个**新文档。若请求超过 `HINDSIGHT_API_RETAIN_BATCH_TOKENS`、无法一次处理，会分成多个部分，每部分各自成为一个文档。 |
+| 一部分条目有 `document_id`，另一部分没有 | 每个未指定 ID 的条目各自形成**独立**的新文档，不会并入其他条目的文档。因此替换或删除其他文档不会影响它。 |
+| 多个条目使用相同 `document_id` | 按请求顺序归入同一文档。 |
+
+带附件且未指定 `document_id` 的条目始终获得独立文档，因此在上表中按*已指定* ID 的条目处理。
+
+若希望各条目独立，请分别指定不同的 `document_id`；若希望归入同一文档，请使用相同的 `document_id`。
+
+### update_mode
+
+指定已存在的 `document_id` 时，控制 Hindsight 如何处理原有文档。
+
+| 值 | 行为 |
+|-------|-----------|
+| `"replace"` *（默认）* | 删除旧文档及其所有记忆，再从头处理新内容，即上文描述的标准更新或插入行为。 |
+| `"append"` | 将新内容追加到已有文档文本，并重新处理合并后的文档。增量存储会自动跳过未变更的分块，仅新增部分触发 LLM 提取。 |
+
+追加模式必须提供 `document_id`，否则没有可追加的已有文档。
+
+**何时使用追加**：`"append"` 适合逐步增长的日志、日记或逐条接收消息的聊天记录。每次更新只需发送新增内容和 `update_mode: "append"`，Hindsight 会高效地与已有内容合并，无需重发全部历史。
+
+```json
+{
+  "items": [
+    {
+      "content": "追加到已有文档的新条目。",
+      "document_id": "my-growing-doc",
+      "update_mode": "append"
+    }
+  ]
+}
+```
+
+### entities
+
+需要确保被识别的实体列表，会与 LLM 自动提取的实体合并。每个条目包含 `text`（实体名称）和可选的 `type`，例如 `"PERSON"`、`"ORG"`、`"CONCEPT"`；省略时默认为 `"CONCEPT"`。
+
+当某些实体很重要，但 LLM 可能遗漏或在不同内容中使用不同称呼时，可显式提供实体，确保它们在知识图谱中建立关联。
+
+### resolve_entities
+
+默认情况下，`entities` 中的名称会与记忆库已有实体进行**解析匹配**：与现有名称相近的名称，可能依据名称相似度及其与同一条目内其他名称的共现强度，匹配到已有实体而非新建。通常这是期望行为，例如 `Dr. Waller` 与 `Dr Waller` 会成为同一实体。
+
+如果提供的名称是权威名称，必须原样存储，请设置 `resolve_entities: false`。此时仅当名称忽略大小写完全匹配时才复用已有实体，其他名称创建新实体，提供的名称之间也不会合并；`Alice` 和 `Alice Smith` 保持为两个实体。
+
+该选项**只影响你提供的实体**。自动提取的实体始终进行解析，因为名称来自提取器的推断；关闭其解析会导致记忆库出现大量近似重复实体。
+
+[编辑记忆](./memories#resolving-entity-names)也支持该选项，而且更需要它：手动纠正名称时，不应让相似的已有实体覆盖你的更正。
+
+### tags 与 document_tags {#tags-and-document_tags}
+
+标签控制**可见范围**，决定召回时哪些记忆可见。记忆的标签只有与召回请求中的标签筛选条件相交时才会返回。因此，一个记忆库服务多个用户或会话、各自只应看到自己的记忆时，标签非常有用。
+
+使用一致的命名约定，让标签筛选可预测。常见约定包括：`user:<id>` 按用户划分、`session:<id>` 隔离会话、`room:<id>` 表示聊天室、`topic:<name>` 筛选类别。记忆库还提供标签列表端点，返回所有标签及对应记忆数量，可用于界面自动补全或通配符展开。
+
+检索时按标签筛选的方法见[召回 API](./recall#tags)。
+
+### observation_scopes
+
+控制记忆在整合过程中参与生成哪些[观察](../observations)。每个范围单独整合，创建或更新只带有该范围标签的观察。
+
+:::info 范围隔离
+整合时，Hindsight 使用 `all_strict` 匹配查找待更新观察，只考虑标签与当前范围完全一致的观察。这能隔离范围：在 `["student:alice"]` 下整合的记忆，不会进入标签为 `["student:alice", "teacher:bob"]` 的观察。
+:::
+
+以下示例使用带有 `tags: ["student:alice", "teacher:bob", "session-id:s1"]` 的课程记录。
+
+#### combined *（默认）* {#combined-default}
+
+将所有标签合在一起整合一次，生成的观察带有完整标签集合。
+
+- 创建的观察：`["student:alice", "teacher:bob", "session-id:s1"]`
+- ✗ *“Alice 在所有课程中有哪些困难？”*：不匹配，因为从未为单独的 `student:alice` 建立观察。
+- ✗ *“Bob 如何教学？”*：没有单独匹配 `teacher:bob` 的观察。
+- ✓ *“Alice 和 Bob 在 s1 课程中发生了什么？”*：完全匹配。
+
+**适用情形**：记忆只有作为整体才有意义，且不需要单独查询任何标签。
+
+#### shared
+
+在单一的全局**无标签**范围内整合一次。记忆自身的标签不参与观察范围划分，但仍保留在来源事实上用于召回筛选。因此，带有*不同*标签的记忆也会整合到**同一**观察中。
+
+- 创建的观察：一条无标签观察（`[]`）。
+- ✓ 无标签观察可匹配任何召回，不受标签筛选条件限制。
+- 可跨每次调用都变化的标签去重：若每个会话都使用唯一的 `session-id:…`，`combined` 和 `per_tag` 每次都会创建新观察，因为标签不重复；`shared` 则会合并为同一观察。
+
+**适用情形**：标签表示每次调用的来源，例如会话 ID，用于召回筛选和调试，但不应作为整合边界。保留 `tags`，并设置 `observation_scopes: "shared"`。
+
+:::caution `shared`、`[[]]` 与 `[]` 的区别
+`shared` 等价于显式范围 `[[]]`，即包含一个空范围的列表。**不要**与 `[]`（空列表）混淆：后者声明了*零个*范围，会静默回退为 `combined`。
+:::
+
+#### per_tag
+
+为每个标签分别整合一次。每个标签拥有独立的观察，随着共享该标签的新记忆增加而增长。
+
+- 创建的观察：`["student:alice"]` · `["teacher:bob"]` · `["session-id:s1"]`。
+- ✓ *“Alice 在所有课程中有哪些困难？”*
+- ✓ *“Bob 如何教学？”*
+- ✓ *“s1 课程中发生了什么？”*
+- ✗ *“Alice 在 Bob 的课上表现如何？”*：没有 `["student:alice", "teacher:bob"]` 组合的观察。
+- ✗ *“Bob 在在线课程中如何教学？”*：没有 `["teacher:bob", "session-id:s1"]` 的观察。
+
+**适用情形**：内容涉及多个标签，每个标签代表独立主体。这是对话、课程或支持会话等多方参与内容最常用的选择。
+
+#### all_combinations
+
+为每个标签子集整合一次，包括单个标签、两两组合、三个标签组合等。3 个标签需整合 7 次。
+
+- 创建的观察：上述 `"per_tag"` 范围，加上 `["student:alice", "teacher:bob"]` · `["student:alice", "session-id:s1"]` · `["teacher:bob", "session-id:s1"]` · `["student:alice", "teacher:bob", "session-id:s1"]`。
+- ✓ 上述 `"per_tag"` 的所有问题。
+- ✓ *“Alice 在 Bob 的课上表现如何？”*：由 `["student:alice", "teacher:bob"]` 匹配。
+
+**适用情形**：需要各个粒度的观察，包括单个标签、标签对和标签组。
+
+#### custom
+
+传入明确的标签集合列表，每个内部列表代表一个范围。
+
+```json
+[["student:alice"], ["teacher:bob"], ["teacher:bob", "session-id:s1"]]
+```
+
+- 创建的观察：恰好这三个范围，不增加其他范围。
+- ✓ *“Alice 有哪些困难？”*
+- ✓ *“Bob 如何教学？”*
+- ✓ *“Bob 在 s1 课程中具体如何教学？”*
+- ✗ *“不区分教师，s1 课程发生了什么？”*：没有单独包含 `["session-id:s1"]`。
+
+**适用情形**：明确知道哪些组合有意义，希望避免不必要的整合。
+
+### 响应 {#response}
+
+同步 retain 响应包含：
+
+- `success`：操作是否完成且没有错误。
+- `bank_id`：接收内容的记忆库。
+- `items_count`：已处理的条目数量。
+- `async`：是否异步处理。
+- `usage`：LLM 调用的 token 用量（`input_tokens`、`output_tokens`、`total_tokens`），仅同步操作返回。
+
+---
+
+## 批量摄取 {#batch-ingestion}
+
+可在一次请求中提交多个条目。推荐批量摄取，以减少网络开销，并让 Hindsight 优化关联内容的提取。
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={retainPy} section="retain-batch" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={retainMjs} section="retain-batch" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={retainSh} section="retain-batch" language="bash" />
+</TabItem>
+<TabItem value="go" label="Go">
+<CodeSnippet code={retainGo} section="retain-batch" language="go" />
+</TabItem>
+</Tabs>
+
+
+---
+
+## 文件 {#files}
+
+直接上传文件，Hindsight 会自动转换为文本并提取记忆。文件处理始终异步运行，返回用于跟踪的操作 ID。
+
+**支持的格式：** PDF、DOCX、DOC、PPTX、PPT、XLSX、XLS、图片（JPG、PNG、GIF 等，OCR 支持取决于解析器配置）、音频（MP3、WAV、FLAC 等，支持转录）、HTML 和纯文本格式（TXT、MD、CSV、JSON、YAML 等）。
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={retainPy} section="retain-files" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={retainMjs} section="retain-files" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={retainSh} section="retain-files" language="bash" />
+</TabItem>
+<TabItem value="go" label="Go">
+<CodeSnippet code={retainGo} section="retain-files" language="go" />
+</TabItem>
+</Tabs>
+
+文件存储端点始终异步返回，响应包含 `operation_ids`，每个上传文件对应一个。可通过 `GET /v1/default/banks/{bank_id}/operations` 轮询进度。
+
+每次请求最多上传 10 个文件，总计不超过 100 MB。每个文件成为独立文档，可分别附加元数据：
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={retainPy} section="retain-files-batch" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={retainMjs} section="retain-files-batch" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={retainSh} section="retain-files" language="bash" />
+</TabItem>
+<TabItem value="go" label="Go">
+<CodeSnippet code={retainGo} section="retain-files" language="go" />
+</TabItem>
+</Tabs>
+
+:::info 文件存储
+上传文件保存在服务端，默认使用 PostgreSQL，生产环境可使用 S3/GCS/Azure。通过 `HINDSIGHT_API_FILE_STORAGE_TYPE` 配置存储。详情见[配置](../configuration#file-processing)。
+:::
+
+---
+
+## 异步摄取 {#async-ingestion}
+
+大批量内容可使用异步摄取，避免阻塞应用：
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={retainPy} section="retain-async" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={retainMjs} section="retain-async" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={retainSh} section="retain-async" language="bash" />
+</TabItem>
+<TabItem value="go" label="Go">
+<CodeSnippet code={retainGo} section="retain-async" language="go" />
+</TabItem>
+</Tabs>
+
+设置 `async: true` 后，调用立即返回 `operation_id`，工作进程服务在后台处理。异步操作不返回 `usage` 指标。
+
+### 使用 `operation_id` 安全重试 {#safe-retries-with-operation_id}
+
+异步 retain 响应丢失或超时后，无法确定操作是否已创建。盲目重试可能将同一任务重复入队，导致重复提取、嵌入和提供商费用。
+
+提供自己的 `operation_id`（任意 UUID）即可安全重试：
+
+```json
+{
+  "items": [{ "content": "Alice 在 Google 工作", "document_id": "conv_123" }],
+  "async": true,
+  "operation_id": "3f2b8c1a-9d4e-4a7b-9c2f-1e6d5a4b3c2d"
+}
+```
+
+- 使用相同 `operation_id` 重发会返回原操作，不创建新任务。因此确认响应丢失后的重试不会重复执行。
+- 若复用的 `operation_id` 已属于其他操作，返回 HTTP `409`。
+- 省略 `operation_id` 时维持默认行为，每次请求创建新操作。
+- **发送请求前**生成 ID，重试时复用。同步 retain 忽略 `operation_id`；请求中的所有条目必须解析为同一种策略。
+
+### 使用提供商批量 API 节省 50% 成本 {#cut-costs-50-with-provider-batch-apis}
+
+异步 retain 可启用提供商 Batch API，将 LLM 事实提取成本降低 50%。OpenAI、Groq 和 Gemini 都提供此折扣，代价是最多 24 小时的处理窗口；retain 本就后台运行时，通常不会明显影响使用体验。
+
+```bash
+export HINDSIGHT_API_RETAIN_BATCH_ENABLED=true
+```
+
+Hindsight 将事实提取调用以批任务提交给提供商，轮询完成状态并自动处理结果，无需修改 API 调用。
+
+:::note
+批量 API 的成本优惠要求 retain 请求使用 `async=true`，且提供商为 OpenAI、Groq 或 Gemini。
+:::

@@ -1,0 +1,297 @@
+---
+sidebar_position: 3
+---
+
+# 反思 {#reflect}
+
+通过智能体推理循环，生成有据可查、考虑性格倾向的回答。
+
+调用 **反思** 时，Hindsight 运行智能体循环，使用多种检索工具自主搜索记忆库，应用记忆库的性格倾向来调整推理方式，并根据检索结果生成最终答案。recall 返回原始事实，而 reflect 返回 LLM 综合撰写的回答。
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import CodeSnippet from '@site/src/components/CodeSnippet';
+
+{/* 导入原始示例源文件 */}
+import reflectPy from '!!raw-loader!@site/examples/api/reflect.py';
+import reflectMjs from '!!raw-loader!@site/examples/api/reflect.mjs';
+import reflectSh from '!!raw-loader!@site/examples/api/reflect.sh';
+import reflectGo from '!!raw-loader!@site/examples/api/reflect.go';
+
+:::info 反思的工作原理
+性格倾向驱动的推理详见[反思架构](/developer/reflect)。
+:::
+
+:::tip 前置条件
+请先完成[快速开始](./quickstart)，安装客户端并启动服务器。
+:::
+
+## 基本用法 {#basic-usage}
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={reflectPy} section="reflect-basic" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={reflectMjs} section="reflect-basic" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={reflectSh} section="reflect-basic" language="bash" />
+</TabItem>
+<TabItem value="go" label="Go">
+<CodeSnippet code={reflectGo} section="reflect-basic" language="go" />
+</TabItem>
+</Tabs>
+
+---
+
+## 参数 {#parameters}
+
+### query
+
+要进行反思的问题或提示词。这是唯一的必填字段。如果情境信息会影响回答，请直接放入查询，而不是作为独立字段。
+
+### budget
+
+控制回答前探索记忆库的深度。支持 `low`（默认）、`mid` 和 `high`。`low` 进行浅层搜索，以速度为优先；`mid` 在问题需要时核对多个来源；`high` 深入探索所有知识层级，可能使用多种查询表达寻找间接关联。需要综合多个来源的复杂问题应使用 `high`。
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={reflectPy} section="reflect-with-params" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={reflectMjs} section="reflect-with-params" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={reflectSh} section="reflect-with-params" language="bash" />
+</TabItem>
+<TabItem value="go" label="Go">
+<CodeSnippet code={reflectGo} section="reflect-with-params" language="go" />
+</TabItem>
+</Tabs>
+
+### max_tokens
+
+限制最终回答的长度，默认 `4096`。它只影响最终答案长度，不限制智能体循环中的检索量。
+
+### response_schema
+
+可选的 JSON Schema **对象**，必须包含非空 `properties`，支持嵌套对象和数组。提供后，响应除 Markdown `text` 外，还包含 `structured_output`：智能体先推理形成答案，再通过第二轮处理将答案提取为符合 schema 的 JSON。因此 `structured_output` 忠实映射 `text`，同时提供可读答案和可编程处理的类型化对象，而非二选一。不合法的 schema，例如非对象或没有属性，会在调用开始前被拒绝。
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={reflectPy} section="reflect-structured-output" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={reflectMjs} section="reflect-structured-output" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={reflectSh} section="reflect-structured-output" language="bash" />
+</TabItem>
+<TabItem value="go" label="Go">
+<CodeSnippet code={reflectGo} section="reflect-structured-output" language="go" />
+</TabItem>
+</Tabs>
+
+### tags
+
+定义反思智能体整个执行过程的可见范围，筛选它可以检索的原始
+事实、观察和心智模型。相同的
+`tags` 和 `tags_match` 值也用于选择注入反思提示词的
+带标签指令。
+
+`tags` 默认为 `null`，`tags_match` 默认为 `any`，`tag_groups`
+默认为 `null`。标签非空时，原始事实、观察和心智模型
+使用与[召回标签](./recall#tags)相同的匹配模式。指令
+另有一条规则：无标签指令属于全局指令，提供任何标签范围时
+仍可生效，包括严格匹配或完全匹配。
+
+| 反思配置 | 原始事实与观察 | 心智模型 | 生效指令 |
+|-----------------------|----------------------------|---------------|-------------------|
+| 省略 `tags`、`tags_match` 和 `tag_groups` | 所有有标签和无标签数据 | 所有有标签和无标签模型 | 仅无标签／全局指令 |
+| `tags: []`，默认 `tags_match: "any"` | 所有有标签和无标签数据 | 所有有标签和无标签模型 | 仅无标签／全局指令 |
+| 无标签，`tags_match: "exact"` | 仅无标签／全局数据 | 仅无标签／全局模型 | 仅无标签／全局指令 |
+| 非空 `tags`，`any` 或 `all` | 匹配的有标签数据及无标签／全局数据 | 匹配模型及无标签／全局模型 | 匹配的有标签指令及无标签／全局指令 |
+| 非空 `tags`，`any_strict` 或 `all_strict` | 仅匹配的有标签数据 | 仅匹配的有标签模型 | 匹配的有标签指令及无标签／全局指令 |
+| 非空 `tags`，`exact` | 标签集合与请求完全一致的数据 | 标签集合与请求完全一致的模型 | 完全匹配的有标签指令及无标签／全局指令 |
+| 非空 `tag_groups`，顶层 `tags_match` 使用默认值 | 匹配复合表达式的数据 | 匹配复合表达式的模型 | 匹配的有标签指令及无标签／全局指令 |
+
+`tag_groups` 的叶节点可设置 `resolve: "fuzzy"`，用法与
+[召回](./recall#fuzzy-leaves)相同。reflect 在智能体循环开始前
+解析一次，确保所有工具都按相同标签筛选。
+
+表格第一行有意采用不同规则：未指定范围的反思可搜索所有
+记忆，但不加载带标签指令。如需创建适用于
+所有 reflect 调用的指令，请将其 `tags` 留空；
+若需限定范围，则给指令设置标签，并向 `reflect` 传入匹配范围。
+
+:::note `isolation_mode`
+`isolation_mode` 是内部 `list_directives` 选项，不是公开的 reflect
+请求参数。Reflect 始终启用它。当没有提供 `tags` 或
+`tag_groups` 时，它只加载无标签指令。
+目前没有按请求关闭此行为的开关。
+:::
+
+:::note MCP 中省略标签
+MCP `reflect` 工具只在存在 `tags` 时转发 `tags_match`。
+通过 MCP 请求空的完全匹配范围时，需同时传入 `tags: []` 和
+`tags_match: "exact"`。
+:::
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={reflectPy} section="reflect-with-tags" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={reflectMjs} section="reflect-with-tags" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={reflectSh} section="reflect-with-tags" language="bash" />
+</TabItem>
+<TabItem value="go" label="Go">
+<CodeSnippet code={reflectGo} section="reflect-with-tags" language="go" />
+</TabItem>
+</Tabs>
+
+#### 常见范围示例 {#common-scope-examples}
+
+不指定范围的反思会搜索所有记忆，但只应用全局指令：
+
+```json
+{
+  "query": "总结当前项目状态"
+}
+```
+
+项目范围包含全局数据和指令，以及匹配
+`project:a` 的数据和指令：
+
+```json
+{
+  "query": "总结当前项目状态",
+  "tags": ["project:a"]
+}
+```
+
+严格项目范围排除无标签记忆、观察和心智
+模型，但全局指令仍然生效：
+
+```json
+{
+  "query": "总结当前项目状态",
+  "tags": ["project:a"],
+  "tags_match": "all_strict"
+}
+```
+
+### tag_groups
+
+通过递归的 `and`、`or` 和 `not` 表达式提供复合标签筛选，
+影响的反思数据来源和指令选择与平铺
+`tags` 相同。公开 REST 请求中，`tag_groups` 与 `tags` 互斥。
+每个叶节点提供自己的匹配模式，默认
+为 `any_strict`；顶层分组按 AND 组合。通常保持顶层
+`tags_match` 为默认 `any`。使用 `tag_groups` 时将其设为 `exact`，
+会先将事实、观察和心智模型限制在
+全局平铺范围内，再应用复合表达式。
+
+MCP `reflect` 工具目前提供平铺的 `tags` 和 `tags_match`，
+不提供 `tag_groups`。
+
+### include
+
+控制主响应之外返回的可选补充数据。
+
+#### include.facts
+
+启用后，响应包含 `based_on` 对象，列出智能体构建答案时实际使用的记忆、心智模型和指令。只有在智能体循环中检索到的来源才能出现在这里，引用会经过验证，避免虚构。适合提高透明度和核实答案。
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={reflectPy} section="reflect-sources" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={reflectMjs} section="reflect-sources" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={reflectSh} section="reflect-sources" language="bash" />
+</TabItem>
+<TabItem value="go" label="Go">
+<CodeSnippet code={reflectGo} section="reflect-sources" language="go" />
+</TabItem>
+</Tabs>
+
+#### include.tool_calls
+
+启用后，响应包含 `trace` 对象，记录智能体循环中每次工具和 LLM 调用的完整执行日志，包括输入、输出及耗时。设置 `output: false` 可仅包含工具输入，减小响应体。适合排查智能体为什么得出某个结论。
+
+### reflect_search_observations_max_tokens
+
+模型没有自行指定预算时，智能体 `search_observations` 工具使用的
+token 预算。大型记忆库中，观察证据往往是反思上下文最大的
+单一来源，因此降低此值会舍弃排名较低的观察，
+换取更小、更便宜且更快的 LLM 上下文。默认 `5000`。
+
+### reflect_search_observations_include_entities
+
+`search_observations` 是否为每条观察附加解析后的
+实体名称。当文本使用别名时很有用，例如规范名称为
+“Robert Smith”而文本使用“Bob”。但实体名称可能占工具序列化数据
+的一半以上；设为 `false` 可保留相同观察和排名，
+同时显著缩小上下文。默认 `true`。
+
+这两个选项都可通过记忆库的
+`reflect_default_options` 配置键设为默认值，见
+[配置](../configuration.mdx)。请求中的显式值始终
+优先。心智模型刷新单独配置，**不读取**
+`reflect_default_options`；请改为设置触发器中的同名字段，或
+记忆库的 `knowledge_page_default_trigger`，见
+[心智模型](./mental-models.mdx)。
+
+---
+
+## 响应 {#response}
+
+### text
+
+格式良好的 Markdown 答案，是 reflect 的主要输出。提供 `response_schema` 后仍返回；`structured_output` 从它提取，而非替代它。
+
+### structured_output
+
+按请求的 `response_schema` 解析出的 LLM 响应。只有设置 `response_schema` 时才返回，否则为 `null`。
+
+### structured_output_error
+
+无法生成结构化视图的原因。仅当提供了 `response_schema` 且提取步骤失败时存在，例如提供商错误、超时或输出无法解析。Reflect 本身仍成功，返回 `200` 和 Markdown `text`。此字段说明机器可读结果因故障缺失，而非答案中没有符合 schema 的内容。缺少 `structured_output` 且**没有**此字段，则属于正常的无匹配内容情况，因为端点省略 null 字段。该字段出现时应视为可重试，也可用作结构化输出故障的告警信号。
+
+### based_on
+
+智能体构建答案时使用的来源，仅在启用 `include.facts` 时存在，包含三个字段：
+
+- `memories`：实际检索并引用的事实列表（world、experience、observation），每项包含 `id`、`text`、`type`、`context`、`occurred_start` 和 `occurred_end`。
+- `mental_models`：使用的心智模型列表，每项包含 `id`、`text` 和 `context`。
+- `directives`：推理过程中执行的指令列表，每项包含 `id`、`name` 和 `content`。
+
+### usage
+
+智能体循环中全部 LLM 调用的 token 用量：`input_tokens`、`output_tokens` 和 `total_tokens`，便于跟踪成本。
+
+### trace
+
+智能体循环的完整执行日志，仅在启用 `include.tool_calls` 时存在，包含：
+
+- `tool_calls`：每次工具调用，包括 `tool` 名称（`lookup`、`recall`、`learn`、`expand`）、`input`、`output`（当 `output: true` 时）、`duration_ms` 和 `iteration`。
+- `llm_calls`：每次 LLM 调用，包括 `scope`（例如 `"agent_1"`、`"final"`）和 `duration_ms`。
+
+## 反思失败的情况 {#when-reflect-fails}
+
+Reflect 根据收集到的证据作答。若无法收集证据，调用会返回 **500**，而不是在没有依据时给出自信的回答：
+
+- **检索工具抛出异常。** 数据库、嵌入模型或重排序模型不可用。批量工具调用中的一次失败就会使整个过程失败，因为围绕未返回结果的工具生成答案，与记忆库确实没有相关内容时的答案难以区分，调用方可能将其存为真实答案。
+- **模型未生成答案。** `done` 调用内容为空，或最终综合步骤没有输出。
+- **模型或传输层无法执行工具调用。** Reflect 完全由结构化工具调用驱动；若传输层静默丢弃工具定义，系统会明确报错，便于切换到支持工具调用的模型。
+- **提供商持续失败。** 非上下文溢出的 LLM 错误在循环内重试一次，随后放弃。
+
+**检索成功但结果为空不算失败**：记忆库确实没有相关内容，reflect 会在答案中说明。
+
+另外两种情况有意不视为失败：*上下文窗口*溢出时，系统会根据已有证据综合答案，因为这是提示词过大导致的预算问题，而非依赖故障；模型*用错*工具，例如缺少参数或调用不存在的工具时，错误会返回给模型纠正，而不是作为异常抛出。

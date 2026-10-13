@@ -1,0 +1,252 @@
+---
+sidebar_position: 9
+---
+
+# 操作 {#operations}
+
+Hindsight异步运行多个维护和摄取任务，而不是阻塞  触发它们的API呼叫。这些任务共享一个队列（`async_operations`）和单个工作池，并且相同REST端点——列表、状态、取消、重试——适用于每种类型。
+
+此页面解释了每种操作类型、何时触发以及如何检查或管理它。
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import CodeSnippet from '@site/src/components/CodeSnippet';
+
+{/* 导入原始源文件 */}
+import operationsPy from '!!raw-loader!@site/examples/api/operations.py';
+import operationsMjs from '!!raw-loader!@site/examples/api/operations.mjs';
+import operationsSh from '!!raw-loader!@site/examples/api/operations.sh';
+import operationsGo from '!!raw-loader!@site/examples/api/operations.go';
+
+:::tip 先决条件
+确保您已完成[快速开始](./quickstart)并理解[记忆存储的工作原理](./retain)。
+:::
+
+## 操作的工作原理 {#how-operations-work}
+
+当API调用需要后台工作，请求处理程序向 写入一行 `async_operations` 带有 的桌子 `status=pending`并立即返回。一个工作人员（在进程内运行API默认情况下，或作为专用服务 — 请参阅 [服务：工作进程服务](../services#worker-service)) 轮询表，声明待处理行，执行相应的处理程序，并标记该行 `completed`或`failed`。
+
+默认情况下，每个操作都在进程内运行：没有外部队列，无需部署额外的进程。当吞吐量需要时，相同的代码路径支持扩展到专用工作进程。
+
+### 生命周期 {#lifecycle}
+
+|状态|含义|
+|--------|---------|
+|`pending`|该行已排队。要么还没有工作人员拿起它，要么分机已通过 将其停放 未来的 `next_retry_at`（例如，用于背压）。|
+|`processing`|工作人员已声明该行并正在积极运行处理程序。|
+|`completed`|处理程序成功返回。|
+|`failed`|处理员举起。 `error_message` 携带原因；您可以使用 重新排队 `POST /…/retry`。|
+|`cancelled`|操作已通过 取消 `DELETE /…/operations/{id}`。适用于 `pending` 和 `processing` 操作类似。|
+
+工作人员重试失败的操作最多`HINDSIGHT_API_WORKER_MAX_RETRIES` 次才决定`failed`。确定性失败（例如，无效的嵌入维度、完整性违规）会跳过重试 - 它们不会通过重新运行而成功。
+
+已完成、失败和取消的操作默认无限期保留。放 `HINDSIGHT_API_OPERATION_RETENTION_DAYS` 为正数天数来限制该历史记录：后台维护循环然后按其自己的计划按有界批次修剪过期的终端行，而不是作为任务处理的副作用。  仅PostgreSQL— 维护循环不在 Oracle 上运行，因此操作历史记录在那里不受限制。整行共享该 TTL，因此在保留操作时，其有效负载保持可用 — 可以重试失败和取消的操作，并使用 检查已完成的操作 `include_payload=true`。保留清理永远不会删除待处理和处理操作。
+
+## 操作类型 {#operation-types}
+
+每个操作都有一个数据库中的 `operation_type`和有效载荷中的 `task_type`。它们通常是相同的。
+
+### `retain` {#retain}
+
+提交者`POST /v1/default/banks/{bank_id}/memories` 与 `async=true`，或按多项`retain_batch` 打电话。处理程序运行与同步记忆存储相同的管道：事实提取（LLM）、嵌入生成、实体解析和链接创建（时间、语义）。
+
+当您摄取数千个项目并且不想要其他内容时，请使用异步记忆存储HTTP拨打电话等待几分钟。 响应中的 `operation_id`可让您轮询是否完成。
+
+#### 父操作：retain_batch {#parent-op-retainbatch}
+
+对于大量提交，Hindsight自动将输入拆分为子批次并创建单个 `retain_batch` 跟踪子级的父级操作。父母的状态反映了总体 — `pending` 直到至少有一个孩子在运行，`processing` 当孩子们执行时，`completed` 每个孩子完成后，`failed` 如果任何一个孩子失败了。每个孩子本身就是一个`retain` 操作链接到父级，因此您可以深入了解每批次的错误消息。
+
+当您列出操作时，默认情况下会显示父项及其子项。通过`exclude_parents=true` 隐藏聚合行并仅显示单个 `retain` 工作。
+
+### `file_convert_retain` {#fileconvertretain}
+
+由文件上传端点提交。该处理程序运行特定于 MIME 的转换（PDF → 文本、DOCX → 文本等），然后将提取的文本传递到记忆存储管道中。这里的失败是默认情况下 **不可重试** — 损坏的 PDF 或丢失的 OCR 在重新运行时不会得到改善，因此操作直接进入`failed`。
+
+哪个解析器运行（`markitdown`，`iris`，或`llama_parse`) 在每次部署时通过 选择 `HINDSIGHT_API_FILE_PARSER`，客户端可以根据请求覆盖它 - 请参阅[配置 → 文件处理](../configuration#file-processing)。
+
+### `consolidation` {#consolidation}
+
+产品**观察** 新版world/experience回忆。参见[观察](../observations) 了解它们是什么以及它们是如何合成的。
+
+自动触发：
+
+- 添加每个记忆存储之后world/experience事实（由每个记忆库控制`enable_auto_consolidation` 和 `enable_observations`）。
+- 删除后，使现有观察无效（源记忆消失→派生观察陈旧→使用幸存的共同源记忆重新运行）。
+- 手动通过 `POST /v1/default/banks/{bank_id}/consolidate`。通过`observation_scopes` 仅巩固与特定标签组合匹配的记忆。
+
+**按记忆库去重**：当一个`consolidation` 作业正在等待记忆库，重复提交返回现有`operation_id`而不是堆叠。一旦作业开始处理，下一个提交将成为下一个待处理槽。
+
+### `refresh_mental_model` {#refreshmentalmodel}
+
+心智模型有一个`source_query` 定义了它总结的记忆。处理程序重新运行该查询，重新汇总结果，并就地更新模型的内容。
+
+通过手动触发 `POST /v1/default/banks/{bank_id}/mental-models/{id}/refresh`，或根据已配置的心智模型的自动刷新计划自动进行。
+
+### `graph_maintenance` {#graphmaintenance}
+
+协调删除后变得陈旧的派生状态。每次调用都会耗尽两个队列，两个队列都由删除本身填充，因此运行只会查看删除触及的内容：
+
+1. **补充关联。** 排空其输出的单元temporal/semantic链接失去了邻居。对于每个单元，如果该单元低于其上限（20 个时间单元，50 个语义单元），Hindsight重新运行记忆存储使用的相同探针并插入丢失的链接。如果没有这个，记忆存储管道的 top-K 上限将使幸存的单元在每次删除后永久处于上限 - 降低图扩展记忆召回。
+2. **实体裁剪。** 排空删除可能搁浅的实体。没有剩下的`unit_entities` 参考已删除（FK `ON DELETE CASCADE` 删除他们的 `entity_cooccurrences` 行）；对于幸存者，两个端点仍然存在但没有当前的共现行memory_unit引用都被清理了——记录时共现是真实的，但目击它的每个单位都已被删除。
+
+记忆库在提交时进行了重复数据删除，因此针对同一记忆库的并发触发器合并为一个消耗。
+
+每次运行都在挂钟预算下按承诺批次进行。对于一次运行来说积压太大（例如批量删除）并不是错误：运行会报告其完成的内容，下一次运行会从停止的地方恢复。
+
+**触发器：** 任何删除memory_units— `DELETE /documents/{id}`，`DELETE /memories/{id}`，并重新保留现有的`document_id`（更新插入路径）。完整的记忆库擦拭（`delete_bank`) 是一个空操作：记忆库中没有任何内容需要维护。
+
+### `webhook_delivery` {#webhookdelivery}
+
+完成某些操作后（例如，使用注册的 Webhook 在记忆库上完成整合），Hindsight入队 `webhook_delivery`任务。处理程序将有效负载 POST 到配置的 URL，并在暂时失败时重试。
+
+## 端点 {#endpoints}
+
+以下所有路径的范围均为 `bank_id`。
+
+### 列出操作 {#list-operations}
+
+```bash
+GET /v1/default/banks/{bank_id}/operations
+```
+
+查询参数：
+
+|参数|说明|
+|-------|-------------|
+|`status`|筛选条件 `pending`，`processing`，`completed`，`failed`，`cancelled`。|
+|`type`|筛选条件 `retain`，`file_convert_retain`，`consolidation`，`refresh_mental_model`，`graph_maintenance`，`webhook_delivery`。|
+|`limit`|1–100，默认 20。|
+|`offset`|分页偏移。|
+|`exclude_parents`|从结果中排除父批处理操作（大 `retain_batch` 调用创建一个父级 + N 个子级）。|
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={operationsPy} section="operations-list" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={operationsMjs} section="operations-list" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={operationsSh} section="operations-list" language="bash" />
+</TabItem>
+<TabItem value="go" label="开始">
+<CodeSnippet code={operationsGo} section="operations-list" language="go" />
+</TabItem>
+</Tabs>
+
+`items_count` 是特定于操作的 - 仅对于记忆存储形状的操作非零（它对提交中的内容项进行计数）。
+
+### 获取运行状态 {#get-operation-status}
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={operationsPy} section="operations-get" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={operationsMjs} section="operations-get" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={operationsSh} section="operations-get" language="bash" />
+</TabItem>
+<TabItem value="go" label="开始">
+<CodeSnippet code={operationsGo} section="operations-get" language="go" />
+</TabItem>
+</Tabs>
+
+查询参数：
+
+|参数|说明|
+|-------|-------------|
+|`include_payload`|将原始任务有效负载（提交参数）包含在响应中，如下所示 `task_payload`。默认`false`；可能很大。|
+
+一些响应字段值得一提：
+
+|字段|说明|
+|-------|-------------|
+|`updated_at`|操作行最后一次更改的时间 — 声明、进度心跳或完成。|
+|`progress`|正在运行的操作的最后已知进度快照，或 `null` 如果没有记录（立即完成或预功能行）。|
+|`task_payload`|原始提交参数；仅当 时才填充 `include_payload=true`。|
+
+`progress` 是粗写的phase/batch边界（集成、批量记忆存储），让您区分健康的长期运行作业和冻结作业：如果 `processed` 在民意调查中不断前进，工作仍然存在； 中没有移动的相同数字 `at` 表示卡住了。其形状：
+
+|字段|说明|
+|-------|-------------|
+|`stage`|最后报告的操作的粗略阶段（例如 `processing_batch`）。|
+|`at`|ISO-8601 写入此快照时的时间戳。|
+|`processed`|已知时，到目前为止已完成的工作单元（子批次、记忆）。|
+|`total`|操作的总工作单位（已知时）。|
+|`detail`|特定于操作的计数器（例如 `observations_created`，`round`，`items_in_sub_batch`）。|
+
+### 取消操作 {#cancel-an-operation}
+
+取消 `pending` 或 `processing` 状态的操作。如果操作已处于终态（`completed`、`failed` 或 `cancelled`），返回 `409`。
+
+记录会立即标记为 `cancelled`，但正在执行的任务采用**协作式取消，不会立即停止**。工作进程会在下一个检查点发现取消请求并停止：记忆存储在子批次或文档边界检查，整合在 LLM 批次边界检查。已提交的工作不会回滚，当前批次仍可能完成。没有检查点的操作会运行到结束；记录仍保持 `cancelled`，因为工作进程不能覆盖这一状态。
+
+这也可以清理工作进程在完成前被终止、因而卡在 `processing` 的操作。此时没有任务在执行，取消会立即生效。随后使用 `POST /…/operations/{id}/retry` 重新排队。
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={operationsPy} section="operations-cancel" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={operationsMjs} section="operations-cancel" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={operationsSh} section="operations-cancel" language="bash" />
+</TabItem>
+<TabItem value="go" label="开始">
+<CodeSnippet code={operationsGo} section="operations-cancel" language="go" />
+</TabItem>
+</Tabs>
+
+### 重试失败的操作 {#retry-a-failed-operation}
+
+该行的状态重置为`pending`，工人又把它捡了起来。退货`409` 如果操作不在中 `failed`或`cancelled`状态。
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={operationsPy} section="operations-retry" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={operationsMjs} section="operations-retry" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={operationsSh} section="operations-retry" language="bash" />
+</TabItem>
+<TabItem value="go" label="开始">
+<CodeSnippet code={operationsGo} section="operations-retry" language="go" />
+</TabItem>
+</Tabs>
+
+## 异步记忆存储示例 {#async-retain-example}
+
+异步提交一批并轮询直到操作完成：
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={operationsPy} section="operations-async-retain" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={operationsMjs} section="operations-async-retain" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={operationsSh} section="operations-async-retain" language="bash" />
+</TabItem>
+<TabItem value="go" label="开始">
+<CodeSnippet code={operationsGo} section="operations-async-retain" language="go" />
+</TabItem>
+</Tabs>
+
+## 工作进程调优 {#worker-tuning}
+
+每个worker都有一个并发预算（`HINDSIGHT_API_WORKER_MAX_SLOTS`，默认 10) 在所有操作类型之间共享。每种类型的时段预订 (`HINDSIGHT_API_WORKER_<TYPE>_MAX_SLOTS`) 在该预算内制定保证容量；剩余的槽形成一个共享池，任何类型都可以使用。参见[配置 → 工作进程配置](../configuration#distributed-workers) 代表整张桌子。
+
+对于大多数部署，默认值就可以了。如果您发现某个操作类型被另一种类型的洪水淹没（例如，在删除繁重的工作负载上出现长 file_convert_retain 阻塞 graph_maintenance），请为该操作类型保留插槽。
+
+插槽也在记忆库中轮换。每个声明依次服务于下一个记忆库（一次操作），然后从任何地方从最旧的到第一个填充池的其余部分。因此，当另一个记忆库的单个写入在其积压后面等待时，批量摄取的记忆库无法拥有整个池，并且它也不会受到限制：当没有其他人在等待时，它仍然占用每个槽。
+
+## 后续步骤 {#next-steps}
+
+- [**文档**](./documents) — 跟踪文档来源
+- [**记忆库**](./memory-banks) — 配置记忆库设置

@@ -1,0 +1,223 @@
+---
+sidebar_position: 5
+---
+
+# 记忆 {#memories}
+
+**记忆单元**是 Hindsight 提取并存储的原子事实。本页介绍读取、列出单条记忆、查看派生观察的演变，以及**管理**记忆（更正、使其失效或恢复）。摄取和查询分别见[记忆存储](./retain.mdx)和[记忆召回](./recall.mdx)。
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import CodeSnippet from '@site/src/components/CodeSnippet';
+
+{/* 导入原始源文件 */}
+import memoriesPy from '!!raw-loader!@site/examples/api/memories.py';
+import memoriesMjs from '!!raw-loader!@site/examples/api/memories.mjs';
+import memoriesSh from '!!raw-loader!@site/examples/api/memories.sh';
+import memoriesGo from '!!raw-loader!@site/examples/api/memories.go';
+
+## 端点 {#endpoints}
+
+|方法|端点|目的|
+|---|---|---|
+|`GET`|`/v1/default/banks/{bank}/memories/list`|列出/过滤记忆库中的记忆单元|
+|`GET`|`/v1/default/banks/{bank}/memories/{id}`|获取单个记忆单元|
+|`GET`|`/v1/default/banks/{bank}/memories/{id}/history`|刷新派生观察历史|
+|`PATCH`|`/v1/default/banks/{bank}/memories/{id}`|管理：编辑/使其失效/恢复|
+|`DELETE`|`/v1/default/banks/{bank}/memories/{id}/observations`|清除记忆的派生观察|
+
+## 列出记忆单元 {#list-memory-units}
+
+列出记忆库中的记忆单元。响应包含各单元的 `fact_type`（`world`、`experience` 或 `observation`）、`state`（`valid` 或 `invalidated`）、元数据、实体、发生日期；对于用户编辑过的事实，还包含 `edited_at` 时间戳。为保持管理操作可审计，**默认包含已失效的记录**；可使用 `state=` 过滤。
+
+使用查询参数缩小结果范围：`type=`（事实类型），`q=`（文本和上下文的全文搜索），`document_id=`（单个源文档），以及 `entity_id=`（链接到给定实体的记忆单位）。 `entity_id` 过滤器是对存储的实体链接的精确反向查找 - 不是文本或语义匹配 - 因此您可以列出实体的证据（例如其观察，使用 `type=observation`）无需扫描每个记忆。因为实体链接仅存在于活动单元中，所以结合 `entity_id` 与 `state=invalidated` 不返回任何内容。
+
+### 时间窗口 {#time-window}
+
+`start_date=` 和 `end_date=` 将结果限制在半开范围内 `[start, end)`，和`time_field=` 选择它们适用的时间戳：
+
+|`time_field`|意思|
+|---|---|
+|`created_at`（默认）|记忆被摄取时|
+|`updated_at`|最后一次写入的时间|
+|`mentioned_at`|当事实被提及时|
+|`occurred_start` / `occurred_end`|当事实本身发生时|
+
+`time_field` 还决定排序顺序（最新在前），并且**排除该列没有值的记忆**。因此 `total` 只统计具有该时间戳的记忆，即使记忆库非空也可能为 `0`。省略这三个参数即可保留默认列表：先按 `mentioned_at`、再按 `created_at` 排序，不排除任何记忆。
+
+这里会实际过滤结果，而记忆召回的 `temporal_window` 仅影响排序。需要完整读取某个时间范围内的记忆时，请使用这些参数。
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={memoriesPy} section="list-memories" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={memoriesMjs} section="list-memories" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={memoriesSh} section="list-memories" language="bash" />
+</TabItem>
+<TabItem value="go" label="开始">
+<CodeSnippet code={memoriesGo} section="list-memories" language="go" />
+</TabItem>
+</Tabs>
+
+## 获取单个记忆单元 {#fetch-a-single-memory-unit}
+
+通过 ID 获取记忆单元，包括其内容、元数据、实体、时间戳、标签和管理状态。
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={memoriesPy} section="get-memory" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={memoriesMjs} section="get-memory" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={memoriesSh} section="get-memory" language="bash" />
+</TabItem>
+<TabItem value="go" label="开始">
+<CodeSnippet code={memoriesGo} section="get-memory" language="go" />
+</TabItem>
+</Tabs>
+
+对于**派生观察**，历史记录端点返回当新的源事实到达时它是如何随着时间的推移而刷新的：
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={memoriesPy} section="observation-history" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={memoriesMjs} section="observation-history" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={memoriesSh} section="observation-history" language="bash" />
+</TabItem>
+<TabItem value="go" label="开始">
+<CodeSnippet code={memoriesGo} section="observation-history" language="go" />
+</TabItem>
+</Tabs>
+
+## 记忆管理：编辑、使其失效与裁剪 {#curation-editing-invalidating--pruning}
+
+记忆在设计上仅允许追加，但存储的事实有时会**出错**、**过时**或**重复**。管理功能允许更正单条记忆或使其失效，同时保留审计记录。失效事实移出活动集合，因此记忆召回绝不会返回它们，但仍可完整恢复。
+
+### 如何选择处理方式 {#when-to-reach-for-what}
+
+并非所有“有问题的记忆”都适合同一种工具。请根据*问题的原因*选择：
+
+|记忆是……|使用|为什么|
+|---|---|---|
+|**整个记忆库的提取质量不佳导致错误**（例如总是弄错事实主体）|修复记忆库的 `retain_mission` / `observations_mission`，然后**重新处理**文档|系统性问题应从源头修复后重新处理，参见[记忆存储](./retain.mdx)和[观察](../observations.mdx)。|
+|**个别事实有误**（单个错误提取的事实）|**编辑**记忆|纠正事实并重新生成由此衍生的一切。|
+|**已不再成立，且没有替代事实**（退役的服务器，修复的工具，改变的角色）|**使其失效**记忆|管道中没有任何东西知道世界发生了变化，所以你明确地告诉它。|
+|**重复或已被取代的事实**|**使其失效**记忆|消除记忆召回中的噪音，同时保留审计跟踪。|
+|**被即将存储的新事实取代**（例如“喜欢宝马”→“喜欢丰田”）|直接存储新事实|整合已能将输入流中的矛盾协调为单条观察。|
+
+经验法则：**如果 Hindsight 能够获知，就交给整合处理；如果只有你知道，就手动管理。**
+
+只有原始的 **world** 和 **experience** 事实可进行管理。观察属于*派生内容*，会从源事实重新生成，因此应管理底层事实，而非观察本身。对观察发送 `PATCH` 会返回 `400`。
+
+### 编辑记忆 {#edit-a-memory}
+
+更正 LLM 提取的内容。您可以修改**文本**、**上下文**、**发生日期**、**事实类型**和**实体**，即提取器可能出错的所有内容。Hindsight 会重新生成事实的嵌入，删除旧版本派生的观察及关联，然后重新整合。编辑过的事实带有 `edited_at` 时间戳，在控制平面中显示为**已编辑（Edited）**徽章。
+
+更正事实绝不会丢弃它参与的**因果关系**：这些关系来自对原始来源的读取。因此编辑（或先使其失效再恢复）会保留这些关系，避免删除无法重建的关联。
+
+无需自行重建任何内容：编辑会在后台**自动重新计算知识图谱与关联**。实体关联根据新文本/实体重新解析，时间和语义关联重新推导，并重新执行整合。`PATCH` 在更改提交后立即返回；图谱和观察的重建随后异步进行。
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={memoriesPy} section="edit-memory" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={memoriesMjs} section="edit-memory" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={memoriesSh} section="edit-memory" language="bash" />
+</TabItem>
+<TabItem value="go" label="开始">
+<CodeSnippet code={memoriesGo} section="edit-memory" language="go" />
+</TabItem>
+</Tabs>
+
+日期、事实类型和实体也可用同样方式更正。对于 `context`、`occurred_start` 和 `occurred_end`，空字符串 `""` 会清除字段，省略字段则保持不变。对于 `entities`，列表会**替换**事实的实体集合，`[]` 会解除全部实体关联；省略字段则保持不变。
+
+### 解析实体名称 {#resolving-entity-names}
+
+`resolve_entities` 控制如何将 `entities` 中的名称匹配到记忆库中的实体：
+
+|值|行为|
+| --- | --- |
+|`true`（默认）|采用记忆存储时的解析方式。各名称会在记忆库中解析；根据名称相似度及其与请求中其他名称的共现强度，接近已有名称的名称可能被解析为该现有实体。|
+|`false`|严格按提供的名称处理。仅当名称在不区分大小写的比较中相同时才复用现有实体；其他名称会创建新实体，同一请求中的名称绝不会相互合并。|
+
+**手动更正事实时，请传入 `false`。** 启用解析时，与现有名称接近的名称可能匹配到相近实体，而非您指定的实体，例如将 `Dr. Waller` 匹配到误拼的 `Dr Wall`，或将 `Alice Smith` 匹配到 `Alice`。编辑仍正常成功，因此响应中不容易看出替换。解析适用于提取过程产生的名称：拼写可能变化，而已有实体通常才是实际所指；若您已明确知道目标实体，则不应启用解析。默认值仍为 `true`，以免影响现有调用方。
+
+[记忆存储](./retain#resolve_entities)也提供同一标志，用于您在那里提供的实体。
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={memoriesPy} section="edit-memory-fields" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={memoriesMjs} section="edit-memory-fields" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={memoriesSh} section="edit-memory-fields" language="bash" />
+</TabItem>
+<TabItem value="go" label="开始">
+<CodeSnippet code={memoriesGo} section="edit-memory-fields" language="go" />
+</TabItem>
+</Tabs>
+
+### 使记忆无效（可逆） {#invalidate-a-memory-reversible}
+
+以可恢复的方式使事实失效。已失效的记忆：
+
+- **不再参与记忆召回**、整合和知识图谱，
+- **关联被裁剪**，其**派生观察在排除该事实后重新计算**（因果关系会另外保留，恢复事实时一并恢复），
+- **保留在记忆库中** 用于审核（通过记忆和文档视图可见），以及
+- 随时可以**恢复**。
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={memoriesPy} section="invalidate-memory" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={memoriesMjs} section="invalidate-memory" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={memoriesSh} section="invalidate-memory" language="bash" />
+</TabItem>
+<TabItem value="go" label="开始">
+<CodeSnippet code={memoriesGo} section="invalidate-memory" language="go" />
+</TabItem>
+</Tabs>
+
+恢复会将事实移回活动集合，恢复其参与的因果关系，并重新执行整合：
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={memoriesPy} section="restore-memory" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={memoriesMjs} section="restore-memory" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={memoriesSh} section="restore-memory" language="bash" />
+</TabItem>
+<TabItem value="go" label="开始">
+<CodeSnippet code={memoriesGo} section="restore-memory" language="go" />
+</TabItem>
+</Tabs>
+
+底层实现会将已失效记录从活动的 `memory_units` 表**移入**独立归档。因此记忆召回和整合无需使用“跳过失效记录”的过滤条件，因为这些记录已不在活动表中。
+
+:::note 文档是事实来源
+记忆从文档中提取。编辑记忆或使其失效**不会**修改来源文档；文档因此保留准确的历史记录。**重新处理文档会重置其所生成事实的管理结果**，因为提取会从原始文本重新开始。系统性问题应在任务目标层面修复后重新处理；剩余个别问题可用编辑或失效操作处理。
+:::
+
+### 修剪工作流程 {#a-pruning-workflow}
+
+要清理重复项并消除噪声，请对 `memories/list` 中的重复项聚类，再使其**失效**。记忆召回结果会立即去除这些噪声，同时保留审计记录。

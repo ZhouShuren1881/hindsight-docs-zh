@@ -1,0 +1,1109 @@
+{
+  "title": "编码智能体",
+  "speed": 2200,
+  "elements": [
+    {
+      "id": "agent",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "Claude Code"
+        },
+        {
+          "type": "subtitle",
+          "text": "~/src/payments-api"
+        }
+      ],
+      "width": 220
+    },
+    {
+      "id": "git",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "Git 历史记录"
+        }
+      ],
+      "width": 220
+    },
+    {
+      "id": "sessions",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "历史会话"
+        },
+        {
+          "type": "subtitle",
+          "text": "智能体自身的会话记录"
+        }
+      ],
+      "width": 220
+    },
+    {
+      "id": "g1",
+      "type": "group",
+      "label": {
+        "title": "你的机器"
+      },
+      "children": [
+        "agent",
+        "git",
+        "sessions"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 16,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "start",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "SessionStart 钩子"
+        }
+      ]
+    },
+    {
+      "id": "deepen",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "加深"
+        },
+        {
+          "type": "subtitle",
+          "text": "后台回填"
+        }
+      ]
+    },
+    {
+      "id": "prompt",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "提示词钩子"
+        },
+        {
+          "type": "subtitle",
+          "text": "自动注入"
+        }
+      ]
+    },
+    {
+      "id": "tools",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "MCP 工具"
+        }
+      ],
+      "width": 220
+    },
+    {
+      "id": "stop",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "Stop 钩子"
+        },
+        {
+          "type": "subtitle",
+          "text": "每次回复后"
+        }
+      ]
+    },
+    {
+      "id": "g2",
+      "type": "group",
+      "label": {
+        "title": "Hindsight 插件"
+      },
+      "children": [
+        "start",
+        "deepen",
+        "prompt",
+        "tools",
+        "stop"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 14,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "docs",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "文档"
+        }
+      ],
+      "width": 220
+    },
+    {
+      "id": "facts",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "事实"
+        }
+      ],
+      "width": 220
+    },
+    {
+      "id": "obs",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "观察"
+        },
+        {
+          "type": "subtitle",
+          "text": "每个仓库一个共享范围"
+        }
+      ],
+      "width": 220
+    },
+    {
+      "id": "memories",
+      "type": "group",
+      "label": {
+        "title": "记忆"
+      },
+      "children": [
+        "facts",
+        "obs"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 20,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "pages",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "知识页面"
+        }
+      ],
+      "width": 220
+    },
+    {
+      "id": "bank",
+      "type": "group",
+      "label": {
+        "title": "记忆库·coding-agents::payments-api"
+      },
+      "children": [
+        "docs",
+        "memories",
+        "pages"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 28,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "extract",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "提取"
+        },
+        {
+          "type": "subtitle",
+          "text": "LLM"
+        }
+      ]
+    },
+    {
+      "id": "consolidate",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "整合"
+        }
+      ]
+    },
+    {
+      "id": "refresh",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "页面刷新"
+        },
+        {
+          "type": "subtitle",
+          "text": "每小时，增量"
+        }
+      ]
+    },
+    {
+      "id": "g3",
+      "type": "group",
+      "label": {
+        "title": "Hindsight 服务器"
+      },
+      "children": [
+        "extract",
+        "consolidate",
+        "refresh"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 60,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "g0",
+      "type": "group",
+      "children": [
+        "g1",
+        "g2",
+        "bank",
+        "g3"
+      ],
+      "layout": {
+        "direction": "row",
+        "gap": 40,
+        "align": "center"
+      }
+    },
+    {
+      "id": "on-start",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "agent"
+      },
+      "end": {
+        "id": "start"
+      },
+      "label": {
+        "text": "会话开始"
+      }
+    },
+    {
+      "id": "on-prompt",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "agent"
+      },
+      "end": {
+        "id": "prompt"
+      },
+      "label": {
+        "text": "每个提示"
+      }
+    },
+    {
+      "id": "on-tool",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "agent"
+      },
+      "end": {
+        "id": "tools"
+      },
+      "label": {
+        "text": "工具调用"
+      }
+    },
+    {
+      "id": "on-stop",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "agent"
+      },
+      "end": {
+        "id": "stop"
+      },
+      "label": {
+        "text": "回复完成"
+      }
+    },
+    {
+      "id": "spawn",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "start"
+      },
+      "end": {
+        "id": "deepen"
+      },
+      "label": {
+        "text": "生成"
+      }
+    },
+    {
+      "id": "read-git",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "git"
+      },
+      "end": {
+        "id": "deepen"
+      }
+    },
+    {
+      "id": "read-sessions",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "sessions"
+      },
+      "end": {
+        "id": "deepen"
+      }
+    },
+    {
+      "id": "backfill",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "deepen"
+      },
+      "end": {
+        "id": "docs"
+      },
+      "label": {
+        "text": "记忆存储"
+      }
+    },
+    {
+      "id": "seed-pages",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "deepen"
+      },
+      "end": {
+        "id": "pages"
+      },
+      "label": {
+        "text": "创建页面"
+      },
+      "quiet": true
+    },
+    {
+      "id": "inject",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "prompt"
+      },
+      "end": {
+        "id": "memories"
+      },
+      "label": {
+        "text": "反思"
+      },
+      "quiet": true
+    },
+    {
+      "id": "search",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "tools"
+      },
+      "end": {
+        "id": "pages"
+      },
+      "label": {
+        "text": "搜索"
+      }
+    },
+    {
+      "id": "writeback",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "stop"
+      },
+      "end": {
+        "id": "docs"
+      },
+      "label": {
+        "text": "追加"
+      }
+    },
+    {
+      "id": "to-extract",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "docs"
+      },
+      "end": {
+        "id": "extract"
+      }
+    },
+    {
+      "id": "to-facts",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "extract"
+      },
+      "end": {
+        "id": "facts"
+      }
+    },
+    {
+      "id": "to-consolidate",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "facts"
+      },
+      "end": {
+        "id": "consolidate"
+      }
+    },
+    {
+      "id": "to-obs",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "consolidate"
+      },
+      "end": {
+        "id": "obs"
+      }
+    },
+    {
+      "id": "to-refresh",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "memories"
+      },
+      "end": {
+        "id": "refresh"
+      }
+    },
+    {
+      "id": "to-pages",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "refresh"
+      },
+      "end": {
+        "id": "pages"
+      }
+    }
+  ],
+  "scenes": [
+    {
+      "label": "首次会话",
+      "caption": "",
+      "beats": [
+        {
+          "edges": {
+            "edge": "on-start",
+            "data": "SessionStart"
+          },
+          "show": {
+            "agent": [
+              {
+                "tag": "shell",
+                "tone": "gray",
+                "text": "cd payments-api && claude",
+                "mono": true
+              }
+            ]
+          },
+          "say": "你在仓库中开启会话，无需执行设置命令：插件的 SessionStart 钩子会完成准备工作。"
+        },
+        {
+          "show": {
+            "start": [
+              {
+                "tag": "bank",
+                "tone": "gray",
+                "text": "coding-agents::payments-api",
+                "mono": true
+              },
+              {
+                "text": "还没有 git 文档",
+                "mark": "cold"
+              }
+            ]
+          },
+          "say": "插件选择该仓库的记忆库。每个仓库一个记忆库，所有智能体与工作树共享；此时它发现记忆库为空。",
+          "ms": 3000
+        },
+        {
+          "edges": {
+            "edge": "spawn",
+            "data": "detached"
+          },
+          "show": {
+            "agent": [
+              {
+                "tag": "shell",
+                "tone": "gray",
+                "text": "cd payments-api && claude",
+                "mono": true
+              },
+              {
+                "tag": "banner",
+                "tone": "green",
+                "text": "Hindsight 正在学习此仓库"
+              }
+            ],
+            "start": [
+              {
+                "tag": "bank",
+                "tone": "gray",
+                "text": "coding-agents::payments-api",
+                "mono": true
+              },
+              {
+                "text": "还没有 git 文档",
+                "mark": "cold"
+              },
+              {
+                "text": "冷 → 代码库调查",
+                "meta": "headless agent"
+              }
+            ],
+            "deepen": [
+              {
+                "text": "1. 配置记忆库 + 创建页面"
+              },
+              {
+                "text": "2. 导入历史会话"
+              },
+              {
+                "text": "3. 导入提交历史"
+              }
+            ]
+          },
+          "say": "每次会话开始都会在后台启动回填，只补齐缺失内容，因此不会阻塞会话。空记忆库还会由无头智能体调查代码库，每新增 20 次提交重新调查一次。",
+          "ms": 3400
+        },
+        {
+          "edges": {
+            "edge": "seed-pages",
+            "data": "5 pages"
+          },
+          "show": {
+            "pages": [
+              {
+                "text": "组件图",
+                "meta": "empty"
+              },
+              {
+                "text": "核心概念",
+                "meta": "empty"
+              },
+              {
+                "text": "约定与模式",
+                "meta": "empty"
+              },
+              {
+                "text": "关键决策和理由",
+                "meta": "empty"
+              },
+              {
+                "text": "举措和改进",
+                "meta": "empty"
+              }
+            ]
+          },
+          "say": "首项工作是配置记忆库并创建仓库知识页面，每页回答一个关于项目的问题。页面最初为空。"
+        },
+        {
+          "edges": [
+            {
+              "edge": "read-sessions",
+              "data": "14 sessions"
+            },
+            {
+              "edge": "read-git",
+              "data": "last 300 commits"
+            }
+          ],
+          "show": {
+            "sessions": [
+              {
+                "text": "本仓库中的 14 个早期会话",
+                "meta": "one document each"
+              }
+            ],
+            "git": [
+              {
+                "tag": "a1b2c3d",
+                "tone": "gray",
+                "text": "使用银行家舍入计算发票总额"
+              },
+              {
+                "tag": "9e8f7a6",
+                "tone": "gray",
+                "text": "不要对行项目进行四舍五入，只对总数进行舍入"
+              }
+            ]
+          },
+          "say": "插件读取该智能体在此仓库中的历史对话，以及最近 300 次提交的提交消息。",
+          "ms": 2800
+        },
+        {
+          "edges": {
+            "edge": "backfill",
+            "data": "retain"
+          },
+          "show": {
+            "docs": [
+              {
+                "tag": "chat:…",
+                "tone": "gray",
+                "text": "14 个对话",
+                "meta": "source:chat"
+              },
+              {
+                "tag": "gitlog:payments-api",
+                "tone": "gray",
+                "text": "全部 300 条提交消息，一份文档",
+                "meta": "source:git"
+              }
+            ]
+          },
+          "say": "每段对话成为一份文档，已存在则跳过。提交历史汇总为一份文档，HEAD 变化时替换。完整差异需显式启用（gitIngest: \"full\"）。",
+          "ms": 3600
+        },
+        {
+          "edges": "to-extract",
+          "ms": 1300
+        },
+        {
+          "edges": "to-facts",
+          "show": {
+            "facts": [
+              {
+                "tag": "world",
+                "tone": "blue",
+                "text": "发票总额使用银行家舍入（取最近偶数）",
+                "meta": "knowledge:decision"
+              },
+              {
+                "tag": "world",
+                "tone": "blue",
+                "text": "不舍入行项目，只舍入总额",
+                "meta": "knowledge:convention"
+              }
+            ]
+          },
+          "say": "服务器提取事实，为长期有效的事实标注所属页面，例如决策、约定或组件。",
+          "ms": 3200
+        },
+        {
+          "edges": "to-consolidate",
+          "ms": 1300
+        },
+        {
+          "edges": "to-obs",
+          "show": {
+            "obs": [
+              {
+                "text": "金额只在发票总额处舍入一次，取最近偶数",
+                "meta": "2 sources"
+              }
+            ]
+          },
+          "say": "整合将事实合并为观察。每个仓库共享一套观察，无论事实由哪个智能体写入。"
+        },
+        {
+          "edges": "to-refresh",
+          "ms": 1300
+        },
+        {
+          "edges": "to-pages",
+          "show": {
+            "pages": [
+              {
+                "text": "组件图"
+              },
+              {
+                "text": "核心概念"
+              },
+              {
+                "text": "约定与模式"
+              },
+              {
+                "text": "关键决策和理由",
+                "meta": "“Rounding: half-even, total only”",
+                "mark": "↻"
+              },
+              {
+                "text": "举措和改进"
+              }
+            ]
+          },
+          "say": "每页根据带有对应标签的记忆生成，并按小时刷新。各页在不同分钟运行，且仅在内容发生变化时更新。",
+          "ms": 3200
+        }
+      ]
+    },
+    {
+      "label": "首条提示词",
+      "caption": "",
+      "beats": [
+        {
+          "edges": {
+            "edge": "on-prompt",
+            "data": "UserPromptSubmit"
+          },
+          "show": {
+            "agent": [
+              {
+                "tag": "prompt",
+                "tone": "gray",
+                "text": "“发票总额减少了一美分。修正四舍五入。”"
+              }
+            ]
+          },
+          "say": "会话中的首条提示词到达时，提示词钩子获取当前任务所需的记忆。已有记忆库的会话在开始时还会收到页面目录和工具指南。"
+        },
+        {
+          "edges": {
+            "edge": "inject",
+            "data": "reflect · budget low"
+          },
+          "show": {
+            "prompt": [
+              {
+                "tag": "autoInject",
+                "tone": "gray",
+                "text": "反思",
+                "meta": "default",
+                "mark": "✓"
+              },
+              {
+                "text": "pages · recall · none",
+                "meta": "cheaper options"
+              }
+            ],
+            "obs": [
+              {
+                "text": "金额只在发票总额处舍入一次，取最近偶数",
+                "meta": "2 sources",
+                "mark": "✓"
+              }
+            ],
+            "facts": [
+              {
+                "tag": "world",
+                "tone": "blue",
+                "text": "发票总额使用银行家舍入（取最近偶数）",
+                "meta": "knowledge:decision",
+                "mark": "✓"
+              }
+            ]
+          },
+          "say": "默认对记忆库执行一次有限预算的反思。\"pages\" 模式改为搜索知识页面，\"recall\" 模式改为召回记忆，两者均只检索。",
+          "ms": 3400
+        },
+        {
+          "edges": {
+            "edge": "on-prompt",
+            "back": true,
+            "data": "injected context"
+          },
+          "show": {
+            "agent": [
+              {
+                "tag": "prompt",
+                "tone": "gray",
+                "text": "“发票总额减少了一美分。修正四舍五入。”"
+              },
+              {
+                "tag": "injected",
+                "tone": "green",
+                "text": "发票总额只舍入一次，取最近偶数，决策见 a1b2c3d。不要舍入行项目。"
+              },
+              {
+                "tag": "notice",
+                "tone": "gray",
+                "text": "Hindsight · 目标：召回此仓库关于“发票总额……”的历史决策"
+              }
+            ]
+          },
+          "say": "答案在智能体开始工作前注入上下文，每个会话一次。若记忆库尚无历史或页面，则等到第二条提示词。",
+          "ms": 3400
+        }
+      ]
+    },
+    {
+      "label": "工作时",
+      "caption": "",
+      "beats": [
+        {
+          "edges": {
+            "edge": "on-tool",
+            "data": "search_knowledge_pages(\"rounding\")"
+          },
+          "show": {
+            "agent": [
+              {
+                "tag": "prompt",
+                "tone": "gray",
+                "text": "“发票总额减少了一美分。修正四舍五入。”"
+              },
+              {
+                "tag": "tool",
+                "tone": "gray",
+                "text": "hindsight_search_knowledge_pages(“四舍五入”)",
+                "mono": true
+              }
+            ],
+            "tools": [
+              {
+                "text": "hindsight_search_knowledge_pages",
+                "mono": true
+              },
+              {
+                "text": "hindsight_list / read_knowledge_page",
+                "mono": true
+              },
+              {
+                "text": "hindsight_reflect",
+                "mono": true
+              },
+              {
+                "text": "hindsight_capture_initiative",
+                "mono": true
+              },
+              {
+                "text": "hindsight_ingest_document",
+                "mono": true
+              },
+              {
+                "text": "hindsight_sync_status · _diagnose",
+                "mono": true
+              }
+            ]
+          },
+          "say": "任务进行中，智能体通过 MCP 工具自行获取记忆。页面不会每轮主动推送；页面目录和工具指南每 10 轮重新注入一次。",
+          "ms": 3200
+        },
+        {
+          "edges": {
+            "edge": "search",
+            "data": "full text + semantic"
+          },
+          "show": {
+            "pages": [
+              {
+                "text": "关键决策和理由",
+                "meta": "§ Money rounding",
+                "mark": "✓"
+              },
+              {
+                "text": "约定与模式",
+                "meta": "§ Money",
+                "mark": "✓"
+              }
+            ]
+          },
+          "say": "页面搜索按相关性排序，并返回各页片段，速度快且显示为工具调用。hindsight_read_knowledge_page 可读取整页。",
+          "ms": 2800
+        },
+        {
+          "edges": {
+            "edge": "on-tool",
+            "back": true,
+            "data": "2 pages"
+          },
+          "show": {
+            "agent": [
+              {
+                "tag": "prompt",
+                "tone": "gray",
+                "text": "“发票总额减少了一美分。修正四舍五入。”"
+              },
+              {
+                "tag": "tool",
+                "tone": "gray",
+                "text": "hindsight_search_knowledge_pages(“四舍五入”)",
+                "mono": true
+              },
+              {
+                "tag": "result",
+                "tone": "green",
+                "text": "关键决策和理由·惯例和模式"
+              }
+            ]
+          },
+          "say": "页面不足以回答时，hindsight_reflect 进一步推理；capture_initiative 将新计划转为独立页面。",
+          "ms": 2800
+        }
+      ]
+    },
+    {
+      "label": "每次回复",
+      "caption": "",
+      "beats": [
+        {
+          "edges": {
+            "edge": "on-stop",
+            "data": "Stop"
+          },
+          "show": {
+            "agent": [
+              {
+                "tag": "prompt",
+                "tone": "gray",
+                "text": "“发票总额减少了一美分。修正四舍五入。”"
+              },
+              {
+                "tag": "reply",
+                "tone": "gray",
+                "text": "将舍入移动到InvoiceTotal.finalize()；行项目保持准确。"
+              }
+            ],
+            "stop": [
+              {
+                "text": "2 个新回合"
+              },
+              {
+                "text": "移除已注入的记忆",
+                "mark": "✓"
+              }
+            ]
+          },
+          "say": "智能体每次完成回复后，Stop 钩子读取会话记录，取出尚未写入的轮次。",
+          "ms": 3000
+        },
+        {
+          "edges": {
+            "edge": "writeback",
+            "data": "append"
+          },
+          "show": {
+            "docs": [
+              {
+                "tag": "conversation:7f3e…",
+                "tone": "gray",
+                "text": "本次会话",
+                "meta": "source:chat · harness:claude-code",
+                "mark": "+2 turns"
+              },
+              {
+                "tag": "gitlog:payments-api",
+                "tone": "gray",
+                "text": "全部 300 条提交消息，一份文档",
+                "meta": "source:git"
+              }
+            ]
+          },
+          "say": "这些轮次追加到会话文档中，首条回复会创建该文档，并标注写入的智能体。这也是控制平面中智能体图标的来源。",
+          "ms": 3400
+        },
+        {
+          "edges": "to-extract",
+          "ms": 1300
+        },
+        {
+          "edges": "to-facts",
+          "show": {
+            "facts": [
+              {
+                "tag": "world",
+                "tone": "blue",
+                "text": "发票总额使用银行家舍入（取最近偶数）",
+                "meta": "knowledge:decision"
+              },
+              {
+                "tag": "experience",
+                "tone": "purple",
+                "text": "我将四舍五入移至InvoiceTotal.finalize()",
+                "meta": "knowledge:decision",
+                "mark": "new"
+              }
+            ]
+          },
+          "say": "新轮次与其他内容一样被提取为事实……"
+        },
+        {
+          "edges": "to-consolidate",
+          "ms": 1300
+        },
+        {
+          "edges": "to-obs",
+          "show": {
+            "obs": [
+              {
+                "text": "金额仅在 InvoiceTotal.finalize() 舍入一次，取最近偶数",
+                "meta": "3 sources",
+                "mark": "updated"
+              }
+            ]
+          },
+          "say": "……整合为仓库的信念……"
+        },
+        {
+          "edges": "to-refresh",
+          "ms": 1300
+        },
+        {
+          "edges": "to-pages",
+          "show": {
+            "pages": [
+              {
+                "text": "组件图"
+              },
+              {
+                "text": "核心概念"
+              },
+              {
+                "text": "约定与模式"
+              },
+              {
+                "text": "关键决策和理由",
+                "meta": "+ rounding lives in finalize()",
+                "mark": "↻"
+              },
+              {
+                "text": "举措和改进"
+              }
+            ]
+          },
+          "say": "……下次定时刷新再修改页面，让后续会话从更新后的知识开始。",
+          "ms": 3200
+        }
+      ]
+    }
+  ]
+}

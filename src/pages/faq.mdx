@@ -1,0 +1,412 @@
+---
+title: 常见问题
+description: 关于 Hindsight 的常见问题与解答
+hide_table_of_contents: true
+---
+
+import {ClientsGrid, LLMProvidersGrid} from '@site/src/components/SupportedGrids';
+import PageHero from '@site/src/components/PageHero';
+
+<PageHero title="常见问题" subtitle="关于 Hindsight 的常见问题与解答。" />
+
+**目录**
+- [Hindsight 是什么，与 RAG 有何不同？](#what-is-hindsight-and-how-does-it-differ-from-rag)
+- [为什么选择 Hindsight 而不是其他方案？](#why-use-hindsight-instead-of-other-solutions)
+- [支持的客户端、集成与 LLM 供应商](#which-clients-and-languages-are-supported)
+- [应该使用哪个模型？](#which-model-should-i-use-with-hindsight)
+- [托管与系统要求](#do-i-need-to-host-my-own-infrastructure)
+- [什么是“僵尸”操作，如何恢复？](#what-are-zombie-operations-and-how-do-i-recover-them)
+- [如何隔离用户数据？](#how-do-i-isolate-user-data)
+- [记忆存储、记忆召回与反思有什么区别？](#whats-the-difference-between-retain-recall-and-reflect)
+- [何时使用记忆召回，何时使用反思？](#when-should-i-use-recall-vs-reflect)
+- [何时使用心智模型？](#when-should-i-use-mental-models)
+- [心智模型与知识页面](#whats-the-difference-between-a-mental-model-and-a-knowledge-page)
+- [预期延迟](#whats-the-typical-latency-for-recall-operations)
+- [标签、元数据与实体标签](#does-hindsight-support-metadata-filtering)
+- [控制召回的记忆类型](#how-do-i-control-which-types-of-memories-are-recalled)
+- [推荐的对话格式](#what-is-the-recommended-format-for-retaining-conversations)
+- [Hindsight 的图与传统知识图谱有何不同？](#how-is-hindsights-graph-different-from-a-traditional-knowledge-graph)
+
+---
+
+### Hindsight 是什么，与 RAG 有何不同？ {#what-is-hindsight-and-how-does-it-differ-from-rag}
+
+Hindsight 是智能体记忆系统，使用仿生数据结构为 AI 智能体提供长期记忆。与传统 RAG（检索增强生成）相比，Hindsight：
+
+- **存储结构化事实**，而非原始文档块
+- **构建心智模型**，随时间整合知识
+- **使用基于图的关系**，关联实体与概念
+- **支持时间推理**，通过具备时间感知能力的检索实现
+- **支持感知性格倾向的反思**，实现细致的推理
+
+详细比较请参阅 [RAG 与记忆](/developer/rag-vs-hindsight)。
+
+---
+
+### 为什么选择 Hindsight 而不是其他方案？ {#why-use-hindsight-instead-of-other-solutions}
+
+Hindsight 专为智能体记忆设计，具有以下独特优势：
+
+- **领先的准确率**：在智能体记忆 LongMemEval 基准测试中排名第一（参阅[详情](https://benchmarks.hindsight.vectorize.io/)）
+- **基于成熟技术**：PostgreSQL 久经考验、可靠且广为熟知
+- **云原生架构**：面向现代云部署设计，支持水平扩展
+- **灵活部署**：可自托管或使用 Hindsight Cloud，适配任意 LLM 供应商
+- **真正的长期记忆**：构建随时间整合知识的心智模型，而不只是检索
+- **基于图的推理**：理解实体与概念之间的关系，提供更丰富的上下文
+- **可用于生产环境**：扩展至数百万条记忆，召回延迟为 50–500ms
+- **开发者友好**：简单的 API（retain、recall、reflect），Python/TypeScript/Go/Rust SDK，以及 LiteLLM/Vercel AI SDK 集成
+
+与向量数据库（仅搜索）或 RAG 系统（文档检索）相比，Hindsight 提供随用户发展而演化的**动态记忆**。
+
+---
+
+### 支持哪些客户端与语言？ {#which-clients-and-languages-are-supported}
+
+<ClientsGrid />
+
+
+---
+
+### 支持哪些集成？ {#which-integrations-are-supported}
+
+在[集成中心](/integrations)浏览所有支持的集成。
+
+---
+
+### 支持哪些 LLM 供应商？ {#which-llm-providers-are-supported}
+
+<LLMProvidersGrid />
+
+支持的供应商完整列表、推荐模型及配置示例请参阅[模型](/developer/models)。
+
+---
+
+### Hindsight 应该使用哪个模型？ {#which-model-should-i-use-with-hindsight}
+
+**[模型排行榜](https://benchmarks.hindsight.vectorize.io/)**针对记忆存储、反思与观察整合，从准确率、速度、成本和可靠性方面对模型进行基准测试，是寻找适合使用场景的权衡方案的最佳起点。
+
+[![模型排行榜](/img/leaderboard.webp)](https://benchmarks.hindsight.vectorize.io/)
+
+支持并经过测试的模型完整列表、供应商默认值及配置示例请参阅[模型](/developer/models)。
+
+---
+
+### 需要自行托管基础设施吗？ {#do-i-need-to-host-my-own-infrastructure}
+
+不需要！你有两种选择：
+
+1. **Hindsight Cloud**：在 [ui.hindsight.vectorize.io](https://ui.hindsight.vectorize.io) 使用完全托管的服务
+2. **自托管**：通过 Docker 或直接安装，部署在自己的基础设施上
+
+自托管说明请参阅[安装](/developer/installation)。
+
+---
+
+### 自托管的最低系统要求是什么？ {#what-are-the-minimum-system-requirements-for-self-hosting}
+
+在本地运行 Hindsight API 服务器需要：
+- Python 3.11+
+- 至少 4GB 内存（生产环境建议 8GB）
+- LLM API 密钥（OpenAI、Anthropic 等）或本地 LLM 环境
+
+配置说明请参阅[安装](/developer/installation)。
+
+---
+
+### 什么是“僵尸”操作，如何恢复？ {#what-are-zombie-operations-and-how-do-i-recover-them}
+
+**僵尸操作**是因领取任务的工作进程消失而无限停留在 `processing` 状态的后台任务，通常发生在 Docker 容器重启后。表现为 `/banks/{bank_id}/stats` 上的 `pending_consolidation`（或类似）计数始终不下降，即使工作进程日志显示有大量空闲执行槽位。
+
+根本原因通常是 `HINDSIGHT_API_WORKER_ID` 不稳定。默认情况下，工作进程以容器主机名作为身份，而 Docker 每次重启都会更换主机名，因此新容器拥有不同 ID，无法将旧工作进程领取的任务识别为自己的任务。
+
+使用管理 CLI **恢复**：
+
+```bash
+# 如果知道哪个工作进程已终止：
+hindsight-admin decommission-worker <old-worker-id>
+
+# 或者，释放整个工作进程集群中的任务：
+hindsight-admin decommission-workers
+```
+
+将 `HINDSIGHT_API_WORKER_ID` 设置为稳定值即可**预防**（Docker 使用 `-e HINDSIGHT_API_WORKER_ID=...`，裸机使用 `--worker-id`）。Helm chart 已处理此问题，其 StatefulSet 会自动使用 pod 名称。
+
+完整诊断与恢复流程请参阅[管理 CLI：恢复卡住的操作](/developer/admin-cli#recovering-stuck-or-zombie-operations)。
+
+---
+
+### 如何隔离用户数据？ {#how-do-i-isolate-user-data}
+
+**记忆库**是隔离的记忆存储（类似“大脑”），包含独立的记忆、实体、关系，以及可选的性格倾向特征（怀疑程度、字面理解程度、共情程度）。各记忆库完全隔离，没有数据泄漏。
+
+多用户应用有两种做法：
+
+**1. 每位用户独立的记忆库**（适合大多数场景）
+- 为每位用户创建一个记忆库（例如 `bank_id="user-123"`）
+- 配置最简单，数据隔离最强
+- 非常适合按用户查询与个性化
+- 每个记忆库可有独特的性格倾向与背景上下文
+- **限制**：无法进行跨用户分析（例如“所有用户最常提到的话题是什么？”）
+
+**2. 使用标签的单一记忆库**（适用于需要聚合见解的应用）
+- 整个应用使用一个记忆库
+- 存储时用用户标识符标记记忆（例如 `tags={"user_id": "user-123"}`）
+- 召回或反思时按标签筛选，实现按用户查询
+- **优势**：同时支持按用户查询与跨用户查询（例如分析特定用户或聚合所有用户的信息）
+
+若重视简单与隐私，可选择每用户独立记忆库；若需要跨用户综合推理，可选择带标签的单一记忆库。管理详情请参阅[记忆库](/developer/api/memory-banks)。
+
+---
+
+### 记忆存储、记忆召回与反思有什么区别？ {#whats-the-difference-between-retain-recall-and-reflect}
+
+Hindsight 有三项核心操作：
+
+- **记忆存储（retain）**：存储数据（事实、实体、关系）
+- **记忆召回（recall）**：根据查询搜索并检索原始记忆数据
+- **反思（reflect）**：让 AI 智能体使用检索到的记忆回答查询
+
+API 详情请参阅[操作](/developer/api/operations)。
+
+---
+
+### 何时使用记忆召回，何时使用反思？ {#when-should-i-use-recall-vs-reflect}
+
+**在以下情况使用召回：**
+- 需要原始事实输入自己的推理流程或提示词
+- 需要最大程度控制如何解释记忆
+- 进行简单的事实查找（例如“Alice 对 X 说过什么？”）
+- 延迟至关重要：召回明显更快（50–500ms，而反思为 1–10s）
+- 希望在检索到的记忆之上构建自己的答案综合层
+
+**在以下情况使用反思：**
+- 需要根据记忆生成可直接使用的答案，无需额外调用 LLM
+- 需要由记忆库的性格倾向（怀疑程度、字面理解程度、共情程度）塑造回答
+- 查询需要跨事实、观察与心智模型进行多步推理
+- 需要基于记忆的推理提供结构化输出（通过 `response_schema`）
+- 需要引用：反思会返回哪些记忆、心智模型与指令影响了答案
+
+**关键区别**：召回返回数据，反思返回答案。召回提供原材料，反思则利用记忆库的性格倾向与自主搜索循环为你推理。
+
+```
+recall("Alice 喜欢什么食物？")
+→ ["Alice 喜欢寿司", "Alice 偏好素食选项"]   # 原始事实
+
+reflect("应该给 Alice 点什么？")
+→ "建议点一份素食寿司拼盘：Alice 喜欢寿司，也偏好素食选项。"  # 有记忆依据的答案
+```
+
+完整 API 详情请参阅[记忆召回](/developer/api/recall)与[反思](/developer/reflect)。
+
+---
+
+### 何时使用心智模型？ {#when-should-i-use-mental-models}
+
+**心智模型**是针对你定义的问题维护的持久答案，根据记忆库知识综合生成，并在知识变化时于后台重写。以下需求适合使用心智模型：
+
+- 超越原始事实的高层理解（例如“用户偏好函数式编程模式”）
+- 长期行为模式（例如“客户对价格敏感，但重视质量”）
+- 即时可用的答案，请求处理过程中无需推理
+- 为 **reflect** 操作中的 AI 智能体推理提供上下文
+
+通过定义问题创建心智模型，Hindsight 会生成内容并保持更新。反思优先检查心智模型，因此最新的心智模型可以直接作答，无需深入观察和原始事实。参阅[心智模型](/developer/api/mental-models)。
+
+---
+
+### 心智模型与知识页面有什么区别？ {#whats-the-difference-between-a-mental-model-and-a-knowledge-page}
+
+**知识页面也是心智模型**，使用相同引擎与刷新行为，但增加了两点：在文件夹树中的位置，以及面向文档而非答案调整的默认配置（仅基于观察构建、每次整合后增量刷新、不受其他页面影响，以及更大的内容预算）。
+
+| | 心智模型 | 知识页面 |
+|---|---|---|
+| 形式 | 针对问题的持久答案 | 带有 frontmatter 的 Markdown 文档 |
+| 组织方式 | 按标签限定范围的平面列表 | 嵌套文件夹与页面 |
+| 来源 | 默认所有事实类型 | 默认仅观察 |
+| 刷新 | 默认关闭 | 每次整合后增量刷新 |
+| 典型使用者 | 通过查找获取答案的应用或智能体 | 浏览与阅读的人或智能体 |
+
+系统需要查询答案时，使用普通心智模型。结果需要像 wiki 一样供直接浏览与阅读时，使用知识页面。心智模型上的所有可配置项同样适用于知识页面。
+
+参阅[心智模型](/developer/api/mental-models)及开发者文档的知识页面章节。
+
+---
+
+
+### 召回操作的典型延迟是多少？ {#whats-the-typical-latency-for-recall-operations}
+
+典型延迟：
+- **不重排**：50–100ms
+- **使用重排**：200–500ms（取决于重排模型与安装环境）
+
+调优选项请参阅[性能](/developer/performance)。
+
+---
+
+### Hindsight 支持元数据筛选吗？ {#does-hindsight-support-metadata-filtering}
+
+支持通过**标签**筛选。标签是存储时附加到记忆的字符串标记，在召回或反思时用作可见性筛选器。仅返回标签值匹配的记忆。
+
+```python
+# 存储时标记记忆
+client.retain(bank_id="my-bank", items=[{
+    "content": "...",
+    "tags": ["user:alice"],
+}])
+
+# 召回时按标签筛选
+client.recall(bank_id="my-bank", query="...", tags=["user:alice"])
+```
+
+完整详情（包括文档级标签）请参阅[标签](/developer/api/retain#tags-and-document_tags)。
+
+**如何按实体筛选？**
+
+从记忆提取的实体（人物、地点、概念）存储在知识图谱中，驱动基于图的检索。因此查询“介绍一下 Alice”自然会找出与 Alice 有关的记忆，无需手动筛选。
+
+若需要针对类似实体的值进行显式标签筛选，可使用带 `tag: true` 的**实体标签**。实体标签允许定义受控的 `key:value` 分类词汇（例如 `user:alice`、`topic:algebra`），在存储时提取。为标签组设置 `tag: true` 会自动将每个提取的标签写入记忆单元，使其可通过标准的 `tags`/`tags_match` 筛选：
+
+```python
+# 记忆库配置：设置 tag: true 的实体标签组
+{
+    "entity_labels": [{
+        "key": "user",
+        "type": "text",
+        "tag": True,
+        "description": "此记忆所属的用户"
+    }]
+}
+
+# 提取标签 "user:alice"，并同时将其写入记忆标签
+# 召回时使用标准 tags 参数筛选
+client.recall(bank_id="my-bank", query="...", tags=["user:alice"])
+```
+
+配置详情请参阅[实体标签](/developer/retain#entity-labels)。
+
+**文档 `metadata` 有何作用？**
+
+文档元数据（存储项中的 `metadata` 键值对）用于其他目的。它会：
+- **加入事实提取提示词**，让 LLM 提取事实时将其用作额外上下文，例如了解文档标题或来源可提高准确率。
+- **随每条召回记忆原样返回**，让应用无需额外查找即可将记忆关联到源系统（例如 URL、讨论串 ID 或工单编号）。
+
+元数据不是筛选器。需要将召回范围限定为部分文档时，请使用标签。
+
+---
+
+### 如何控制召回的记忆类型？ {#how-do-i-control-which-types-of-memories-are-recalled}
+
+如果记忆库混合了不同形式的记忆（例如简洁规则与详细流程），而召回给定查询时出现了错误形式，可使用带 `tag: true` 的**实体标签**在存储时对事实分类，在召回时严格筛选。
+
+1. 在记忆库中定义带 `tag: true` 的标签组及受控词汇（例如 `rule` 与 `procedure`）
+2. 正常存储，LLM 会自动对每条提取的事实分类
+3. 召回时传入 `tags=["memory_type:rule"]` 和 `tags_match="any_strict"`，确保仅包含匹配记忆
+
+这是排序前应用的 SQL 层筛选，而非评分信号。被排除的记忆永远不会进入检索流水线。它比调整排序权重更可靠，因为权重只能微调连续分值，无法保证排序。
+
+完整演示请参阅[最佳实践：按记忆形式筛选](/best-practices#filtering-by-memory-shape-with-entity-labels)，配置参考请参阅[实体标签](/developer/api/memory-banks#entity-labels)。
+
+---
+
+### 存储对话时推荐什么格式？ {#what-is-the-recommended-format-for-retaining-conversations}
+
+将**整个对话作为单个文档**传入，并随对话增长更新或插入。Hindsight 会自动分块，无需自行拆分。
+
+**首选格式：JSON 数组**
+
+```json
+[
+  {"role": "user",      "content": "我上个月搬到了柏林。"},
+  {"role": "assistant", "content": "你觉得那里怎么样？"},
+  {"role": "user",      "content": "很喜欢，尤其是美食。"}
+]
+```
+
+JSON 数组是最常见的对话形式，因此 Hindsight 对其进行了内部的分块优化。
+
+**替代方案：带前缀的纯文本**
+
+```
+[2025-06-01T10:32:00Z] user: 我上个月搬到了柏林。
+[2025-06-01T10:32:05Z] assistant: 你觉得那里怎么样？
+[2025-06-01T10:32:20Z] user: 很喜欢，尤其是美食。
+```
+
+为每条消息添加用户名与时间戳前缀可改善提取质量，LLM 会利用这些信号正确归属事实并推理时间。
+
+**使用稳定的文档 ID 进行更新或插入：**
+
+```python
+await client.retain(
+    bank_id="my-bank",
+    documents=[{
+        "id": "chat-session-abc123",  # 稳定 ID 支持更新或插入
+        "content": conversation,       # 截至目前的完整对话
+    }]
+)
+```
+
+使用相同 `id` 再次存储会替换旧文档及其事实，因此对话增长时不会不断积累重复内容。
+
+**不要预先摘要或提取事实。** Hindsight 会自动完成这些工作，且需要完整对话作为上下文。“对，没错”或“我选方案 2”之类的消息离开前后交流就没有意义。
+
+---
+
+### Hindsight 的图与传统知识图谱有何不同？ {#how-is-hindsights-graph-different-from-a-traditional-knowledge-graph}
+
+Hindsight 使用**以事件为中心的图**，围绕具体时刻（对话、观察、记忆）组织数据，而非静态、孤立的事实。记忆是锚点：实体关联到其出现的记忆，记忆之间也可直接关联（下文详述）。最贴切的类比是地图与剪贴簿。
+
+**传统图（如 Neo4j）是一张地图。**它展示地点如何通过道路直接连接，映射世界中固定的结构事实：
+
+```
+[多伦多] ──IS_IN──> [加拿大]
+```
+
+**Hindsight 的图是一本剪贴簿。**每页是一条记忆。在这一页贴上该时刻出现的所有人物、概念和标签的贴纸。贴纸彼此不连接，只是共同出现在同一页：
+
+```
+剪贴簿页面：“数学课”
+  [Alice]   [Acme]   [pedagogy:scaffolding]
+```
+
+#### 两者如何处理随时间发生的变化？ {#how-do-the-two-handle-change-over-time}
+
+这是传统图用于 AI 记忆时面临的主要限制。
+
+**传统图难以处理变化。**如果 Alice 离开 Acme Corp 加入 Stark Industries，你必须手动删除或重写旧的 `[WORKS_AT]` 箭头。否则图会表示她同时在两家公司工作，与现实矛盾。传统图面向绝对的当前状态，数据变化时会丢失历史。
+
+**Hindsight 保留历史，因此能轻松处理变化。**如果 Alice 换了工作，无需重写过去。只要创建新的剪贴簿页面 `记忆：周二的通话`，并贴上 `[Stark Industries]` 贴纸即可。去年的旧页面仍准确地将她关联到 `[Acme Corp]`。图自然跟踪世界如何演变，无需复杂的数据库维护。
+
+#### 贴纸从何而来？如何控制？ {#where-do-the-stickers-come-from-how-do-i-control-them}
+
+贴纸的创建结合了 AI 自动化与开发者控制：
+
+- **开放世界自动化（默认）**：Hindsight 的 LLM 流水线自动从原始文本检测并提取标准实体（人物、地点、日期），将其转化为贴纸。
+- **通过 `entity_labels` 控制**：可使用[实体标签](/developer/retain#entity-labels)定义自定义结构，强制 LLM 使用严格的预定义词汇分类记忆。你选择贴纸的具体名称与参数，而非让 AI 随意创造描述，例如强制 `pedagogy` 键仅从 `scaffolding`、`direct_instruction` 或 `socratic_questioning` 中选择。若要让记忆库*仅*使用配置的标签，并关闭上述开放世界自动化，还需在记忆库配置中设置 `entities_allow_free_form: false`，此时 LLM 会完全跳过自由形式的命名实体，只输出符合结构的条目。
+
+#### 能构建直接连接实体的流水线吗？ {#can-i-build-direct-entity-to-entity-pipelines}
+
+不能。在 Hindsight 中，实体（人物、地点、概念或分类标签）之间没有直接连接的箭头，而是通过关联到同一个父记忆单元（同一页剪贴簿）建立联系。
+
+#### 如果实体没有直接连接，Hindsight 如何发现联系？ {#how-does-hindsight-find-connections-if-entities-arent-directly-linked}
+
+召回从语义搜索开始，将与查询最相关的记忆作为起始页面，再通过三种并行信号从这些起点扩展：
+
+- **共享实体**。如果记忆 A 和记忆 B 都关联到同一个实体节点（如 `[pedagogy:scaffolding]`），Hindsight 会遍历 `记忆 A → [pedagogy:scaffolding] → 记忆 B`。这对应贴有相同贴纸的剪贴簿页面。
+- **记忆之间的语义链接**。存储新记忆时，Hindsight 预计算其在嵌入空间中到最近邻的链接，让语义相关的页面直接连接，无需共享贴纸。
+- **记忆之间的因果链接**。Hindsight 还会提取记忆之间的显式因果关系（`causes`、`caused_by`、`enables`、`prevents`），因此因果链是直接支持的边，而非必须由模型推断的内容。
+
+语义层选择起点，图则根据每个候选项中最强的这三类信号之一补充联系。
+
+#### 这种图结构有助于减少智能体幻觉吗？ {#does-this-graph-structure-help-reduce-hallucinations-in-my-agent}
+
+有帮助，它为使用这些上下文的 LLM 提供更有依据的推理材料。剪贴簿模型的三项特征直接促成这一点：
+
+- **保留历史而不将其压缩为当前状态**。模型看到具有时间范围的事实（Alice 去年在 Acme、现在在 Stark Industries），而非迫使其调和或猜测的矛盾当前关系。
+- **联系来自记录的链接，而非推断**。召回两条相关记忆是因为它们共享实体、预计算语义近邻或显式因果边。链接出现在检索上下文中，模型无需自行编造。
+- **相互印证的证据不断积累**。关联到同一实体的多条记忆互相强化而非竞争，向模型提供得到印证的论断，而非孤立且缺乏支持的论断。
+
+---
+
+## 还有问题？ {#still-have-questions}
+
+加入我们的 [Slack 社区](https://vectorize.io/slack)，或在 [GitHub](https://github.com/vectorize-io/hindsight/issues) 报告问题。

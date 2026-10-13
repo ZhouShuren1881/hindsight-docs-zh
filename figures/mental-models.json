@@ -1,0 +1,639 @@
+{
+  "title": "心智模型",
+  "speed": 2200,
+  "elements": [
+    {
+      "id": "app",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "你的应用程序"
+        }
+      ],
+      "minCardHeight": 103,
+      "width": 200
+    },
+    {
+      "id": "api",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "心智模型 API"
+        },
+        {
+          "type": "subtitle",
+          "text": "创建·阅读"
+        }
+      ]
+    },
+    {
+      "id": "trigger",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "触发器"
+        },
+        {
+          "type": "subtitle",
+          "text": "整合后，或 cron"
+        }
+      ],
+      "minCardHeight": 43,
+      "width": 200
+    },
+    {
+      "id": "reflect",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "反思"
+        },
+        {
+          "type": "subtitle",
+          "text": "回答问题"
+        }
+      ],
+      "minCardHeight": 58,
+      "width": 200
+    },
+    {
+      "id": "g2",
+      "type": "group",
+      "label": {
+        "title": "Hindsight 工作进程"
+      },
+      "children": [
+        "trigger",
+        "reflect"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 32,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "g1",
+      "type": "group",
+      "label": {
+        "title": "Hindsight",
+        "logo": "/img/logo.webp"
+      },
+      "children": [
+        "api",
+        "g2"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 32,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "obs",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "观察"
+        }
+      ],
+      "minCardHeight": 103,
+      "width": 200
+    },
+    {
+      "id": "facts",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "事实"
+        }
+      ],
+      "minCardHeight": 73,
+      "width": 190
+    },
+    {
+      "id": "sources",
+      "type": "group",
+      "label": {
+        "title": "读取"
+      },
+      "children": [
+        "obs",
+        "facts"
+      ],
+      "layout": {
+        "direction": "row",
+        "gap": 24,
+        "align": "center"
+      }
+    },
+    {
+      "id": "mm",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "心智模型"
+        },
+        {
+          "type": "subtitle",
+          "text": "团队概况"
+        }
+      ],
+      "minCardHeight": 133,
+      "width": 200
+    },
+    {
+      "id": "hist",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "历史"
+        },
+        {
+          "type": "subtitle",
+          "text": "以前的版本"
+        }
+      ],
+      "minCardHeight": 43,
+      "width": 190
+    },
+    {
+      "id": "g4",
+      "type": "group",
+      "label": {
+        "title": "写入"
+      },
+      "children": [
+        "mm",
+        "hist"
+      ],
+      "layout": {
+        "direction": "row",
+        "gap": 24,
+        "align": "center"
+      }
+    },
+    {
+      "id": "g3",
+      "type": "group",
+      "label": {
+        "title": "记忆库"
+      },
+      "children": [
+        "sources",
+        "g4"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 32,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "g0",
+      "type": "group",
+      "children": [
+        "app",
+        "g1",
+        "g3"
+      ],
+      "layout": {
+        "direction": "row",
+        "gap": 40,
+        "align": "center"
+      }
+    },
+    {
+      "id": "call",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "app"
+      },
+      "end": {
+        "id": "api"
+      }
+    },
+    {
+      "id": "build",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "api"
+      },
+      "end": {
+        "id": "reflect"
+      },
+      "label": {
+        "text": "首次构建"
+      },
+      "quiet": true
+    },
+    {
+      "id": "read-src",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "reflect"
+      },
+      "end": {
+        "id": "sources"
+      }
+    },
+    {
+      "id": "write",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "reflect"
+      },
+      "end": {
+        "id": "mm"
+      },
+      "label": {
+        "text": "写入"
+      }
+    },
+    {
+      "id": "version",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "mm"
+      },
+      "end": {
+        "id": "hist"
+      }
+    },
+    {
+      "id": "changed",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "sources"
+      },
+      "end": {
+        "id": "trigger"
+      },
+      "label": {
+        "text": "范围变更"
+      }
+    },
+    {
+      "id": "refresh",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "trigger"
+      },
+      "end": {
+        "id": "reflect"
+      },
+      "label": {
+        "text": "刷新"
+      }
+    },
+    {
+      "id": "read",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "api"
+      },
+      "end": {
+        "id": "mm"
+      },
+      "label": {
+        "text": "读取"
+      },
+      "quiet": true
+    }
+  ],
+  "scenes": [
+    {
+      "label": "创建",
+      "caption": "",
+      "beats": [
+        {
+          "edges": {
+            "edge": "call",
+            "data": "source question"
+          },
+          "show": {
+            "app": [
+              {
+                "tag": "question",
+                "tone": "gray",
+                "text": "“团队中有哪些人，每个人都做什么工作？”"
+              },
+              {
+                "tag": "trigger",
+                "tone": "gray",
+                "text": "整合后刷新",
+                "meta": "delta mode"
+              }
+            ]
+          },
+          "say": "只需定义一次问题，并指定如何保持答案最新。"
+        },
+        {
+          "edges": {
+            "edge": "build",
+            "data": "build it"
+          },
+          "show": {
+            "reflect": [
+              {
+                "text": "对这个记忆库的反思",
+                "meta": "in the model’s tag scope"
+              }
+            ]
+          },
+          "say": "Hindsight 在后台通过反思生成答案，标签限定可读取的记忆。"
+        },
+        {
+          "edges": {
+            "edge": "read-src",
+            "data": "observations + facts"
+          },
+          "show": {
+            "obs": [
+              {
+                "text": "Bob 运行检索评估",
+                "meta": "4 sources",
+                "mark": "✓"
+              },
+              {
+                "text": "Carol 转向 ML 来微调排名",
+                "meta": "3 sources",
+                "mark": "✓"
+              }
+            ],
+            "facts": [
+              {
+                "tag": "world",
+                "tone": "blue",
+                "text": "Carol 转到 ML 团队",
+                "meta": "Feb 2026",
+                "mark": "✓"
+              }
+            ]
+          },
+          "say": "先读取整合后的观察，再用原始事实核对细节。",
+          "ms": 2800
+        },
+        {
+          "edges": {
+            "edge": "write",
+            "data": "document v1"
+          },
+          "show": {
+            "mm": [
+              {
+                "tag": "research",
+                "tone": "blue",
+                "text": "Bob：检索评估"
+              },
+              {
+                "tag": "ml team",
+                "tone": "purple",
+                "text": "Carol：排名微调"
+              },
+              {
+                "text": "依据 2 条观察、1 个事实",
+                "meta": "v1"
+              }
+            ]
+          },
+          "say": "答案存储为文档，同时保存生成它所依据的证据。",
+          "ms": 3000
+        }
+      ]
+    },
+    {
+      "label": "保持最新状态",
+      "caption": "",
+      "beats": [
+        {
+          "show": {
+            "obs": [
+              {
+                "text": "Bob 运行检索评估",
+                "meta": "4 sources"
+              },
+              {
+                "text": "Carol 转向 ML 来微调排名",
+                "meta": "3 sources"
+              },
+              {
+                "text": "Alice加入研究团队",
+                "meta": "2 sources",
+                "mark": "new"
+              }
+            ],
+            "mm": [
+              {
+                "tag": "research",
+                "tone": "blue",
+                "text": "Bob：检索评估"
+              },
+              {
+                "tag": "ml team",
+                "tone": "purple",
+                "text": "Carol：排名微调"
+              },
+              {
+                "text": "依据 2 条观察、1 个事实",
+                "meta": "v1"
+              }
+            ]
+          },
+          "say": "记忆库持续学习，整合在模型作用域内生成一条新观察。",
+          "ms": 2800
+        },
+        {
+          "edges": {
+            "edge": "changed",
+            "data": "newer than v1"
+          },
+          "show": {
+            "trigger": [
+              {
+                "tag": "stale",
+                "tone": "orange",
+                "text": "作用域内存在比 v1 上次读取更新的记忆"
+              }
+            ]
+          },
+          "say": "触发器先检查：模型作用域中是否有比上次刷新读取的最新记忆更新的内容？记忆库其他范围的活动不计入。",
+          "ms": 3200
+        },
+        {
+          "edges": {
+            "edge": "refresh",
+            "data": "refresh"
+          },
+          "show": {
+            "reflect": [
+              {
+                "text": "仅阅读v1以来的新内容"
+              }
+            ]
+          },
+          "say": "增量模式只读取上次刷新后到达的新记忆。"
+        },
+        {
+          "edges": {
+            "edge": "read-src",
+            "data": "what’s new"
+          },
+          "show": {
+            "obs": [
+              {
+                "text": "Bob 运行检索评估",
+                "meta": "4 sources"
+              },
+              {
+                "text": "Carol 转向 ML 来微调排名",
+                "meta": "3 sources"
+              },
+              {
+                "text": "Alice加入研究团队",
+                "meta": "2 sources",
+                "mark": "✓"
+              }
+            ]
+          }
+        },
+        {
+          "edges": [
+            {
+              "edge": "write",
+              "data": "append_block → Research"
+            },
+            {
+              "edge": "version",
+              "data": "v1"
+            }
+          ],
+          "show": {
+            "reflect": [
+              {
+                "tag": "edit",
+                "tone": "green",
+                "text": "append_block",
+                "meta": "Research",
+                "mono": true
+              }
+            ],
+            "mm": [
+              {
+                "tag": "research",
+                "tone": "blue",
+                "text": "Bob：检索评估",
+                "mark": "same"
+              },
+              {
+                "tag": "research",
+                "tone": "blue",
+                "text": "Alice：3月加入",
+                "mark": "added"
+              },
+              {
+                "tag": "ml team",
+                "tone": "purple",
+                "text": "Carol：排名微调",
+                "mark": "same"
+              },
+              {
+                "text": "证据：3 个观察，1 个事实",
+                "meta": "v2"
+              }
+            ],
+            "hist": [
+              {
+                "tag": "v1",
+                "tone": "gray",
+                "text": "Bob，Carol"
+              }
+            ]
+          },
+          "say": "刷新应用局部编辑而非重写：在研究章节添加一个条目，其余内容原样保留，旧版本存入历史记录。",
+          "ms": 3800
+        }
+      ]
+    },
+    {
+      "label": "读取",
+      "caption": "",
+      "beats": [
+        {
+          "edges": {
+            "edge": "call",
+            "data": "get “Team overview”"
+          },
+          "show": {
+            "app": [
+              {
+                "tag": "read",
+                "tone": "gray",
+                "text": "团队概况"
+              }
+            ]
+          },
+          "say": "应用需要答案时，通过 ID 获取模型。"
+        },
+        {
+          "edges": {
+            "edge": "read",
+            "data": "database read"
+          },
+          "say": "这只是一次数据库读取，无需检索、调用 LLM 或等待生成。"
+        },
+        {
+          "edges": [
+            {
+              "edge": "read",
+              "back": true,
+              "data": "v2 · fresh"
+            }
+          ],
+          "ms": 1600
+        },
+        {
+          "edges": {
+            "edge": "call",
+            "back": true,
+            "data": "the document"
+          },
+          "show": {
+            "app": [
+              {
+                "tag": "read",
+                "tone": "gray",
+                "text": "团队概况"
+              },
+              {
+                "tag": "answer",
+                "tone": "green",
+                "text": "研究：Bob、Alice · ML：Carol",
+                "meta": "fresh",
+                "mark": "✓"
+              }
+            ]
+          },
+          "say": "所有提问者得到同一份文档。反思也优先读取心智模型，并且只在模型未过时时采信它。",
+          "ms": 3400
+        }
+      ]
+    }
+  ]
+}

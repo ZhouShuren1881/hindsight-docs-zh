@@ -1,0 +1,701 @@
+{
+  "title": "多语言支持",
+  "speed": 2200,
+  "elements": [
+    {
+      "id": "agent",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "你的AI智能体"
+        }
+      ],
+      "minCardHeight": 148,
+      "width": 200
+    },
+    {
+      "id": "retain",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "记忆存储"
+        },
+        {
+          "type": "subtitle",
+          "text": "LLM 提取"
+        }
+      ],
+      "minCardHeight": 58,
+      "width": 210
+    },
+    {
+      "id": "recall",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "记忆召回"
+        },
+        {
+          "type": "subtitle",
+          "text": "搜索"
+        }
+      ],
+      "minCardHeight": 43,
+      "width": 210
+    },
+    {
+      "id": "reflect",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "反思"
+        },
+        {
+          "type": "subtitle",
+          "text": "智能体循环"
+        }
+      ],
+      "minCardHeight": 58,
+      "width": 210
+    },
+    {
+      "id": "g1",
+      "type": "group",
+      "label": {
+        "title": "Hindsight API"
+      },
+      "children": [
+        "retain",
+        "recall",
+        "reflect"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 24,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "vectors",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "向量"
+        },
+        {
+          "type": "subtitle",
+          "text": "嵌入模型"
+        }
+      ],
+      "minCardHeight": 58
+    },
+    {
+      "id": "fulltext",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "全文"
+        },
+        {
+          "type": "subtitle",
+          "text": "分词器"
+        }
+      ],
+      "minCardHeight": 58
+    },
+    {
+      "id": "indexes",
+      "type": "group",
+      "label": {
+        "title": "索引"
+      },
+      "children": [
+        "vectors",
+        "fulltext"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 12,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "facts",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "事实"
+        }
+      ],
+      "minCardHeight": 103,
+      "width": 250
+    },
+    {
+      "id": "entities",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "实体"
+        },
+        {
+          "type": "subtitle",
+          "text": "原始姓名"
+        }
+      ],
+      "minCardHeight": 73,
+      "width": 250
+    },
+    {
+      "id": "g3",
+      "type": "group",
+      "children": [
+        "facts",
+        "entities"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 24,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "g2",
+      "type": "group",
+      "label": {
+        "title": "记忆库"
+      },
+      "children": [
+        "indexes",
+        "g3"
+      ],
+      "layout": {
+        "direction": "row",
+        "gap": 40,
+        "align": "center"
+      }
+    },
+    {
+      "id": "g0",
+      "type": "group",
+      "children": [
+        "agent",
+        "g1",
+        "g2"
+      ],
+      "layout": {
+        "direction": "row",
+        "gap": 40,
+        "align": "center"
+      }
+    },
+    {
+      "id": "call-retain",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "agent"
+      },
+      "end": {
+        "id": "retain"
+      },
+      "label": {
+        "text": "retain()"
+      }
+    },
+    {
+      "id": "call-recall",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "agent"
+      },
+      "end": {
+        "id": "recall"
+      },
+      "label": {
+        "text": "recall()"
+      }
+    },
+    {
+      "id": "call-reflect",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "agent"
+      },
+      "end": {
+        "id": "reflect"
+      },
+      "label": {
+        "text": "reflect()"
+      }
+    },
+    {
+      "id": "r-facts",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "retain"
+      },
+      "end": {
+        "id": "facts"
+      },
+      "quiet": true
+    },
+    {
+      "id": "r-ent",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "retain"
+      },
+      "end": {
+        "id": "entities"
+      },
+      "quiet": true
+    },
+    {
+      "id": "r-idx",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "retain"
+      },
+      "end": {
+        "id": "indexes"
+      },
+      "label": {
+        "text": "索引"
+      }
+    },
+    {
+      "id": "q-vec",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "recall"
+      },
+      "end": {
+        "id": "vectors"
+      }
+    },
+    {
+      "id": "q-ft",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "recall"
+      },
+      "end": {
+        "id": "fulltext"
+      }
+    },
+    {
+      "id": "idx-facts",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "indexes"
+      },
+      "end": {
+        "id": "facts"
+      },
+      "label": {
+        "text": "指向"
+      }
+    },
+    {
+      "id": "reflect-recall",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "reflect"
+      },
+      "end": {
+        "id": "recall"
+      },
+      "label": {
+        "text": "用途"
+      }
+    }
+  ],
+  "scenes": [
+    {
+      "label": "retain()",
+      "caption": "",
+      "beats": [
+        {
+          "edges": {
+            "edge": "call-retain",
+            "data": "Chinese content"
+          },
+          "show": {
+            "agent": [
+              {
+                "tag": "content",
+                "tone": "gray",
+                "text": "“王芳在Google北京办公室工作，她是一位高级产品经理。之前她在Microsoft和Amazon工作过。”"
+              },
+              {
+                "tag": "context",
+                "tone": "gray",
+                "text": "员工资料"
+              }
+            ]
+          },
+          "say": "智能体存储一段提及英文公司名的中文文本。"
+        },
+        {
+          "show": {
+            "retain": [
+              {
+                "text": "输入语言：中文"
+              },
+              {
+                "text": "用中文写事实",
+                "mark": "✓"
+              },
+              {
+                "text": "保留原始名称",
+                "mark": "✓"
+              }
+            ]
+          },
+          "light": [
+            "retain"
+          ],
+          "say": "系统没有独立的语言检测器，而是要求 LLM 使用输入语言生成事实，并保留原始名称。",
+          "ms": 3400
+        },
+        {
+          "edges": [
+            "r-facts",
+            "r-ent"
+          ],
+          "show": {
+            "facts": [
+              {
+                "tag": "world",
+                "tone": "blue",
+                "text": "王芳在Google北京办公室工作，出任高级产品经理",
+                "mark": "new"
+              },
+              {
+                "tag": "world",
+                "tone": "blue",
+                "text": "王芳曾在Microsoft和Amazon工作过",
+                "mark": "new"
+              }
+            ],
+            "entities": [
+              {
+                "type": "graph",
+                "nodes": [
+                  "王芳",
+                  "Google",
+                  "Microsoft",
+                  "Amazon"
+                ],
+                "links": [
+                  [
+                    "王芳",
+                    "Google"
+                  ],
+                  [
+                    "王芳",
+                    "Microsoft"
+                  ],
+                  [
+                    "王芳",
+                    "Amazon"
+                  ]
+                ],
+                "lit": [
+                  "王芳",
+                  "Google",
+                  "Microsoft",
+                  "Amazon"
+                ]
+              }
+            ]
+          },
+          "say": "事实以中文存储。“王芳”仍是“王芳”，不会变成“Wang Fang”；Google 仍是 Google。",
+          "ms": 3400
+        },
+        {
+          "edges": "r-idx",
+          "show": {
+            "vectors": [
+              {
+                "text": "bge-m3",
+                "mono": true,
+                "meta": "100+ languages",
+                "mark": "✓"
+              }
+            ],
+            "fulltext": [
+              {
+                "text": "pgroonga",
+                "mono": true,
+                "meta": "splits Chinese text",
+                "mark": "✓"
+              }
+            ]
+          },
+          "say": "语言影响索引。默认嵌入模型与关键词索引仅支持英语，应选择多语言模型，以及能切分中文的分词器。",
+          "ms": 3800
+        },
+        {
+          "edges": {
+            "edge": "call-retain",
+            "back": true,
+            "data": "✓ 2 facts"
+          },
+          "show": {
+            "agent": [
+              {
+                "tag": "content",
+                "tone": "gray",
+                "text": "“王芳在Google北京办公室工作，她是一位高级产品经理。之前她在Microsoft和Amazon工作过。”"
+              },
+              {
+                "tag": "context",
+                "tone": "gray",
+                "text": "员工资料"
+              },
+              {
+                "tag": "result",
+                "tone": "green",
+                "text": "2 个已存储的事实",
+                "mark": "✓"
+              }
+            ]
+          },
+          "say": "按输入时的语言存储。",
+          "ms": 1800
+        }
+      ]
+    },
+    {
+      "label": "recall()",
+      "caption": "",
+      "beats": [
+        {
+          "edges": {
+            "edge": "call-recall",
+            "data": "“王芳在哪里工作？”"
+          },
+          "show": {
+            "agent": [
+              {
+                "tag": "query",
+                "tone": "gray",
+                "text": "“王芳在哪里工作？”"
+              }
+            ]
+          },
+          "say": "使用中文查询。"
+        },
+        {
+          "edges": [
+            {
+              "edge": "q-vec",
+              "data": "≈ 在哪里工作"
+            },
+            {
+              "edge": "q-ft",
+              "data": "“王芳”"
+            }
+          ],
+          "show": {
+            "vectors": [
+              {
+                "text": "按含义匹配",
+                "meta": "工作 ≈ 担任",
+                "mark": "✓"
+              }
+            ],
+            "fulltext": [
+              {
+                "text": "与名字相符",
+                "meta": "王芳 in 2 facts",
+                "mark": "✓"
+              }
+            ]
+          },
+          "say": "多语言嵌入按语义匹配；分词器让“王芳”作为一个完整词精确匹配。",
+          "ms": 3200
+        },
+        {
+          "edges": "idx-facts",
+          "show": {
+            "facts": [
+              {
+                "tag": "world",
+                "tone": "blue",
+                "text": "王芳在Google北京办公室工作，出任高级产品经理",
+                "mark": "✓"
+              },
+              {
+                "tag": "world",
+                "tone": "blue",
+                "text": "王芳曾在Microsoft和Amazon工作过",
+                "mark": "✓"
+              }
+            ]
+          },
+          "say": "两者都找到中文事实。后续排序的默认重排序模型也仅支持英语，因此同样需要选择多语言模型。",
+          "ms": 2000
+        },
+        {
+          "edges": {
+            "edge": "call-recall",
+            "back": true,
+            "data": "2 facts"
+          },
+          "show": {
+            "agent": [
+              {
+                "tag": "query",
+                "tone": "gray",
+                "text": "“王芳在哪里工作？”"
+              },
+              {
+                "tag": "1",
+                "tone": "green",
+                "text": "王芳在Google北京办公室工作，出任高级产品经理"
+              },
+              {
+                "tag": "2",
+                "tone": "green",
+                "text": "王芳曾在Microsoft和Amazon工作过"
+              }
+            ]
+          },
+          "say": "事实按存储时的原文返回，过程中没有翻译。",
+          "ms": 2800
+        }
+      ]
+    },
+    {
+      "label": "reflect()",
+      "caption": "",
+      "beats": [
+        {
+          "edges": {
+            "edge": "call-reflect",
+            "data": "“王芳有哪些工作经历？”"
+          },
+          "show": {
+            "agent": [
+              {
+                "tag": "question",
+                "tone": "gray",
+                "text": "“王芳有哪些工作经历？”"
+              }
+            ]
+          },
+          "say": "使用中文提问。"
+        },
+        {
+          "edges": {
+            "edge": "reflect-recall",
+            "data": "recall"
+          },
+          "show": {
+            "reflect": [
+              {
+                "text": "问题语言：中文"
+              },
+              {
+                "text": "正在搜索……"
+              }
+            ]
+          },
+          "say": "反思像之前一样搜索记忆库……"
+        },
+        {
+          "edges": [
+            "q-vec",
+            "q-ft"
+          ],
+          "ms": 1600,
+          "say": "……使用相同的索引……"
+        },
+        {
+          "edges": "idx-facts",
+          "show": {
+            "facts": [
+              {
+                "tag": "world",
+                "tone": "blue",
+                "text": "王芳在Google北京办公室工作，出任高级产品经理",
+                "mark": "cited"
+              },
+              {
+                "tag": "world",
+                "tone": "blue",
+                "text": "王芳曾在Microsoft和Amazon工作过",
+                "mark": "cited"
+              }
+            ]
+          },
+          "ms": 2000,
+          "say": "……找到两个事实。"
+        },
+        {
+          "show": {
+            "reflect": [
+              {
+                "text": "问题语言：中文"
+              },
+              {
+                "text": "引用2个事实"
+              },
+              {
+                "text": "中文回答",
+                "mark": "✓"
+              }
+            ]
+          },
+          "light": [
+            "reflect"
+          ],
+          "say": "答案使用问题的语言生成。",
+          "ms": 2400
+        },
+        {
+          "edges": {
+            "edge": "call-reflect",
+            "back": true,
+            "data": "answer in Chinese"
+          },
+          "show": {
+            "agent": [
+              {
+                "tag": "question",
+                "tone": "gray",
+                "text": "“王芳有哪些工作经历？”"
+              },
+              {
+                "tag": "answer",
+                "tone": "green",
+                "text": "“王芳目前在Google北京办公室担任高级产品经理，之前在Microsoft和Amazon工作过。”"
+              }
+            ]
+          },
+          "say": "若要让所有输出固定为一种语言，请设置 HINDSIGHT_API_LLM_OUTPUT_LANGUAGE。",
+          "ms": 3200
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,867 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>心智模型刷新：完整流程 — Hindsight</title>
+  <meta name="description" content="Hindsight心理模型刷新管道的逐步跟踪：每个分支、增量与完整，以及降价交叉到结构中的位置。">
+  <style>
+    /* Minimal reset — the artifact host used to supply this. */
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -moz-text-size-adjust: none; -webkit-text-size-adjust: none; text-size-adjust: none; }
+    body, h1, h2, h3, h4, p, figure, blockquote, dl, dd, ol, ul { margin: 0; }
+    ol[role="list"], ul[role="list"] { list-style: none; }
+    body { min-height: 100vh; }
+    img, picture, svg { max-width: 100%; display: block; }
+    input, button, textarea, select { font: inherit; }
+  </style>
+
+  <style>
+    .theme-toggle {
+      position: fixed; top: 1rem; right: 1rem; z-index: 10;
+      font-family: var(--mono); font-size: .72rem; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--muted);
+      background: var(--card); border: 1px solid var(--rule);
+      border-radius: 5px; padding: .45rem .7rem; cursor: pointer;
+      box-shadow: var(--shadow);
+    }
+    .theme-toggle:hover { color: var(--ink); }
+    .theme-toggle:focus-visible { outline: 2px solid var(--struct); outline-offset: 3px; }
+    @media print { .theme-toggle { display: none; } }
+  </style>
+
+  <style>
+  :root {
+    --paper:   #F5F7F9;
+    --card:    #FFFFFF;
+    --ink:     #191D24;
+    --muted:   #64707F;
+    --rule:    #DDE3EA;
+    --struct:  #2D5BD6;
+    --lossy:   #B0224A;
+    --ok:      #0C7A63;
+    --shadow:  0 1px 2px rgba(25,29,36,.06), 0 8px 24px -16px rgba(25,29,36,.28);
+
+    --serif: "Iowan Old Style", Georgia, "Times New Roman", serif;
+    --sans:  system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono:  ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+    --measure: 72ch;
+    --wide: 1080px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:  #12151A;
+      --card:   #191D24;
+      --ink:    #E4E8EE;
+      --muted:  #93A0B0;
+      --rule:   #262C35;
+      --struct: #7398F7;
+      --lossy:  #F2789C;
+      --ok:     #35C6A4;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:  #12151A;
+    --card:   #191D24;
+    --ink:    #E4E8EE;
+    --muted:  #93A0B0;
+    --rule:   #262C35;
+    --struct: #7398F7;
+    --lossy:  #F2789C;
+    --ok:     #35C6A4;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+  }
+  :root[data-theme="light"] {
+    --paper:  #F5F7F9;
+    --card:   #FFFFFF;
+    --ink:    #191D24;
+    --muted:  #64707F;
+    --rule:   #DDE3EA;
+    --struct: #2D5BD6;
+    --lossy:  #B0224A;
+    --ok:     #0C7A63;
+    --shadow: 0 1px 2px rgba(25,29,36,.06), 0 8px 24px -16px rgba(25,29,36,.28);
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16.5px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: var(--wide);
+    margin: 0 auto;
+    padding: 4rem 1.5rem 6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2.25rem;
+  }
+  .page > * { max-width: var(--measure); }
+  .page > .bleed { max-width: 100%; width: 100%; }
+
+  /* Masthead ------------------------------------------------------------ */
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: .72rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  h1 {
+    font-family: var(--serif);
+    font-size: clamp(2.1rem, 5vw, 3.1rem);
+    line-height: 1.08;
+    font-weight: 600;
+    letter-spacing: -.015em;
+    text-wrap: balance;
+    margin-top: .4rem;
+  }
+  .standfirst {
+    font-size: 1.1rem;
+    color: var(--muted);
+    text-wrap: pretty;
+  }
+  .masthead-rule {
+    border: 0;
+    border-top: 2px solid var(--ink);
+    max-width: var(--measure);
+    margin: .5rem 0 0;
+  }
+
+  h2 {
+    font-family: var(--serif);
+    font-size: 1.7rem;
+    font-weight: 600;
+    letter-spacing: -.01em;
+    line-height: 1.2;
+    text-wrap: balance;
+    margin-top: 1.5rem;
+    padding-top: 1.4rem;
+    border-top: 1px solid var(--rule);
+  }
+  h3 {
+    font-family: var(--sans);
+    font-size: 1.02rem;
+    font-weight: 650;
+    letter-spacing: -.005em;
+    margin-top: .75rem;
+  }
+  p { text-wrap: pretty; }
+  a { color: var(--struct); text-underline-offset: .18em; }
+  a:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--struct);
+    outline-offset: 3px;
+    border-radius: 3px;
+  }
+
+  code {
+    font-family: var(--mono);
+    font-size: .855em;
+    background: color-mix(in srgb, var(--ink) 6%, transparent);
+    padding: .12em .34em;
+    border-radius: 3px;
+  }
+
+  ul, ol { padding-left: 1.3rem; display: flex; flex-direction: column; gap: .45rem; }
+  li::marker { color: var(--muted); }
+
+  /* Contents ------------------------------------------------------------ */
+  .toc {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 1.1rem 1.4rem;
+    box-shadow: var(--shadow);
+  }
+  .toc ol {
+    list-style: none;
+    padding: 0;
+    counter-reset: toc;
+    gap: .3rem;
+  }
+  .toc li { display: flex; gap: .7rem; align-items: baseline; }
+  .toc li::before {
+    counter-increment: toc;
+    content: counter(toc, decimal-leading-zero);
+    font-family: var(--mono);
+    font-size: .74rem;
+    color: var(--muted);
+  }
+  .toc a { text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+
+  /* Figures ------------------------------------------------------------- */
+  figure {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 1.5rem 1.5rem 1.1rem;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: .9rem;
+    overflow-x: auto;
+  }
+  figure svg { display: block; max-width: 100%; height: auto; min-width: 560px; margin: 0 auto; }
+  figcaption {
+    font-size: .875rem;
+    color: var(--muted);
+    border-top: 1px solid var(--rule);
+    padding-top: .8rem;
+    text-wrap: pretty;
+    min-width: 0;
+  }
+  figcaption b { color: var(--ink); font-weight: 620; }
+
+  /* Tables -------------------------------------------------------------- */
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    background: var(--card);
+    box-shadow: var(--shadow);
+  }
+  table { border-collapse: collapse; width: 100%; font-size: .875rem; }
+  th, td {
+    text-align: left;
+    padding: .62rem .85rem;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+  thead th {
+    font-family: var(--mono);
+    font-size: .7rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: 0; }
+  td code { background: none; padding: 0; }
+  .yes { color: var(--ok); font-weight: 600; }
+  .no  { color: var(--muted); }
+  .raise { color: var(--lossy); font-weight: 600; }
+
+  /* Callout ------------------------------------------------------------- */
+  .note {
+    border-left: 3px solid var(--struct);
+    background: color-mix(in srgb, var(--struct) 7%, transparent);
+    padding: .9rem 1.15rem;
+    border-radius: 0 5px 5px 0;
+    font-size: .94rem;
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+  }
+  .note.warn {
+    border-left-color: var(--lossy);
+    background: color-mix(in srgb, var(--lossy) 8%, transparent);
+  }
+  .note-label {
+    font-family: var(--mono);
+    font-size: .68rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--struct);
+  }
+  .note.warn .note-label { color: var(--lossy); }
+
+  .src {
+    font-family: var(--mono);
+    font-size: .76rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  /* SVG shared ---------------------------------------------------------- */
+  .d-box   { fill: var(--card); stroke: currentColor; stroke-width: 1.25; }
+  .d-fill  { fill: color-mix(in srgb, var(--ink) 5%, transparent); stroke: currentColor; stroke-width: 1.25; }
+  .d-struct{ fill: color-mix(in srgb, var(--struct) 12%, transparent); stroke: var(--struct); stroke-width: 1.5; }
+  .d-lossy { fill: color-mix(in srgb, var(--lossy) 12%, transparent); stroke: var(--lossy); stroke-width: 1.5; }
+  .d-ok    { fill: color-mix(in srgb, var(--ok) 12%, transparent); stroke: var(--ok); stroke-width: 1.5; }
+  .d-line  { stroke: currentColor; stroke-width: 1.25; fill: none; }
+  .d-line-lossy { stroke: var(--lossy); stroke-width: 1.75; fill: none; }
+  .d-line-struct{ stroke: var(--struct); stroke-width: 1.5; fill: none; }
+  .d-dash  { stroke-dasharray: 5 4; }
+  .d-t     { font-family: var(--sans); font-size: 12.5px; fill: var(--ink); }
+  .d-t-sm  { font-family: var(--sans); font-size: 11px; fill: var(--muted); }
+  .d-m     { font-family: var(--mono); font-size: 11px; fill: var(--ink); }
+  .d-m-sm  { font-family: var(--mono); font-size: 10px; fill: var(--muted); }
+  .d-m-lossy { font-family: var(--mono); font-size: 11px; fill: var(--lossy); }
+  .d-m-ok  { font-family: var(--mono); font-size: 11px; fill: var(--ok); }
+  .d-num   { font-family: var(--mono); font-size: 11px; fill: var(--muted); }
+  .d-head  { font-family: var(--sans); font-size: 12px; font-weight: 650; fill: var(--ink); }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<button class="theme-toggle" type="button" id="themeToggle" aria-label="切换颜色主题">主题</button>
+<div class="page">
+
+  <header>
+    <div class="eyebrow">Hindsight·engine/reflect·知识页面</div>
+    <h1>心智模型如何刷新</h1>
+    <hr class="masthead-rule">
+  </header>
+
+  <p class="standfirst">Hindsight中的每一个知识页面都是一个自我重写的心智模型。这是整个流程——模式决策、七个阶段、每个分支以及四个结果中的每一个——根据今天的代码进行追踪。</p>
+
+  <nav class="toc" aria-label="内容">
+    <ol>
+      <li><a href="#shape">一刷新的形状</a></li>
+      <li><a href="#gate">阶段 2 — 模式门</a></li>
+      <li><a href="#delta">阶段 5 — Delta 分支内部</a></li>
+      <li><a href="#guards">阶段 6 — 守卫</a></li>
+      <li><a href="#outcomes">阶段 7 — 实际写入的内容</a></li>
+      <li><a href="#crossings">Markdown 成为结构</a></li>
+      <li><a href="#inversion">反转，绘制</a></li>
+    </ol>
+  </nav>
+
+  <p>刷新被故意分成两部分。 <code>_execute_mental_model_refresh</code> 运行整个管道并 <b>什么也没写</b> —它返回一个 <code>_MentalModelRefreshRun</code> 记录它所做的每一个决定。 <code>refresh_mental_model</code> 坚持跑步； <code>dry_run_refresh_mental_model</code> 举报并扔掉。故意没有使执行器在预览中表现不同的标志，因为可以配置的预览将停止预测它存在的要预测的刷新。</p>
+
+  <!-- ================================================================== -->
+  <h2 id="shape">1·一刷新的形状</h2>
+
+  <p>七个阶段，按顺序排列。阶段 1-4 是无条件的：即使是纯粹的全模式刷新也会解析范围、拍摄快照并调用“反思”。分支全部发生在 5 和 6 中。</p>
+
+  <figure class="bleed">
+    <svg viewBox="0 0 900 660" role="img" aria-label="刷新的七个阶段，从上到下运行，第 5 和第 6 阶段右侧有 3 个无写出口。">
+      <defs>
+        <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+        </marker>
+        <marker id="a1r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--lossy)"/>
+        </marker>
+        <marker id="a1g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--ok)"/>
+        </marker>
+      </defs>
+
+      <!-- spine -->
+      <g>
+        <rect class="d-box" x="40" y="14"  width="400" height="56" rx="4"/>
+        <text class="d-num"  x="56" y="36">01</text>
+        <text class="d-head" x="86" y="36">读取触发器</text>
+        <text class="d-m-sm" x="86" y="54">requested_mode = 触发模式或“完整”</text>
+
+        <rect class="d-struct" x="40" y="102" width="400" height="56" rx="4"/>
+        <text class="d-num"  x="56" y="124">02</text>
+        <text class="d-head" x="86" y="124">模式门</text>
+        <text class="d-m-sm" x="86" y="142">解析use_delta·负载structured_content</text>
+
+        <rect class="d-box" x="40" y="190" width="400" height="56" rx="4"/>
+        <text class="d-num"  x="56" y="212">03</text>
+        <text class="d-head" x="86" y="212">范围+快照</text>
+        <text class="d-m-sm" x="86" y="230">refresh_cutoff·processed_watermark</text>
+
+        <rect class="d-box" x="40" y="278" width="400" height="56" rx="4"/>
+        <text class="d-num"  x="56" y="300">04</text>
+        <text class="d-head" x="86" y="300">reflect_async</text>
+        <text class="d-m-sm" x="86" y="318">→ 候选降价 (reflect_result.text)</text>
+
+        <rect class="d-struct" x="40" y="366" width="400" height="70" rx="4"/>
+        <text class="d-num"  x="56" y="388">05</text>
+        <text class="d-head" x="86" y="388">达美运营</text>
+        <text class="d-m-sm" x="86" y="406">仅当use_delta时 — 否则跳过整个</text>
+        <text class="d-m-sm" x="86" y="424">组delta_applied、final_content、final_structured</text>
+
+        <rect class="d-box" x="40" y="468" width="400" height="70" rx="4"/>
+        <text class="d-num"  x="56" y="490">06</text>
+        <text class="d-head" x="86" y="490">守卫</text>
+        <text class="d-m-sm" x="86" y="508">空渲染 · 增量窗口候选</text>
+        <text class="d-m-sm" x="86" y="526">然后parse_markdown(final_content)（如果需要）</text>
+
+        <rect class="d-ok" x="40" y="570" width="400" height="56" rx="4"/>
+        <text class="d-num"  x="56" y="592">07</text>
+        <text class="d-head" x="86" y="592">坚持</text>
+        <text class="d-m-sm" x="86" y="610">内容+structured_content+水印</text>
+      </g>
+
+      <!-- spine arrows -->
+      <g class="d-line" marker-end="url(#a1)">
+        <line x1="240" y1="70"  x2="240" y2="98"/>
+        <line x1="240" y1="158" x2="240" y2="186"/>
+        <line x1="240" y1="246" x2="240" y2="274"/>
+        <line x1="240" y1="334" x2="240" y2="362"/>
+        <line x1="240" y1="436" x2="240" y2="464"/>
+        <line x1="240" y1="538" x2="240" y2="566"/>
+      </g>
+
+      <!-- full-mode bypass -->
+      <path class="d-line d-dash" d="M 40 130 L 18 130 L 18 502 L 36 502" marker-end="url(#a1)"/>
+      <text class="d-m-sm" x="10" y="316" transform="rotate(-90 10 316)" text-anchor="middle">完整模式：跳过第 5 阶段</text>
+
+      <!-- exits -->
+      <g>
+        <rect class="d-ok" x="560" y="366" width="310" height="46" rx="4"/>
+        <text class="d-m-ok" x="576" y="384">content_preserved_no_new_facts</text>
+        <text class="d-t-sm" x="576" y="402">文档未受影响·水印进步</text>
+        <path class="d-line-struct" d="M 440 389 L 556 389" marker-end="url(#a1g)"/>
+
+        <rect class="d-lossy" x="560" y="452" width="310" height="46" rx="4"/>
+        <text class="d-m-lossy" x="576" y="470">refresh_failed_empty_candidate</text>
+        <text class="d-t-sm" x="576" y="488">加注·持有水印</text>
+        <path class="d-line-lossy" d="M 440 475 L 556 475" marker-end="url(#a1r)"/>
+
+        <rect class="d-lossy" x="560" y="512" width="310" height="46" rx="4"/>
+        <text class="d-m-lossy" x="576" y="530">refresh_failed_delta_not_applied</text>
+        <text class="d-t-sm" x="576" y="548">加注·持有水印</text>
+        <path class="d-line-lossy" d="M 440 535 L 556 535" marker-end="url(#a1r)"/>
+
+        <rect class="d-ok" x="560" y="580" width="310" height="36" rx="4"/>
+        <text class="d-m-ok" x="576" y="602">content_written</text>
+        <path class="d-line" d="M 440 598 L 556 598" marker-end="url(#a1g)" stroke="var(--ok)"/>
+      </g>
+    </svg>
+    <figcaption><b>一次刷新，端到端。</b> 执行者什么也不写；它返回一个携带结果的运行对象。四个结果中的三个使存储的文档完全保持原样 - 只是 <code>content_written</code> 取代了它。请注意虚线旁路：在完整模式下，第 5 阶段根本不运行，这就是为什么完整模式页面永远不会表现出增量特定损坏的原因。</figcaption>
+  </figure>
+
+  <!-- ================================================================== -->
+  <h2 id="gate">2 · 第 2 阶段 — 模式门</h2>
+
+  <p>请求增量模式与获得它不同。 <code>requested_mode</code> 来自触发器—知识页面获取 <code>KNOWLEDGE_PAGE_DEFAULT_TRIGGER</code>，设置 <code>mode: "delta"</code>，所以 <b>delta 是每个页面的默认值</b>。然后三个门决定请求是否存活。</p>
+
+  <figure class="bleed">
+    <svg viewBox="0 0 900 400" role="img" aria-label="模式门：增量请求通过基线检查和源查询检查成为use_delta，有两个后备原因分支到完整模式。">
+      <defs>
+        <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+        </marker>
+        <marker id="a2s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--struct)"/>
+        </marker>
+      </defs>
+
+      <rect class="d-fill" x="24" y="150" width="150" height="56" rx="4"/>
+      <text class="d-head" x="40" y="172">触发模式</text>
+      <text class="d-m-sm" x="40" y="190">“三角洲”| “满”</text>
+
+      <!-- gate 1 -->
+      <rect class="d-box" x="228" y="140" width="180" height="76" rx="4"/>
+      <text class="d-head" x="244" y="164">门 1 — 基线</text>
+      <text class="d-m-sm" x="244" y="182">内容非空</text>
+      <text class="d-m-sm" x="244" y="198">（永不刷新=空）</text>
+
+      <!-- gate 2 -->
+      <rect class="d-box" x="462" y="140" width="194" height="76" rx="4"/>
+      <text class="d-head" x="478" y="164">门 2 — 主题</text>
+      <text class="d-m-sm" x="478" y="182">last_refreshed_source_query</text>
+      <text class="d-m-sm" x="478" y="198">为 NULL 或未更改</text>
+
+      <!-- result -->
+      <rect class="d-struct" x="700" y="140" width="176" height="76" rx="4"/>
+      <text class="d-head" x="716" y="164">use_delta = 真</text>
+      <text class="d-m-sm" x="716" y="182">负载structured_content</text>
+      <text class="d-m-sm" x="716" y="198">（可能为NULL）</text>
+
+      <g class="d-line" marker-end="url(#a2)">
+        <line x1="174" y1="178" x2="224" y2="178"/>
+      </g>
+      <path class="d-line-struct" d="M 408 178 L 458 178" marker-end="url(#a2s)"/>
+      <path class="d-line-struct" d="M 656 178 L 696 178" marker-end="url(#a2s)"/>
+
+      <!-- fallbacks down -->
+      <rect class="d-fill" x="228" y="290" width="180" height="46" rx="4"/>
+      <text class="d-m" x="244" y="312">no_baseline_content</text>
+      <text class="d-t-sm" x="244" y="328">首次刷新</text>
+      <path class="d-line" d="M 318 216 L 318 286" marker-end="url(#a2)"/>
+
+      <rect class="d-fill" x="462" y="290" width="194" height="46" rx="4"/>
+      <text class="d-m" x="478" y="312">source_query_changed</text>
+      <text class="d-t-sm" x="478" y="328">话题转移</text>
+      <path class="d-line" d="M 559 216 L 559 286" marker-end="url(#a2)"/>
+
+      <rect class="d-fill" x="700" y="290" width="176" height="46" rx="4"/>
+      <text class="d-head" x="716" y="318">→满载运行</text>
+
+      <path class="d-line" d="M 408 313 L 458 313" marker-end="url(#a2)"/>
+      <path class="d-line" d="M 656 313 L 696 313" marker-end="url(#a2)"/>
+
+      <text class="d-t-sm" x="24" y="60">稍后，在第 5 阶段，一旦 delta 已经运行，就会设置另外两个后备原因：</text>
+      <text class="d-m-sm" x="24" y="82">structured_doc_unreadable·delta_ops_failed·delta_ops_all_skipped</text>
+      <line class="d-line d-dash" x1="24" y1="100" x2="876" y2="100"/>
+    </svg>
+    <figcaption><b>Delta 被请求，然后获得。</b> Gate 1就是为什么全新页面第一次刷新总是满的——还没有内容可以编辑。 Gate 2 捕获更改的源查询，其中对有关旧主题的文档进行外科手术编辑将是错误的。 <code>use_delta</code> 为真仍然没有说明达美航空是否会这样做 <i>成功</i>；三个进一步的后退原因在第五阶段等待。</figcaption>
+  </figure>
+
+  <div class="note">
+    <span class="note-label">值得了解</span>
+    <p>2号门通过时 <code>last_refreshed_source_query</code> 是 <code>NULL</code>，不仅仅是匹配时。这是故意的：有人手写了一页，然后 <i>然后</i> 开启增量模式希望他们的散文成为起点，而不是被一次性完全重建所丢弃。</p>
+  </div>
+
+  <!-- ================================================================== -->
+  <h2 id="delta">3 · 第 5 阶段 — Delta 分支内部</h2>
+
+  <p>这就是有趣的失败所在。该分支需要一个基线文档来编辑，并且在放弃之前会按顺序尝试两个源。</p>
+
+  <figure class="bleed">
+    <svg viewBox="0 0 900 620" role="img" aria-label="在 delta 分支内：基线从 structured_content 加载或从 markdown 重新解析，然后 LLM 发出应用的操作，有四种可能的退出。">
+      <defs>
+        <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+        </marker>
+        <marker id="a3r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--lossy)"/>
+        </marker>
+        <marker id="a3g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--ok)"/>
+        </marker>
+      </defs>
+
+      <text class="d-head" x="24" y="24">步骤 A — 找到基线</text>
+
+      <rect class="d-struct" x="24" y="46" width="250" height="62" rx="4"/>
+      <text class="d-m" x="40" y="68">structured_content</text>
+      <text class="d-t-sm" x="40" y="86">存储的结构化文档</text>
+      <text class="d-t-sm" x="40" y="100">经 Pydantic 验证</text>
+
+      <rect class="d-lossy" x="324" y="46" width="250" height="62" rx="4"/>
+      <text class="d-m" x="340" y="68">parse_markdown(内容)</text>
+      <text class="d-t-sm" x="340" y="86">fallback — 重新推导结构</text>
+      <text class="d-t-sm" x="340" y="100">来自存储的降价</text>
+
+      <rect class="d-fill" x="624" y="46" width="252" height="62" rx="4"/>
+      <text class="d-m" x="640" y="68">structured_doc_unreadable</text>
+      <text class="d-t-sm" x="640" y="86">根本没有基线</text>
+      <text class="d-t-sm" x="640" y="100">→ 三角洲废弃</text>
+
+      <path class="d-line-lossy" d="M 274 77 L 320 77" marker-end="url(#a3r)"/>
+      <text class="d-m-sm" x="297" y="36" text-anchor="middle">NULL / 无效</text>
+      <path class="d-line" d="M 574 77 L 620 77" marker-end="url(#a3)"/>
+      <text class="d-m-sm" x="597" y="36" text-anchor="middle">加注</text>
+
+      <line class="d-line d-dash" x1="24" y1="126" x2="876" y2="126"/>
+
+      <text class="d-head" x="24" y="156">步骤 B — 有什么新东西吗？</text>
+
+      <rect class="d-box" x="24" y="172" width="250" height="56" rx="4"/>
+      <text class="d-m" x="40" y="194">supporting_facts</text>
+      <text class="d-t-sm" x="40" y="212">仅此一跑的遗憾</text>
+
+      <rect class="d-ok" x="324" y="172" width="310" height="56" rx="4"/>
+      <text class="d-m-ok" x="340" y="194">content_preserved_no_new_facts</text>
+      <text class="d-t-sm" x="340" y="212">立即返回·无LLM调用</text>
+
+      <path class="d-line" d="M 274 200 L 320 200" marker-end="url(#a3g)" stroke="var(--ok)"/>
+      <text class="d-m-sm" x="277" y="191">空</text>
+
+      <line class="d-line d-dash" x1="24" y1="252" x2="876" y2="252"/>
+
+      <text class="d-head" x="24" y="282">步骤 C — 操作调用</text>
+
+      <rect class="d-struct" x="24" y="298" width="250" height="76" rx="4"/>
+      <text class="d-m" x="40" y="320">delta LLM 调用</text>
+      <text class="d-t-sm" x="40" y="338">将current_doc视为JSON，</text>
+      <text class="d-t-sm" x="40" y="352">永远不会像降价一样</text>
+      <text class="d-t-sm" x="40" y="366">文本模式，手工解析</text>
+
+      <rect class="d-box" x="324" y="298" width="250" height="76" rx="4"/>
+      <text class="d-m" x="340" y="320">apply_operations</text>
+      <text class="d-t-sm" x="340" y="338">类型化块有效负载：</text>
+      <text class="d-t-sm" x="340" y="352">段落·bullet_list·</text>
+      <text class="d-t-sm" x="340" y="366">ordered_list·代码·表</text>
+
+      <path class="d-line-struct" d="M 274 336 L 320 336" marker-end="url(#a3)" stroke="var(--struct)"/>
+
+      <!-- three exits from step C -->
+      <rect class="d-ok" x="624" y="290" width="252" height="46" rx="4"/>
+      <text class="d-m-ok" x="640" y="310">delta_applied = 真</text>
+      <text class="d-t-sm" x="640" y="327">render_document(文档) → 内容</text>
+      <path class="d-line" d="M 574 313 L 620 313" marker-end="url(#a3g)" stroke="var(--ok)"/>
+
+      <rect class="d-lossy" x="624" y="348" width="252" height="40" rx="4"/>
+      <text class="d-m-lossy" x="640" y="372">delta_ops_all_skipped</text>
+      <path class="d-line-lossy" d="M 574 350 L 600 350 L 600 368 L 620 368" marker-end="url(#a3r)"/>
+
+      <rect class="d-lossy" x="624" y="400" width="252" height="40" rx="4"/>
+      <text class="d-m-lossy" x="640" y="424">delta_ops_failed</text>
+      <path class="d-line-lossy" d="M 149 374 L 149 420 L 620 420" marker-end="url(#a3r)"/>
+      <text class="d-m-sm" x="160" y="414">任何例外</text>
+
+      <line class="d-line d-dash" x1="24" y1="462" x2="876" y2="462"/>
+
+      <text class="d-head" x="24" y="492">步骤 D — 调用者看到的内容</text>
+      <text class="d-t" x="24" y="516">effective_mode =“增量”如果delta_applied则“满”</text>
+      <text class="d-t-sm" x="24" y="540">页面可以请求增量，通过两个门，调用LLM - 并且仍然被记录为在完整模式下运行，</text>
+      <text class="d-t-sm" x="24" y="558">因为effective_mode报告文档发生了什么，而不是尝试了什么。</text>
+      <text class="d-m-sm" x="24" y="586">当 delta 不适用时，final_content 仍然是候选者——第 6 阶段拒绝写入。</text>
+    </svg>
+    <figcaption><b>delta分支有4个出口，只有其中一个编辑文档。</b> 注意步骤 A 的后备箭头：每当 <code>structured_content</code> 缺失或验证失败，基线是 <i>从存储的 markdown 中重新派生</i>。自从 <code>create_mental_model</code> 永远不会填充 <code>structured_content</code>，该回退保证在手工编写的页面的第一次增量刷新上运行。</figcaption>
+  </figure>
+
+  <!-- ================================================================== -->
+  <h2 id="guards">4 · 第 6 阶段 — 守卫</h2>
+
+  <p>两名警卫站在候选人和数据库之间，然后进行最后一次转换。</p>
+
+  <ul>
+    <li><b>空渲染。</b> 如果 <code>final_content</code> 为空，刷新失败。小模型、耗尽的重试阶梯或过于急切的答案清理正则表达式都可能产生空答案，并且编写它会破坏工作文档。</li>
+    <li><b>Delta 窗候选。</b> 如果已请求 delta 但未申请， <code>final_content</code> 仍然是 灰色 候选者 - 并且该候选者是在 <code>created_after</code>，所以它只覆盖比上次刷新更新的记忆。写入它会默默地删除旧文档中该文档所知道的所有内容 <i>和</i> 将水印推进过去。防护是在窗口上而不是在每个失败分支上锁定的，因此任何未来的分支都会继承它。</li>
+    <li><b>基线播种。</b> 如果 <code>final_structured</code> 依然 <code>None</code> ——这是每次全模式刷新和每个失败的增量——候选降价被解析，以便下一次刷新有需要编辑的内容。</li>
+  </ul>
+
+  <div class="note warn">
+    <span class="note-label">桌虫居住的地方</span>
+    <p>最后一步是有损的。它在每次全模式刷新时运行，直到最近，它无法识别的降价表格变成了用空格连接的段落——整个表格焊接到一行上。因为该连接是幂等的，所以下一次刷新会将残骸重新解析为散文并重新发出它，因此该页面永远无法恢复。</p>
+  </div>
+
+  <!-- ================================================================== -->
+  <h2 id="outcomes">5 · 第 7 阶段 — 实际写入的内容</h2>
+
+  <p>结果文字决定了关于持久性的一切。四人中的两人加注 <code>MentalModelRefreshError</code> 记录审核失败后。</p>
+
+  <div class="table-wrap bleed">
+    <table>
+      <thead>
+        <tr>
+          <th>结果</th>
+          <th>内容</th>
+          <th>structured_content</th>
+          <th>水印</th>
+          <th>加注</th>
+          <th>为什么</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>content_written</code></td>
+          <td class="yes">书面</td>
+          <td class="yes">书面</td>
+          <td class="yes">进步</td>
+          <td class="no">无</td>
+          <td>正常路径，适用于完整路径和增量路径。</td>
+        </tr>
+        <tr>
+          <td><code>content_preserved_no_new_facts</code></td>
+          <td class="no">未受影响</td>
+          <td class="no">未受影响</td>
+          <td class="yes">进步</td>
+          <td class="no">无</td>
+          <td>窗口中没有任何新内容。水印仍然会移动，因此不会重新读取空窗口。</td>
+        </tr>
+        <tr>
+          <td><code>refresh_failed_empty_candidate</code></td>
+          <td class="no">未受影响</td>
+          <td class="no">未受影响</td>
+          <td class="raise">举行</td>
+          <td class="raise">是的</td>
+          <td>几乎总是上游LLM 故障。保留水印意味着重试会重新读取同一窗口。</td>
+        </tr>
+        <tr>
+          <td><code>refresh_failed_delta_not_applied</code></td>
+          <td class="no">未受影响</td>
+          <td class="no">未受影响</td>
+          <td class="raise">举行</td>
+          <td class="raise">是的</td>
+          <td>候选仅覆盖增量窗口，因此它不是文档。</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>在持久性本身期间可能会发生第五种故障：当触发器携带 <code>response_schema</code>，存储的内容被投影到 <code>structured_output</code>，如果提取失败，则整个刷新都会失败，而不是保留内容并在其旁边保留陈旧的机器可读视图。</p>
+
+  <div class="note">
+    <span class="note-label">边缘案例</span>
+    <p>三角窗防护罩仅在以下情况下才会触发 <code>created_after</code> 已设置。一个模型没有 <code>last_refreshed_at</code> 会失败并将候选人写成一份完整的文件——合法，因为候选人阅读了完整的历史 <i>是</i> 文档。实际上该列是 <code>NOT NULL</code> 并且默认为创建时间，因此增量刷新始终有一个窗口。</p>
+  </div>
+
+  <!-- ================================================================== -->
+  <h2 id="crossings">6 · Markdown 成为结构</h2>
+
+  <p>这是对设计决策至关重要的图表。 Delta LLM 永远不会看到降价——它是被传递的 <code>current_doc.model_dump_json()</code> 并在打字块中给出答案。 Markdown 正好在三个点进入结构化世界，其中两个点处于刷新热路径上。</p>
+
+  <figure class="bleed">
+    <svg viewBox="0 0 900 470" role="img" aria-label="将 Markdown 解析为结构的三个位置：页面创建、增量基线回退以及完全刷新后的基线播种，最后两个形成一个循环，在每次刷新时重新解析存储的 Markdown。">
+      <defs>
+        <marker id="a4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+        </marker>
+        <marker id="a4r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--lossy)"/>
+        </marker>
+        <marker id="a4s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--struct)"/>
+        </marker>
+      </defs>
+
+      <!-- storage lane -->
+      <rect class="d-fill" x="300" y="196" width="300" height="86" rx="4"/>
+      <text class="d-head" x="450" y="222" text-anchor="middle">mental_models行</text>
+      <text class="d-m" x="450" y="244" text-anchor="middle">content — markdown，权威</text>
+      <text class="d-m-sm" x="450" y="264" text-anchor="middle">structured_content — 可为空缓存</text>
+
+      <!-- 1 create -->
+      <rect class="d-box" x="24" y="28" width="240" height="66" rx="4"/>
+      <text class="d-head" x="40" y="50">①create_knowledge_page</text>
+      <text class="d-t-sm" x="40" y="68">客户端帖子降价</text>
+      <text class="d-m-sm" x="40" y="85">structured_content 保持 NULL</text>
+      <path class="d-line" d="M 264 61 L 282 61 L 282 239 L 296 239" marker-end="url(#a4)"/>
+
+      <!-- 2 baseline fallback -->
+      <rect class="d-lossy" x="636" y="28" width="240" height="66" rx="4"/>
+      <text class="d-head" x="652" y="50">② 增量基线</text>
+      <text class="d-m-sm" x="652" y="68">parse_markdown(current_content)</text>
+      <text class="d-t-sm" x="652" y="85">当缓存为NULL/invalid时</text>
+      <path class="d-line-lossy" d="M 600 239 L 618 239 L 618 61 L 632 61" marker-end="url(#a4r)"/>
+
+      <!-- 3 seeding -->
+      <rect class="d-lossy" x="636" y="376" width="240" height="66" rx="4"/>
+      <text class="d-head" x="652" y="398">③ 基线播种</text>
+      <text class="d-m-sm" x="652" y="416">parse_markdown(final_content)</text>
+      <text class="d-t-sm" x="652" y="433">每次全模式刷新</text>
+
+      <!-- reflect -->
+      <rect class="d-box" x="24" y="376" width="240" height="66" rx="4"/>
+      <text class="d-head" x="40" y="398">反思候选人</text>
+      <text class="d-t-sm" x="40" y="416">自由格式 Markdown 散文</text>
+      <text class="d-m-sm" x="40" y="433">reflect_result.文本</text>
+      <path class="d-line" d="M 264 409 L 632 409" marker-end="url(#a4r)" stroke="var(--lossy)"/>
+
+      <!-- delta engine -->
+      <rect class="d-struct" x="300" y="102" width="300" height="56" rx="4"/>
+      <text class="d-head" x="450" y="124" text-anchor="middle">delta LLM — 仅类型化块</text>
+      <text class="d-m-sm" x="450" y="143" text-anchor="middle">model_dump_json() 输入 · 输出操作</text>
+
+      <!-- render back -->
+      <path class="d-line-struct" d="M 340 196 L 340 162" marker-end="url(#a4s)"/>
+      <text class="d-m-sm" x="350" y="182">结构</text>
+      <path class="d-line-struct" d="M 470 162 L 470 192" marker-end="url(#a4s)"/>
+      <text class="d-m-sm" x="480" y="182">render_document</text>
+
+      <!-- the loop -->
+      <path class="d-line-lossy d-dash" d="M 876 376 L 890 376 L 890 100 L 876 100"/>
+      <text class="d-m-sm" x="876" y="330" text-anchor="end" fill="var(--lossy)">伤害写在这里……</text>
+      <text class="d-m-sm" x="876" y="348" text-anchor="end" fill="var(--lossy)">…被读回作为下一个基线</text>
+
+      <text class="d-t-sm" x="24" y="326">蓝色 = 永远不会离开结构化表示。</text>
+      <text class="d-t-sm" x="24" y="344">红色=降价→结构转换，模式无法表达的任何内容都会丢失。</text>
+    </svg>
+    <figcaption><b>三个转换中有两个位于热路径上。</b> ② 和 ③ 在刷新期间重复且静默地运行，并且它们相互馈送：全模式刷新通过解析其自己的 Markdown 输出来为缓存提供种子，下一个增量刷新将编辑解析生成的任何内容。中间的结构化脊柱（LLM实际工作的地方）已经是无损的。</figcaption>
+  </figure>
+
+  <!-- ================================================================== -->
+  <h2 id="inversion">7 · 反转，绘制</h2>
+
+  <p>悬而未决的问题是是否 <code>structured_content</code> 应该成为事实的来源，并在阅读时呈现 Markdown。这就是区别，它比最初出现的要窄——因为在增量路径 Hindsight 上已经以这种方式工作。</p>
+
+  <figure class="bleed">
+    <svg viewBox="0 0 900 430" role="img" aria-label="并排比较：今天markdown是权威的，每次刷新都会重新解析，而在反转结构下是权威的，markdown是渲染的投影，重新解析箭头消失。">
+      <defs>
+        <marker id="a5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+        </marker>
+        <marker id="a5r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--lossy)"/>
+        </marker>
+        <marker id="a5s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--struct)"/>
+        </marker>
+      </defs>
+
+      <line class="d-line d-dash" x1="450" y1="14" x2="450" y2="416"/>
+
+      <!-- TODAY -->
+      <text class="d-head" x="24" y="30">今天</text>
+      <text class="d-t-sm" x="24" y="48">markdown权威·结构是缓存</text>
+
+      <rect class="d-fill" x="24" y="70" width="180" height="52" rx="4"/>
+      <text class="d-m" x="114" y="92" text-anchor="middle">内容</text>
+      <text class="d-t-sm" x="114" y="110" text-anchor="middle">降价·索引</text>
+
+      <rect class="d-box" x="234" y="70" width="180" height="52" rx="4"/>
+      <text class="d-m" x="324" y="92" text-anchor="middle">structured_content</text>
+      <text class="d-t-sm" x="324" y="110" text-anchor="middle">可为空</text>
+
+      <path class="d-line-lossy" d="M 204 88 L 230 88" marker-end="url(#a5r)"/>
+      <text class="d-m-sm" x="217" y="62" text-anchor="middle" fill="var(--lossy)">解析</text>
+
+      <rect class="d-struct" x="234" y="170" width="180" height="46" rx="4"/>
+      <text class="d-m" x="324" y="198" text-anchor="middle">三角洲行动</text>
+      <path class="d-line-struct" d="M 324 122 L 324 166" marker-end="url(#a5s)"/>
+
+      <rect class="d-fill" x="24" y="170" width="180" height="46" rx="4"/>
+      <text class="d-m" x="114" y="198" text-anchor="middle">反思候选人</text>
+
+      <path class="d-line-lossy" d="M 114 216 L 114 264 L 324 264 L 324 220" marker-end="url(#a5r)"/>
+      <text class="d-m-sm" x="219" y="280" text-anchor="middle" fill="var(--lossy)">重新解析每次完全刷新</text>
+
+      <rect class="d-fill" x="24" y="310" width="390" height="80" rx="4"/>
+      <text class="d-t-sm" x="40" y="332">• 解析在热路径上运行，默默地，永远</text>
+      <text class="d-t-sm" x="40" y="352">• 架构上限仅有时适用 - 取决于模式</text>
+      <text class="d-t-sm" x="40" y="372">• 错误的解析会在以后每次刷新时重新签名</text>
+
+      <!-- INVERTED -->
+      <text class="d-head" x="486" y="30">倒立</text>
+      <text class="d-t-sm" x="486" y="48">结构权威·markdown是投影</text>
+
+      <rect class="d-struct" x="486" y="70" width="180" height="52" rx="4"/>
+      <text class="d-m" x="576" y="92" text-anchor="middle">structured_content</text>
+      <text class="d-t-sm" x="576" y="110" text-anchor="middle">真相来源</text>
+
+      <rect class="d-fill" x="696" y="70" width="180" height="52" rx="4"/>
+      <text class="d-m" x="786" y="92" text-anchor="middle">内容</text>
+      <text class="d-t-sm" x="786" y="110" text-anchor="middle">已渲染·仍在索引中</text>
+
+      <path class="d-line-struct" d="M 666 88 L 692 88" marker-end="url(#a5s)"/>
+      <text class="d-m-sm" x="681" y="62" text-anchor="middle" fill="var(--struct)">渲染</text>
+
+      <rect class="d-struct" x="486" y="170" width="180" height="46" rx="4"/>
+      <text class="d-m" x="576" y="198" text-anchor="middle">三角洲行动</text>
+      <path class="d-line-struct" d="M 576 122 L 576 166" marker-end="url(#a5s)"/>
+
+      <rect class="d-box" x="696" y="170" width="180" height="46" rx="4"/>
+      <text class="d-m" x="786" y="192" text-anchor="middle">摄取解析</text>
+      <text class="d-t-sm" x="786" y="209" text-anchor="middle">创建·仅导入</text>
+      <path class="d-line" d="M 696 193 L 670 193" marker-end="url(#a5s)" stroke="var(--struct)"/>
+
+      <rect class="d-fill" x="486" y="310" width="390" height="80" rx="4"/>
+      <text class="d-t-sm" x="502" y="332">• 解析发生一次，在边缘，失败是可见的</text>
+      <text class="d-t-sm" x="502" y="352">• 模式上限始终适用 - 一致，而不是间歇性的</text>
+      <text class="d-t-sm" x="502" y="372">• 新成本：内容必须与读取模型保持同步</text>
+    </svg>
+    <figcaption><b>消失的边缘是重新解析。</b> 在反转下，解析器幸存下来，从刷新循环降级到摄取边界（页面创建、导入、传输），其中发生一次故障并且有人可以看到它。两列中的 delta 脊柱都没有变化，因为它已经是结构原生的。</figcaption>
+  </figure>
+
+  <h3>反转没有删除的内容</h3>
+  <ul>
+    <li><b>The <code>content</code> 列。</b> <code>search_knowledge_pages</code> 在页面名称和内容上融合BM25，并返回内容片段。渲染的形式必须保持具体化，因此解析器问题被替换为投影同步问题。</li>
+    <li><b>解析器。</b> <code>create_knowledge_page</code> 接受客户端的降价，并导入恢复降价主体。两者都还是需要markdown → 结构。</li>
+    <li><b>模式上限。</b> 五种块类型，其中图像和原始 HTML 明确超出范围。在反转的情况下，任何未建模的东西在摄取时都变得无法表示，而不是后来退化——可以说更好，因为它在有人可以对其采取行动的地方失败了。</li>
+  </ul>
+
+  <p>这两种方法都无法修复已损坏的页面：折叠的表格是单个物理行，识别表格至少需要两个。无论哪个方向获胜，回填都是它自己的工作。</p>
+
+</div>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var btn = document.getElementById("themeToggle");
+    var stored = null;
+    try { stored = localStorage.getItem("mmflow-theme"); } catch (e) {}
+    if (stored) root.setAttribute("data-theme", stored);
+    btn.addEventListener("click", function () {
+      var dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var current = root.getAttribute("data-theme") || (dark ? "dark" : "light");
+      var next = current === "dark" ? "light" : "dark";
+      root.setAttribute("data-theme", next);
+      try { localStorage.setItem("mmflow-theme", next); } catch (e) {}
+    });
+  })();
+</script>
+</body>
+</html>

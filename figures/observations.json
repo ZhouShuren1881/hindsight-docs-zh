@@ -1,0 +1,611 @@
+{
+  "title": "观察整合",
+  "speed": 2200,
+  "elements": [
+    {
+      "id": "facts",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "事实"
+        },
+        {
+          "type": "subtitle",
+          "text": "来自记忆存储"
+        }
+      ],
+      "minCardHeight": 73,
+      "width": 200
+    },
+    {
+      "id": "find",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "查找相关"
+        },
+        {
+          "type": "subtitle",
+          "text": "同一标签作用域内的观察"
+        }
+      ],
+      "minCardHeight": 43,
+      "width": 210
+    },
+    {
+      "id": "llm",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "LLM决定"
+        },
+        {
+          "type": "subtitle",
+          "text": "创建·更新·删除"
+        }
+      ],
+      "minCardHeight": 43,
+      "width": 210
+    },
+    {
+      "id": "dedup",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "近重复检查"
+        },
+        {
+          "type": "subtitle",
+          "text": "合并或保留"
+        }
+      ],
+      "minCardHeight": 43,
+      "width": 210
+    },
+    {
+      "id": "g1",
+      "type": "group",
+      "label": {
+        "title": "Hindsight 工作进程·整合"
+      },
+      "children": [
+        "find",
+        "llm",
+        "dedup"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 36,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "obs",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "观察"
+        },
+        {
+          "type": "subtitle",
+          "text": "每个维度一个信念"
+        }
+      ],
+      "minCardHeight": 133,
+      "width": 230
+    },
+    {
+      "id": "history",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "观察历史"
+        },
+        {
+          "type": "subtitle",
+          "text": "以前的版本"
+        }
+      ],
+      "minCardHeight": 103,
+      "width": 230
+    },
+    {
+      "id": "g2",
+      "type": "group",
+      "label": {
+        "title": "记忆库"
+      },
+      "children": [
+        "obs",
+        "history"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 36,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "g0",
+      "type": "group",
+      "children": [
+        "facts",
+        "g1",
+        "g2"
+      ],
+      "layout": {
+        "direction": "row",
+        "gap": 40,
+        "align": "center"
+      }
+    },
+    {
+      "id": "in",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "facts"
+      },
+      "end": {
+        "id": "find"
+      },
+      "label": {
+        "text": "新事实"
+      }
+    },
+    {
+      "id": "search",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "find"
+      },
+      "end": {
+        "id": "obs"
+      },
+      "label": {
+        "text": "记忆召回"
+      }
+    },
+    {
+      "id": "find->llm",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "find"
+      },
+      "end": {
+        "id": "llm"
+      }
+    },
+    {
+      "id": "llm->dedup",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "llm"
+      },
+      "end": {
+        "id": "dedup"
+      }
+    },
+    {
+      "id": "write",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "dedup"
+      },
+      "end": {
+        "id": "obs"
+      },
+      "label": {
+        "text": "写入"
+      }
+    },
+    {
+      "id": "snapshot",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "dedup"
+      },
+      "end": {
+        "id": "history"
+      },
+      "label": {
+        "text": "旧文本"
+      }
+    }
+  ],
+  "scenes": [
+    {
+      "label": "精炼",
+      "caption": "",
+      "beats": [
+        {
+          "show": {
+            "facts": [
+              {
+                "tag": "new fact",
+                "tone": "green",
+                "text": "用户称赞React的组件模型",
+                "meta": "week 2"
+              }
+            ],
+            "obs": [
+              {
+                "text": "用户更喜欢React进行前端开发",
+                "meta": "1 source",
+                "mark": "stale"
+              }
+            ]
+          },
+          "say": "新事实到达。在它完成整合前，观察搜索会标记为过时，反思因而需要用原始事实核对。",
+          "ms": 3200
+        },
+        {
+          "edges": {
+            "edge": "in",
+            "data": "“praises React’s component model”"
+          },
+          "show": {
+            "find": [
+              {
+                "text": "搜索与此事实相关的观察"
+              }
+            ]
+          },
+          "say": "整合在记忆存储后于后台运行。它为每个新事实召回相关观察，范围限于相同标签作用域。"
+        },
+        {
+          "edges": {
+            "edge": "search",
+            "data": "recall"
+          }
+        },
+        {
+          "edges": {
+            "edge": "search",
+            "back": true,
+            "data": "1 related"
+          },
+          "show": {
+            "find": [
+              {
+                "text": "1 条相关观察",
+                "meta": "React preference",
+                "mark": "✓"
+              }
+            ]
+          }
+        },
+        {
+          "edges": "find->llm",
+          "show": {
+            "llm": [
+              {
+                "tag": "update",
+                "tone": "blue",
+                "text": "相同维度，更多证据"
+              }
+            ]
+          },
+          "say": "一次 LLM 调用同时查看新事实和已有观察，逐个维度决定创建、更新或删除。",
+          "ms": 2800
+        },
+        {
+          "edges": "llm->dedup",
+          "show": {
+            "dedup": [
+              {
+                "text": "没有几乎相同的观察",
+                "mark": "keep"
+              }
+            ]
+          },
+          "say": "写入前，每条新建或改写的观察都会与最相近的观察比较。只有几乎相同的内容才会接受合并或保留检查。"
+        },
+        {
+          "edges": [
+            {
+              "edge": "write",
+              "data": "rewrite + 1 source"
+            },
+            {
+              "edge": "snapshot",
+              "data": "v1"
+            }
+          ],
+          "show": {
+            "obs": [
+              {
+                "text": "用户对React很感兴趣，尤其是它的组件模型",
+                "meta": "2 sources",
+                "mark": "updated"
+              }
+            ],
+            "history": [
+              {
+                "tag": "v1",
+                "tone": "gray",
+                "text": "用户更喜欢React进行前端开发"
+              }
+            ]
+          },
+          "say": "观察被改写，并附上事实作为证据，因此证据数量增加。之前的表述保留在历史记录中。",
+          "ms": 3200
+        },
+        {
+          "show": {
+            "obs": [
+              {
+                "text": "用户对React很感兴趣，尤其是它的组件模型",
+                "meta": "2 sources",
+                "mark": "fresh"
+              }
+            ]
+          },
+          "say": "同一次写入将事实标记为已整合，观察重新成为最新状态。",
+          "ms": 2000
+        }
+      ]
+    },
+    {
+      "label": "矛盾",
+      "caption": "",
+      "beats": [
+        {
+          "show": {
+            "facts": [
+              {
+                "tag": "new fact",
+                "tone": "green",
+                "text": "用户切换到Vue并且不再使用React",
+                "meta": "week 3"
+              }
+            ],
+            "obs": [
+              {
+                "text": "用户对React很感兴趣，尤其是它的组件模型",
+                "meta": "2 sources",
+                "mark": "stale"
+              }
+            ],
+            "history": [
+              {
+                "tag": "v1",
+                "tone": "gray",
+                "text": "用户更喜欢React进行前端开发"
+              }
+            ]
+          },
+          "say": "现在到达的事实与记忆库已有信念矛盾。",
+          "ms": 2400
+        },
+        {
+          "edges": {
+            "edge": "in",
+            "data": "“switched to Vue”"
+          }
+        },
+        {
+          "edges": {
+            "edge": "search",
+            "data": "recall"
+          }
+        },
+        {
+          "edges": {
+            "edge": "search",
+            "back": true,
+            "data": "1 related"
+          },
+          "show": {
+            "find": [
+              {
+                "text": "1 条相关观察",
+                "meta": "React enthusiasm",
+                "mark": "✓"
+              }
+            ]
+          }
+        },
+        {
+          "edges": "find->llm",
+          "show": {
+            "llm": [
+              {
+                "tag": "update",
+                "tone": "orange",
+                "text": "状态改变：保留故事"
+              }
+            ]
+          },
+          "say": "状态变化不意味着删除。LLM 更新信念以记录变化，有日期时一并保留。",
+          "ms": 3000
+        },
+        {
+          "edges": "llm->dedup",
+          "show": {
+            "dedup": [
+              {
+                "text": "没有几乎相同的观察",
+                "mark": "keep"
+              }
+            ]
+          }
+        },
+        {
+          "edges": [
+            {
+              "edge": "write",
+              "data": "rewrite + 1 source"
+            },
+            {
+              "edge": "snapshot",
+              "data": "v2"
+            }
+          ],
+          "show": {
+            "obs": [
+              {
+                "text": "用户是React爱好者，喜欢其组件模型，但现在已切换到Vue",
+                "meta": "3 sources",
+                "mark": "updated"
+              }
+            ],
+            "history": [
+              {
+                "tag": "v1",
+                "tone": "gray",
+                "text": "用户更喜欢React进行前端开发"
+              },
+              {
+                "tag": "v2",
+                "tone": "gray",
+                "text": "用户对React很感兴趣，尤其是它的组件模型"
+              }
+            ]
+          },
+          "say": "观察现在描述完整变化过程，而不只是“偏好 Vue”。它以三个事实为依据，两个旧版本均保留在历史记录中。",
+          "ms": 3600
+        },
+        {
+          "show": {
+            "obs": [
+              {
+                "text": "用户是React爱好者，喜欢其组件模型，但现在已切换到Vue",
+                "meta": "3 sources",
+                "mark": "fresh"
+              }
+            ]
+          },
+          "ms": 2000
+        }
+      ]
+    },
+    {
+      "label": "新内容",
+      "caption": "",
+      "beats": [
+        {
+          "show": {
+            "facts": [
+              {
+                "tag": "new fact",
+                "tone": "green",
+                "text": "用户在 Fly.io 上部署他们的应用程序",
+                "meta": "week 3"
+              }
+            ],
+            "obs": [
+              {
+                "text": "用户是React爱好者，喜欢其组件模型，但现在已切换到Vue",
+                "meta": "3 sources",
+                "mark": "stale"
+              }
+            ],
+            "history": [
+              {
+                "tag": "v1",
+                "tone": "gray",
+                "text": "用户更喜欢React进行前端开发"
+              },
+              {
+                "tag": "v2",
+                "tone": "gray",
+                "text": "用户对React很感兴趣，尤其是它的组件模型"
+              }
+            ]
+          },
+          "say": "一个新事实涉及记忆库尚未形成信念的主题。",
+          "ms": 2400
+        },
+        {
+          "edges": {
+            "edge": "in",
+            "data": "“deploys on Fly.io”"
+          }
+        },
+        {
+          "edges": {
+            "edge": "search",
+            "data": "recall"
+          }
+        },
+        {
+          "edges": {
+            "edge": "search",
+            "back": true,
+            "data": "nothing related"
+          },
+          "show": {
+            "find": [
+              {
+                "text": "无相关观察",
+                "mark": "—"
+              }
+            ]
+          }
+        },
+        {
+          "edges": "find->llm",
+          "show": {
+            "llm": [
+              {
+                "tag": "create",
+                "tone": "green",
+                "text": "新维度，无需更新已有观察"
+              }
+            ]
+          },
+          "say": "现有观察都未涵盖这一维度，因此 LLM 创建新观察，而非修改无关观察。",
+          "ms": 2800
+        },
+        {
+          "edges": "llm->dedup",
+          "show": {
+            "dedup": [
+              {
+                "text": "最接近：React/Vue信念",
+                "meta": "not near-identical",
+                "mark": "keep"
+              }
+            ]
+          },
+          "say": "近重复检查保留了它：不同维度维持为独立观察。",
+          "ms": 2800
+        },
+        {
+          "edges": {
+            "edge": "write",
+            "data": "new observation"
+          },
+          "show": {
+            "obs": [
+              {
+                "text": "用户是React爱好者，喜欢其组件模型，但现在已切换到Vue",
+                "meta": "3 sources",
+                "mark": "fresh"
+              },
+              {
+                "text": "用户在 Fly.io 上部署他们的应用程序",
+                "meta": "1 source",
+                "mark": "new"
+              }
+            ]
+          },
+          "say": "新观察最初只有一个来源，后续事实再次证实时，会积累更多证据。",
+          "ms": 2800
+        }
+      ]
+    }
+  ]
+}

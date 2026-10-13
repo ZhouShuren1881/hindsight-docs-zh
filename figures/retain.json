@@ -1,0 +1,800 @@
+{
+  "title": "记忆存储的作用",
+  "speed": 2200,
+  "elements": [
+    {
+      "id": "input",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "retain()"
+        },
+        {
+          "type": "subtitle",
+          "text": "内容+上下文"
+        }
+      ],
+      "minCardHeight": 163,
+      "width": 210
+    },
+    {
+      "id": "chunk",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "分块"
+        },
+        {
+          "type": "subtitle",
+          "text": "分割长内容"
+        }
+      ],
+      "minCardHeight": 43,
+      "width": 210
+    },
+    {
+      "id": "extract",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "LLM 提取"
+        },
+        {
+          "type": "subtitle",
+          "text": "什么·何时·何地·谁·为什么"
+        }
+      ],
+      "minCardHeight": 118,
+      "width": 210
+    },
+    {
+      "id": "resolve",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "实体解析"
+        },
+        {
+          "type": "subtitle",
+          "text": "一个名字，一个实体"
+        }
+      ],
+      "minCardHeight": 73,
+      "width": 210
+    },
+    {
+      "id": "link",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "嵌入和链接"
+        },
+        {
+          "type": "subtitle",
+          "text": "向量 + 已有关联"
+        }
+      ],
+      "minCardHeight": 43,
+      "width": 210
+    },
+    {
+      "id": "g1",
+      "type": "group",
+      "label": {
+        "title": "记忆存储管道"
+      },
+      "children": [
+        "chunk",
+        "extract",
+        "resolve",
+        "link"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 20,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "docs",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "文档"
+        }
+      ],
+      "minCardHeight": 43
+    },
+    {
+      "id": "chunks",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "分块"
+        }
+      ],
+      "minCardHeight": 58
+    },
+    {
+      "id": "g3",
+      "type": "group",
+      "label": {
+        "title": "来源"
+      },
+      "children": [
+        "docs",
+        "chunks"
+      ],
+      "layout": {
+        "direction": "row",
+        "gap": 40,
+        "align": "center"
+      }
+    },
+    {
+      "id": "facts",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "事实"
+        },
+        {
+          "type": "subtitle",
+          "text": "世界事实 · 经验事实"
+        }
+      ],
+      "minCardHeight": 133,
+      "width": 400
+    },
+    {
+      "id": "entities",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "实体"
+        }
+      ],
+      "minCardHeight": 73,
+      "width": 180
+    },
+    {
+      "id": "links",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "链接"
+        }
+      ],
+      "minCardHeight": 133,
+      "width": 230
+    },
+    {
+      "id": "g4",
+      "type": "group",
+      "label": {
+        "title": "图"
+      },
+      "children": [
+        "entities",
+        "links"
+      ],
+      "layout": {
+        "direction": "row",
+        "gap": 40,
+        "align": "center"
+      }
+    },
+    {
+      "id": "g2",
+      "type": "group",
+      "label": {
+        "title": "记忆库"
+      },
+      "children": [
+        "g3",
+        "facts",
+        "g4"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 28,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "g0",
+      "type": "group",
+      "children": [
+        "input",
+        "g1",
+        "g2"
+      ],
+      "layout": {
+        "direction": "row",
+        "gap": 40,
+        "align": "center"
+      }
+    },
+    {
+      "id": "call",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "input"
+      },
+      "end": {
+        "id": "chunk"
+      },
+      "label": {
+        "text": "retain()"
+      }
+    },
+    {
+      "id": "c-docs",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "chunk"
+      },
+      "end": {
+        "id": "docs"
+      }
+    },
+    {
+      "id": "c-chunks",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "chunk"
+      },
+      "end": {
+        "id": "chunks"
+      }
+    },
+    {
+      "id": "c-x",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "chunk"
+      },
+      "end": {
+        "id": "extract"
+      }
+    },
+    {
+      "id": "x-facts",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "extract"
+      },
+      "end": {
+        "id": "facts"
+      },
+      "label": {
+        "text": "事实"
+      }
+    },
+    {
+      "id": "x-r",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "extract"
+      },
+      "end": {
+        "id": "resolve"
+      }
+    },
+    {
+      "id": "r-ent",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "resolve"
+      },
+      "end": {
+        "id": "entities"
+      },
+      "label": {
+        "text": "实体"
+      }
+    },
+    {
+      "id": "r-l",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "resolve"
+      },
+      "end": {
+        "id": "link"
+      }
+    },
+    {
+      "id": "l-links",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "link"
+      },
+      "end": {
+        "id": "links"
+      },
+      "label": {
+        "text": "链接"
+      },
+      "quiet": true
+    }
+  ],
+  "scenes": [
+    {
+      "label": "新事实",
+      "caption": "",
+      "beats": [
+        {
+          "edges": {
+            "edge": "call",
+            "data": "content + context"
+          },
+          "show": {
+            "input": [
+              {
+                "tag": "content",
+                "tone": "gray",
+                "text": "“Alice Chen 每周工作 80 小时，精疲力尽，因此她于 2024 年 6 月搬到苏黎世办事处。”"
+              },
+              {
+                "tag": "context",
+                "tone": "gray",
+                "text": "Bob正在谈论他的团队"
+              },
+              {
+                "tag": "timestamp",
+                "tone": "gray",
+                "text": "2025 年 1 月 10 日"
+              }
+            ]
+          },
+          "say": "发送内容、说明发言者身份的上下文，以及发言时间。"
+        },
+        {
+          "edges": [
+            "c-docs",
+            "c-chunks"
+          ],
+          "show": {
+            "chunk": [
+              {
+                "text": "1 个分块",
+                "meta": "long content is split"
+              }
+            ],
+            "docs": [
+              {
+                "text": "notes-2025-01-10",
+                "meta": "Jan 10, 2025"
+              }
+            ],
+            "chunks": [
+              {
+                "tag": "#1",
+                "tone": "gray",
+                "text": "“Alice Chen 每周工作 80 小时，精疲力竭……”"
+              }
+            ]
+          },
+          "say": "原文保存为文档并切分为分块，以便之后返回准确的原始段落。"
+        },
+        {
+          "edges": {
+            "edge": "c-x",
+            "data": "chunk #1"
+          },
+          "show": {
+            "extract": [
+              {
+                "text": "内容：Alice 搬到苏黎世办公室"
+              },
+              {
+                "text": "时间：2024年6月"
+              },
+              {
+                "text": "地点：苏黎世"
+              },
+              {
+                "text": "人物：Alice Chen"
+              },
+              {
+                "text": "原因：她精疲力尽"
+              }
+            ]
+          },
+          "say": "LLM 读取各分块，提取包含事件、时间、地点、人物与原因的事实。它保留原因而不只是事件，并立即为每个事实生成嵌入。",
+          "ms": 3400
+        },
+        {
+          "edges": {
+            "edge": "x-r",
+            "data": "“Alice Chen”, “Zurich office”"
+          },
+          "show": {
+            "resolve": [
+              {
+                "text": "“Alice Chen”",
+                "meta": "not in the bank yet",
+                "mark": "new"
+              },
+              {
+                "text": "“苏黎世办公室”",
+                "meta": "not in the bank yet",
+                "mark": "new"
+              }
+            ]
+          },
+          "say": "实体解析确定每个名称指向谁，将名称与记忆库已有实体比较。两者目前都未知，因此创建两个新实体。",
+          "ms": 3200
+        },
+        {
+          "edges": "r-ent",
+          "show": {
+            "entities": [
+              {
+                "type": "graph",
+                "nodes": [
+                  "Alice Chen",
+                  "Zurich office"
+                ],
+                "links": [
+                  [
+                    "Alice Chen",
+                    "Zurich office"
+                  ]
+                ],
+                "lit": [
+                  "Alice Chen",
+                  "Zurich office"
+                ]
+              }
+            ]
+          },
+          "say": "每个实体只存储一次，所有提及它的事实都关联到它。"
+        },
+        {
+          "edges": "x-facts",
+          "show": {
+            "facts": [
+              {
+                "tag": "world",
+                "tone": "blue",
+                "text": "Alice Chen 每周工作 80 小时",
+                "mark": "new"
+              },
+              {
+                "tag": "world",
+                "tone": "blue",
+                "text": "Alice Chen 烧坏了",
+                "mark": "new"
+              },
+              {
+                "tag": "world",
+                "tone": "blue",
+                "text": "Alice Chen 搬迁至苏黎世办事处",
+                "meta": "happened Jun 2024 · learned Jan 2025",
+                "mark": "new"
+              }
+            ]
+          },
+          "say": "这些属于世界事实：Bob 在讲述 Alice，而非智能体自身。每条事实保留两个时间：发生时间与 Hindsight 获知时间。",
+          "ms": 3600
+        },
+        {
+          "edges": [
+            "r-l",
+            "l-links"
+          ],
+          "show": {
+            "link": [
+              {
+                "text": "3 个已嵌入的事实"
+              },
+              {
+                "text": "4 种关联"
+              }
+            ],
+            "links": [
+              {
+                "text": "实体",
+                "mono": true,
+                "meta": "all 3 facts share Alice Chen"
+              },
+              {
+                "text": "时间",
+                "mono": true,
+                "meta": "facts close in time"
+              },
+              {
+                "text": "语义",
+                "mono": true,
+                "meta": "facts with a similar meaning"
+              },
+              {
+                "text": "caused_by",
+                "mono": true,
+                "meta": "burned out ← 80-hour weeks"
+              }
+            ]
+          },
+          "say": "最后，通过共享实体、时间接近程度、嵌入所表示的语义相似性，以及因果关系建立事实关联。",
+          "ms": 3800
+        },
+        {
+          "edges": {
+            "edge": "call",
+            "back": true,
+            "data": "✓ 3 facts"
+          },
+          "show": {
+            "input": [
+              {
+                "tag": "content",
+                "tone": "gray",
+                "text": "“Alice Chen 每周工作 80 小时，精疲力尽，因此她于 2024 年 6 月搬到苏黎世办事处。”"
+              },
+              {
+                "tag": "context",
+                "tone": "gray",
+                "text": "Bob正在谈论他的团队"
+              },
+              {
+                "tag": "timestamp",
+                "tone": "gray",
+                "text": "2025 年 1 月 10 日"
+              },
+              {
+                "tag": "result",
+                "tone": "green",
+                "text": "3 个事实已存储",
+                "mark": "✓"
+              }
+            ]
+          },
+          "say": "retain() 完成。之后在后台根据这些事实生成观察。",
+          "ms": 2400
+        }
+      ]
+    },
+    {
+      "label": "同一人，新名称",
+      "caption": "",
+      "beats": [
+        {
+          "edges": {
+            "edge": "call",
+            "data": "content + context"
+          },
+          "show": {
+            "input": [
+              {
+                "tag": "content",
+                "tone": "gray",
+                "text": "“Alice C. 现在负责苏黎世办事处。”"
+              },
+              {
+                "tag": "context",
+                "tone": "gray",
+                "text": "Bob正在谈论他的团队"
+              },
+              {
+                "tag": "timestamp",
+                "tone": "gray",
+                "text": "2025 年 3 月 3 日"
+              }
+            ]
+          },
+          "say": "两个月后，Bob 提到“Alice C.”。"
+        },
+        {
+          "edges": [
+            "c-docs",
+            "c-chunks"
+          ],
+          "show": {
+            "docs": [
+              {
+                "text": "notes-2025-01-10",
+                "meta": "Jan 10, 2025"
+              },
+              {
+                "text": "notes-2025-03-03",
+                "meta": "Mar 3, 2025",
+                "mark": "new"
+              }
+            ],
+            "chunks": [
+              {
+                "tag": "#1",
+                "tone": "gray",
+                "text": "“Alice C. 现在负责苏黎世办事处。”"
+              }
+            ]
+          },
+          "say": "采用相同流程：保存为新文档，切分为分块……"
+        },
+        {
+          "edges": "c-x",
+          "show": {
+            "extract": [
+              {
+                "text": "内容：Alice C. 负责苏黎世办事处"
+              },
+              {
+                "text": "时间：2025年3月"
+              },
+              {
+                "text": "人物：Alice C."
+              }
+            ]
+          },
+          "say": "……由 LLM 读取。事实提及“Alice C.”，这是记忆库从未见过的名称。",
+          "ms": 2600
+        },
+        {
+          "edges": {
+            "edge": "x-r",
+            "data": "“Alice C.”, “Zurich office”"
+          },
+          "show": {
+            "resolve": [
+              {
+                "text": "“Alice C.”",
+                "meta": "close to Alice Chen"
+              },
+              {
+                "text": "苏黎世办公室旁",
+                "meta": "seen with Alice Chen before",
+                "mark": "✓"
+              },
+              {
+                "text": "→ Alice Chen",
+                "mark": "merged"
+              },
+              {
+                "text": "“苏黎世办公室”",
+                "meta": "same name",
+                "mark": "match"
+              }
+            ]
+          },
+          "say": "这个名称接近 Alice Chen，同一事实还提及她已关联的苏黎世办事处。两点结合足以判定是同一个人。",
+          "ms": 3400
+        },
+        {
+          "edges": "r-ent",
+          "show": {
+            "entities": [
+              {
+                "type": "graph",
+                "nodes": [
+                  "Alice Chen",
+                  "Zurich office"
+                ],
+                "links": [
+                  [
+                    "Alice Chen",
+                    "Zurich office"
+                  ]
+                ],
+                "lit": [
+                  "Alice Chen",
+                  "Zurich office"
+                ]
+              }
+            ]
+          },
+          "say": "不创建新实体：这里的“Alice C.”被识别为 Alice Chen。"
+        },
+        {
+          "edges": "x-facts",
+          "show": {
+            "facts": [
+              {
+                "tag": "world",
+                "tone": "blue",
+                "text": "Alice Chen 每周工作 80 小时"
+              },
+              {
+                "tag": "world",
+                "tone": "blue",
+                "text": "Alice Chen 烧坏了"
+              },
+              {
+                "tag": "world",
+                "tone": "blue",
+                "text": "Alice Chen 搬迁至苏黎世办事处",
+                "meta": "happened Jun 2024 · learned Jan 2025"
+              },
+              {
+                "tag": "world",
+                "tone": "blue",
+                "text": "Alice C. 负责苏黎世办事处",
+                "meta": "about Alice Chen · Mar 2025",
+                "mark": "new"
+              }
+            ]
+          },
+          "say": "事实保留原始措辞，但关联到 Alice Chen，与其他关于她的信息汇集在一起。之后询问 Alice 时，可获取全部相关内容。",
+          "ms": 3200
+        },
+        {
+          "edges": [
+            "r-l",
+            "l-links"
+          ],
+          "show": {
+            "links": [
+              {
+                "text": "实体",
+                "mono": true,
+                "meta": "joins 3 earlier facts about Alice Chen",
+                "mark": "new"
+              },
+              {
+                "text": "语义",
+                "mono": true,
+                "meta": "≈ Alice Chen moved to the Zurich office"
+              }
+            ]
+          },
+          "say": "实体关联将它与 1 月的三个事实连接。",
+          "ms": 2600
+        },
+        {
+          "edges": {
+            "edge": "call",
+            "back": true,
+            "data": "✓ 1 fact"
+          },
+          "show": {
+            "input": [
+              {
+                "tag": "content",
+                "tone": "gray",
+                "text": "“Alice C. 现在负责苏黎世办事处。”"
+              },
+              {
+                "tag": "context",
+                "tone": "gray",
+                "text": "Bob正在谈论他的团队"
+              },
+              {
+                "tag": "timestamp",
+                "tone": "gray",
+                "text": "2025 年 3 月 3 日"
+              },
+              {
+                "tag": "result",
+                "tone": "green",
+                "text": "1 个事实已存储",
+                "mark": "✓"
+              }
+            ]
+          },
+          "say": "完成：关于同一个 Alice 的事实又增加一条。",
+          "ms": 2000
+        }
+      ]
+    }
+  ]
+}

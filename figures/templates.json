@@ -1,0 +1,671 @@
+{
+  "title": "记忆库模板",
+  "speed": 2200,
+  "elements": [
+    {
+      "id": "s-config",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "配置"
+        },
+        {
+          "type": "subtitle",
+          "text": "每个记忆库覆盖"
+        }
+      ],
+      "minCardHeight": 58
+    },
+    {
+      "id": "s-mm",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "心智模型"
+        }
+      ],
+      "minCardHeight": 58
+    },
+    {
+      "id": "s-dir",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "指令"
+        }
+      ],
+      "minCardHeight": 28
+    },
+    {
+      "id": "s-mem",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "记忆"
+        }
+      ],
+      "minCardHeight": 28
+    },
+    {
+      "id": "src",
+      "type": "group",
+      "label": {
+        "title": "调整记忆库"
+      },
+      "children": [
+        "s-config",
+        "s-mm",
+        "s-dir",
+        "s-mem"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 12,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "export",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "导出"
+        }
+      ],
+      "minCardHeight": 73
+    },
+    {
+      "id": "hub",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "模板中心"
+        },
+        {
+          "type": "subtitle",
+          "text": "现成的清单"
+        }
+      ],
+      "minCardHeight": 58,
+      "width": 200
+    },
+    {
+      "id": "manifest",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "清单"
+        },
+        {
+          "type": "subtitle",
+          "text": "JSON"
+        }
+      ],
+      "minCardHeight": 193,
+      "width": 200
+    },
+    {
+      "id": "g1",
+      "type": "group",
+      "children": [
+        "hub",
+        "manifest"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 40,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "import",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "导入"
+        }
+      ],
+      "minCardHeight": 88,
+      "width": 170
+    },
+    {
+      "id": "refresh",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "刷新"
+        },
+        {
+          "type": "subtitle",
+          "text": "心智模型内容"
+        }
+      ],
+      "minCardHeight": 43
+    },
+    {
+      "id": "g2",
+      "type": "group",
+      "label": {
+        "title": "Hindsight",
+        "logo": "/img/logo.webp"
+      },
+      "children": [
+        "import",
+        "refresh"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 40,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "d-config",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "配置"
+        },
+        {
+          "type": "subtitle",
+          "text": "每个记忆库覆盖"
+        }
+      ],
+      "minCardHeight": 73
+    },
+    {
+      "id": "d-mm",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "心智模型"
+        }
+      ],
+      "minCardHeight": 58
+    },
+    {
+      "id": "d-dir",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "指令"
+        }
+      ],
+      "minCardHeight": 28
+    },
+    {
+      "id": "d-mem",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "记忆"
+        }
+      ],
+      "minCardHeight": 28
+    },
+    {
+      "id": "dst",
+      "type": "group",
+      "label": {
+        "title": "新记忆库"
+      },
+      "children": [
+        "d-config",
+        "d-mm",
+        "d-dir",
+        "d-mem"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 12,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "g0",
+      "type": "group",
+      "children": [
+        "src",
+        "export",
+        "g1",
+        "g2",
+        "dst"
+      ],
+      "layout": {
+        "direction": "row",
+        "gap": 32,
+        "align": "center"
+      }
+    },
+    {
+      "id": "out",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "src"
+      },
+      "end": {
+        "id": "export"
+      },
+      "label": {
+        "text": "导出"
+      }
+    },
+    {
+      "id": "to-manifest",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "export"
+      },
+      "end": {
+        "id": "manifest"
+      }
+    },
+    {
+      "id": "from-hub",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "hub"
+      },
+      "end": {
+        "id": "manifest"
+      },
+      "label": {
+        "text": "复制"
+      }
+    },
+    {
+      "id": "in",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "manifest"
+      },
+      "end": {
+        "id": "import"
+      },
+      "label": {
+        "text": "导入"
+      }
+    },
+    {
+      "id": "apply",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "import"
+      },
+      "end": {
+        "id": "dst"
+      }
+    },
+    {
+      "id": "queue",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "import"
+      },
+      "end": {
+        "id": "refresh"
+      }
+    },
+    {
+      "id": "gen",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "refresh"
+      },
+      "end": {
+        "id": "d-mm"
+      }
+    }
+  ],
+  "scenes": [
+    {
+      "label": "导出",
+      "caption": "",
+      "beats": [
+        {
+          "show": {
+            "s-config": [
+              {
+                "text": "retain_mission",
+                "mono": true,
+                "meta": "set"
+              },
+              {
+                "text": "enable_observations",
+                "mono": true,
+                "meta": "true"
+              }
+            ],
+            "s-mm": [
+              {
+                "text": "项目背景",
+                "mono": true,
+                "meta": "filled"
+              }
+            ],
+            "s-dir": [
+              {
+                "text": "引用文件路径"
+              }
+            ],
+            "s-mem": [
+              {
+                "text": "1,240 个记忆"
+              }
+            ]
+          },
+          "say": "一个已经调优的记忆库：包含自身配置、心智模型、指令，以及已学到的记忆。",
+          "ms": 2800
+        },
+        {
+          "edges": {
+            "edge": "out",
+            "data": "export"
+          },
+          "show": {
+            "export": [
+              {
+                "text": "仅此记忆库覆盖的内容"
+              },
+              {
+                "text": "无服务器默认值，无API密钥"
+              }
+            ]
+          },
+          "say": "导出读取这套设置，只保留本记忆库的配置，不包含服务器默认值，也绝不包含凭据，让清单可移植。",
+          "ms": 3000
+        },
+        {
+          "edges": "to-manifest",
+          "show": {
+            "manifest": [
+              {
+                "tag": "version",
+                "tone": "gray",
+                "text": "“1”",
+                "mono": true
+              },
+              {
+                "tag": "bank",
+                "tone": "blue",
+                "text": "retain_mission，enable_observations"
+              },
+              {
+                "tag": "mental_models",
+                "tone": "orange",
+                "text": "项目背景",
+                "meta": "refresh after consolidation"
+              },
+              {
+                "tag": "directives",
+                "tone": "purple",
+                "text": "引用文件路径"
+              }
+            ],
+            "s-mem": [
+              {
+                "text": "1,240 个记忆",
+                "mark": "stay"
+              }
+            ]
+          },
+          "say": "清单是普通 JSON：包含配置、心智模型定义（不含内容）与指令，始终不包含记忆。",
+          "ms": 3200
+        }
+      ]
+    },
+    {
+      "label": "导入",
+      "caption": "",
+      "beats": [
+        {
+          "edges": {
+            "edge": "in",
+            "data": "import"
+          },
+          "show": {
+            "manifest": [
+              {
+                "tag": "version",
+                "tone": "gray",
+                "text": "“1”",
+                "mono": true
+              },
+              {
+                "tag": "bank",
+                "tone": "blue",
+                "text": "retain_mission，enable_observations"
+              },
+              {
+                "tag": "mental_models",
+                "tone": "orange",
+                "text": "项目背景",
+                "meta": "refresh after consolidation"
+              },
+              {
+                "tag": "directives",
+                "tone": "purple",
+                "text": "引用文件路径"
+              }
+            ]
+          },
+          "say": "将清单导入另一个记忆库。若记忆库尚不存在，会创建它。"
+        },
+        {
+          "show": {
+            "import": [
+              {
+                "text": "清单有效",
+                "mark": "✓"
+              },
+              {
+                "text": "配置：2 个覆盖"
+              },
+              {
+                "text": "心智模型：新增 1 个"
+              },
+              {
+                "text": "指令：1 个新指令"
+              }
+            ]
+          },
+          "say": "首先检查清单。试运行在此停止，并显示将发生的更改。",
+          "ms": 2800
+        },
+        {
+          "edges": "apply",
+          "show": {
+            "d-config": [
+              {
+                "text": "retain_mission",
+                "mono": true,
+                "meta": "set"
+              },
+              {
+                "text": "enable_observations",
+                "mono": true,
+                "meta": "true"
+              }
+            ],
+            "d-mm": [
+              {
+                "text": "项目背景",
+                "mono": true,
+                "meta": "no content yet"
+              }
+            ],
+            "d-dir": [
+              {
+                "text": "引用文件路径"
+              }
+            ],
+            "d-mem": [
+              {
+                "text": "空"
+              }
+            ]
+          },
+          "say": "配置成为记忆库级覆盖值。心智模型按 ID 匹配，指令按名称匹配；创建新条目，更新已有条目。",
+          "ms": 3400
+        },
+        {
+          "edges": {
+            "edge": "queue",
+            "data": "operation_ids"
+          },
+          "show": {
+            "refresh": [
+              {
+                "text": "1 项刷新已排队"
+              },
+              {
+                "text": "还没有什么可读的"
+              }
+            ]
+          },
+          "say": "心智模型内容在后台生成，响应返回用于跟踪的操作 ID。"
+        },
+        {
+          "edges": "gen",
+          "show": {
+            "d-mm": [
+              {
+                "text": "项目背景",
+                "mono": true,
+                "meta": "fills as memories arrive"
+              }
+            ]
+          },
+          "say": "新记忆库尚无记忆，因此没有内容可读取。模型在每次整合后刷新，随着记忆库学习而逐渐充实。行为相同，记忆库全新。",
+          "ms": 3200
+        }
+      ]
+    },
+    {
+      "label": "来自中心",
+      "caption": "",
+      "beats": [
+        {
+          "show": {
+            "hub": [
+              {
+                "text": "编码智能体",
+                "mark": "✓"
+              },
+              {
+                "text": "对话"
+              },
+              {
+                "text": "个人助手",
+                "meta": "+ more"
+              }
+            ]
+          },
+          "light": [
+            "hub"
+          ],
+          "say": "也可以跳过导出：模板中心提供现成清单，使用前可先阅读。"
+        },
+        {
+          "edges": {
+            "edge": "from-hub",
+            "data": "Coding Agent"
+          },
+          "show": {
+            "manifest": [
+              {
+                "tag": "version",
+                "tone": "gray",
+                "text": "“1”",
+                "mono": true
+              },
+              {
+                "tag": "bank",
+                "tone": "blue",
+                "text": "retain_mission、enable_observations、observations_mission、disposition_*"
+              },
+              {
+                "tag": "mental_models",
+                "tone": "orange",
+                "text": "项目背景、开发人员偏好、评审模式"
+              }
+            ]
+          },
+          "say": "复制一个模板，其 JSON 与导出生成的格式相同。"
+        },
+        {
+          "edges": {
+            "edge": "in",
+            "data": "import"
+          },
+          "say": "以相同方式导入。"
+        },
+        {
+          "edges": "apply",
+          "show": {
+            "d-config": [
+              {
+                "text": "retain_mission",
+                "mono": true,
+                "meta": "set"
+              },
+              {
+                "text": "enable_observations",
+                "mono": true,
+                "meta": "true"
+              },
+              {
+                "text": "observations_mission",
+                "mono": true,
+                "meta": "set"
+              },
+              {
+                "text": "disposition_*",
+                "mono": true,
+                "meta": "literalism 5 · skepticism 3"
+              }
+            ],
+            "d-mm": [
+              {
+                "text": "3 个模型",
+                "meta": "fill as memories arrive"
+              }
+            ],
+            "d-dir": [
+              {
+                "text": "此模板中没有"
+              }
+            ],
+            "d-mem": [
+              {
+                "text": "空"
+              }
+            ]
+          },
+          "say": "新记忆库从已验证的设置开始，无需从零配置。",
+          "ms": 3000
+        }
+      ]
+    }
+  ]
+}

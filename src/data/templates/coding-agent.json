@@ -1,0 +1,39 @@
+{
+  "version": "1",
+  "bank": {
+    "retain_mission": "提取技术决策及其理由、架构选择、编程模式与约定、项目结构事实、库和工具偏好、反复出现的问题，以及开发者的代码评审偏好（指出什么问题、接受什么做法）。忽略临时调试输出与样板内容。",
+    "enable_observations": true,
+    "observations_mission": "跟踪稳定的项目事实：技术栈、团队约定、架构模式、评审标准，以及代码库随时间的变化。",
+    "disposition_literalism": 5,
+    "disposition_skepticism": 3
+  },
+  "mental_models": [
+    {
+      "id": "project-context",
+      "name": "项目上下文",
+      "source_query": "项目的技术栈、架构和关键约定是什么？主要组件有哪些，它们如何协同？",
+      "max_tokens": 2048,
+      "trigger": {
+        "refresh_after_consolidation": true
+      }
+    },
+    {
+      "id": "developer-preferences",
+      "name": "开发者偏好",
+      "source_query": "开发者对工具、库、编程风格和工作流有哪些偏好？希望如何编写与评审代码？",
+      "max_tokens": 1024,
+      "trigger": {
+        "refresh_after_consolidation": true
+      }
+    },
+    {
+      "id": "review-patterns",
+      "name": "评审模式",
+      "source_query": "在代码评审中，这位开发者一贯指出或关注哪些问题（缺陷、风格、安全、测试），又认为什么可以接受？哪些反馈类型反复出现？",
+      "max_tokens": 1024,
+      "trigger": {
+        "refresh_after_consolidation": true
+      }
+    }
+  ]
+}

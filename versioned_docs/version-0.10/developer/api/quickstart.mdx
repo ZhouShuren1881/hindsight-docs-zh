@@ -1,0 +1,134 @@
+---
+sidebar_position: 0
+---
+
+# 快速开始 {#quick-start}
+
+在 60 秒内启动并使用 Hindsight。
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import CodeSnippet from '@site/src/components/CodeSnippet';
+import {ClientsGrid} from '@site/src/components/SupportedGrids';
+
+{/* 导入原始示例源文件 */}
+import quickstartPy from '!!raw-loader!@site/examples/api/quickstart.py';
+import quickstartMjs from '!!raw-loader!@site/examples/api/quickstart.mjs';
+import quickstartSh from '!!raw-loader!@site/examples/api/quickstart.sh';
+import quickstartGo from '!!raw-loader!@site/examples/api/quickstart.go';
+
+## 客户端 {#clients}
+
+<ClientsGrid />
+
+## 启动 API 服务器 {#start-the-api-server}
+
+<Tabs>
+<TabItem value="pip" label="pip（仅 API）">
+
+```bash
+pip install hindsight-api
+export OPENAI_API_KEY=sk-xxx
+export HINDSIGHT_API_LLM_API_KEY=$OPENAI_API_KEY
+
+hindsight-api
+```
+
+API 地址：[http://localhost:8888](http://localhost:8888/docs)
+
+</TabItem>
+<TabItem value="docker" label="Docker（完整体验）">
+
+```bash
+
+export OPENAI_API_KEY=sk-xxx
+
+docker run -it --pull always --name hindsight --restart unless-stopped --shm-size=1g -p 8888:8888 -p 9999:9999 \
+  -e HINDSIGHT_API_LLM_API_KEY=$OPENAI_API_KEY \
+  -v $HOME/.hindsight-docker:/home/hindsight/.pg0 \
+  ghcr.io/vectorize-io/hindsight:latest
+```
+
+- **API**：http://localhost:8888
+- **控制平面**（Web 界面）：http://localhost:9999
+
+:::tip 在生产环境中设置稳定的 `HINDSIGHT_API_WORKER_ID`
+工作进程使用容器主机名作为身份，Docker 默认将其设为容器 ID。该值每次重启都会变化，因此容器停止时正在处理的任务会留在旧 ID 下，新容器无法识别这些任务属于自己。
+
+将 `HINDSIGHT_API_WORKER_ID` 设为稳定值，例如 `-e HINDSIGHT_API_WORKER_ID=hindsight-prod`，使工作进程在重启后保持同一身份。即使只有一个容器，也建议这样设置。诊断和恢复命令见[管理 CLI：恢复卡住的操作](/developer/admin-cli#recovering-stuck-or-zombie-operations)。
+:::
+
+</TabItem>
+</Tabs>
+
+:::tip LLM 提供程序
+Hindsight 需要支持结构化输出的 LLM。推荐 **Groq** 搭配 `gpt-oss-20b`，实现快速且经济的推理。
+详情见 [LLM 提供程序](/developer/models#llm)。
+:::
+
+---
+
+## 使用客户端 {#use-the-client}
+
+<Tabs>
+<TabItem value="python" label="Python">
+
+```bash
+pip install hindsight-client
+```
+
+<CodeSnippet code={quickstartPy} section="quickstart-full" language="python" />
+
+</TabItem>
+<TabItem value="node" label="Node.js">
+
+```bash
+npm install @vectorize-io/hindsight-client
+```
+
+<CodeSnippet code={quickstartMjs} section="quickstart-full" language="javascript" />
+
+</TabItem>
+<TabItem value="cli" label="CLI">
+
+```bash
+curl -fsSL https://hindsight.vectorize.io/get-cli | bash
+```
+
+<CodeSnippet code={quickstartSh} section="quickstart-full" language="bash" />
+
+</TabItem>
+<TabItem value="go" label="Go">
+
+```bash
+go get github.com/vectorize-io/hindsight/hindsight-clients/go
+```
+
+<CodeSnippet code={quickstartGo} section="quickstart-full" language="go" />
+
+</TabItem>
+</Tabs>
+
+---
+
+## 执行过程 {#whats-happening}
+
+| 操作 | 作用 |
+|-----------|--------------|
+| **记忆存储（Retain）** | 处理内容、提取事实、识别实体，并在知识图谱中建立关联 |
+| **记忆召回（Recall）** | 并行运行语义、关键词、图和时间四种搜索策略，找到相关记忆 |
+| **反思（Reflect）** | 利用检索到的记忆，生成考虑性格倾向的回答 |
+
+---
+
+## 集成 {#integrations}
+
+在[集成中心](/integrations)浏览所有支持的集成。
+
+## 后续步骤 {#next-steps}
+
+- [**记忆存储**](./retain)：存储记忆的高级选项。
+- [**记忆召回**](./recall)：搜索和检索策略。
+- [**反思**](./reflect)：考虑性格倾向的推理。
+- [**记忆库**](./memory-banks)：配置性格倾向和使命。
+- [**服务器部署**](/developer/installation)：Docker Compose、Helm 和生产环境配置。

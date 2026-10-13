@@ -1,0 +1,183 @@
+---
+title: 实践手册
+hide_table_of_contents: true
+---
+
+import CookbookGrid from '@site/src/components/CookbookGrid';
+import PageHero from '@site/src/components/PageHero';
+
+<PageHero title="实践手册" subtitle="使用 Hindsight 构建的实用示例和完整应用。" />
+
+<div>
+
+## 示例教程 {#recipes}
+
+<CookbookGrid
+  items={[
+    {
+      title: "Hindsight 快速开始",
+      href: "/cookbook/recipes/quickstart",
+      description: "学习基本操作：存储、召回和反思",
+      tags: { sdk: "hindsight-client", topic: "快速开始" }
+    },
+    {
+      title: "按用户划分记忆",
+      href: "/cookbook/recipes/per-user-memory",
+      description: "构建按用户隔离记忆的聊天机器人",
+      tags: { sdk: "hindsight-client", topic: "学习" }
+    },
+    {
+      title: "共享知识的支持智能体",
+      href: "/cookbook/recipes/support-agent-shared-knowledge",
+      description: "结合用户专属记忆与共享产品文档",
+      tags: { sdk: "hindsight-client", topic: "学习" }
+    },
+    {
+      title: "通过 LiteLLM 使用记忆",
+      href: "/cookbook/recipes/litellm-memory-demo",
+      description: "通过 LiteLLM 回调为任意 LLM 应用自动添加记忆",
+      tags: { sdk: "hindsight-litellm", topic: "快速开始" }
+    },
+    {
+      title: "学习工具路由",
+      href: "/cookbook/recipes/tool-learning-demo",
+      description: "通过反馈与记忆教会 LLM 选择工具",
+      tags: { sdk: "hindsight-litellm", topic: "学习" }
+    },
+    {
+      title: "拥有 Hindsight 记忆的健身教练",
+      href: "/cookbook/recipes/fitness_tracker",
+      description: "通过个性化教练跟踪训练、饮食和进度",
+      tags: { sdk: "hindsight-client", topic: "推荐" }
+    },
+    {
+      title: "拥有 Hindsight 记忆的健康助手",
+      href: "/cookbook/recipes/healthcare_assistant",
+      description: "记住患者历史和偏好，提供支持性对话",
+      tags: { sdk: "hindsight-client", topic: "推荐" }
+    },
+    {
+      title: "拥有 Hindsight 记忆的电影推荐助手",
+      href: "/cookbook/recipes/movie_recommendation",
+      description: "获取随时间不断改善的个性化电影推荐",
+      tags: { sdk: "hindsight-client", topic: "推荐" }
+    },
+    {
+      title: "拥有 Hindsight 记忆的个人 AI 助手",
+      href: "/cookbook/recipes/personal_assistant",
+      description: "记住生活与偏好的通用助手",
+      tags: { sdk: "hindsight-client", topic: "推荐" }
+    },
+    {
+      title: "拥有 Hindsight 记忆的个性化搜索智能体",
+      href: "/cookbook/recipes/personalized_search",
+      description: "学习用户位置、饮食和生活方式的搜索助手",
+      tags: { sdk: "hindsight-client", topic: "推荐" }
+    },
+    {
+      title: "拥有 Hindsight 记忆的学习伙伴",
+      href: "/cookbook/recipes/study_buddy",
+      description: "跟踪学习、识别知识空缺并提供个性化复习建议",
+      tags: { sdk: "hindsight-client", topic: "学习" }
+    }
+  ]}
+/>
+
+## 完整应用 {#applications}
+
+<CookbookGrid
+  items={[
+    {
+      title: "CableConnect：AI 客服协作助手演示",
+      href: "/cookbook/applications/cable-co",
+      description: "通过 Hindsight 从客服人员反馈中学习的 AI 助手",
+      tags: { sdk: "hindsight-client", topic: "客户服务" }
+    },
+    {
+      title: "聊天记忆应用",
+      href: "/cookbook/applications/chat-memory",
+      description: "使用 Groq 与 Hindsight 的按用户记忆实时聊天应用",
+      tags: { sdk: "@vectorize-io/hindsight-client", topic: "聊天" }
+    },
+    {
+      title: "聊天记忆应用（Hindsight Cloud）",
+      href: "/cookbook/applications/chat-memory-cloud",
+      description: "由 Hindsight Cloud 提供按用户记忆的实时聊天应用",
+      tags: { sdk: "@vectorize-io/hindsight-client", topic: "聊天" }
+    },
+    {
+      title: "Chat SDK 多平台机器人",
+      href: "/cookbook/applications/chat-sdk-multi-platform",
+      description: "使用 Vercel Chat SDK 与 Hindsight 提供跨平台记忆",
+      tags: { sdk: "@vectorize-io/hindsight-chat", topic: "推荐" }
+    },
+    {
+      title: "ClaimsIQ：保险理赔分类智能体演示",
+      href: "/cookbook/applications/claims-iq",
+      description: "通过 Hindsight 学习理赔裁决规则",
+      tags: { sdk: "hindsight-litellm", topic: "智能体" }
+    },
+    {
+      title: "CrewAI + Hindsight 记忆",
+      href: "/cookbook/applications/crewai-memory",
+      description: "通过 Hindsight 为 CrewAI 智能体提供长期持久记忆",
+      tags: { sdk: "hindsight-crewai", topic: "智能体" }
+    },
+    {
+      title: "配送员演示",
+      href: "/cookbook/applications/deliveryman-demo",
+      description: "通过心智模型学习的配送智能体模拟",
+      tags: { sdk: "hindsight-litellm", topic: "学习" }
+    },
+    {
+      title: "Go 记忆增强 API",
+      href: "/cookbook/applications/go-memory-service",
+      description: "为开发者知识助手提供按用户记忆库的 Go HTTP 微服务",
+      tags: { sdk: "hindsight-client-go", topic: "学习" }
+    },
+    {
+      title: "记忆方案对比演示",
+      href: "/cookbook/applications/hindsight-litellm-demo",
+      description: "交互比较无记忆、完整历史和语义检索",
+      tags: { sdk: "hindsight-litellm", topic: "快速开始" }
+    },
+    {
+      title: "工具学习演示",
+      href: "/cookbook/applications/hindsight-tool-learning-demo",
+      description: "工具名称含糊时，让 LLM 通过 Hindsight 学习选择",
+      tags: { sdk: "hindsight-litellm", topic: "学习" }
+    },
+    {
+      title: "OpenAI 智能体与 Hindsight 记忆集成",
+      href: "/cookbook/applications/openai-fitness-coach",
+      description: "使用 OpenAI Assistants 与 Hindsight 记忆后端的健身教练",
+      tags: { sdk: "hindsight-api", topic: "推荐" }
+    },
+    {
+      title: "Pydantic AI + Hindsight 记忆",
+      href: "/cookbook/applications/pydantic-ai-memory",
+      description: "通过 Hindsight 为 Pydantic AI 提供长期持久记忆",
+      tags: { sdk: "hindsight-pydantic-ai", topic: "智能体" }
+    },
+    {
+      title: "Sanity CMS 博客记忆",
+      href: "/cookbook/applications/sanity-blog-memory",
+      description: "同步博客到 Hindsight，支持语义搜索和 AI 洞察",
+      tags: { sdk: "@vectorize-io/hindsight-client", topic: "学习" }
+    },
+    {
+      title: "立场跟踪器",
+      href: "/cookbook/applications/stancetracker",
+      description: "自动抓取网页，跟踪政治候选人立场随时间的变化",
+      tags: { sdk: "@vectorize-io/hindsight-client", topic: "推荐" }
+    },
+    {
+      title: "Hindsight AI SDK：私人厨师",
+      href: "/cookbook/applications/taste-ai",
+      description: "AI SDK v6 饮食助手，展示召回、心智模型和指令",
+      tags: { sdk: "@vectorize-io/hindsight-ai-sdk", topic: "推荐" }
+    }
+  ]}
+/>
+
+</div>

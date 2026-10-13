@@ -1,0 +1,330 @@
+---
+sidebar_position: 5
+---
+
+import CodeSnippet from '@site/src/components/CodeSnippet';
+import recallPy from '!!raw-loader!@site/examples/api/recall.py';
+import memoryBanksPy from '!!raw-loader!@site/examples/api/memory-banks.py';
+import observationsPy from '!!raw-loader!@site/examples/api/observations.py';
+import Figure from '@site/src/components/Figure';
+import observationsFigure from '@site/figures/observations.json';
+
+# 观察：知识整合 {#observations-knowledge-consolidation}
+
+记忆存储后，Hindsight 会自动将相关事实整合为**观察**，即记忆库从多条记忆中形成、经过去重且有证据支撑的认知。每条观察都会跟踪其支持证据（包含精确引文）和证据数量。当新证据到来时，系统会完善观察，而非直接覆盖。
+
+<Figure doc={observationsFigure} />
+
+---
+
+## 什么是观察？ {#what-are-observations}
+
+观察是由多条事实形成的**整合知识**。原始事实是单条信息，而观察则代表基于累积证据、经过去重的认知、偏好和经验。它们不是 LLM 临时编造的摘要：每条观察都有具体来源记忆的支持，带有证据数量，并随着新证据的支持、反驳或补充而演进。
+
+| 原始事实 | 观察 |
+|----------|------|
+| 「Alice 更喜欢 Python」 | 「Alice 是一名以 Python 为主的开发者，重视可读性和简洁性」 |
+| 「Alice 不喜欢冗长的代码」 | |
+| 「Alice 推荐使用类型提示」 | |
+
+观察提供：
+- **去重：**形成一个持久认知，而不是许多重叠事实
+- **事实依据：**每条观察都引用支持它的具体记忆，并附带引文
+- **演进：**证据加强、削弱或反驳认知时，对观察进行完善，同时保留历史
+- **新鲜度感知：**当较新的记忆尚未整合时，`reflect` 会将受影响的观察视为过时，并根据原始事实验证它们
+- **效率：**以浓缩的知识加快检索
+
+---
+
+## 整合如何工作 {#how-consolidation-works}
+
+### 自动后台处理 {#automatic-background-processing}
+
+`retain()` 完成后，整合引擎会自动运行：
+
+1. **分析新事实** — 将每条新事实与已有观察比较
+2. **检测规律** — 将相关事实分组并综合
+3. **创建或更新观察** — 创建新观察，或完善已有观察
+4. **跟踪证据** — 每条观察都保留对支持事实的引用
+
+### 协调近似重复的观察 {#near-duplicate-reconciliation}
+
+整合仍可能产生两条措辞略有不同、含义却相同的观察。例如，能力较弱的模型可能写出一条近乎相同的观察，而不完善已有观察；也可能在完善一条观察时改变了措辞，使它与另一条观察重叠。如果不处理，这些近似重复的观察会让记忆召回充斥冗余认知。
+
+启用此功能后，Hindsight 会自动协调这些观察。每当观察被创建**或**更新时，系统都会将它与最相似的已有观察比较。如果高度相似，就会进行有针对性的检查，决定是**合并**为一个认知（合并双方的支持证据），还是**保留**为独立观察。由于检查会阅读两条观察的全文，在重要细节上存在差异的观察，如数值、否定含义、命名实体或语言不同，会被正确保留，而不是合并。
+
+这一行为由 [`HINDSIGHT_API_CONSOLIDATION_DEDUP_THRESHOLD`](/developer/configuration#observations) 控制：当两条观察的余弦相似度达到或超过阈值时，进行协调。该功能**默认启用**（`0.97`）；较低值会更积极地协调，`1.0` 则禁用。协调仅在 PostgreSQL 部署上运行，Oracle 无论阈值如何都跳过此过程。
+
+协调只比较**相同标签范围内**的观察。如果每次记忆存储都使用唯一标签（例如 `session-id`），每个会话都会进入自己的范围，永远不会与其他会话去重，从而每个会话都产生一条近乎相同的观察。要跨这些变化频繁的标签整合，存储时设置 [`observation_scopes: "shared"`](/developer/api/retain#shared)，将观察限定为一个全局、无标签的认知，同时保留来源事实上的会话标签，以便记忆召回时过滤。
+
+### 禁用自动整合 {#disabling-auto-consolidation}
+
+设置 `HINDSIGHT_API_ENABLE_AUTO_CONSOLIDATION=false`（或通过[记忆库配置 API](/developer/api/memory-banks#observations-configuration) 为单个记忆库配置），可阻止系统在记忆存储、删除和更新后自动运行整合。禁用后，只有明确调用[整合端点](#trigger-consolidation)时才会运行。
+
+这适用于希望完全控制整合时机的情况，例如先批量执行多次记忆存储再整合，或只针对特定范围执行整合。
+
+### 定向整合 {#targeted-consolidation}
+
+默认情况下，整合会处理记忆库中**所有**尚未整合的记忆。通过整合端点的 `observation_scopes` 参数，可以限定为特定标签集合：
+
+<CodeSnippet code={observationsPy} section="targeted-consolidation" language="python" />
+
+每个范围是一个标签列表。记忆的标签**包含该范围中的全部标签**时，才匹配该范围。例如，范围 `["user:alice"]` 匹配带有 `["user:alice", "team:eng"]` 标签的记忆。
+
+省略 `observation_scopes` 时，处理所有尚未整合的记忆，保持向后兼容。
+
+### 基于证据的演进 {#evidence-based-evolution}
+
+观察会随着新证据到来而演进：
+
+| 事件 | 记忆库学到的内容 | 观察状态 |
+|------|------------------|----------|
+| **第 1 天** | 「Redis 根据 BSD 许可证开源」 | 「Redis 非常适合缓存：快速、可靠，对开源软件友好」（2 条支持事实） |
+| **第 2 天** | 「Redis 有出色的社区支持」 | 观察得到强化（3 条支持事实） |
+| **第 30 天** | 「Redis 将许可证改为 SSPL」 | 观察得到完善：「Redis 技术能力强，但云场景下存在许可证方面的顾虑」 |
+| **第 45 天** | 「Valkey 以 BSD 许可证从 Redis 分叉」 | 新观察：「需要真正开源软件的新项目，可以考虑 Valkey」 |
+
+### 处理矛盾证据 {#handling-contradictory-evidence}
+
+当新事实与已有观察矛盾时，会发生什么？
+
+整合引擎不会盲目覆盖，而是通过记录演进过程来**协调**矛盾。
+
+**示例：用户偏好变化**
+
+| 时间 | 事实 | 观察 |
+|------|------|------|
+| 第 1 周 | 「用户说自己喜欢 React」 | 「用户偏好使用 React 开发前端」 |
+| 第 2 周 | 「用户赞赏 React 的组件模型」 | 「用户对 React 很热衷，尤其喜欢它的组件模型」 |
+| 第 3 周 | 「用户说自己已转用 Vue，不会再用 React」 | 「用户曾热衷于 React，并欣赏它的组件模型，但现在已转用 Vue，不再使用 React」 |
+
+最终观察记录了**完整历程**，不仅是「用户偏好 Vue」，还包含偏好的完整演变。这种细致理解意味着：
+
+- 智能体不会向明确不再使用 React 的人推荐 React 教程
+- 智能体理解*为什么*这很重要（用户以前很热衷，因此这是主动做出的选择）
+- 智能体可在相关场景引用这段历史（「我知道你以前使用过 React……」）
+
+系统会：
+1. **检测冲突** — 新事实与已有观察矛盾
+2. **保留历史** — 将之前的理解融入新观察
+3. **创建细致的观察** — 综合出更丰富的理解，记录变化
+4. **更新新鲜度** — 将观察标记为最近更新
+
+**示例：纠正错误信息**
+
+| 时间 | 事实 | 观察 |
+|------|------|------|
+| 第 1 天 | 「Alice 在 Google 工作」 | 「Alice 是 Google 员工」 |
+| 第 10 天 | 「Alice 实际上在 Meta 工作，而不是 Google」 | 「Alice 在 Meta 工作（此前认为她在 Google 工作）」 |
+
+当事实明确纠正之前的信息时，观察会更新以体现纠正，同时注明之前的理解。原始事实始终保留，因此你可以追溯最初的陈述，以及何时被纠正。
+
+---
+
+## 检索中的观察 {#observations-in-retrieval}
+
+`recall()` 和 `reflect()` 都会自动包含观察。
+
+### 记忆召回中的观察 {#in-recall}
+
+观察会与原始事实一起返回，可通过 `types` 参数过滤：
+
+<CodeSnippet code={recallPy} section="recall-with-observations" language="python" />
+
+### 反思中的观察 {#in-reflect}
+
+反思智能体使用**分层检索**：
+
+1. **[心智模型](/developer/api/mental-models)** — 用户整理的摘要（最高优先级）
+2. **观察** — 具有新鲜度感知的整合知识
+3. **原始事实** — 用于验证的事实依据
+
+智能体会自动查询观察，并将它们用于推理。
+
+---
+
+## 新鲜度感知 {#freshness-awareness}
+
+观察会跟踪上次更新时间。反思期间，智能体会考虑其新鲜度：
+
+- **最新观察：**直接用于推理
+- **过时观察：**智能体会先根据当前事实验证，再使用它
+
+这可以确保底层数据变化时，回答仍然准确。
+
+---
+
+## 观察范围 {#observation-scopes}
+
+默认情况下，观察的范围由一条记忆的所有标签组合而成。记忆存储参数 `observation_scopes` 可以改变这一行为，按单个标签、标签组合或自定义范围列表分别构建观察。当单条记忆带有多个标签、而你希望各标签独立累积自己的观察时，这一功能至关重要。
+
+完整说明和选项请参阅[记忆存储 API 中的 `observation_scopes`](./api/retain#observation_scopes)。
+
+要查看记忆库中已经存在的范围，调用 `GET /v1/default/banks/{bank_id}/observations/scopes`。响应会列出每个精确标签集合及其观察数量；空标签列表表示全局范围。列表支持分页（`limit` 默认 100，以及 `offset`），`total` 表示记忆库中不同范围的总数。需要精确过滤到某个观察范围、而不匹配带有额外标签的观察时，将返回的范围作为 `tags`，并设置 `tags_match: "exact"`。要**仅**召回全局范围，也就是 `observation_scopes: "shared"` 写入的无标签观察，传入空列表并使用精确匹配：`tags: []`、`tags_match: "exact"`。
+
+---
+
+## 观察使命 {#observations-mission}
+
+设置**观察使命**（`observations_mission`），可以精确定义记忆库应该综合什么。它会用你自己的指令替换内置的持久知识规则，让你控制观察的形式。
+
+```
+例如：观察是关于人物和项目的稳定事实。
+      始终包含偏好、技能和反复出现的规律。
+      忽略一次性事件和短暂状态。
+```
+
+留空时使用服务器默认规则：保留长期成立、具体而持久的事实（偏好、技能、关系、反复出现的规律），过滤短暂状态。
+
+**示例：**
+
+| `observations_mission` | 综合的内容 |
+|------------------------|------------|
+| *（未设置，默认）* | 持久事实：偏好、技能、关系、反复出现的规律 |
+| *「观察是冲刺成果和阻碍的每周总结」* | 按时间段分组的广泛事件摘要 |
+| *「观察仅包含关于有姓名人物的稳定事实」* | 以人物为中心、关联具体人物的知识 |
+| *「观察是客户支持互动中反复出现的规律」* | 失败模式、常见请求、痛点 |
+
+通过[记忆库配置 API](/developer/api/memory-banks#observations-configuration) 或 [`HINDSIGHT_API_OBSERVATIONS_MISSION`](/developer/configuration#observations) 环境变量设置 `observations_mission`。
+
+---
+
+## 整合策略 {#consolidation-strategies}
+
+记忆库中的所有范围都使用相同的使命、观察数量上限和来源事实 token 限制。**整合策略**（`consolidation_strategies`）允许特定范围使用自己的设置。
+
+这让一个记忆库可以服务多个受众。假设每条记忆都带有作者、团队和公司的标签，并以 `observation_scopes: [["user:dana"], ["team:exec"], ["company:acme"]]` 存储。每个范围都会构建自己的观察。但如果只有一个使命，公司范围就会包含与 Dana 个人范围相同的细节，例如姓名、交易金额和私下说过的任何内容，只是更多人可以看到。策略可以解决这一问题：
+
+```json
+[
+  {
+    "scopes": [{"tags": ["company:*"]}],
+    "observations_mission": "此范围向全公司共享。只记录概括性的行业趋势。绝不提及具体公司、人物、交易金额或融资阶段。",
+    "max_observations_per_scope": 20
+  },
+  {
+    "scopes": [{"tags": ["team:*"]}],
+    "observations_mission": "记录团队必须落实的决策。"
+  }
+]
+```
+
+配置后，Dana 的范围会保留「Acme Robotics 签订了一份 3 年租约，租用包含 4,000 个 GPU 的集群」，而公司范围会得到「企业正在租用 GPU 集群来运行开放权重模型」。
+
+策略匹配方式如下：
+
+- **`scopes`** 是备选条件列表。每项格式为 `{"tags": [...], "tags_match": "all" | "exact"}`，其中 `tags` 为 [fnmatch](https://docs.python.org/3/library/fnmatch.html) 模式（`*` 匹配任意文本）。**任一**备选条件匹配整合范围时，策略就适用（OR）；单个备选条件中的标签必须全部出现（AND）。
+- **`tags_match`** 对每个备选条件单独设置，决定是否允许其他标签：
+
+  | `tags_match` | `{"tags": ["company:*", "team:*"]}` 匹配…… | ……但不匹配 |
+  |---|---|---|
+  | `"all"` *（默认）* | `{company:acme, team:exec}`、`{user:dana, team:exec, company:acme}` | `{company:acme}`（没有团队标签） |
+  | `"exact"` | 仅 `{company:acme, team:exec}` | `{user:dana, team:exec, company:acme}`（多出 `user:` 标签） |
+
+  由于模式按备选条件设置，同一策略可以混用。例如，`[{"tags": ["company:*"], "tags_match": "exact"}, {"tags": ["team:*"]}]` 会覆盖*仅有*公司标签的范围，或在其他标签之外还包含团队标签的范围。要匹配多个标签中的*任意一个*，为每个标签单独定义备选条件：`[{"tags": ["company:*"]}, {"tags": ["team:*"]}]`。无法表达排除标签的条件（例如「有公司标签但没有用户标签」）。
+
+  :::caution 无标签范围永远无法被策略覆盖
+  任何模式都无法匹配没有标签的范围，包括单独的 `["*"]`。这意味着使用 [`observation_scopes: "shared"`](./api/retain#observation_scopes)、在单个无标签范围内整合的记忆库，有一个所有策略都无法覆盖的范围：它始终使用记忆库级别的设置。如果需要使命不同的通用兜底范围，请为它添加真实标签并针对该标签配置，而不要依赖 `shared`。
+  :::
+
+  请记住，策略匹配的是**观察范围**，即整合时用于分组观察的标签集合，由记忆存储时的 [`observation_scopes`](./api/retain#observation_scopes) 设置，而不是单条记忆的标签。如果一条记忆带有用户、团队和公司标签，但以 `observation_scopes: [["user:dana"], ["team:exec"], ["company:acme"]]` 存储，就会产生三个单标签范围，其中没有任何一个同时包含公司和团队标签。
+- **策略可以设置：**`observations_mission`、`max_observations_per_scope`、`consolidation_source_facts_max_tokens` 和 `consolidation_source_facts_max_tokens_per_observation`。全部都是可选项。
+- **策略未设置的选项，以及没有策略匹配的所有范围，**使用记忆库级别的值。控制台会将这些记忆库级别的值显示为**默认（Default）**策略。
+
+### 两个策略匹配同一范围时 {#when-two-strategies-match-the-same-scope}
+
+**列表中的第一个策略整体生效。**一个范围只会应用一个策略。列表顺序就是优先级顺序，对应控制台标签页从左到右的顺序。
+
+策略不会混合使用。如果优先策略的某个设置为空，该设置来自**默认**，而不是后面同样匹配的策略。例如：
+
+```json
+[
+  {"scopes": [{"tags": ["company:acme"]}], "max_observations_per_scope": 5},
+  {"scopes": [{"tags": ["company:*"]}], "observations_mission": "只记录总体趋势。"}
+]
+```
+
+范围 `company:acme` 的上限为 5，并使用**记忆库级别的使命**，而不是「只记录总体趋势」。第二个策略仍适用于其他所有 `company:*` 范围。要让 `company:acme` 同时使用这两项设置，请将两项设置都放在第一个策略中。
+
+要查看某个范围使用哪个策略，在控制台打开该策略：每条规则都会显示匹配多少已有范围，以及其中多少被更靠前的策略占用，并提供示例。`POST /v1/default/banks/{bank_id}/consolidation-strategies/preview` 也会返回相同信息。它接收草稿 `strategies` 列表（不保存任何内容），按策略和规则报告匹配范围，以及每个范围实际由哪个策略处理，使用的计算逻辑与整合本身相同。最多扫描 10,000 个不同范围；超过这一数量时，`complete` 为 `false`，计数只是下界。只有已经存在观察的范围可以预览。
+
+没有设置任何选项的策略会被忽略：它不匹配任何范围，也不会阻挡后续策略。
+
+通过控制台或记忆库配置 API 保存格式错误的策略时，会返回 400，并指出出错条目。例如，出现未知键（将 `"scopes"` 写成 `"scope"`）、标签列表不是字符串列表，或使用未知的 `tags_match`。`HINDSIGHT_API_CONSOLIDATION_STRATEGIES` 环境变量**不会**采用这种验证方式：格式错误的条目会被静默丢弃，无法识别的 `tags_match` 会回退为 `"all"`，而不会报错。如果通过环境变量配置策略，请随后查看预览，确认每个策略都覆盖了预期范围。*尚未完成*的策略会被接受，因为控制台会在输入过程中保存策略：尚未添加标签的规则，或尚未添加设置的策略，会被存储，但在完成前被忽略。[记忆库模板](/developer/api/memory-banks)导出和导入时，会原样保留策略。
+
+每个范围在独立的 LLM 调用中整合，因此某个范围的使命不会进入其他范围的调用。
+
+可在控制台（记忆库的**配置 → 观察（Configuration → Observations）**）、[记忆库配置 API](/developer/api/memory-banks#observations-configuration) 或 [`HINDSIGHT_API_CONSOLIDATION_STRATEGIES`](/developer/configuration#observations) 环境变量中设置 `consolidation_strategies`。它替代了旧的 `observation_scope_limits`。旧设置仍然可用，但只在策略之后检查，而且只支持观察数量上限。
+
+:::note 从 `observation_scope_limits` 迁移规则
+两个字段的匹配方式不同。`observation_scope_limits` 只支持完全覆盖：模式必须覆盖范围中的每个标签。策略默认采用 `tags_match: "all"`，允许额外标签。因此，原样复制模式会扩大匹配范围。添加 `"tags_match": "exact"` 可保持原有行为。
+
+另请注意，如果某策略覆盖了范围，却未设置 `max_observations_per_scope`，则观察上限会继续回退到 `observation_scope_limits`，而不会使用后续策略中可能设置的上限。
+:::
+
+---
+
+## 观察生命周期与失效 {#observation-lifecycle--invalidation}
+
+### 删除记忆时 {#when-memories-are-deleted}
+
+观察来源于原始记忆。删除来源记忆时，Hindsight 会自动保持观察的一致性：
+
+| 操作 | 对观察的影响 |
+|------|--------------|
+| 删除文档 | 删除该文档记忆衍生的所有观察 |
+| 按类型删除单条记忆 | 删除以这些记忆为来源的观察 |
+| 删除整个记忆库 | 观察与其他所有内容一起删除 |
+
+删除后，为受影响观察提供过证据的**剩余来源记忆**会重置整合状态。下次整合时，它们会再次被整合，产生新的观察。
+
+### 清除特定记忆的观察 {#clearing-observations-for-a-specific-memory}
+
+你可以清除源自单条记忆的所有观察，而不删除记忆本身。当你希望强制重新综合该记忆对整合知识的贡献时，这很有用。
+
+使用 `DELETE /v1/default/banks/{bank_id}/memories/{memory_id}/observations` 端点。它会：
+1. 删除所有将该记忆列为来源的观察
+2. 重置该记忆及为这些观察贡献证据的其他来源记忆的 `consolidated_at`
+3. 触发整合任务，自动生成新的观察
+
+### 重置所有观察 {#resetting-all-observations}
+
+要清除全部整合知识并重新开始：
+
+<CodeSnippet code={observationsPy} section="clear-observations" language="python" />
+
+这会重置记忆库中所有来源记忆的整合状态，下次整合将从头重新推导所有观察。
+
+---
+
+## 触发整合 {#trigger-consolidation}
+
+使用整合端点手动触发整合：
+
+```http
+POST /v1/default/banks/{bank_id}/consolidate
+Content-Type: application/json
+
+{
+  "observation_scopes": [["user:alice"], ["team:engineering"]]
+}
+```
+
+请求体可选。省略请求体或发送空请求体时，会处理记忆库中所有尚未整合的记忆。
+
+| 参数 | 类型 | 描述 |
+|------|------|------|
+| `observation_scopes` | `list[list[str]]` \| `null` | 可选的标签范围列表。只处理标签包含至少一个范围内全部标签的记忆。省略时处理整个记忆库。 |
+
+## 配置 {#configuration}
+
+观察整合默认自动运行。可以通过 [`HINDSIGHT_API_ENABLE_AUTO_CONSOLIDATION`](/developer/configuration#observations) 禁用自动整合，再通过[整合端点](#trigger-consolidation)按需触发。通过[操作 API](./api/operations)监控整合进度。
+
+---
+
+## 后续步骤 {#next-steps}
+
+- [**记忆存储**](./retain) — 如何存储事实并触发整合
+- [**记忆召回**](./retrieval) — 如何检索观察
+- [**反思**](./reflect) — 智能体循环如何使用观察
+- [**心智模型**](./api/mental-models) — 用户为常见查询整理的摘要

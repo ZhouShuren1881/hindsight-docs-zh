@@ -1,0 +1,261 @@
+---
+sidebar_position: 9
+---
+
+# 记忆库模板 {#bank-templates}
+
+声明式JSON清单，用于通过单个API调用创建预配置的记忆库。
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import CodeSnippet from '@site/src/components/CodeSnippet';
+
+{/* 导入原始源文件 */}
+import templatesPy from '!!raw-loader!@site/examples/api/bank-templates.py';
+import templatesMjs from '!!raw-loader!@site/examples/api/bank-templates.mjs';
+import templatesSh from '!!raw-loader!@site/examples/api/bank-templates.sh';
+import templatesGo from '!!raw-loader!@site/examples/api/bank-templates.go';
+
+## 概述 {#overview}
+
+记忆库模板是一个JSON清单，描述了记忆库的完整设置：配置覆盖、心智模型、指令等等。您无需进行多次 API 调用来配置记忆库，而是提交一个清单，然后 API 提供所有内容。
+
+模板可用于：
+- **复制** — 为多个用户或智能体批量创建配置相同的记忆库
+- **入门引导** — 新用户从已知良好的配置开始，而不是从头开始配置
+- **共享** — 将推荐的设置分发为便携式JSON文件
+- **框架集成** — 在集成过程中提供推荐模板
+
+浏览[记忆库模板中心](/templates)，获取可直接使用的模板。
+
+## 清单模式 {#manifest-schema}
+
+```json
+{
+  "version": "1",
+  "bank": {
+    "reflect_mission": "...",
+    "retain_mission": "...",
+    "retain_extraction_mode": "concise | verbose | custom | verbatim | chunks",
+    "retain_custom_instructions": "...",
+    "retain_chunk_size": 2048,
+    "retain_structured_chunk_size": 8192,
+    "disposition_skepticism": 3,
+    "disposition_literalism": 3,
+    "disposition_empathy": 3,
+    "enable_observations": true,
+    "observations_mission": "...",
+    "entity_labels": [{ "key": "sentiment", "type": "value", "values": [{ "value": "positive" }, { "value": "negative" }] }],
+    "entities_allow_free_form": true
+  },
+  "mental_models": [
+    {
+      "id": "unique-lowercase-id",
+      "name": "人类可读的名称",
+      "source_query": "生成此心智模型内容的查询",
+      "tags": ["optional", "tags"],
+      "max_tokens": 2048,
+      "trigger": {
+        "refresh_after_consolidation": false,
+        "fact_types": ["world", "experience", "observation"],
+        "exclude_mental_models": false,
+        "exclude_mental_model_ids": []
+      }
+    }
+  ],
+  "directives": [
+    {
+      "name": "directive-name",
+      "content": "指令说明文字",
+      "priority": 0,
+      "is_active": true,
+      "tags": ["optional", "tags"]
+    }
+  ]
+}
+```
+
+### 字段 {#fields}
+
+|字段|必填|说明|
+|-------|----------|-------------|
+|`version`|是的|架构版本。目前`"1"`。|
+|`bank`|否|记忆库配置覆盖。省略保持配置不变。|
+|`mental_models`|否|心智模型创建或更新。省略保持不变。|
+|`directives`|否|创建或更新的指令。省略保持不变。|
+
+全部`bank`，`mental_models`，和`directives` 是可选的。省略任何部分以使记忆库的该部分保持不变。
+
+### 记忆库配置字段 {#bank-config-fields}
+
+模板可包含所有按记忆库设置的配置项，因此导出的记忆库在其他位置导入后可重现完整配置。
+`bank` 中的所有字段均为可选：只有明确提供的字段会被设为记忆库级覆盖值，
+其余字段继承服务器或租户的默认值。
+
+
+完整且始终最新的字段列表见[模板 JSON Schema](/bank-template-schema.json)。
+各字段的含义与[配置](../configuration.mdx)中相同。最常用的字段如下：
+
+
+|字段|类型|说明|
+|-------|------|-------------|
+|`reflect_mission`|string|反思操作的任务目标/上下文|
+|`retain_mission`|string|引导记忆存储过程中提取的内容|
+|`retain_extraction_mode`|string|`concise`，`verbose`，`custom`，`verbatim`，或`chunks`|
+|`retain_custom_instructions`|string|自定义提取提示（需要`mode=custom`)|
+|`retain_chunk_size`|integer|每个内容块的目标最大字符数|
+|`retain_structured_chunk_size`|integer|可保持完整的单行 JSONL 或单轮对话的最大字符数；未设置时默认为 `retain_chunk_size`|
+|`disposition_skepticism`|integer (1-5)|性格的怀疑程度|
+|`disposition_literalism`|integer (1-5)|性格按字面理解的程度|
+|`disposition_empathy`|integer (1-5)|性格的共情程度|
+|`enable_observations`|boolean|切换观察整合|
+|`observations_mission`|string|控制合成到观察中的内容|
+|`entity_labels`|object[]|以标签组表示的受控词汇表，参见[记忆库 → entity_labels](./memory-banks#entity-labels)|
+|`entities_allow_free_form`|boolean|允许标签词汇表之外的实体|
+
+### 心智模型字段 {#mental-model-fields}
+
+|字段|必填|说明|
+|-------|----------|-------------|
+|`id`|是的|唯一 ID（带连字符的小写字母数字）。用于重新导入时匹配。|
+|`name`|是的|人类可读的名称|
+|`source_query`|是|通过反思生成此心智模型内容的查询|
+|`tags`|否|用于范围可见性的标签。默认值：`[]`|
+|`max_tokens`|否|生成内容的最大 Token 数（256-8192）。默认值：`2048`|
+|`trigger`|否|自动刷新的触发设置|
+
+### 指令字段 {#directive-fields}
+
+|字段|必填|说明|
+|-------|----------|-------------|
+|`name`|是的|指令名称。用作重新导入时的匹配键。|
+|`content`|是的|指令说明文本。|
+|`priority`|否|优先级值（越高=更重要）。默认值：`0`|
+|`is_active`|否|指令是否处于活动状态。默认值：`true`|
+|`tags`|否|用于分类的标签。默认值：`[]`|
+
+## 导入 {#import}
+
+将清单导入记忆库。如果记忆库不存在，则会自动创建。
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={templatesPy} section="import-template" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={templatesMjs} section="import-template" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={templatesSh} section="import-template" language="bash" />
+</TabItem>
+<TabItem value="go" label="去">
+<CodeSnippet code={templatesGo} section="import-template" language="go" />
+</TabItem>
+</Tabs>
+
+### 行为 {#behavior}
+
+- **配置**：全部`bank` 字段按照记忆库配置覆盖应用
+- **心智模型**：按 `id` 匹配；创建新模型，仅在现有模型定义与清单不同时更新它。
+- **指令**：按 `name` 匹配；创建新指令，仅在现有指令与清单不同时更新它。
+- **异步**：心智模型内容异步生成。回复包括 `operation_ids` 跟踪进度。
+- **幂等**：重新导入未变更的清单不会更新任何内容，也不会安排刷新。因此每次同步应用同一模板都不会产生 LLM 调用。只有新建或变更的心智模型才会重新生成。
+
+### 试运行 {#dry-run}
+
+验证清单而不应用更改：
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={templatesPy} section="import-dry-run" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={templatesMjs} section="import-dry-run" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={templatesSh} section="import-dry-run" language="bash" />
+</TabItem>
+<TabItem value="go" label="去">
+<CodeSnippet code={templatesGo} section="import-dry-run" language="go" />
+</TabItem>
+</Tabs>
+
+返回*会*发生的情况（将应用哪个配置，将创建哪个心智模型）而不进行任何更改。如果清单无效，则返回 HTTP 400 以及详细的错误消息。
+
+## 导出 {#export}
+
+将记忆库的当前配置覆盖、心智模型和指令导出为清单：
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={templatesPy} section="export-template" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={templatesMjs} section="export-template" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={templatesSh} section="export-template" language="bash" />
+</TabItem>
+<TabItem value="go" label="去">
+<CodeSnippet code={templatesGo} section="export-template" language="go" />
+</TabItem>
+</Tabs>
+
+导出的清单仅包含显式设为记忆库级覆盖值的配置字段，而非包含服务器/租户默认值的完整解析配置。因此该清单可移植：导入新记忆库时，仅覆盖有意自定义的字段。
+
+### 往返 {#round-trip}
+
+从一个记忆库导出并导入到另一个记忆库以复制设置：
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={templatesPy} section="export-reimport" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={templatesMjs} section="export-reimport" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={templatesSh} section="export-reimport" language="bash" />
+</TabItem>
+<TabItem value="go" label="去">
+<CodeSnippet code={templatesGo} section="export-reimport" language="go" />
+</TabItem>
+</Tabs>
+
+## JSON 模式 {#json-schema}
+
+清单格式由 JSON Schema 定义。可从服务器获取实时 Schema：
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={templatesPy} section="get-schema" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={templatesMjs} section="get-schema" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={templatesSh} section="get-schema" language="bash" />
+</TabItem>
+<TabItem value="go" label="去">
+<CodeSnippet code={templatesGo} section="get-schema" language="go" />
+</TabItem>
+</Tabs>
+
+静态 Schema 也可通过 [bank-template-schema.json](/bank-template-schema.json) 获取。
+
+## 控制平面 {#control-plane}
+
+控制平面的记忆库创建对话框提供可选的“从模板导入”开关。启用后，可粘贴清单 JSON，在创建记忆库时预先配置。
+
+您还可以在记忆库设置页面通过**操作 → 导出模板（Actions → Export Template）**导出模板，将清单 JSON 复制到剪贴板。
+
+## 版本控制 {#versioning}
+
+`version` 字段支持前向兼容的模式演化。当前版本是`"1"`。
+
+未来版本发布时：
+- 旧清单在导入时会自动升级到当前架构
+- 导出始终生成最新版本
+- API 拒绝版本高于服务器支持的清单（带有建议升级的明确错误消息）
+
+这意味着旧模板可以无限期地继续工作 - 无需手动更新它们。

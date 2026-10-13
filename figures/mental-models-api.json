@@ -1,0 +1,762 @@
+{
+  "title": "心智模型 (API)",
+  "speed": 2200,
+  "elements": [
+    {
+      "id": "app",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "你的应用程序"
+        }
+      ],
+      "minCardHeight": 178,
+      "width": 200
+    },
+    {
+      "id": "mmapi",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "心智模型 API"
+        },
+        {
+          "type": "subtitle",
+          "text": "创建·获取·刷新"
+        }
+      ],
+      "minCardHeight": 43
+    },
+    {
+      "id": "reflect",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "反思"
+        },
+        {
+          "type": "subtitle",
+          "text": "智能体循环"
+        }
+      ],
+      "minCardHeight": 58,
+      "width": 196
+    },
+    {
+      "id": "g1",
+      "type": "group",
+      "label": {
+        "title": "Hindsight API"
+      },
+      "children": [
+        "mmapi",
+        "reflect"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 60,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "consolidate",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "整合"
+        },
+        {
+          "type": "subtitle",
+          "text": "事实 → 观察"
+        }
+      ],
+      "minCardHeight": 43
+    },
+    {
+      "id": "refresh",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "刷新"
+        },
+        {
+          "type": "subtitle",
+          "text": "对源查询的反思"
+        }
+      ],
+      "minCardHeight": 103,
+      "width": 196
+    },
+    {
+      "id": "g2",
+      "type": "group",
+      "label": {
+        "title": "Hindsight 工作进程"
+      },
+      "children": [
+        "consolidate",
+        "refresh"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 40,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "facts",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "事实"
+        },
+        {
+          "type": "subtitle",
+          "text": "世界事实 · 经验事实"
+        }
+      ],
+      "minCardHeight": 103,
+      "width": 196
+    },
+    {
+      "id": "obs",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "观察"
+        }
+      ],
+      "minCardHeight": 103,
+      "width": 196
+    },
+    {
+      "id": "mm",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "心智模型"
+        }
+      ],
+      "minCardHeight": 178,
+      "width": 210
+    },
+    {
+      "id": "bank",
+      "type": "group",
+      "label": {
+        "title": "记忆库"
+      },
+      "children": [
+        "facts",
+        "obs",
+        "mm"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 28,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "g0",
+      "type": "group",
+      "children": [
+        "app",
+        "g1",
+        "g2",
+        "bank"
+      ],
+      "layout": {
+        "direction": "row",
+        "gap": 40,
+        "align": "center"
+      }
+    },
+    {
+      "id": "create",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "app"
+      },
+      "end": {
+        "id": "mmapi"
+      },
+      "label": {
+        "text": "创建"
+      }
+    },
+    {
+      "id": "ask",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "app"
+      },
+      "end": {
+        "id": "reflect"
+      },
+      "label": {
+        "text": "反思"
+      }
+    },
+    {
+      "id": "queue",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "mmapi"
+      },
+      "end": {
+        "id": "refresh"
+      },
+      "label": {
+        "text": "排队刷新"
+      }
+    },
+    {
+      "id": "new-facts",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "facts"
+      },
+      "end": {
+        "id": "consolidate"
+      },
+      "label": {
+        "text": "新事实"
+      }
+    },
+    {
+      "id": "write-obs",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "consolidate"
+      },
+      "end": {
+        "id": "obs"
+      }
+    },
+    {
+      "id": "trigger",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "consolidate"
+      },
+      "end": {
+        "id": "refresh"
+      },
+      "label": {
+        "text": "触发"
+      }
+    },
+    {
+      "id": "read-obs",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "refresh"
+      },
+      "end": {
+        "id": "obs"
+      }
+    },
+    {
+      "id": "read-facts",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "refresh"
+      },
+      "end": {
+        "id": "facts"
+      }
+    },
+    {
+      "id": "write",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "refresh"
+      },
+      "end": {
+        "id": "mm"
+      },
+      "label": {
+        "text": "写入"
+      }
+    },
+    {
+      "id": "search-mm",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "reflect"
+      },
+      "end": {
+        "id": "mm"
+      },
+      "label": {
+        "text": "search_mental_models"
+      },
+      "quiet": true
+    }
+  ],
+  "scenes": [
+    {
+      "label": "create()",
+      "caption": "",
+      "beats": [
+        {
+          "edges": {
+            "edge": "create",
+            "data": "POST /mental-models"
+          },
+          "show": {
+            "app": [
+              {
+                "tag": "create",
+                "tone": "gray",
+                "text": "团队概况"
+              },
+              {
+                "tag": "source query",
+                "tone": "gray",
+                "text": "“团队中有哪些人，他们做什么工作？”"
+              },
+              {
+                "tag": "trigger",
+                "tone": "gray",
+                "text": "整合后刷新",
+                "meta": "delta"
+              }
+            ]
+          },
+          "say": "创建一个心智模型：指定名称、要回答的问题，以及刷新时机。"
+        },
+        {
+          "show": {
+            "mmapi": [
+              {
+                "text": "已保存团队概览"
+              },
+              {
+                "text": "内容：还没有",
+                "meta": "async"
+              }
+            ]
+          },
+          "say": "API 立即保存模型，但此时还没有内容。"
+        },
+        {
+          "edges": [
+            {
+              "edge": "queue",
+              "data": "refresh task"
+            },
+            {
+              "edge": "create",
+              "back": true,
+              "data": "operation_id"
+            }
+          ],
+          "show": {
+            "app": [
+              {
+                "tag": "create",
+                "tone": "gray",
+                "text": "团队概况"
+              },
+              {
+                "tag": "source query",
+                "tone": "gray",
+                "text": "“团队中有哪些人，他们做什么工作？”"
+              },
+              {
+                "tag": "trigger",
+                "tone": "gray",
+                "text": "整合后刷新",
+                "meta": "delta"
+              },
+              {
+                "tag": "response",
+                "tone": "green",
+                "text": "操作排队",
+                "mark": "…"
+              }
+            ]
+          },
+          "say": "内容在后台生成，响应返回可轮询的操作 ID。"
+        },
+        {
+          "edges": {
+            "edge": "read-obs",
+            "data": "search_observations"
+          },
+          "show": {
+            "refresh": [
+              {
+                "text": "对源查询的反思"
+              },
+              {
+                "text": "1. search_observations",
+                "mono": true,
+                "mark": "✓"
+              }
+            ],
+            "obs": [
+              {
+                "text": "Alice：Google的研究团队",
+                "meta": "3 sources",
+                "mark": "✓"
+              },
+              {
+                "text": "Bob 领导 ML 项目",
+                "meta": "2 sources",
+                "mark": "✓"
+              }
+            ]
+          },
+          "say": "刷新就是针对来源查询执行反思，先读取观察……",
+          "ms": 2800
+        },
+        {
+          "edges": {
+            "edge": "read-facts",
+            "data": "recall"
+          },
+          "show": {
+            "refresh": [
+              {
+                "text": "对源查询的反思"
+              },
+              {
+                "text": "1. search_observations",
+                "mono": true,
+                "mark": "✓"
+              },
+              {
+                "text": "2. recall",
+                "mono": true,
+                "mark": "✓"
+              }
+            ],
+            "facts": [
+              {
+                "tag": "world",
+                "tone": "blue",
+                "text": "Alice加入Google",
+                "meta": "Mar 2026",
+                "mark": "✓"
+              },
+              {
+                "tag": "world",
+                "tone": "blue",
+                "text": "Bob 领导 ML 项目",
+                "meta": "Feb 2026",
+                "mark": "✓"
+              }
+            ]
+          },
+          "say": "……再读取原始事实，核对细节。"
+        },
+        {
+          "edges": {
+            "edge": "write",
+            "data": "content"
+          },
+          "show": {
+            "refresh": [
+              {
+                "text": "对源查询的反思"
+              },
+              {
+                "text": "1. search_observations",
+                "mono": true,
+                "mark": "✓"
+              },
+              {
+                "text": "2. recall",
+                "mono": true,
+                "mark": "✓"
+              },
+              {
+                "text": "3. 写入文档",
+                "mono": true,
+                "mark": "✓"
+              }
+            ],
+            "mm": [
+              {
+                "tag": "team overview",
+                "tone": "orange",
+                "text": "刚刚刷新",
+                "mark": "new"
+              },
+              {
+                "text": "• Alice：研究团队，Google"
+              },
+              {
+                "text": "• Bob：领导 ML 项目"
+              }
+            ]
+          },
+          "say": "生成文档，并与其依据的记忆一起存储。",
+          "ms": 3000
+        }
+      ]
+    },
+    {
+      "label": "自动刷新",
+      "caption": "",
+      "beats": [
+        {
+          "edges": {
+            "edge": "new-facts",
+            "data": "new fact"
+          },
+          "show": {
+            "app": [
+              {
+                "tag": "retain",
+                "tone": "gray",
+                "text": "“Carol 本周加入了 ML 项目。”"
+              }
+            ],
+            "facts": [
+              {
+                "tag": "world",
+                "tone": "blue",
+                "text": "Carol 加入 ML 项目",
+                "meta": "Sep 2026",
+                "mark": "new"
+              }
+            ],
+            "consolidate": [
+              {
+                "text": "1 个新事实"
+              },
+              {
+                "text": "融入信念"
+              }
+            ]
+          },
+          "say": "之后，智能体存储一个新事实，整合开始处理它。",
+          "ms": 2800
+        },
+        {
+          "edges": "write-obs",
+          "show": {
+            "obs": [
+              {
+                "text": "Alice：Google的研究团队",
+                "meta": "3 sources"
+              },
+              {
+                "text": "Bob 领导 ML 项目",
+                "meta": "2 sources"
+              },
+              {
+                "text": "Carol 致力于 ML 项目\n自上次刷新以来",
+                "meta": "1 source",
+                "mark": "new"
+              }
+            ]
+          },
+          "say": "整合生成关于 Carol 的观察。"
+        },
+        {
+          "edges": {
+            "edge": "trigger",
+            "data": "refresh_after_consolidation"
+          },
+          "show": {
+            "refresh": [
+              {
+                "text": "范围已更改",
+                "mark": "stale"
+              },
+              {
+                "text": "delta：只阅读新内容"
+              }
+            ]
+          },
+          "say": "加入刷新队列前，整合会检查模型作用域中是否有比上次读取更新的记忆。若没有，就不刷新，也不消耗 LLM 调用。",
+          "ms": 3200
+        },
+        {
+          "edges": {
+            "edge": "read-obs",
+            "data": "since last refresh"
+          },
+          "show": {
+            "refresh": [
+              {
+                "text": "范围已更改",
+                "mark": "stale"
+              },
+              {
+                "text": "delta：只阅读新内容"
+              },
+              {
+                "text": "append_block",
+                "mono": true,
+                "meta": "Carol",
+                "mark": "✓"
+              }
+            ]
+          },
+          "say": "增量模式只读取新记忆，返回局部编辑，而非重写全文。",
+          "ms": 2800
+        },
+        {
+          "edges": {
+            "edge": "write",
+            "data": "append_block"
+          },
+          "show": {
+            "mm": [
+              {
+                "tag": "team overview",
+                "tone": "orange",
+                "text": "刚刚刷新",
+                "mark": "↻"
+              },
+              {
+                "text": "• Alice：研究团队，Google",
+                "mark": "="
+              },
+              {
+                "text": "• Bob：领导 ML 项目",
+                "mark": "="
+              },
+              {
+                "text": "• Carol：加入ML项目",
+                "mark": "new"
+              }
+            ]
+          },
+          "say": "未被编辑触及的行逐字节保留，只添加 Carol 所在的一行。",
+          "ms": 3000
+        }
+      ]
+    },
+    {
+      "label": "reflect()",
+      "caption": "",
+      "beats": [
+        {
+          "edges": {
+            "edge": "ask",
+            "data": "“Who works on the ML project?”"
+          },
+          "show": {
+            "app": [
+              {
+                "tag": "question",
+                "tone": "gray",
+                "text": "“谁参与 ML 项目？”"
+              }
+            ]
+          },
+          "say": "现在，智能体提出一个问题。"
+        },
+        {
+          "edges": {
+            "edge": "search-mm",
+            "data": "search_mental_models"
+          },
+          "show": {
+            "reflect": [
+              {
+                "text": "1. search_mental_models",
+                "mono": true,
+                "mark": "✓"
+              },
+              {
+                "text": "团队概况",
+                "meta": "fresh"
+              }
+            ],
+            "mm": [
+              {
+                "tag": "team overview",
+                "tone": "orange",
+                "text": "按含义匹配",
+                "mark": "fresh"
+              },
+              {
+                "text": "• Alice：研究团队，Google"
+              },
+              {
+                "text": "• Bob：领导 ML 项目"
+              },
+              {
+                "text": "• Carol：加入ML项目"
+              }
+            ]
+          },
+          "say": "反思首先按语义搜索心智模型。“团队概况”匹配问题，且内容为最新。",
+          "ms": 3000
+        },
+        {
+          "show": {
+            "reflect": [
+              {
+                "text": "1. search_mental_models",
+                "mono": true,
+                "mark": "✓"
+              },
+              {
+                "text": "团队概况",
+                "meta": "fresh"
+              },
+              {
+                "text": "2. done",
+                "mono": true,
+                "mark": "✓"
+              }
+            ]
+          },
+          "say": "模型涵盖了问题，智能体可以据此回答。若模型过时或偏离主题，则继续查找观察与原始事实。",
+          "ms": 3200
+        },
+        {
+          "edges": {
+            "edge": "ask",
+            "back": true,
+            "data": "answer"
+          },
+          "show": {
+            "app": [
+              {
+                "tag": "question",
+                "tone": "gray",
+                "text": "“谁参与 ML 项目？”"
+              },
+              {
+                "tag": "answer",
+                "tone": "green",
+                "text": "“Bob领导，Carol刚刚加入。”",
+                "meta": "from Team overview"
+              }
+            ]
+          },
+          "say": "答案返回，并引用所用的心智模型。",
+          "ms": 3000
+        }
+      ]
+    }
+  ]
+}
