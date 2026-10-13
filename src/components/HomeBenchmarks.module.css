@@ -96,6 +96,7 @@
   flex-direction: column;
   /* A 2px gap between the two fills, so adjacent bars never touch. */
   gap: 2px;
+  padding-right: 1.5rem;
 }
 
 .track {

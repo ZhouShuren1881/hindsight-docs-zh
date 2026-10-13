@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "docusaurus": "docusaurus",
-    "dev": "docusaurus start --port 8300",
-    "build": "node scripts/check-code-parity.mjs && node scripts/check-integration-seo.mjs && node scripts/check-integrations.mjs && node scripts/check-templates.mjs && node scripts/check-featured-posts.mjs && node scripts/check-mock-bank.mjs && docusaurus build",
+    "dev": "docusaurus start --port 8300 --locale zh-CN",
+    "build": "node scripts/check-code-parity.mjs && node scripts/check-integration-seo.mjs && node scripts/check-integrations.mjs && node scripts/check-templates.mjs && node scripts/check-featured-posts.mjs && node scripts/check-mock-bank.mjs && docusaurus build --locale zh-CN",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "clear": "docusaurus clear",

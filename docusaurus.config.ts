@@ -27,6 +27,21 @@ const config: Config = {
   url: 'https://zhoushuren1881.github.io',
   baseUrl: '/hindsight-docs-zh/',
 
+  i18n: {
+    defaultLocale: 'zh-CN',
+    locales: ['zh-CN', 'en'],
+    localeConfigs: {
+      'zh-CN': {
+        label: '简体中文',
+      },
+      en: {
+        label: 'English',
+        url: 'https://hindsight.vectorize.io',
+        baseUrl: '/',
+      },
+    },
+  },
+
   organizationName: 'zhoushuren1881',
   projectName: 'hindsight-docs-zh',
   trailingSlash: false,
@@ -310,6 +325,11 @@ const config: Config = {
           ],
         },
         {
+          type: 'localeDropdown',
+          position: 'right',
+          className: 'navbar-item-language',
+        },
+        {
           href: 'https://github.com/vectorize-io/hindsight',
           position: 'right',
           label: 'GitHub',
@@ -378,7 +398,7 @@ const config: Config = {
               href: 'https://github.com/vectorize-io/hindsight',
             },
             {
-              label: 'Github社区中文文档',
+              label: '中文文档仓库',
               href: 'https://github.com/ZhouShuren1881/hindsight-docs-zh',
             },
             {

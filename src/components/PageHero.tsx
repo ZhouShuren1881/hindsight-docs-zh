@@ -1,4 +1,4 @@
-import React, {type ReactNode} from 'react';
+import React, {type ReactNode, useEffect, useRef} from 'react';
 import clsx from 'clsx';
 import styles from './PageHero.module.css';
 
@@ -16,8 +16,34 @@ interface PageHeroProps {
  * its sizing and its own two pieces of content.
  */
 export default function PageHero({title, subtitle}: PageHeroProps): ReactNode {
+  const hero = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = hero.current;
+    if (!el) return;
+    const root = document.documentElement;
+    let frame: number | null = null;
+    // clientWidth excludes the vertical scrollbar, unlike 100vw.
+    const syncWidth = () => {
+      el.style.setProperty('--page-hero-width', `${root.clientWidth}px`);
+    };
+    syncWidth();
+    const observer = new ResizeObserver(() => {
+      if (frame !== null) return;
+      frame = requestAnimationFrame(() => {
+        frame = null;
+        syncWidth();
+      });
+    });
+    observer.observe(root);
+    return () => {
+      observer.disconnect();
+      if (frame !== null) cancelAnimationFrame(frame);
+    };
+  }, []);
+
   return (
-    <div className={clsx('hs-hero-band', styles.hero)}>
+    <div ref={hero} className={clsx('hs-hero-band', styles.hero)}>
       <h1 className={styles.title}>{title}</h1>
       {subtitle && <p className={styles.subtitle}>{subtitle}</p>}
     </div>

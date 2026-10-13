@@ -2,9 +2,10 @@
    band spans the viewport. The band's own look — surface, ink tokens, heading
    colour — is the shared `hs-hero-band` class in custom.css. */
 .hero {
-  width: 100vw;
+  /* occupy the entire width of the window */
+  width: var(--page-hero-width, 100%);
   left: 50%;
-  margin-left: -50vw;
+  margin-left: calc(var(--page-hero-width, 100%) / -2);
   /* cancel Docusaurus's margin-vert--lg on the page <main> */
   margin-top: -2rem;
   margin-bottom: 3rem;
