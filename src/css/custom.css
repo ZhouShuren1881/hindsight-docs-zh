@@ -1794,13 +1794,13 @@ html.blog-post-page {
 
   html.docs-doc-id-developer\/index .hs-full-bleed {
     /* The doc container is centred to the right of the sidebar and capped
-       on wide screens. Use the viewport width and shift its centre left by
-       half the sidebar so the band still reaches both window edges. */
-    width: 100vw;
-    margin-left: calc(50% - 50vw - var(--doc-sidebar-width) / 2);
+       on wide screens. Use the measured width excluding the scrollbar and
+       shift its centre left by half the sidebar to reach both page edges. */
+    width: var(--hs-viewport-width, 100%);
+    margin-left: calc(50% - var(--hs-viewport-width, 100%) / 2 - var(--doc-sidebar-width) / 2);
     /* Keeps the content on the same 1240px centre line as the hero's grid
        while the surface itself reaches the window edges. */
-    padding-inline: max(1.5rem, calc((100vw - 1240px) / 2));
+    padding-inline: max(1.5rem, calc((var(--hs-viewport-width, 100%) - 1240px) / 2));
   }
 
   /* Keeps the theme's own pull under the navbar; only the hero is added. */

@@ -14,7 +14,7 @@ npm run build
 本地开发（http://localhost:8300）
 
 ```bash
-npm start
+npm run dev
 ```
 
 ## 与原版的差异

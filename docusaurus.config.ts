@@ -378,6 +378,10 @@ const config: Config = {
               href: 'https://github.com/vectorize-io/hindsight',
             },
             {
+              label: 'Github社区中文文档',
+              href: 'https://github.com/ZhouShuren1881/hindsight-docs-zh',
+            },
+            {
               label: 'Slack',
               href: 'https://vectorize.io/slack',
             },
