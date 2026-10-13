@@ -1,3 +1,4 @@
+import {useBaseUrlUtils} from '@docusaurus/useBaseUrl';
 import React from 'react';
 import Link from '@docusaurus/Link';
 import Layout from '@theme/Layout';
@@ -13,13 +14,14 @@ function formatDate(dateString: string): string {
 function BlogCard({content}: {content: PropBlogPostContent}) {
   const {metadata, assets} = content;
   const {title, description, date, readingTime, permalink, frontMatter} = metadata;
+  const {withBaseUrl} = useBaseUrlUtils();
   const image = assets.image ?? frontMatter.image ?? '/img/blog-default.webp';
 
   return (
     <Link to={permalink} className={styles.card}>
       <div className={styles.cardImageWrapper}>
         {image ? (
-          <img src={image} alt={title} className={styles.cardImage} />
+          <img src={withBaseUrl(image)} alt={title} className={styles.cardImage} />
         ) : (
           <div className={styles.cardImagePlaceholder} />
         )}

@@ -1,3 +1,4 @@
+import {useBaseUrlUtils} from '@docusaurus/useBaseUrl';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {flushSync} from 'react-dom';
 import clsx from 'clsx';
@@ -62,6 +63,7 @@ function categoryLabelFor(content: PropBlogPostContent): string | null {
 function BlogCard({content, animate = true}: {content: PropBlogPostContent; animate?: boolean}) {
   const {metadata, assets} = content;
   const {title, description, date, readingTime, permalink, frontMatter} = metadata;
+  const {withBaseUrl} = useBaseUrlUtils();
   const image = assets.image ?? frontMatter.image ?? '/img/blog-default.webp';
   const categoryLabel = categoryLabelFor(content);
 
@@ -73,7 +75,7 @@ function BlogCard({content, animate = true}: {content: PropBlogPostContent; anim
     >
       <div className={styles.cardImageWrapper}>
         {image ? (
-          <img src={image} alt={title} className={styles.cardImage} />
+          <img src={withBaseUrl(image)} alt={title} className={styles.cardImage} />
         ) : (
           <div className={styles.cardImagePlaceholder} />
         )}

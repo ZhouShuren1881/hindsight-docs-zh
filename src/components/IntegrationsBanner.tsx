@@ -1,3 +1,4 @@
+import {useBaseUrlUtils} from '@docusaurus/useBaseUrl';
 import React from 'react';
 import type {IconType} from 'react-icons';
 import {SiPython, SiGo, SiOpenai, SiAnthropic, SiGooglegemini, SiOllama, SiVercel} from 'react-icons/si';
@@ -55,17 +56,18 @@ const ITEMS: BannerItem[] = [
 ];
 
 function BannerItemComponent({item}: {item: BannerItem}) {
+  const {withBaseUrl} = useBaseUrlUtils();
   const content = (
     <span className={styles.item}>
       <span className={styles.itemIcon}>
         {item.icon && <item.icon size={18} />}
-        {item.imgSrc && <img src={item.imgSrc} alt={item.label} width={18} height={18} style={{objectFit: 'contain'}} />}
+        {item.imgSrc && <img src={withBaseUrl(item.imgSrc)} alt={item.label} width={18} height={18} style={{objectFit: 'contain'}} />}
       </span>
       <span className={styles.itemLabel}>{item.label}</span>
     </span>
   );
   return item.href
-    ? <a href={item.href} className={styles.itemLink}>{content}</a>
+    ? <a href={withBaseUrl(item.href)} className={styles.itemLink}>{content}</a>
     : <span>{content}</span>;
 }
 

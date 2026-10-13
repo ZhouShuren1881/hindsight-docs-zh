@@ -1,3 +1,4 @@
+import useBaseUrl from '@docusaurus/useBaseUrl';
 import { useRef, useEffect, useCallback, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import { prepare, layout, prepareWithSegments, layoutWithLines } from "@chenglou/pretext";
@@ -262,9 +263,6 @@ const LINK_TYPE_COLORS: Record<string, string> = {
 
 const DEFAULT_NODE_COLOR = "#0074d9";
 
-/** Docs-only: the control plane serves its logo at /logo.png, the docs site at /img/logo.webp. */
-const LOGO_URL = "/img/logo.webp";
-
 function toolbarBtnStyle(isDark: boolean): CSSProperties {
   return {
     padding: "6px 10px",
@@ -306,6 +304,8 @@ export function Constellation({
   groupLabelFn,
   allowFullscreen = true,
 }: ConstellationProps) {
+  // Docs-only: resolve the export logo against the deployment directory.
+  const logoUrl = useBaseUrl("/img/logo.webp");
   const wrapperRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -1438,7 +1438,7 @@ export function Constellation({
   const logoDataUrlRef = useRef<string | null>(null);
   useEffect(() => {
     let cancelled = false;
-    loadDataUrl(LOGO_URL)
+    loadDataUrl(logoUrl)
       .then((url) => {
         if (!cancelled) logoDataUrlRef.current = url;
       })
@@ -1446,7 +1446,7 @@ export function Constellation({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [logoUrl]);
 
   // ----- SVG export (shareable, branded poster of the whole graph) -----
   // Independent of the live camera: fits every node into a fixed high-res
@@ -1593,7 +1593,7 @@ export function Constellation({
     let logo = logoDataUrlRef.current;
     if (!logo) {
       try {
-        logo = await loadDataUrl(LOGO_URL);
+        logo = await loadDataUrl(logoUrl);
         logoDataUrlRef.current = logo;
       } catch {
         logo = null;
@@ -1609,7 +1609,7 @@ export function Constellation({
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  }, [buildSvgString]);
+  }, [buildSvgString, logoUrl]);
 
   return (
     <div

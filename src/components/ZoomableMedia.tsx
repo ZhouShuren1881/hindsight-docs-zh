@@ -1,4 +1,5 @@
 import React, { Children, isValidElement, useRef, type ReactElement, type ReactNode } from "react";
+import useBaseUrl from '@docusaurus/useBaseUrl';
 import styles from "./ZoomableMedia.module.css";
 
 interface ZoomableMediaProps {
@@ -18,9 +19,10 @@ export default function ZoomableMedia({ children }: ZoomableMediaProps): ReactNo
   const frame = useRef<HTMLDivElement>(null);
   const child = Children.only(children);
   const src = isValidElement(child) ? child.props.src : undefined;
+  const resolvedSrc = useBaseUrl(src ?? '');
 
   const openFile = () => {
-    if (src) window.open(src, "_blank", "noopener");
+    if (src) window.open(resolvedSrc, "_blank", "noopener");
   };
 
   const showFullScreen = () => {

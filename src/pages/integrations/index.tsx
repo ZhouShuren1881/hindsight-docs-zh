@@ -1,3 +1,4 @@
+import {useBaseUrlUtils} from '@docusaurus/useBaseUrl';
 import clsx from 'clsx';
 import React, {useMemo, useState} from 'react';
 import Link from '@docusaurus/Link';
@@ -102,6 +103,7 @@ function IntegrationCard({
 }
 
 export default function IntegrationsHub(): React.ReactElement {
+  const {withBaseUrl} = useBaseUrlUtils();
   const [search, setSearch] = useState('');
   const [selectedType, setSelectedType] = useState<IntegrationType | 'all'>('all');
 
@@ -249,7 +251,7 @@ export default function IntegrationsHub(): React.ReactElement {
               {harnesses.map((h) => (
                 <Link key={h.id} to={harnessDocLink(h)} className={styles.harnessCard}>
                   <img
-                    src={harnessIconPath(h)}
+                    src={withBaseUrl(harnessIconPath(h))}
                     alt=""
                     className={styles.compactIcon}
                     aria-hidden

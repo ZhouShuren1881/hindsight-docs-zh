@@ -1,3 +1,4 @@
+import useBaseUrl from '@docusaurus/useBaseUrl';
 import React from 'react';
 import Breadcrumbs from '@theme-original/DocBreadcrumbs';
 import type BreadcrumbsType from '@theme/DocBreadcrumbs';
@@ -12,7 +13,8 @@ export default function BreadcrumbsWrapper(props: Props): React.JSX.Element {
   // page — a bordered strip above it puts a box between the navbar and the
   // band and undoes the full-bleed. The homepage renders its own <SkillBanner />
   // just below the hero instead (docs/developer/index.mdx).
-  const isHome = useLocation().pathname.replace(/\/$/, '') === '';
+  const homeUrl = useBaseUrl('/');
+  const isHome = useLocation().pathname.replace(/\/$/, '') === homeUrl.replace(/\/$/, '');
 
   return (
     <>

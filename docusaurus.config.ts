@@ -24,11 +24,11 @@ const config: Config = {
     },
   },
 
-  url: 'https://hindsight.vectorize.io',
-  baseUrl: '/',
+  url: 'https://zhoushuren1881.github.io',
+  baseUrl: '/hindsight-docs-zh/',
 
-  organizationName: 'vectorize-io',
-  projectName: 'hindsight',
+  organizationName: 'zhoushuren1881',
+  projectName: 'hindsight-docs-zh',
   trailingSlash: false,
 
   onBrokenLinks: 'throw',

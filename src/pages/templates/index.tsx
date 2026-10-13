@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import React, {useMemo, useState, useCallback} from 'react';
-import useBaseUrl from '@docusaurus/useBaseUrl';
+import {useBaseUrlUtils} from '@docusaurus/useBaseUrl';
 import Link from '@docusaurus/Link';
 import Layout from '@theme/Layout';
 import catalog from '@site/src/data/templates.json';
@@ -62,12 +62,13 @@ const INTEGRATION_MAP = Object.fromEntries(
 );
 
 function IntegrationIcons({ids}: {ids: string[]}) {
+  const {withBaseUrl} = useBaseUrlUtils();
   return (
     <div className={styles.integrationIcons}>
       {ids.map((id) => {
         const info = INTEGRATION_MAP[id];
         if (!info?.icon) return null;
-        const src = useBaseUrl(info.icon);
+        const src = withBaseUrl(info.icon);
         return <img key={id} src={src} alt={info.name} title={info.name} className={styles.integrationIcon} />;
       })}
     </div>
@@ -166,7 +167,7 @@ export default function TemplateGallery(): React.ReactElement {
         <h1 className={styles.heroTitle}>记忆库模板中心</h1>
         <p className={styles.heroSubtitle}>
           使用预设记忆库模板快速上手。浏览、预览并导入到你的 Hindsight 记忆库。
-          {' '}<a href="/developer/api/bank-templates" className={styles.heroLink}>了解模板的工作原理 &rarr;</a>
+          {' '}<Link to="/developer/api/bank-templates" className={styles.heroLink}>了解模板的工作原理 &rarr;</Link>
         </p>
 
         <div className={styles.hubSearchWrapper}>
