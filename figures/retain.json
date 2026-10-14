@@ -1,5 +1,5 @@
 {
-  "title": "记忆存储的作用",
+  "title": "Retain 的作用",
   "speed": 2200,
   "elements": [
     {
@@ -12,7 +12,7 @@
         },
         {
           "type": "subtitle",
-          "text": "内容+上下文"
+          "text": "内容 + 上下文"
         }
       ],
       "minCardHeight": 163,
@@ -24,11 +24,11 @@
       "content": [
         {
           "type": "title",
-          "text": "分块"
+          "text": "文本分块"
         },
         {
           "type": "subtitle",
-          "text": "分割长内容"
+          "text": "拆分较长内容"
         }
       ],
       "minCardHeight": 43,
@@ -44,7 +44,7 @@
         },
         {
           "type": "subtitle",
-          "text": "什么·何时·何地·谁·为什么"
+          "text": "什么 · 何时 · 何地 · 谁 · 为什么"
         }
       ],
       "minCardHeight": 118,
@@ -56,11 +56,11 @@
       "content": [
         {
           "type": "title",
-          "text": "实体解析"
+          "text": "实体消解"
         },
         {
           "type": "subtitle",
-          "text": "一个名字，一个实体"
+          "text": "一个名称对应一个实体"
         }
       ],
       "minCardHeight": 73,
@@ -72,11 +72,11 @@
       "content": [
         {
           "type": "title",
-          "text": "嵌入和链接"
+          "text": "生成嵌入并建立关联"
         },
         {
           "type": "subtitle",
-          "text": "向量 + 已有关联"
+          "text": "向量 + 关联"
         }
       ],
       "minCardHeight": 43,
@@ -86,7 +86,7 @@
       "id": "g1",
       "type": "group",
       "label": {
-        "title": "记忆存储管道"
+        "title": "Retain 处理流程"
       },
       "children": [
         "chunk",
@@ -117,7 +117,7 @@
       "content": [
         {
           "type": "title",
-          "text": "分块"
+          "text": "文本分块"
         }
       ],
       "minCardHeight": 58
@@ -148,7 +148,7 @@
         },
         {
           "type": "subtitle",
-          "text": "世界事实 · 经验事实"
+          "text": "world · experience"
         }
       ],
       "minCardHeight": 133,
@@ -172,7 +172,7 @@
       "content": [
         {
           "type": "title",
-          "text": "链接"
+          "text": "关联"
         }
       ],
       "minCardHeight": 133,
@@ -182,7 +182,7 @@
       "id": "g4",
       "type": "group",
       "label": {
-        "title": "图"
+        "title": "图谱"
       },
       "children": [
         "entities",
@@ -333,7 +333,7 @@
         "id": "links"
       },
       "label": {
-        "text": "链接"
+        "text": "关联"
       },
       "quiet": true
     }
@@ -346,28 +346,28 @@
         {
           "edges": {
             "edge": "call",
-            "data": "content + context"
+            "data": "内容 + 上下文"
           },
           "show": {
             "input": [
               {
-                "tag": "content",
+                "tag": "内容",
                 "tone": "gray",
-                "text": "“Alice Chen 每周工作 80 小时，精疲力尽，因此她于 2024 年 6 月搬到苏黎世办事处。”"
+                "text": "“Alice Chen 每周工作 80 小时，因而精疲力竭，所以她于 2024 年 6 月调往苏黎世办公室。”"
               },
               {
-                "tag": "context",
+                "tag": "上下文",
                 "tone": "gray",
-                "text": "Bob正在谈论他的团队"
+                "text": "Bob 正在谈论他的团队"
               },
               {
-                "tag": "timestamp",
+                "tag": "时间戳",
                 "tone": "gray",
                 "text": "2025 年 1 月 10 日"
               }
             ]
           },
-          "say": "发送内容、说明发言者身份的上下文，以及发言时间。"
+          "say": "你会发送内容、说明说话者的上下文，以及这段话说出的时间。"
         },
         {
           "edges": [
@@ -377,73 +377,73 @@
           "show": {
             "chunk": [
               {
-                "text": "1 个分块",
-                "meta": "long content is split"
+                "text": "1 个文本分块",
+                "meta": "较长内容会拆分"
               }
             ],
             "docs": [
               {
                 "text": "notes-2025-01-10",
-                "meta": "Jan 10, 2025"
+                "meta": "2025 年 1 月 10 日"
               }
             ],
             "chunks": [
               {
                 "tag": "#1",
                 "tone": "gray",
-                "text": "“Alice Chen 每周工作 80 小时，精疲力竭……”"
+                "text": "“Alice Chen 每周工作 80 小时，因而精疲力竭……”"
               }
             ]
           },
-          "say": "原文保存为文档并切分为分块，以便之后返回准确的原始段落。"
+          "say": "原始内容会作为文档保存并拆分成文本分块，因此之后可以原样返回对应段落。"
         },
         {
           "edges": {
             "edge": "c-x",
-            "data": "chunk #1"
+            "data": "文本分块 #1"
           },
           "show": {
             "extract": [
               {
-                "text": "内容：Alice 搬到苏黎世办公室"
+                "text": "什么：Alice 调往苏黎世办公室"
               },
               {
-                "text": "时间：2024年6月"
+                "text": "何时：2024 年 6 月"
               },
               {
-                "text": "地点：苏黎世"
+                "text": "何地：苏黎世"
               },
               {
-                "text": "人物：Alice Chen"
+                "text": "谁：Alice Chen"
               },
               {
-                "text": "原因：她精疲力尽"
+                "text": "为什么：她精疲力竭"
               }
             ]
           },
-          "say": "LLM 读取各分块，提取包含事件、时间、地点、人物与原因的事实。它保留原因而不只是事件，并立即为每个事实生成嵌入。",
+          "say": "LLM 会读取每个文本分块，并提取关于什么、何时、何地、谁和为什么的事实。它会保留原因，而不只是事件。每条事实都会立即生成嵌入。",
           "ms": 3400
         },
         {
           "edges": {
             "edge": "x-r",
-            "data": "“Alice Chen”, “Zurich office”"
+            "data": "“Alice Chen”、“苏黎世办公室”"
           },
           "show": {
             "resolve": [
               {
                 "text": "“Alice Chen”",
-                "meta": "not in the bank yet",
+                "meta": "记忆库中尚不存在",
                 "mark": "new"
               },
               {
-                "text": "“苏黎世办公室”",
-                "meta": "not in the bank yet",
+                "text": "“Zurich office”",
+                "meta": "记忆库中尚不存在",
                 "mark": "new"
               }
             ]
           },
-          "say": "实体解析确定每个名称指向谁，将名称与记忆库已有实体比较。两者目前都未知，因此创建两个新实体。",
+          "say": "实体消解决定每个名称指向谁。系统会将名称与记忆库中已有的实体进行比较。当前两个名称都尚未匹配到已知实体，因此都会成为新实体。",
           "ms": 3200
         },
         {
@@ -469,7 +469,7 @@
               }
             ]
           },
-          "say": "每个实体只存储一次，所有提及它的事实都关联到它。"
+          "say": "每个实体只存储一次，所有提及该实体的事实都会指向它。"
         },
         {
           "edges": "x-facts",
@@ -484,19 +484,19 @@
               {
                 "tag": "world",
                 "tone": "blue",
-                "text": "Alice Chen 烧坏了",
+                "text": "Alice Chen 精疲力竭",
                 "mark": "new"
               },
               {
                 "tag": "world",
                 "tone": "blue",
-                "text": "Alice Chen 搬迁至苏黎世办事处",
-                "meta": "happened Jun 2024 · learned Jan 2025",
+                "text": "Alice Chen 调往苏黎世办公室",
+                "meta": "发生于 2024 年 6 月 · 得知于 2025 年 1 月",
                 "mark": "new"
               }
             ]
           },
-          "say": "这些属于世界事实：Bob 在讲述 Alice，而非智能体自身。每条事实保留两个时间：发生时间与 Hindsight 获知时间。",
+          "say": "这些都是 world 事实：Bob 谈论的是 Alice，而不是智能体。每条事实都保留两个时间：事件发生的时间，以及 Hindsight 得知它的时间。",
           "ms": 3600
         },
         {
@@ -507,7 +507,7 @@
           "show": {
             "link": [
               {
-                "text": "3 个已嵌入的事实"
+                "text": "3 条事实已生成嵌入"
               },
               {
                 "text": "4 种关联"
@@ -515,95 +515,95 @@
             ],
             "links": [
               {
-                "text": "实体",
+                "text": "entity",
                 "mono": true,
-                "meta": "all 3 facts share Alice Chen"
+                "meta": "3 条事实都提及 Alice Chen"
               },
               {
-                "text": "时间",
+                "text": "temporal",
                 "mono": true,
-                "meta": "facts close in time"
+                "meta": "时间接近的事实"
               },
               {
-                "text": "语义",
+                "text": "semantic",
                 "mono": true,
-                "meta": "facts with a similar meaning"
+                "meta": "含义相似的事实"
               },
               {
                 "text": "caused_by",
                 "mono": true,
-                "meta": "burned out ← 80-hour weeks"
+                "meta": "精疲力竭 ← 每周工作 80 小时"
               }
             ]
           },
-          "say": "最后，通过共享实体、时间接近程度、嵌入所表示的语义相似性，以及因果关系建立事实关联。",
+          "say": "最后，事实会通过共享实体、时间接近程度、语义相似性（由嵌入得出）以及因果关系建立关联。",
           "ms": 3800
         },
         {
           "edges": {
             "edge": "call",
             "back": true,
-            "data": "✓ 3 facts"
+            "data": "✓ 3 条事实"
           },
           "show": {
             "input": [
               {
-                "tag": "content",
+                "tag": "内容",
                 "tone": "gray",
-                "text": "“Alice Chen 每周工作 80 小时，精疲力尽，因此她于 2024 年 6 月搬到苏黎世办事处。”"
+                "text": "“Alice Chen 每周工作 80 小时，因而精疲力竭，所以她于 2024 年 6 月调往苏黎世办公室。”"
               },
               {
-                "tag": "context",
+                "tag": "上下文",
                 "tone": "gray",
-                "text": "Bob正在谈论他的团队"
+                "text": "Bob 正在谈论他的团队"
               },
               {
-                "tag": "timestamp",
+                "tag": "时间戳",
                 "tone": "gray",
                 "text": "2025 年 1 月 10 日"
               },
               {
-                "tag": "result",
+                "tag": "结果",
                 "tone": "green",
-                "text": "3 个事实已存储",
+                "text": "已存入 3 条事实",
                 "mark": "✓"
               }
             ]
           },
-          "say": "retain() 完成。之后在后台根据这些事实生成观察。",
+          "say": "retain() 已完成。之后，系统会在后台根据这些事实构建观测。",
           "ms": 2400
         }
       ]
     },
     {
-      "label": "同一人，新名称",
+      "label": "同一人，出现新名称",
       "caption": "",
       "beats": [
         {
           "edges": {
             "edge": "call",
-            "data": "content + context"
+            "data": "内容 + 上下文"
           },
           "show": {
             "input": [
               {
-                "tag": "content",
+                "tag": "内容",
                 "tone": "gray",
-                "text": "“Alice C. 现在负责苏黎世办事处。”"
+                "text": "“Alice C. 现在负责苏黎世办公室。”"
               },
               {
-                "tag": "context",
+                "tag": "上下文",
                 "tone": "gray",
-                "text": "Bob正在谈论他的团队"
+                "text": "Bob 正在谈论他的团队"
               },
               {
-                "tag": "timestamp",
+                "tag": "时间戳",
                 "tone": "gray",
                 "text": "2025 年 3 月 3 日"
               }
             ]
           },
-          "say": "两个月后，Bob 提到“Alice C.”。"
+          "say": "两个月后，Bob 提到了“Alice C.”。"
         },
         {
           "edges": [
@@ -614,11 +614,11 @@
             "docs": [
               {
                 "text": "notes-2025-01-10",
-                "meta": "Jan 10, 2025"
+                "meta": "2025 年 1 月 10 日"
               },
               {
                 "text": "notes-2025-03-03",
-                "meta": "Mar 3, 2025",
+                "meta": "2025 年 3 月 3 日",
                 "mark": "new"
               }
             ],
@@ -626,44 +626,44 @@
               {
                 "tag": "#1",
                 "tone": "gray",
-                "text": "“Alice C. 现在负责苏黎世办事处。”"
+                "text": "“Alice C. 现在负责苏黎世办公室。”"
               }
             ]
           },
-          "say": "采用相同流程：保存为新文档，切分为分块……"
+          "say": "流程相同：先作为新文档存储，再拆分成文本分块……"
         },
         {
           "edges": "c-x",
           "show": {
             "extract": [
               {
-                "text": "内容：Alice C. 负责苏黎世办事处"
+                "text": "什么：Alice C. 负责苏黎世办公室"
               },
               {
-                "text": "时间：2025年3月"
+                "text": "何时：2025 年 3 月"
               },
               {
-                "text": "人物：Alice C."
+                "text": "谁：Alice C."
               }
             ]
           },
-          "say": "……由 LLM 读取。事实提及“Alice C.”，这是记忆库从未见过的名称。",
+          "say": "……然后由 LLM 读取。事实中出现了“Alice C.”这个记忆库从未见过的名称。",
           "ms": 2600
         },
         {
           "edges": {
             "edge": "x-r",
-            "data": "“Alice C.”, “Zurich office”"
+            "data": "“Alice C.”、“苏黎世办公室”"
           },
           "show": {
             "resolve": [
               {
                 "text": "“Alice C.”",
-                "meta": "close to Alice Chen"
+                "meta": "与 Alice Chen 相似"
               },
               {
-                "text": "苏黎世办公室旁",
-                "meta": "seen with Alice Chen before",
+                "text": "同时提及苏黎世办公室",
+                "meta": "此前曾与 Alice Chen 一同出现",
                 "mark": "✓"
               },
               {
@@ -671,13 +671,13 @@
                 "mark": "merged"
               },
               {
-                "text": "“苏黎世办公室”",
-                "meta": "same name",
+                "text": "“Zurich office”",
+                "meta": "名称相同",
                 "mark": "match"
               }
             ]
           },
-          "say": "这个名称接近 Alice Chen，同一事实还提及她已关联的苏黎世办事处。两点结合足以判定是同一个人。",
+          "say": "这个名称与 Alice Chen 相似，而且同一条事实还提到了已与她关联的苏黎世办公室。两条线索合在一起足以判断：这是同一个人。",
           "ms": 3400
         },
         {
@@ -703,7 +703,7 @@
               }
             ]
           },
-          "say": "不创建新实体：这里的“Alice C.”被识别为 Alice Chen。"
+          "say": "系统不会创建新实体：这次提到的“Alice C.”会归入 Alice Chen。"
         },
         {
           "edges": "x-facts",
@@ -717,24 +717,24 @@
               {
                 "tag": "world",
                 "tone": "blue",
-                "text": "Alice Chen 烧坏了"
+                "text": "Alice Chen 精疲力竭"
               },
               {
                 "tag": "world",
                 "tone": "blue",
-                "text": "Alice Chen 搬迁至苏黎世办事处",
-                "meta": "happened Jun 2024 · learned Jan 2025"
+                "text": "Alice Chen 调往苏黎世办公室",
+                "meta": "发生于 2024 年 6 月 · 得知于 2025 年 1 月"
               },
               {
                 "tag": "world",
                 "tone": "blue",
-                "text": "Alice C. 负责苏黎世办事处",
-                "meta": "about Alice Chen · Mar 2025",
+                "text": "Alice C. 负责苏黎世办公室",
+                "meta": "指 Alice Chen · 2025 年 3 月",
                 "mark": "new"
               }
             ]
           },
-          "say": "事实保留原始措辞，但关联到 Alice Chen，与其他关于她的信息汇集在一起。之后询问 Alice 时，可获取全部相关内容。",
+          "say": "这条事实保留原有措辞，但会指向 Alice Chen，因此与关于她的其他信息关联起来。之后询问 Alice 时，就能检索到全部相关内容。",
           "ms": 3200
         },
         {
@@ -745,53 +745,53 @@
           "show": {
             "links": [
               {
-                "text": "实体",
+                "text": "entity",
                 "mono": true,
-                "meta": "joins 3 earlier facts about Alice Chen",
+                "meta": "与之前 3 条关于 Alice Chen 的事实关联",
                 "mark": "new"
               },
               {
-                "text": "语义",
+                "text": "semantic",
                 "mono": true,
-                "meta": "≈ Alice Chen moved to the Zurich office"
+                "meta": "≈ Alice Chen 调往苏黎世办公室"
               }
             ]
           },
-          "say": "实体关联将它与 1 月的三个事实连接。",
+          "say": "它通过实体关联连接到 1 月的三条事实。",
           "ms": 2600
         },
         {
           "edges": {
             "edge": "call",
             "back": true,
-            "data": "✓ 1 fact"
+            "data": "✓ 1 条事实"
           },
           "show": {
             "input": [
               {
-                "tag": "content",
+                "tag": "内容",
                 "tone": "gray",
-                "text": "“Alice C. 现在负责苏黎世办事处。”"
+                "text": "“Alice C. 现在负责苏黎世办公室。”"
               },
               {
-                "tag": "context",
+                "tag": "上下文",
                 "tone": "gray",
-                "text": "Bob正在谈论他的团队"
+                "text": "Bob 正在谈论他的团队"
               },
               {
-                "tag": "timestamp",
+                "tag": "时间戳",
                 "tone": "gray",
                 "text": "2025 年 3 月 3 日"
               },
               {
-                "tag": "result",
+                "tag": "结果",
                 "tone": "green",
-                "text": "1 个事实已存储",
+                "text": "已存入 1 条事实",
                 "mark": "✓"
               }
             ]
           },
-          "say": "完成：关于同一个 Alice 的事实又增加一条。",
+          "say": "完成：又存入一条关于同一位 Alice 的事实。",
           "ms": 2000
         }
       ]

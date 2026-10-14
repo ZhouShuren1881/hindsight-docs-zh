@@ -12,7 +12,7 @@ export function LLMProvidersTable() {
     <table>
       <thead>
         <tr>
-          <th>供应商</th>
+          <th>服务提供方</th>
           <th>默认模型</th>
         </tr>
       </thead>

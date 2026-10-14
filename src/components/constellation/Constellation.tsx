@@ -1237,7 +1237,7 @@ export function Constellation({
         const nodeColor = preparedNodes[idx].heatColor;
         const linkCount = preparedNodes[idx].linkCount;
         const factType = meta?.fact_type || node.group || "memory";
-        const factTypeLabel = ({world: "世界事实", experience: "经历", observation: "观察", memory: "记忆"} as Record<string, string>)[factType] ?? factType;
+        const factTypeLabel = ({world: "世界事实", experience: "经历事实", observation: "观测", memory: "记忆"} as Record<string, string>)[factType] ?? factType;
         const context = meta?.context && meta.context !== "N/A" ? meta.context : null;
         const tags: string[] = Array.isArray(meta?.tags) ? meta.tags : [];
         const occurredStart = meta?.occurred_start || null;

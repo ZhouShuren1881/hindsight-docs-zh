@@ -9,30 +9,30 @@ import multilingualFigure from '@site/figures/multilingual.json';
 
 # 多语言支持 {#multilingual-support}
 
-Hindsight 自动检测输入语言，并使用相同语言回答。这意味着事实、实体和反思回答都会保留原始语言，而不会翻译成英语。
+Hindsight 会自动检测输入内容的语言，并使用相同语言作答。因此，事实、实体和反思回答都会保留原始语言，不会翻译成英语。
 
 ## 工作原理 {#how-it-works}
 
 <Figure doc={multilingualFigure} />
 
-存储内容或针对查询进行反思时，Hindsight 会：
+存入内容或针对查询进行反思时，Hindsight 会：
 
-1. 从内容中自动**检测输入语言**
+1. 根据内容自动**检测输入语言**
 2. **使用原始语言提取事实**，保留细微差异和含义
-3. **使用原始文字存储实体**，张伟仍然是张伟，不会变成“Zhang Wei”
-4. **使用相同语言回答**，中文查询得到中文回答
+3. **以实体原本使用的文字形式存储名称**——张伟仍是张伟，不会变成“Zhang Wei”
+4. **使用相同语言作答**——中文查询会得到中文回答
 
 ---
 
-## 存储非英语内容 {#retain-with-non-english-content}
+## 存入非英语内容 {#retain-with-non-english-content}
 
-存储任何语言的内容时，Hindsight 都使用相同语言提取和存储事实。
+无论存入哪种语言的内容，Hindsight 都会使用该语言提取并存储事实。
 
 ### 示例：中文内容 {#example-chinese-content}
 
 <CodeSnippet code={multilingualPy} section="retain-chinese" language="python" />
 
-### 示例：日语内容 {#example-japanese-content}
+### 示例：日文内容 {#example-japanese-content}
 
 <CodeSnippet code={multilingualPy} section="retain-japanese" language="python" />
 
@@ -40,7 +40,7 @@ Hindsight 自动检测输入语言，并使用相同语言回答。这意味着�
 
 ## 使用非英语查询进行反思 {#reflect-with-non-english-queries}
 
-`reflect` 操作也遵循输入语言，使用与查询相同的语言生成经过思考的回答。
+`reflect` 操作同样会遵循输入语言，根据查询所用的语言生成审慎的回答。
 
 ### 示例：中文反思 {#example-chinese-reflection}
 
@@ -50,9 +50,9 @@ Hindsight 自动检测输入语言，并使用相同语言回答。这意味着�
 
 ## 混合语言内容 {#mixed-language-content}
 
-Hindsight 能妥善处理混合语言内容，在适当情况下保留两种语言。
+Hindsight 能妥善处理混合语言内容，并在适当情况下保留两种语言。
 
-### 示例：包含英文公司名称的中文文本 {#example-chinese-text-with-english-company-names}
+### 示例：含英文公司名称的中文文本 {#example-chinese-text-with-english-company-names}
 
 <CodeSnippet code={multilingualPy} section="mixed-language" language="python" />
 
@@ -60,9 +60,9 @@ Hindsight 能妥善处理混合语言内容，在适当情况下保留两种语�
 
 ## 支持的语言 {#supported-languages}
 
-**Hindsight 的多语言支持完全取决于 LLM 的语言能力。** Hindsight 指示 LLM 检测输入语言，并使用相同语言回答。如果 LLM 支持某种语言，Hindsight 就可以处理该语言。
+**Hindsight 的多语言支持完全取决于所用 LLM 的语言能力。** Hindsight 会指示 LLM 检测输入语言，并使用相同语言作答。只要 LLM 支持某种语言，Hindsight 就能处理这种语言。
 
-大多数现代 LLM（GPT-4、Claude、Gemini、Llama 3 等）支持数十种语言，包括：
+大多数现代 LLM（GPT-4、Claude、Gemini、Llama 3 等）都支持数十种语言，包括：
 
 - **东亚语言**：中文（简体/繁体）、日语、韩语
 - **欧洲语言**：西班牙语、法语、德语、意大利语、葡萄牙语、荷兰语、波兰语、俄语
@@ -70,66 +70,66 @@ Hindsight 能妥善处理混合语言内容，在适当情况下保留两种语�
 - **南亚语言**：印地语、孟加拉语、泰米尔语
 - **东南亚语言**：泰语、越南语、印度尼西亚语
 
-**要确认目标语言是否受支持**，请直接用该语言的内容测试 LLM。如果 LLM 能理解和生成该语言的文本，Hindsight 就能正确保留它。
+**要确认目标语言是否受支持**，请直接使用该语言的内容测试 LLM。如果 LLM 能理解并生成这种语言的文本，Hindsight 就能正确保留这种语言。
 
 ---
 
-## 多语言使用配置 {#configuring-for-multilingual-use}
+## 配置多语言支持 {#configuring-for-multilingual-use}
 
-要获得最佳多语言表现，请配置流水线的全部四个组件：
+要获得理想的多语言处理效果，请配置流水线中的四个组件：
 
 ### 1. LLM（必需） {#1-llm-required}
-LLM 必须支持目标语言。大多数现代 LLM 都支持，但仍需确认具体模型的能力。
+所用 LLM 必须支持目标语言。大多数现代 LLM 都支持多种语言，但请确认你使用的具体模型是否支持。
 
-### 2. 嵌入模型（推荐） {#2-embedding-model-recommended}
-默认嵌入模型（`BAAI/bge-small-en-v1.5`）**仅支持英语**。多语言内容请使用多语言嵌入模型：
+### 2. 嵌入模型（建议） {#2-embedding-model-recommended}
+默认嵌入模型（`BAAI/bge-small-en-v1.5`）**仅支持英语**。处理多语言内容时，请使用多语言嵌入模型：
 
 ```bash
-# 在 .env 文件中
+# 在 .env 文件中设置
 HINDSIGHT_API_EMBEDDINGS_LOCAL_MODEL=BAAI/bge-m3
 ```
 
 **推荐的多语言嵌入模型：**
-| 模型 | 语言数量 | 说明 |
+| 模型 | 语言数 | 说明 |
 |-------|-----------|-------|
 | `BAAI/bge-m3` | 100+ | 综合多语言表现最佳 |
-| `intfloat/multilingual-e5-large` | 100+ | 不错的替代选择 |
-| `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` | 50+ | 更轻量 |
+| `intfloat/multilingual-e5-large` | 100+ | 良好的替代选择 |
+| `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` | 50+ | 体量较小 |
 
-### 3. 重排序模型（推荐） {#3-reranker-model-recommended}
-默认重排序模型（`cross-encoder/ms-marco-MiniLM-L-6-v2`）**仅支持英语**。多语言内容请使用多语言重排序模型：
+### 3. 重排序模型（建议） {#3-reranker-model-recommended}
+默认重排序模型（`cross-encoder/ms-marco-MiniLM-L-6-v2`）**仅支持英语**。处理多语言内容时，请使用多语言重排序模型：
 
 ```bash
-# 在 .env 文件中
+# 在 .env 文件中设置
 HINDSIGHT_API_RERANKER_LOCAL_MODEL=BAAI/bge-reranker-v2-m3
 ```
 
 **推荐的多语言重排序模型：**
-| 模型 | 语言数量 | 说明 |
+| 模型 | 语言数 | 说明 |
 |-------|-----------|-------|
 | `BAAI/bge-reranker-v2-m3` | 100+ | 多语言重排序表现最佳 |
-| `cross-encoder/mmarco-mMiniLMv2-L12-H384-v1` | 14 | 更轻量的替代选择 |
+| `cross-encoder/mmarco-mMiniLMv2-L12-H384-v1` | 14 | 体量较小的替代选择 |
 
-### 4. BM25 / 全文搜索后端 {#4-bm25--full-text-search-backend}
+### 4. BM25/全文搜索后端 {#4-bm25--full-text-search-backend}
 
-语义（嵌入）检索分支通过含义实现跨语言匹配。Hindsight 同时运行 BM25 关键词检索分支，而 **BM25 天然在同一语言内部工作**：它基于分词器的词元进行字符/token 匹配。默认 `native` 后端使用 PostgreSQL 的英语词典，对非英语内容效果较差；对于缺少空格词边界的中文、日语和韩语，甚至无法进行有效分词。
+语义（嵌入）检索分支可以按含义匹配跨语言内容。Hindsight 还会并行运行 BM25 关键词检索分支，而 **BM25 天生只能在同一种语言内检索**——它根据分词器的词元对字符/词元进行匹配。默认的 `native` 后端使用 PostgreSQL 英语词典，因此处理非英语内容时效果较差；对于中文、日文和韩文（这些语言的词语之间没有空格边界），它也无法提供有效的分词。
 
-有两个相互关联的设置：
+有两个相互作用的配置项：
 
-- `HINDSIGHT_API_TEXT_SEARCH_EXTENSION` — 选择后端（`native`、`vchord`、`pg_textsearch`、`pgroonga` 或 `pg_search`）。
-- `HINDSIGHT_API_TEXT_SEARCH_EXTENSION_NATIVE_LANGUAGE` — 选择 `native` 后端使用的 PostgreSQL 词典（默认 `english`）。
+- `HINDSIGHT_API_TEXT_SEARCH_EXTENSION`——选择后端（`native`、`vchord`、`pg_textsearch`、`pgroonga` 或 `pg_search`）。
+- `HINDSIGHT_API_TEXT_SEARCH_EXTENSION_NATIVE_LANGUAGE`——选择 `native` 后端使用的 PostgreSQL 词典（默认值：`english`）。
 
-根据记忆库存储的语言选择后端：
+请根据记忆库中存储的语言选择后端：
 
-| 后端 | 多语言 / 中日韩语言 | 说明 |
+| 后端 | 多语言/中日韩语言 | 说明 |
 |---------|--------------------|-------|
-| `native` | 仅支持欧洲等语言（英语、法语、德语、西班牙语、意大利语、葡萄牙语、俄语、荷兰语、瑞典语、挪威语、丹麦语、芬兰语、匈牙利语、土耳其语、阿拉伯语，以及 `simple`）。中日韩语言需要 `zhparser` 等第三方词典。 | 标准 PostgreSQL，无需额外扩展。通过 `HINDSIGHT_API_TEXT_SEARCH_EXTENSION_NATIVE_LANGUAGE` 配置语言。 |
-| `vchord` | 通过 `llmlingua2` 分词器支持多语言。 | 已使用 vchord 进行向量搜索时最适合。 |
-| `pg_textsearch` | 仅支持英语（硬编码）。 | 行业标准 BM25 排序 + Block-Max WAND。 |
-| `pgroonga` | **支持，开箱即用。** 单一索引通过 `TokenBigram` 多语言分词器和 `NormalizerNFKC150` Unicode 归一化，处理英语、中日韩和混合文字内容。 | 推荐用于非英语/混合语言记忆库。需要 `pgroonga` 扩展。参见 `docker/docker-compose/pgroonga/`。 |
-| `pg_search` | 通过可配置分词器支持多语言（例如 `chinese_compatible`、`jieba`、`chinese_lindera`、`japanese_lindera`、`korean_lindera`、`ngram`）。 | ParadeDB `pg_search` 扩展，是唯一兼容 Citus 的 BM25 后端。通过 `HINDSIGHT_API_TEXT_SEARCH_EXTENSION_PG_SEARCH_TOKENIZER` 设置分词器。参见 `docker/docker-compose/pg_search/`。 |
+| `native` | 仅支持欧洲语言（英语、法语、德语、西班牙语、意大利语、葡萄牙语、俄语、荷兰语、瑞典语、挪威语、丹麦语、芬兰语、匈牙利语、土耳其语、阿拉伯语，以及 `simple`）。处理中文、日文和韩文需要使用 `zhparser` 等第三方词典。 | PostgreSQL 原生后端，无需额外扩展。通过 `HINDSIGHT_API_TEXT_SEARCH_EXTENSION_NATIVE_LANGUAGE` 配置语言。 |
+| `vchord` | 通过 `llmlingua2` 分词器支持多语言。 | 已使用 vchord 进行向量检索时最合适。 |
+| `pg_textsearch` | 仅支持英语（硬编码）。 | 业界标准的 BM25 排序和 Block-Max WAND。 |
+| `pgroonga` | **是，开箱即用。** 单个索引通过 `TokenBigram` 多语言分词器和 `NormalizerNFKC150` Unicode 规范化处理英语、中日韩语言和混合文字内容。 | 推荐用于非英语或混合语言记忆库。需要安装 `pgroonga` 扩展。参见 `docker/docker-compose/pgroonga/`。 |
+| `pg_search` | 通过可配置的分词器支持多语言（例如 `chinese_compatible`、`jieba`、`chinese_lindera`、`japanese_lindera`、`korean_lindera`、`ngram`）。 | ParadeDB 的 `pg_search` 扩展；唯一兼容 Citus 的 BM25 后端。通过 `HINDSIGHT_API_TEXT_SEARCH_EXTENSION_PG_SEARCH_TOKENIZER` 设置分词器。参见 `docker/docker-compose/pg_search/`。 |
 
-**为单语言记忆库选择后端**（例如全部为西班牙语内容）：
+**为单语言记忆库选择后端**（例如，内容全部为西班牙语）：
 ```bash
 HINDSIGHT_API_TEXT_SEARCH_EXTENSION=native
 HINDSIGHT_API_TEXT_SEARCH_EXTENSION_NATIVE_LANGUAGE=spanish
@@ -142,67 +142,67 @@ HINDSIGHT_API_TEXT_SEARCH_EXTENSION=pgroonga
 
 :::note 需要外部 PostgreSQL
 
-`pgroonga` 和 `pg_search` 后端依赖 PostgreSQL 扩展，而未设置 `HINDSIGHT_API_DATABASE_URL` 时 Hindsight 使用的嵌入式 `pg0` 数据库**不包含**这些扩展。因此默认单容器设置无法启用这两种后端。请将 `HINDSIGHT_API_DATABASE_URL` 指向已安装对应扩展的外部 PostgreSQL，做法参见 `docker/docker-compose/pgroonga/` 和 `docker/docker-compose/pg_search/` 示例。
+`pgroonga` 和 `pg_search` 后端依赖 PostgreSQL 扩展，而 Hindsight 在未设置 `HINDSIGHT_API_DATABASE_URL` 时使用的内嵌 `pg0` 数据库**不包含**这些扩展。在默认的单容器部署中，两个后端都无法启用。请将 `HINDSIGHT_API_DATABASE_URL` 指向已安装相应扩展的外部 PostgreSQL；`docker/docker-compose/pgroonga/` 和 `docker/docker-compose/pg_search/` 中的配置示例也采用这种方式。
 
 :::
 
-`native` 和 `pgroonga` 的设置互不适用。`pgroonga` 的分词器在创建索引时确定，忽略 `HINDSIGHT_API_TEXT_SEARCH_EXTENSION_NATIVE_LANGUAGE`。
+`native` 和 `pgroonga` 的配置项互不适用：`pgroonga` 的分词器在创建索引时设置，不会读取 `HINDSIGHT_API_TEXT_SEARCH_EXTENSION_NATIVE_LANGUAGE`。
 
 #### 强制指定 LLM 输出语言 {#forcing-the-llm-output-language}
 
-独立于 BM25 后端，`HINDSIGHT_API_LLM_OUTPUT_LANGUAGE` 会强制所有 LLM 生成内容使用单一语言，无论源内容是什么语言。它统一适用于：
+无论源内容使用什么语言，`HINDSIGHT_API_LLM_OUTPUT_LANGUAGE` 都可以让所有由 LLM 生成的内容统一使用指定语言。这一设置一致地应用于：
 
-- **记忆存储** — 从源文档提取的事实文本、上下文和实体名称。
-- **整合** — 从这些事实综合得到的观察和心智模型。
-- **反思** — 反思 API 返回的最终自然语言回答。
+- **Retain（存入）**——从源文档中提取的事实文本、上下文和实体名称。
+- **整合**——根据这些事实综合生成的观测/心智模型。
+- **Reflect（反思）**——Reflect API 返回的最终自然语言回答。
 
 ```bash
-# 每次 LLM 调用（记忆存储、整合、反思）均输出西班牙语，与源语言无关。
+# 每次 LLM 调用（retain、整合、reflect）都输出西班牙语，无论源语言为何。
 HINDSIGHT_API_LLM_OUTPUT_LANGUAGE=Spanish
 ```
 
-常见配置模式：
-- **统一的单语言记忆库**：`HINDSIGHT_API_TEXT_SEARCH_EXTENSION_NATIVE_LANGUAGE=spanish` + `HINDSIGHT_API_LLM_OUTPUT_LANGUAGE=Spanish` — 即使来源包含混合语言，也用西班牙语存储、索引和回答。
-- **使用多语言索引的混合语言记忆库**：`HINDSIGHT_API_TEXT_SEARCH_EXTENSION=pgroonga` + 不设置 `HINDSIGHT_API_LLM_OUTPUT_LANGUAGE` — 保留事实的源语言；pgroonga 在一个索引中处理所有语言；反思使用查询语言回答。
-- **跨语言统一**：`HINDSIGHT_API_LLM_OUTPUT_LANGUAGE=English` — 无论来源语言如何，所有事实、观察和反思回答均使用英语。适用于消费方（仅支持英语的 LLM、仪表盘或下游流水线）需要统一输出的情况。
+常见用法：
+- **语言统一的单语言记忆库**：设置 `HINDSIGHT_API_TEXT_SEARCH_EXTENSION_NATIVE_LANGUAGE=spanish` 和 `HINDSIGHT_API_LLM_OUTPUT_LANGUAGE=Spanish`，即使来源语言混杂，也用西班牙语存储、编制索引并作答。
+- **启用多语言索引的混合语言记忆库**：设置 `HINDSIGHT_API_TEXT_SEARCH_EXTENSION=pgroonga`，并让 `HINDSIGHT_API_LLM_OUTPUT_LANGUAGE` 保持未设置状态，以保留源语言事实；pgroonga 会在一个索引中处理所有语言，Reflect 则使用查询语言作答。
+- **统一为一种跨语言输出**：设置 `HINDSIGHT_API_LLM_OUTPUT_LANGUAGE=English`，让所有事实、观测和反思回答都使用英语，无论来源语言为何。当使用方（仅支持英语的 LLM、仪表板或下游流水线）需要统一输出时，这种方式很有用。
 
-不设置 `HINDSIGHT_API_LLM_OUTPUT_LANGUAGE`，即可在整个流水线保留来源/查询语言（默认行为）。
+让 `HINDSIGHT_API_LLM_OUTPUT_LANGUAGE` 保持未设置状态，即可在整个流水线中保留来源语言/查询语言（默认行为）。
 
 #### 未设置输出语言时的默认行为 {#default-behaviour-when-no-output-language-is-set}
 
-未设置 `HINDSIGHT_API_LLM_OUTPUT_LANGUAGE` 时，记忆存储和整合都会被指示以源材料语言输出。对于观察，具体规则如下：
+未设置 `HINDSIGHT_API_LLM_OUTPUT_LANGUAGE` 时，系统会指示 Retain 和整合都使用源材料的语言生成内容。具体来说，观测遵循以下规则：
 
-- **每条观察独立决定语言**，依据是构成该观察的事实，而不是整个批次。混合中英文事实的批次会为中文事实生成中文观察，为英文事实生成英文观察。单条观察合并多种语言事实时，采用事实中占多数的语言。
-- **更新遵循新事实的语言。** 当现有观察与用于更新它的事实语言不同时，整条观察会改写为新事实的语言。此前观察偏离正确语言的记忆库，会随着新事实到来逐渐恢复。
-- **名称和技术术语始终不翻译**：无论周围使用哪种语言，专有名词、产品名、地名、标识符、代码和单位都保持源事实中的写法。
+- **逐条观测决定语言**，依据是构成该观测的事实，而不是批次整体语言。一个批次同时包含中文和英文事实时，中文事实会生成中文观测，英文事实会生成英文观测。如果同一条观测整合了多种语言的事实，则采用占多数的事实语言。
+- **更新时跟随新事实的语言。** 如果现有观测所用语言与用于更新它的事实语言不同，系统会用新事实的语言重写整条观测。随着新事实到来，此前语言偏离的记忆库会逐渐恢复一致。
+- **名称和技术术语绝不翻译**——专有名称、产品名、地名、标识符、代码和单位都保持源事实中的写法，不随周边文字的语言变化。
 
-这属于提示词层面的指导，并非强制保证：忽略指令的模型仍可能输出错误语言。如果记忆库无论来源如何都必须使用单一语言，请显式设置 `HINDSIGHT_API_LLM_OUTPUT_LANGUAGE`。
+这是提示词层面的指导，并非硬性保证：忽略指令的模型仍可能输出错误的语言。如果记忆库必须始终使用单一语言，无论来源内容如何，都应显式设置 `HINDSIGHT_API_LLM_OUTPUT_LANGUAGE`。
 
 ---
 
 ## 最佳实践 {#best-practices}
 
-### 1. 为非英语内容使用多语言模型 {#1-use-multilingual-models-for-non-english-content}
-如果主要处理非英语内容，请配置多语言嵌入和重排序模型。仅支持英语的模型仍能正确存储内容，但语义搜索质量会下降。
+### 1. 处理非英语内容时使用多语言模型 {#1-use-multilingual-models-for-non-english-content}
+如果你的主要工作内容不是英语，请配置多语言嵌入模型和重排序模型。仅支持英语的模型仍能正确存储内容，但语义检索质量会下降。
 
-### 2. 每次记忆存储调用尽量只使用一种语言 {#2-keep-content-in-one-language-per-retain-call}
-虽然支持混合语言内容，但每次 `retain` 调用使用单一语言会产生更一致的结果。
+### 2. 每次 Retain 调用只使用一种语言 {#2-keep-content-in-one-language-per-retain-call}
+混合语言内容虽然可以处理，但每次 `retain` 调用只使用一种语言，结果会更一致。
 
 ### 3. 使用与内容相同的语言查询 {#3-query-in-the-same-language-as-your-content}
-为了获得最佳效果，请使用与已存储内容相同的语言查询。跨语言查询（例如用英文查询中文内容）可能有效，但结果取决于嵌入模型。
+为获得最佳效果，请使用与已存储内容相同的语言进行查询。跨语言查询（例如用英语查询中文内容）可能有效，但结果会因嵌入模型而异。
 
 ---
 
 ## 技术细节 {#technical-details}
 
-多语言支持通过 LLM 提示词指令实现，而不依赖外部语言检测库。此方式：
+多语言支持通过 LLM 提示词指令实现，而不是依赖外部语言检测库。这种方式：
 
 - **无需额外依赖**
-- **适用于任何支持多语言的 LLM**
-- 自然地**处理边界情况**，例如混合语言内容
-- 比基于规则的翻译更好地**保留语义**
+- **适用于支持多种语言的任何 LLM**
+- **可自然处理混合语言内容等边缘情况**
+- **比基于规则的翻译更能保留语义**
 
-LLM 被指示执行以下操作：
+系统会指示 LLM：
 1. 检测输入语言
 2. 使用相同语言提取所有事实、实体和描述
-3. 除非输入本身是英语，否则不要翻译成英语
+3. 除非输入为英语，否则绝不翻译成英语

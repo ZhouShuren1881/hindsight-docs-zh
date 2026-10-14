@@ -23,29 +23,29 @@ func main() {
 
 	operationID := "550e8400-e29b-41d4-a716-446655440000"
 
-	// 确保库存在，未创建的库列操作会 404（#4442）。
-	// memory-banks.go 先运行并清理 my-bank，因此此文件
-	// 不能假设此前示例留下记忆库。
+	// Make sure the bank exists: listing operations for a bank nobody created is a 404 (#4442).
+	// memory-banks.go runs before this file and deletes 'my-bank' in its cleanup, so this file
+	// cannot assume an earlier example left one behind.
 	client.BanksAPI.CreateOrUpdateBank(ctx, "my-bank").
 		CreateBankRequest(hindsight.CreateBankRequest{}).Execute()
 
 	// [docs:operations-list]
-	// 列出近期操作，默认最近 20 个。
+	// List recent operations for a bank (default: 20 most recent).
 	recent, _, err := client.OperationsAPI.ListOperations(ctx, "my-bank").Execute()
 	if err != nil {
-		log.Fatalf("列出操作： %v", err)
+		log.Fatalf("list operations: %v", err)
 	}
 	for _, op := range recent.Operations {
 		fmt.Println(op.Id, op.TaskType, op.Status)
 	}
 
-	// 按状态和类型筛选。
+	// Filter by status and type.
 	_, _, _ = client.OperationsAPI.ListOperations(ctx, "my-bank").
 		Status("pending").
 		Type_("graph_maintenance").
 		Execute()
 
-	// 隐藏 retain_batch 父行，仅显示子存储任务。
+	// Hide retain_batch parent rows (show only individual child retain jobs).
 	_, _, _ = client.OperationsAPI.ListOperations(ctx, "my-bank").
 		ExcludeParents(true).
 		Execute()
@@ -54,37 +54,37 @@ func main() {
 	// [docs:operations-get]
 	status, _, err := client.OperationsAPI.GetOperationStatus(ctx, "my-bank", operationID).Execute()
 	if err != nil {
-		log.Fatalf("获取状态： %v", err)
+		log.Fatalf("get status: %v", err)
 	}
 	fmt.Println(status.Status, status.ErrorMessage)
 
-	// 包含提交载荷，批量存储可能较大。
+	// Include the submission payload (can be large for retain batches).
 	_, _, _ = client.OperationsAPI.GetOperationStatus(ctx, "my-bank", operationID).
 		IncludePayload(true).
 		Execute()
 	// [/docs:operations-get]
 
 	// [docs:operations-cancel]
-	// Worker 领取前取消待处理操作。
-	// 已 processing/completed/failed 时返回 409。
+	// Cancel a pending operation before a worker claims it.
+	// Returns 409 if the operation is already processing/completed/failed.
 	_, _, _ = client.OperationsAPI.CancelOperation(ctx, "my-bank", operationID).Execute()
 	// [/docs:operations-cancel]
 
 	// [docs:operations-retry]
-	// 重新排队失败或取消操作。
-	// 非 failed/cancelled 时返回 409。
+	// Re-queue a failed (or cancelled) operation.
+	// Returns 409 if the operation isn't in failed/cancelled state.
 	_, _, _ = client.OperationsAPI.RetryOperation(ctx, "my-bank", operationID).Execute()
 	// [/docs:operations-retry]
 
 	// [docs:operations-async-retain]
-	// 异步提交大批量，立即返回
-	// 可轮询的 operation_id。
+	// Submit a large batch asynchronously — the call returns immediately with
+	// an operation_id you can poll.
 	async := true
 	resp, _, err := client.MemoryAPI.RetainMemories(ctx, "my-bank").
 		RetainRequest(hindsight.RetainRequest{
 			Items: []hindsight.MemoryItem{
-				{Content: hindsight.TextContent("Alice 于 2023 年加入 Google")},
-				{Content: hindsight.TextContent("Bob 比起 JavaScript 更喜欢 Python")},
+				{Content: hindsight.TextContent("Alice joined Google in 2023")},
+				{Content: hindsight.TextContent("Bob prefers Python over JavaScript")},
 			},
 			Async: &async,
 		}).Execute()

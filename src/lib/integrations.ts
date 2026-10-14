@@ -38,7 +38,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
   framework: '框架与 SDK',
   mcp: 'MCP',
   tool: '工具与应用',
-  legacy: '旧版集成',
+  legacy: '已被替代',
 };
 
 const CATEGORY_ORDER = ['framework', 'mcp', 'tool', 'coding-agent', 'legacy'];

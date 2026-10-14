@@ -24,15 +24,15 @@ func main() {
 	ctx := context.Background()
 
 	// =============================================================================
-	// 初始化（不在文档中展示）
+	// Setup (not shown in docs)
 	// =============================================================================
 	client.BanksAPI.CreateOrUpdateBank(ctx, memBankID).
 		CreateBankRequest(hindsight.CreateBankRequest{
-			Name: *hindsight.NewNullableString(hindsight.PtrString("记忆演示")),
+			Name: *hindsight.NewNullableString(hindsight.PtrString("Memories Demo")),
 		}).Execute()
 	for _, content := range []string{
-		"助手在 2023 年访问巴黎。",
-		"部署服务器 srv-04 运行 PostgreSQL 14。",
+		"The assistant visited Paris in 2023.",
+		"The deploy server srv-04 runs PostgreSQL 14.",
 	} {
 		client.MemoryAPI.RetainMemories(ctx, memBankID).
 			RetainRequest(hindsight.RetainRequest{
@@ -42,22 +42,22 @@ func main() {
 	time.Sleep(3 * time.Second)
 
 	// =============================================================================
-	// 文档示例
+	// Doc Examples
 	// =============================================================================
 
 	// [docs:list-memories]
-	// 列出记忆单元，默认包含失效行。
+	// List memory units in a bank. Invalidated rows are included by default.
 	memories, _, _ := client.MemoryAPI.ListMemories(ctx, memBankID).Execute()
 	for _, unit := range memories.GetItems() {
 		fmt.Printf("- [%v] %v\n", unit.GetFactType(), unit.GetText())
 	}
 
-	// 仅筛选失效事实，如审查重复项.
+	// Filter to only the invalidated facts (e.g. to review duplicates).
 	invalidated, _, _ := client.MemoryAPI.ListMemories(ctx, memBankID).State("invalidated").Execute()
-	fmt.Printf("%d 条失效事实\n", len(invalidated.GetItems()))
+	fmt.Printf("%d invalidated fact(s)\n", len(invalidated.GetItems()))
 	// [/docs:list-memories]
 
-	// 选择 world/experience 原始事实整理。
+	// Pick a raw fact (world/experience) to curate below.
 	var memoryID string
 	for _, unit := range memories.GetItems() {
 		if ft := unit.GetFactType(); ft == "world" || ft == "experience" {
@@ -68,26 +68,26 @@ func main() {
 
 	if memoryID != "" {
 		// [docs:get-memory]
-		// 获取单个记忆单元（元数据、实体、日期、状态）.
+		// Fetch a single memory unit (metadata, entities, dates, state).
 		memory, _, _ := client.MemoryAPI.GetMemory(ctx, memBankID, memoryID).Execute()
 		fmt.Printf("Memory: %v\n", memory)
 		// [/docs:get-memory]
 
 		// [docs:edit-memory]
-		// 修正文本，重新嵌入、移除派生观察及链接，
-		// 自动重新整合并重算图。
+		// Correct the fact's text. Re-embeds, drops derived observations/links,
+		// re-consolidates, and recomputes the graph automatically.
 		client.MemoryAPI.UpdateMemory(ctx, memBankID, memoryID).
 			UpdateMemoryRequest(hindsight.UpdateMemoryRequest{
-				Text:   *hindsight.NewNullableString(hindsight.PtrString("用户在 2023 年访问巴黎。")),
-				Reason: *hindsight.NewNullableString(hindsight.PtrString("主体错误")),
+				Text:   *hindsight.NewNullableString(hindsight.PtrString("The user visited Paris in 2023.")),
+				Reason: *hindsight.NewNullableString(hindsight.PtrString("wrong subject")),
 			}).Execute()
 		// [/docs:edit-memory]
 
 		// [docs:edit-memory-fields]
-		// 一次修正日期、类型和实体。空字符串清字段；
-		// entities 替换集合（[] 全解除），省略则不变。
-		// ResolveEntities false 防止输入实体名匹配
-		// 到已有的相似实体。
+		// Correct dates, fact type, and entities in one call. "" clears a field;
+		// entities replaces the set ([] detaches all); omit to leave unchanged.
+		// ResolveEntities false keeps the entity names you wrote from being matched
+		// onto a similar entity that already exists.
 		client.MemoryAPI.UpdateMemory(ctx, memBankID, memoryID).
 			UpdateMemoryRequest(hindsight.UpdateMemoryRequest{
 				OccurredStart:   *hindsight.NewNullableString(hindsight.PtrString("2023-06-01")),
@@ -98,17 +98,17 @@ func main() {
 		// [/docs:edit-memory-fields]
 
 		// [docs:invalidate-memory]
-		// 使事实软失效：移出召回/整合/图，剪除链接，
-		// 重新计算不含它的观察，但保留审计。
+		// Soft-retire a fact: removed from recall/consolidation/graph, links pruned,
+		// derived observations recomputed without it — but kept for audit.
 		client.MemoryAPI.UpdateMemory(ctx, memBankID, memoryID).
 			UpdateMemoryRequest(hindsight.UpdateMemoryRequest{
 				State:  *hindsight.NewNullableString(hindsight.PtrString("invalidated")),
-				Reason: *hindsight.NewNullableString(hindsight.PtrString("服务器于 2026-06-01 停用")),
+				Reason: *hindsight.NewNullableString(hindsight.PtrString("server decommissioned 2026-06-01")),
 			}).Execute()
 		// [/docs:invalidate-memory]
 
 		// [docs:restore-memory]
-		// 恢复此前失效事实。
+		// Restore a previously invalidated fact.
 		client.MemoryAPI.UpdateMemory(ctx, memBankID, memoryID).
 			UpdateMemoryRequest(hindsight.UpdateMemoryRequest{
 				State: *hindsight.NewNullableString(hindsight.PtrString("valid")),
@@ -116,7 +116,7 @@ func main() {
 		// [/docs:restore-memory]
 	}
 
-	// 派生观察展示来源到达时的演变。
+	// An observation (derived) exposes how it evolved as sources arrived.
 	var observationID string
 	for _, unit := range memories.GetItems() {
 		if unit.GetFactType() == "observation" {
@@ -126,17 +126,17 @@ func main() {
 	}
 	if observationID != "" {
 		// [docs:observation-history]
-		// 获取派生观察刷新历史.
+		// Get the refresh history of a derived observation.
 		history, _, _ := client.MemoryAPI.GetObservationHistory(ctx, memBankID, observationID).Execute()
-		fmt.Printf("观察历史： %v\n", history)
+		fmt.Printf("Observation history: %v\n", history)
 		// [/docs:observation-history]
 	}
 
 	// =============================================================================
-	// 清理（不在文档中展示）
+	// Cleanup (not shown in docs)
 	// =============================================================================
 	req, _ := http.NewRequest("DELETE", fmt.Sprintf("%s/v1/default/banks/%s", apiURL, memBankID), nil)
 	http.DefaultClient.Do(req)
 
-	fmt.Println("memories.go: 全部示例通过")
+	fmt.Println("memories.go: All examples passed")
 }

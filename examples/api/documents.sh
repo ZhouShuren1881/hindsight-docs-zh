@@ -1,6 +1,6 @@
 #!/bin/bash
-# Hindsight 文档 API 示例 CLI
-# 运行： bash examples/api/documents.sh
+# Documents API examples for Hindsight CLI
+# Run: bash examples/api/documents.sh
 
 set -e
 
@@ -8,31 +8,31 @@ HINDSIGHT_URL="${HINDSIGHT_API_URL:-http://localhost:8888}"
 BANK_ID="documents-sh-demo-bank"
 
 # =============================================================================
-# 初始化（不在文档中展示）
+# Setup (not shown in docs)
 # =============================================================================
 WORKDIR=$(mktemp -d)
 cd "$WORKDIR"
 mkdir docs
-echo "Alice 向整个团队介绍第四季度路线图。" > docs/meeting-notes.txt
+echo "Alice presented the Q4 roadmap to the whole team." > docs/meeting-notes.txt
 
 # =============================================================================
-# 文档示例
+# Doc Examples
 # =============================================================================
 
 # [docs:document-retain]
-# 带文档 ID 存储
-hindsight memory retain "$BANK_ID" "会议记录内容..." --doc-id notes-2024-03-15
+# Retain content with document ID
+hindsight memory retain "$BANK_ID" "Meeting notes content..." --doc-id notes-2024-03-15
 
-# 从文件批量存储
+# Batch retain from files
 hindsight memory retain-files "$BANK_ID" docs/
 # [/docs:document-retain]
 
 # [docs:document-update]
 # Original
-hindsight memory retain "$BANK_ID" "项目截止日期：3 月 31 日" --doc-id project-plan
+hindsight memory retain "$BANK_ID" "Project deadline: March 31" --doc-id project-plan
 
 # Update
-hindsight memory retain "$BANK_ID" "项目截止日期：4 月 15 日（已延期）" --doc-id project-plan
+hindsight memory retain "$BANK_ID" "Project deadline: April 15 (extended)" --doc-id project-plan
 # [/docs:document-update]
 
 # [docs:document-get]
@@ -40,22 +40,22 @@ hindsight document get "$BANK_ID" notes-2024-03-15
 # [/docs:document-get]
 
 # [docs:document-update-tags]
-# 以新值替换标签（逗号分隔）
+# Replace tags with new values (comma-separated)
 hindsight document update "$BANK_ID" notes-2024-03-15 --tags team-a,team-b
 
-# 移除全部标签，使文档在所有范围可见
+# Remove all tags (make document visible everywhere)
 hindsight document update "$BANK_ID" notes-2024-03-15 --tags ""
 # [/docs:document-update-tags]
 
-# 空值应清空集合，而非存入一个空字符串标签。
+# The empty value must clear the set, not store one "" tag.
 TAGS=$(curl -sf "${HINDSIGHT_URL}/v1/default/banks/${BANK_ID}/documents/notes-2024-03-15" | jq -c '.tags')
-[ "$TAGS" = "[]" ] || { echo "预期无标签，实际为 $TAGS"; exit 1; }
+[ "$TAGS" = "[]" ] || { echo "expected no tags, got $TAGS"; exit 1; }
 
 # [docs:document-list]
-# 列出全部文档
+# List all documents
 hindsight document list "$BANK_ID"
 
-# 按 ID 子串筛选
+# Filter by ID substring
 hindsight document list "$BANK_ID" --query notes
 # [/docs:document-list]
 
@@ -64,9 +64,9 @@ hindsight document delete "$BANK_ID" notes-2024-03-15
 # [/docs:document-delete]
 
 # =============================================================================
-# 清理（不在文档中展示）
+# Cleanup (not shown in docs)
 # =============================================================================
 rm -rf "$WORKDIR"
 curl -s -X DELETE "${HINDSIGHT_URL}/v1/default/banks/${BANK_ID}" > /dev/null
 
-echo "documents.sh: 全部示例通过"
+echo "documents.sh: All examples passed"

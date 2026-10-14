@@ -1,5 +1,5 @@
 {
-  "title": "心智模型 (API)",
+  "title": "心智模型（API）",
   "speed": 2200,
   "elements": [
     {
@@ -8,7 +8,7 @@
       "content": [
         {
           "type": "title",
-          "text": "你的应用程序"
+          "text": "你的应用"
         }
       ],
       "minCardHeight": 178,
@@ -24,7 +24,7 @@
         },
         {
           "type": "subtitle",
-          "text": "创建·获取·刷新"
+          "text": "创建 · 获取 · 刷新"
         }
       ],
       "minCardHeight": 43
@@ -35,7 +35,7 @@
       "content": [
         {
           "type": "title",
-          "text": "反思"
+          "text": "Reflect"
         },
         {
           "type": "subtitle",
@@ -71,7 +71,7 @@
         },
         {
           "type": "subtitle",
-          "text": "事实 → 观察"
+          "text": "事实 → 观测"
         }
       ],
       "minCardHeight": 43
@@ -86,7 +86,7 @@
         },
         {
           "type": "subtitle",
-          "text": "对源查询的反思"
+          "text": "基于来源查询执行 Reflect"
         }
       ],
       "minCardHeight": 103,
@@ -118,7 +118,7 @@
         },
         {
           "type": "subtitle",
-          "text": "世界事实 · 经验事实"
+          "text": "世界 · 经历"
         }
       ],
       "minCardHeight": 103,
@@ -130,7 +130,7 @@
       "content": [
         {
           "type": "title",
-          "text": "观察"
+          "text": "观测"
         }
       ],
       "minCardHeight": 103,
@@ -205,7 +205,7 @@
         "id": "reflect"
       },
       "label": {
-        "text": "反思"
+        "text": "Reflect"
       }
     },
     {
@@ -219,7 +219,7 @@
         "id": "refresh"
       },
       "label": {
-        "text": "排队刷新"
+        "text": "将刷新任务排入队列"
       }
     },
     {
@@ -258,7 +258,7 @@
         "id": "refresh"
       },
       "label": {
-        "text": "触发"
+        "text": "触发器"
       }
     },
     {
@@ -326,24 +326,24 @@
           "show": {
             "app": [
               {
-                "tag": "create",
+                "tag": "创建",
                 "tone": "gray",
-                "text": "团队概况"
+                "text": "团队概览"
               },
               {
-                "tag": "source query",
+                "tag": "来源查询",
                 "tone": "gray",
-                "text": "“团队中有哪些人，他们做什么工作？”"
+                "text": "“团队成员有哪些？他们分别负责什么？”"
               },
               {
-                "tag": "trigger",
+                "tag": "触发器",
                 "tone": "gray",
                 "text": "整合后刷新",
                 "meta": "delta"
               }
             ]
           },
-          "say": "创建一个心智模型：指定名称、要回答的问题，以及刷新时机。"
+          "say": "你创建心智模型：指定名称、需要回答的问题以及刷新时机。"
         },
         {
           "show": {
@@ -352,18 +352,18 @@
                 "text": "已保存团队概览"
               },
               {
-                "text": "内容：还没有",
-                "meta": "async"
+                "text": "内容：尚未生成",
+                "meta": "异步"
               }
             ]
           },
-          "say": "API 立即保存模型，但此时还没有内容。"
+          "say": "API 会立即保存模型，但此时其内容尚不存在。"
         },
         {
           "edges": [
             {
               "edge": "queue",
-              "data": "refresh task"
+              "data": "刷新任务"
             },
             {
               "edge": "create",
@@ -374,30 +374,30 @@
           "show": {
             "app": [
               {
-                "tag": "create",
+                "tag": "创建",
                 "tone": "gray",
-                "text": "团队概况"
+                "text": "团队概览"
               },
               {
-                "tag": "source query",
+                "tag": "来源查询",
                 "tone": "gray",
-                "text": "“团队中有哪些人，他们做什么工作？”"
+                "text": "“团队成员有哪些？他们分别负责什么？”"
               },
               {
-                "tag": "trigger",
+                "tag": "触发器",
                 "tone": "gray",
                 "text": "整合后刷新",
                 "meta": "delta"
               },
               {
-                "tag": "response",
+                "tag": "响应",
                 "tone": "green",
-                "text": "操作排队",
+                "text": "操作已排队",
                 "mark": "…"
               }
             ]
           },
-          "say": "内容在后台生成，响应返回可轮询的操作 ID。"
+          "say": "内容会在后台写入。响应中包含可供轮询的操作 ID。"
         },
         {
           "edges": {
@@ -407,7 +407,7 @@
           "show": {
             "refresh": [
               {
-                "text": "对源查询的反思"
+                "text": "基于来源查询执行 Reflect"
               },
               {
                 "text": "1. search_observations",
@@ -417,18 +417,18 @@
             ],
             "obs": [
               {
-                "text": "Alice：Google的研究团队",
-                "meta": "3 sources",
+                "text": "Alice：Google 研究团队",
+                "meta": "3 个来源",
                 "mark": "✓"
               },
               {
-                "text": "Bob 领导 ML 项目",
-                "meta": "2 sources",
+                "text": "Bob 负责 ML 项目",
+                "meta": "2 个来源",
                 "mark": "✓"
               }
             ]
           },
-          "say": "刷新就是针对来源查询执行反思，先读取观察……",
+          "say": "刷新会针对源查询执行 Reflect。它会先读取观测……",
           "ms": 2800
         },
         {
@@ -439,7 +439,7 @@
           "show": {
             "refresh": [
               {
-                "text": "对源查询的反思"
+                "text": "基于来源查询执行 Reflect"
               },
               {
                 "text": "1. search_observations",
@@ -456,20 +456,20 @@
               {
                 "tag": "world",
                 "tone": "blue",
-                "text": "Alice加入Google",
-                "meta": "Mar 2026",
+                "text": "Alice 加入 Google",
+                "meta": "2026 年 3 月",
                 "mark": "✓"
               },
               {
                 "tag": "world",
                 "tone": "blue",
-                "text": "Bob 领导 ML 项目",
-                "meta": "Feb 2026",
+                "text": "Bob 负责 ML 项目",
+                "meta": "2026 年 2 月",
                 "mark": "✓"
               }
             ]
           },
-          "say": "……再读取原始事实，核对细节。"
+          "say": "……再读取原始事实以核对细节。"
         },
         {
           "edges": {
@@ -479,7 +479,7 @@
           "show": {
             "refresh": [
               {
-                "text": "对源查询的反思"
+                "text": "基于来源查询执行 Reflect"
               },
               {
                 "text": "1. search_observations",
@@ -499,20 +499,20 @@
             ],
             "mm": [
               {
-                "tag": "team overview",
+                "tag": "团队概览",
                 "tone": "orange",
                 "text": "刚刚刷新",
                 "mark": "new"
               },
               {
-                "text": "• Alice：研究团队，Google"
+                "text": "• Alice：Google 研究团队"
               },
               {
-                "text": "• Bob：领导 ML 项目"
+                "text": "• Bob：负责 ML 项目"
               }
             ]
           },
-          "say": "生成文档，并与其依据的记忆一起存储。",
+          "say": "系统会写入文档，并将其与作为依据的记忆一同保存。",
           "ms": 3000
         }
       ]
@@ -524,12 +524,12 @@
         {
           "edges": {
             "edge": "new-facts",
-            "data": "new fact"
+            "data": "新事实"
           },
           "show": {
             "app": [
               {
-                "tag": "retain",
+                "tag": "存入",
                 "tone": "gray",
                 "text": "“Carol 本周加入了 ML 项目。”"
               }
@@ -539,20 +539,20 @@
                 "tag": "world",
                 "tone": "blue",
                 "text": "Carol 加入 ML 项目",
-                "meta": "Sep 2026",
+                "meta": "2026 年 9 月",
                 "mark": "new"
               }
             ],
             "consolidate": [
               {
-                "text": "1 个新事实"
+                "text": "1 条新事实"
               },
               {
-                "text": "融入信念"
+                "text": "整合为认知判断"
               }
             ]
           },
-          "say": "之后，智能体存储一个新事实，整合开始处理它。",
+          "say": "之后，智能体存入一条新事实。整合流程会将其纳入处理。",
           "ms": 2800
         },
         {
@@ -560,21 +560,21 @@
           "show": {
             "obs": [
               {
-                "text": "Alice：Google的研究团队",
-                "meta": "3 sources"
+                "text": "Alice：Google 研究团队",
+                "meta": "3 个来源"
               },
               {
-                "text": "Bob 领导 ML 项目",
-                "meta": "2 sources"
+                "text": "Bob 负责 ML 项目",
+                "meta": "2 个来源"
               },
               {
-                "text": "Carol 致力于 ML 项目\n自上次刷新以来",
-                "meta": "1 source",
+                "text": "Carol 参与 ML 项目",
+                "meta": "1 个来源",
                 "mark": "new"
               }
             ]
           },
-          "say": "整合生成关于 Carol 的观察。"
+          "say": "系统会写入一条关于 Carol 的观测。"
         },
         {
           "edges": {
@@ -584,30 +584,30 @@
           "show": {
             "refresh": [
               {
-                "text": "范围已更改",
+                "text": "自上次刷新以来范围发生变化",
                 "mark": "stale"
               },
               {
-                "text": "delta：只阅读新内容"
+                "text": "delta：仅读取新增内容"
               }
             ]
           },
-          "say": "加入刷新队列前，整合会检查模型作用域中是否有比上次读取更新的记忆。若没有，就不刷新，也不消耗 LLM 调用。",
+          "say": "将刷新任务排入队列前，整合流程会检查模型范围内是否存在比上次读取更新的记忆。如果没有变化，就不会执行刷新，也不会消耗 LLM 调用。",
           "ms": 3200
         },
         {
           "edges": {
             "edge": "read-obs",
-            "data": "since last refresh"
+            "data": "自上次刷新以来"
           },
           "show": {
             "refresh": [
               {
-                "text": "范围已更改",
+                "text": "自上次刷新以来范围发生变化",
                 "mark": "stale"
               },
               {
-                "text": "delta：只阅读新内容"
+                "text": "delta：仅读取新增内容"
               },
               {
                 "text": "append_block",
@@ -617,7 +617,7 @@
               }
             ]
           },
-          "say": "增量模式只读取新记忆，返回局部编辑，而非重写全文。",
+          "say": "delta 模式只读取新增记忆，并通过少量编辑来更新内容，而不是重写全文。",
           "ms": 2800
         },
         {
@@ -628,26 +628,26 @@
           "show": {
             "mm": [
               {
-                "tag": "team overview",
+                "tag": "团队概览",
                 "tone": "orange",
                 "text": "刚刚刷新",
                 "mark": "↻"
               },
               {
-                "text": "• Alice：研究团队，Google",
+                "text": "• Alice：Google 研究团队",
                 "mark": "="
               },
               {
-                "text": "• Bob：领导 ML 项目",
+                "text": "• Bob：负责 ML 项目",
                 "mark": "="
               },
               {
-                "text": "• Carol：加入ML项目",
+                "text": "• Carol：加入 ML 项目",
                 "mark": "new"
               }
             ]
           },
-          "say": "未被编辑触及的行逐字节保留，只添加 Carol 所在的一行。",
+          "say": "编辑未触及的行都会按字节原样复制。这里只新增了 Carol 对应的行。",
           "ms": 3000
         }
       ]
@@ -659,12 +659,12 @@
         {
           "edges": {
             "edge": "ask",
-            "data": "“Who works on the ML project?”"
+            "data": "“谁参与 ML 项目？”"
           },
           "show": {
             "app": [
               {
-                "tag": "question",
+                "tag": "问题",
                 "tone": "gray",
                 "text": "“谁参与 ML 项目？”"
               }
@@ -685,29 +685,29 @@
                 "mark": "✓"
               },
               {
-                "text": "团队概况",
-                "meta": "fresh"
+                "text": "团队概览",
+                "meta": "最新"
               }
             ],
             "mm": [
               {
-                "tag": "team overview",
+                "tag": "团队概览",
                 "tone": "orange",
                 "text": "按含义匹配",
                 "mark": "fresh"
               },
               {
-                "text": "• Alice：研究团队，Google"
+                "text": "• Alice：Google 研究团队"
               },
               {
-                "text": "• Bob：领导 ML 项目"
+                "text": "• Bob：负责 ML 项目"
               },
               {
-                "text": "• Carol：加入ML项目"
+                "text": "• Carol：加入 ML 项目"
               }
             ]
           },
-          "say": "反思首先按语义搜索心智模型。“团队概况”匹配问题，且内容为最新。",
+          "say": "Reflect 会先按含义搜索心智模型。“团队概览”匹配且内容是最新的。",
           "ms": 3000
         },
         {
@@ -719,41 +719,41 @@
                 "mark": "✓"
               },
               {
-                "text": "团队概况",
-                "meta": "fresh"
+                "text": "团队概览",
+                "meta": "最新"
               },
               {
-                "text": "2. done",
+                "text": "2. 完成",
                 "mono": true,
                 "mark": "✓"
               }
             ]
           },
-          "say": "模型涵盖了问题，智能体可以据此回答。若模型过时或偏离主题，则继续查找观察与原始事实。",
+          "say": "该模型涵盖了问题，因此智能体可以据此作答。如果内容已待更新或主题不相关，智能体会继续检查观测和原始事实。",
           "ms": 3200
         },
         {
           "edges": {
             "edge": "ask",
             "back": true,
-            "data": "answer"
+            "data": "答案"
           },
           "show": {
             "app": [
               {
-                "tag": "question",
+                "tag": "问题",
                 "tone": "gray",
                 "text": "“谁参与 ML 项目？”"
               },
               {
-                "tag": "answer",
+                "tag": "答案",
                 "tone": "green",
-                "text": "“Bob领导，Carol刚刚加入。”",
-                "meta": "from Team overview"
+                "text": "“Bob 负责该项目，Carol 刚刚加入。”",
+                "meta": "来自“团队概览”"
               }
             ]
           },
-          "say": "答案返回，并引用所用的心智模型。",
+          "say": "答案返回时会注明所依据的心智模型。",
           "ms": 3000
         }
       ]

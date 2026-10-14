@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Hindsight 指令 API 示例 (Node.js)
- * 运行： node examples/api/directives.mjs
+ * Directives API examples for Hindsight (Node.js)
+ * Run: node examples/api/directives.mjs
  */
 import { HindsightClient } from '@vectorize-io/hindsight-client';
 
@@ -9,30 +9,30 @@ const HINDSIGHT_URL = process.env.HINDSIGHT_API_URL || 'http://localhost:8888';
 const BANK_ID = 'directives-example-bank';
 
 // =============================================================================
-// 初始化（不在文档中展示）
+// Setup (not shown in docs)
 // =============================================================================
 const client = new HindsightClient({ baseUrl: HINDSIGHT_URL });
-await client.createBank(BANK_ID, { name: '测试记忆库' });
+await client.createBank(BANK_ID, { name: 'Test Bank' });
 
 // =============================================================================
-// 文档示例
+// Doc Examples
 // =============================================================================
 
 // [docs:create-directive]
-// 创建指令（反思的硬性规则）
+// Create a directive (hard rule for reflect)
 const directive = await client.createDirective(
     BANK_ID,
-    '正式语言',
-    '始终使用正式英语回复，避免俚语和口语表达。'
+    'Formal Language',
+    'Always respond in formal English, avoiding slang and colloquialisms.'
 );
 
-console.log(`已创建指令： ${directive.id}`);
+console.log(`Created directive: ${directive.id}`);
 // [/docs:create-directive]
 
 const directiveId = directive.id;
 
 // [docs:list-directives]
-// 列出记忆库中的全部指令
+// List all directives in a bank
 const directives = await client.listDirectives(BANK_ID);
 
 for (const d of directives.items) {
@@ -41,22 +41,22 @@ for (const d of directives.items) {
 // [/docs:list-directives]
 
 // [docs:update-directive]
-// 更新指令（如禁用而不删除）
+// Update a directive (e.g., disable without deleting)
 const updated = await client.updateDirective(BANK_ID, directiveId, {
     isActive: false
 });
 
-console.log(`指令启用状态： ${updated.is_active}`);
+console.log(`Directive active: ${updated.is_active}`);
 // [/docs:update-directive]
 
 // [docs:delete-directive]
-// 删除指令
+// Delete a directive
 await client.deleteDirective(BANK_ID, directiveId);
 // [/docs:delete-directive]
 
 // =============================================================================
-// 清理（不在文档中展示）
+// Cleanup (not shown in docs)
 // =============================================================================
 await client.deleteBank(BANK_ID);
 
-console.log('directives.mjs: 全部示例通过');
+console.log('directives.mjs: All examples passed');

@@ -43,10 +43,10 @@ function BlogCard({content}: {content: PropBlogPostContent}) {
 const TAG_LABELS: Record<string, {title: string; subtitle: string}> = {
   'hindsight-cloud': {
     title: 'Hindsight Cloud',
-    subtitle: 'Hindsight Cloud 动态与更新',
+    subtitle: 'Hindsight Cloud 新闻与动态',
   },
   'deep-dive': {
-    title: '深入解析',
+    title: '深度解析',
     subtitle: '架构、工程与基准测试',
   },
   'release': {
@@ -55,7 +55,7 @@ const TAG_LABELS: Record<string, {title: string; subtitle: string}> = {
   },
   'tutorial': {
     title: '教程与集成',
-    subtitle: '在你的技术栈中使用 Hindsight',
+    subtitle: '如何在你的技术栈中使用 Hindsight',
   },
 };
 

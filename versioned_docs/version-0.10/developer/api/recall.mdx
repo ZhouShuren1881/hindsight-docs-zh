@@ -4,26 +4,26 @@ sidebar_position: 2
 
 # 召回记忆 {#recall-memories}
 
-使用多策略召回，从记忆库中检索记忆。
+通过多策略召回，从记忆库中检索记忆。
 
-调用 **记忆召回** 时，Hindsight 并行执行语义相似度、关键词（BM25）、图遍历和时间四种检索策略，再融合并重排序为统一的结果列表。响应包含结构化事实，而非原始文档。
+执行 **Recall（召回）** 时，Hindsight 会并行运行四种检索策略：语义相似度、关键词（BM25）、图遍历和时间检索；随后融合并重新排序结果，生成一个排序列表。响应包含结构化事实，而不是原始文档。
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import CodeSnippet from '@site/src/components/CodeSnippet';
 
-{/* 导入原始示例源文件 */}
+{/* Import raw source files */}
 import recallPy from '!!raw-loader!@site/examples/api/recall.py';
 import recallMjs from '!!raw-loader!@site/examples/api/recall.mjs';
 import recallSh from '!!raw-loader!@site/examples/api/recall.sh';
 import recallGo from '!!raw-loader!@site/examples/api/recall.go';
 
-:::info 记忆召回的工作原理
-四种检索策略及 RRF 融合详见[记忆召回架构](/developer/retrieval)。
+:::info 召回的工作原理
+如需了解四种检索策略（语义、关键词、图和时间检索）以及 RRF 融合，请参阅[召回架构](/developer/retrieval)指南。
 :::
 
 :::tip 前置条件
-请先完成[快速开始](./quickstart)，安装客户端并启动服务器。
+请先完成[快速入门](./quickstart)，安装客户端并启动服务器。
 :::
 
 ## 基本召回 {#basic-recall}
@@ -47,15 +47,15 @@ import recallGo from '!!raw-loader!@site/examples/api/recall.go';
 
 ## 参数 {#parameters}
 
-### query
+### query {#query}
 
-要搜索的自然语言问题或陈述，是唯一的必填字段。查询同时驱动四种检索策略：生成嵌入用于语义搜索、分词用于 BM25 关键词搜索、作为图遍历起点，并解析其中的时间表达。检索后，原始查询还会交给交叉编码器重排序模型，对每个候选项重新评分。超过 500 token 的查询会被拒绝。
+要搜索的自然语言问题或陈述。这是唯一必填字段。query 会同时驱动全部四种检索策略：系统会将其嵌入以执行语义检索，将其分词以执行 BM25 关键词检索，用它作为图遍历的起点，并从中解析时间表达式。检索完成后，原始 query 文本还会传给交叉编码器重排器，为每个候选结果重新打分。超过 500 个 token 的 query 会被拒绝。
 
-### types
+### types {#types}
 
-控制搜索的记忆事实类别。支持 `world`（客观事实）、`experience`（事件与对话）和 `observation`（由多条记忆整合得到、去重且有证据支持的认知）。省略时搜索全部三类。
+控制要搜索哪些类别的记忆事实。可接受的值为 `world`（客观事实）、`experience`（事件和对话）和 `observation`（从多条记忆中整合而来、经过去重且有证据依据的认知判断）。省略时会搜索全部三种类型。
 
-每种类型独立执行完整的四策略检索流程，因此缩小 `types` 范围可同时减少结果数量和查询成本。
+每种类型都会独立运行完整的四策略检索流程，因此缩小 `types` 的范围会同时减少结果集和查询成本。
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -78,19 +78,19 @@ import recallGo from '!!raw-loader!@site/examples/api/recall.go';
 </TabItem>
 </Tabs>
 
-:::tip 关于观察
-观察是由多个事实整合得到、去重且有证据支持的认知，包括偏好、反复出现的模式，以及记忆库积累的持久经验。每条观察都引用支持它的记忆并保留准确引文；新证据到来时逐步完善，而非直接覆盖。观察在 retain 操作后由后台自动创建和维护。
+:::tip 关于观测
+观测是从多条事实中整合而来、经过去重且有证据依据的认知判断，例如记忆库逐渐积累的偏好、反复出现的模式和持久经验。每条观测都会引用其支持记忆（并附上精确引文）；有新证据到来时，观测会得到修订，而不是被覆盖。Retain（存入）操作完成后，系统会在后台自动创建并维护观测。
 :::
 
-### prefer_observations
+### prefer_observations {#prefer_observations}
 
-观察由原始事实整合而成，同时召回 `observation`、`world` 和 `experience` 时，同一信息可能出现两次：一次作为原始事实，一次包含在观察中。`prefer_observations` 保留所有类型，但若结果中的观察由某条原始事实生成，就删除该原始事实，由观察替代。空出的名额会用排名靠后的结果补齐，不减少覆盖。
+观测由原始事实整合而成，因此同时召回 `observation`、`world` 和 `experience` 时，可能会两次返回相同信息：一次是原始事实，一次是整合进观测后的内容。启用 `prefer_observations` 后，两者兼得：仍会召回所有类型，但如果结果中的某条观测是由某条原始事实形成的，就会舍弃该原始事实，让观测取代它。腾出的名额会用次优结果补齐，因此覆盖范围不会减少。
 
-这样无需在“仅原始事实”（没有整合）和“仅观察”（整合可能尚未跟上最新存储）之间选择。该选项**默认关闭**，设为 `true` 启用。只有 `types` 同时包含 `observation` 和 `world`／`experience` 中至少一种时才生效。
+这样就可以一次请求全部内容，无需在“仅原始事实”（不做整合）和“仅观测”（整合赶不上最新存入内容时可能滞后）之间二选一。**默认禁用**；将其设为 `true` 即可启用。只有当 `types` 同时包含 `observation` 和至少一种 `world`/`experience` 时，此选项才生效。
 
-### budget
+### budget {#budget}
 
-控制检索深度和广度。支持 `low`、`mid`（默认）和 `high`。简单快速查询使用 `low`，日常查询使用平衡的 `mid`，需要间接关联或全面覆盖时使用 `high`。
+控制检索深度和广度。可接受的值为 `low`、`mid`（默认值）和 `high`。简单查询、希望快速返回时用 `low`；日常查询、需要均衡结果时用 `mid`；需要发现间接关联或尽可能全面覆盖时用 `high`。
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -107,12 +107,12 @@ import recallGo from '!!raw-loader!@site/examples/api/recall.go';
 </TabItem>
 </Tabs>
 
-### max_tokens
+### max_tokens {#max_tokens}
 
-返回事实可共同占用的最大 token 数，默认 `4096`。仅计算事实的 `text`，不计元数据、标签、实体等字段。重排序后按相关性顺序选取事实，直到预算耗尽。某条事实超出剩余预算时会跳过，不会终止选择，后面更短的事实仍可返回。Hindsight 面向以 token 而非结果数量规划上下文的智能体，`max_tokens` 应设为希望分配给记忆的上下文预算。
+限制返回事实合计可占用的 token 数。默认值为 `4096`。只有每条事实的 `text` 字段计入此预算；元数据、标签、实体和其他字段均不计入。重排后，系统按相关性从高到低依次纳入事实，直到预算耗尽，因此返回的始终是预算容纳得下的最相关记忆。如果某条事实过长，超出剩余预算，系统会跳过它并继续选择，因此排在其后的较短事实仍可能返回。Hindsight 面向智能体设计；智能体按 token 而不是结果条数进行思考。请将 `max_tokens` 设为你想分配给记忆内容的上下文窗口额度。
 
 :::note
-查询匹配到内容时不会返回空列表：即使最高排名的事实也放不进预算，仍会完整返回并超出预算，而非在句中截断。空列表会被理解为“记忆库没有这种记忆”，截断的事实则可能表达原记忆从未作出的断言。唯一例外是 `max_tokens=0`，它明确表示“不返回事实”，可用于只请求分块。
+只要查询匹配到了内容，响应就不会为空：如果连排名第一的事实都放不进预算，系统会完整返回这条超预算的事实，而不会将其截断到句子中间。因为空结果列表会让人以为“这个记忆库没有相关记忆”，而被截断的事实可能会变成记忆从未表达过的断言。唯一例外是 `max_tokens=0`，这表示有意“不返回事实”，可用于只获取文本分块。
 :::
 
 <Tabs>
@@ -130,42 +130,42 @@ import recallGo from '!!raw-loader!@site/examples/api/recall.go';
 </TabItem>
 </Tabs>
 
-### query_timestamp
+### query_timestamp {#query_timestamp}
 
-从用户视角表示提问时间的 ISO 8601 日期时间。提供后，它作为查询中相对时间表达和新鲜度评分的基准。例如查询为“上个月”，`query_timestamp` 为 `2023-05-30` 时，时间搜索窗口约为 2023 年 4 月，新鲜度加权以 2023 年 5 月 30 日为基准。省略时使用服务器当前时间。重放历史对话或构建需要固定时间基准的智能体时，此字段尤其重要。
+表示用户提出查询时间的 ISO 8601 日期时间。提供此值后，系统会用它作为解析 query 中相对时间表达式的基准，并据此计算近期性评分。例如，query 写着“上个月”，而 `query_timestamp` 为 `2023-05-30`，时间检索窗口就会约为 2023 年 4 月，近期性加权也会以 2023 年 5 月 30 日为基准计算。未提供时，系统使用服务器当前时间作为基准。此字段尤其适用于重放历史对话，或构建需要以特定时间为基准进行召回的智能体。
 
-### temporal_window
+### temporal_window {#temporal_window}
 
-为时间搜索显式提供 `{ "start": ..., "end": ... }`，两者均为 ISO 8601 日期时间。若已明确时间区间，例如界面日期选择器的结果，或智能体已解析“上季度”，Hindsight 会直接使用边界，不再从查询文本提取日期。
+用于时间检索部分的显式 ISO 8601 日期时间范围 `{ "start": ..., "end": ... }`。如果你已知道目标时段，例如来自界面中的日期选择器，或智能体已算出“上个季度”对应的日期，就可以提供此值；Hindsight 会直接使用这些边界，而不再从 query 文本中读取日期。
 
 ```json
-{ "query": "我们对价格作了什么决定", "temporal_window": { "start": "2023-04-01T00:00:00Z", "end": "2023-06-30T23:59:59Z" } }
+{ "query": "what did we decide about pricing", "temporal_window": { "start": "2023-04-01T00:00:00Z", "end": "2023-06-30T23:59:59Z" } }
 ```
 
-**它影响排名，不执行筛选。** Hindsight 同时采用多种搜索方式，时间窗口只影响其中与时间相关的部分：窗口内的记忆更容易被找到且排名更高，其他内容仍正常搜索。因此窗口外的结果也会返回，不能用它将答案限制在某个时期。比较的是*记忆描述的事件日期*，而非存入记忆的日期。
+**它用于排序，不用于过滤。** Hindsight 会同时通过多种方式进行检索，而此窗口只会引导其中具备时间感知能力的检索部分：窗口内日期的记忆会被检出并获得更高排序；其他内容仍照常检索。日期在窗口之外的结果仍可能返回，因此这不能用来将答案限制在某个时段内。另请注意，系统比较的是记忆自身记录的日期——即记忆所述事件发生的时间——而不是记忆存入的时间。
 
-边界包含在窗口内；没有时区的日期时间按 UTC 解释。关闭时间感知搜索的记忆库会忽略此窗口。`temporal_window` 仅替代日期提取，[`query_timestamp`](#query_timestamp) 仍是新鲜度评分的基准，两者可以一起使用。
+另有两点需要了解：边界包含在范围内；没有时区的朴素日期时间会按 UTC 解释；如果记忆库关闭了时间感知检索，此窗口会被忽略。`temporal_window` 只会取代日期提取；[`query_timestamp`](#query_timestamp) 仍然是近期性评分的时间基准，因此两者仍可一起使用。
 
-### include
+### include {#include}
 
-可选对象，控制主事实之外返回的补充数据。
+用于控制随主要事实一同返回的补充数据的可选对象。
 
-#### chunks
+#### chunks {#chunks}
 
-启用后，响应包含提取各事实的原始来源文本分块。分块在 `max_tokens` 筛选前获取，因此 `max_tokens=0` 虽不返回事实，仍可返回分块。子选项 `max_tokens`（默认 `8192`）独立控制分块的总 token 预算，适合智能体需要事实周边原文的场景。
+启用后，响应会包含提取每条事实所依据的原始来源文本分块。获取分块发生在应用 `max_tokens` 过滤之前，因此即使设 `max_tokens=0` 不返回事实，仍可返回分块。`max_tokens` 子选项（默认值为 `8192`）独立控制分块的总 token 预算。智能体需要事实文本以外的上下文时，此选项很有用。
 
 :::note
-启用 `include_chunks` 后，先根据重排序结果中得分最高的条目获取分块，再进行 token 筛选。最后一个分块会截断而非丢弃，恰好适应预算；每个分块的 `truncated` 标志指示是否被截断。
+启用 `include_chunks` 后，系统会根据 token 过滤前重排得分最高的结果来获取分块。最后一个分块会截断（而不是丢弃），以恰好符合预算；每个分块都带有 `truncated` 标志，表示其是否被截断。
 
-使用标签筛选（`tags`、`tags_match`、`tag_groups`）时，分块所属**文档**的标签也必须满足条件。事实可能凭自身标签匹配，例如由[实体标签](./memory-banks#entity-labels)生成的 `kind:rule` 事实，但来源文档不匹配时，不应返回文档的其他文本。此时仍返回事实，不返回其分块。
+如果设置了标签过滤器（`tags`、`tags_match`、`tag_groups`），只有当文档的标签也通过过滤时，才会返回相应分块。某条事实可能因自身标签而匹配——例如从[实体标签](./memory-banks#entity-labels)投影而来的 `kind:rule` 事实——但其来源文档的标签可能不匹配；此时不应连同该文档中的其他文本一起返回。这条事实仍会返回，但不会返回其分块。
 :::
 
-#### source_facts
+#### source_facts {#source_facts}
 
-启用且 `types` 包含 `observation` 时，每条观察都附带生成它的原始事实。来源事实位于顶层 `source_facts` 字典，以事实 ID 为键；观察的 `source_fact_ids` 列表用于关联。不同观察共享的事实会去重。子选项 `max_tokens`（默认 `4096`）限制来源事实总 token 预算。
+启用此选项且 `types` 包含 `observation` 时，每条观测结果都会附带用于综合生成该观测的原始事实。来源事实会放在顶层 `source_facts` 字典中，以事实 ID 为键；每条观测结果带有 `source_fact_ids` 列表以供交叉引用。重复出现在多条观测中的事实只返回一次。`max_tokens` 子选项（默认值为 `4096`）限制来源事实的总 token 预算。
 
 :::note
-预算按结果顺序使用，因此耗尽时，排名最低的结果先失去来源事实，最高排名的结果始终保留。`source_fact_ids` 仍列出全部来源，所以部分 ID 可能没有 `source_facts` 条目。如果原因是预算耗尽而非事实缺失，响应设置 `source_facts_truncated: true`。需要解析全部来源时，提高 `max_tokens` 或设为 `-1`。
+预算按结果顺序消耗，因此预算用尽时，排名最低的结果会失去其来源事实；排名靠前的结果始终保留来源事实。`source_fact_ids` 始终列出全部来源，因此某个 ID 可能在 `source_facts` 中没有对应项；如果这是预算造成的，而不是因为事实缺失，响应会设置 `source_facts_truncated: true`。如果需要解析所有来源，请提高 `max_tokens`（或将其设为 `-1`）。
 :::
 
 <Tabs>
@@ -183,56 +183,56 @@ import recallGo from '!!raw-loader!@site/examples/api/recall.go';
 </TabItem>
 </Tabs>
 
-#### entities
+#### entities {#entities}
 
-默认启用，使每条事实包含相关实体的规范名称。设为 `null` 可跳过实体 JOIN 查询并减小响应。子选项 `max_tokens`（默认 `500`）是为未来实体数据预算预留的限制。
+默认启用。启用时，每条返回事实都会包含与其关联实体的规范名称。设为 `null` 可跳过实体 JOIN 查询并减小响应体积。`max_tokens` 子选项（默认值为 `500`）是为未来实体数据准备的保护阈值。
 
-### tags
+### tags {#tags}
 
-将召回限制在请求的标签范围内。`tags` 默认为 `null`，
-`tags_match` 默认为 `any`。
+将召回范围限制为请求标签范围内的记忆。`tags` 默认值为 `null`，
+`tags_match` 默认值为 `any`。
 
-`tags_match` 参数控制筛选逻辑：
+`tags_match` 参数控制过滤逻辑：
 
 | 模式 | 无标签记忆 | 匹配条件 |
 |------|-------------------|-----------------|
-| `any`（默认） | 包含 | 记忆具有指定标签中的**至少一个** |
-| `any_strict` | 排除 | 记忆具有指定标签中的**至少一个** |
-| `all` | 包含 | 记忆具有指定的**所有**标签 |
-| `all_strict` | 排除 | 记忆具有指定的**所有**标签 |
-| `exact` | 排除 | 记忆的标签集合与指定集合**完全一致** |
+| `any`（默认值） | 包含 | 记忆至少带有一个指定标签 |
+| `any_strict` | 排除 | 记忆至少带有一个指定标签 |
+| `all` | 包含 | 记忆带有全部指定标签 |
+| `all_strict` | 排除 | 记忆带有全部指定标签 |
+| `exact` | 排除 | 记忆的标签集合与指定集合完全相同 |
 
-默认值与空筛选条件的行为如下：
+需要特别注意默认行为和空过滤器的行为：
 
-| `tags` | `tags_match` | 可返回的记忆 |
+| `tags` | `tags_match` | 符合条件的记忆 |
 |--------|--------------|-------------------|
-| 省略、`null` 或 `[]` | 省略（`any`） | 所有有标签和无标签记忆 |
-| 省略、`null` 或 `[]` | `any`、`all`、`any_strict` 或 `all_strict` | 所有有标签和无标签记忆；空标签列表表示不筛选 |
-| 省略、`null` 或 `[]` | `exact` | 仅无标签／全局记忆 |
-| 非空 | `any` 或 `all` | 匹配的有标签记忆，以及无标签／全局记忆 |
+| 省略、`null` 或 `[]` | 省略（`any`） | 全部有标签和无标签的记忆 |
+| 省略、`null` 或 `[]` | `any`、`all`、`any_strict` 或 `all_strict` | 全部有标签和无标签的记忆；空标签列表表示不进行过滤 |
+| 省略、`null` 或 `[]` | `exact` | 仅无标签/全局记忆 |
+| 非空 | `any` 或 `all` | 匹配的有标签记忆，以及无标签/全局记忆 |
 | 非空 | `any_strict` 或 `all_strict` | 仅匹配的有标签记忆 |
-| 非空 | `exact` | 完整标签集合与 `tags` 完全相等的记忆 |
+| 非空 | `exact` | 标签集合与 `tags` 完全相同的记忆 |
 
-:::note MCP 的空范围行为
-MCP `recall` 工具仅在存在 `tags` 时转发 `tags_match`。
-通过 MCP 选择无标签／全局范围时，请同时传入 `tags: []` 和
-`tags_match: "exact"`，不要省略 `tags`。
+:::note MCP 空范围行为
+对于 MCP `recall` 工具，只有在提供 `tags` 时才会转发 `tags_match`。
+若要通过 MCP 选择无标签/全局范围，应同时传入 `tags: []` 和
+`tags_match: "exact"`，而不是省略 `tags`。
 :::
 
-#### 场景设置 {#scenario-setup}
+#### 场景设定 {#scenario-setup}
 
-假设记忆库中有以下四条记忆：
+假设某个记忆库中有以下四条记忆：
 
 | 记忆 | 标签 |
 |--------|------|
-| “Alice 偏好异步沟通” | `["user:alice"]` |
-| “Bob 不喜欢冗长会议” | `["user:bob"]` |
-| “团队使用 Slack 发布通知” | `["user:alice", "team"]` |
-| “公司规定：周五不开会” | *（无标签）* |
+| "Alice prefers async communication" | `["user:alice"]` |
+| "Bob dislikes long meetings" | `["user:bob"]` |
+| "Team uses Slack for announcements" | `["user:alice", "team"]` |
+| "Company policy: no meetings on Fridays" | *（无标签）* |
 
-#### `any`：OR 匹配，包含无标签记忆（默认） {#any--or-matching-includes-untagged-default}
+#### `any` — OR 匹配，包含无标签记忆（默认值） {#any--or-matching-includes-untagged-default}
 
-返回具有**至少一个**匹配标签的记忆，以及无标签记忆。
+返回至少带有一个匹配标签的记忆，以及无标签记忆。
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -249,11 +249,11 @@ MCP `recall` 工具仅在存在 `tags` 时转发 `tags_match`。
 </TabItem>
 </Tabs>
 
-适用于**共享全局知识与用户专属信息**并存的模式，无标签记忆表示所有人都应看到的信息。
+适用于**共享的全局知识和特定用户的**模式；此时，无标签记忆代表所有人都应看到的信息。
 
-#### `any_strict`：OR 匹配，排除无标签记忆 {#any_strict--or-matching-excludes-untagged}
+#### `any_strict` — OR 匹配，排除无标签记忆 {#any_strict--or-matching-excludes-untagged}
 
-与 `any` 相同，但排除无标签记忆。
+与 `any` 相同，但会排除无标签记忆。
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -270,11 +270,11 @@ MCP `recall` 工具仅在存在 `tags` 时转发 `tags_match`。
 </TabItem>
 </Tabs>
 
-适用于记忆**完全按标签分区**，且无标签记忆永远不应可见的场景。
+适用于记忆**完全按标签分区**、且绝不应显示无标签记忆的情况。
 
-#### `all`：AND 匹配，包含无标签记忆 {#all--and-matching-includes-untagged}
+#### `all` — AND 匹配，包含无标签记忆 {#all--and-matching-includes-untagged}
 
-返回具有指定**全部**标签的记忆，以及无标签记忆。
+返回带有每一个指定标签的记忆，以及无标签记忆。
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -291,11 +291,11 @@ MCP `recall` 工具仅在存在 `tags` 时转发 `tags_match`。
 </TabItem>
 </Tabs>
 
-适用于记忆必须属于**指定范围交集**的场景，例如同时与某用户及某项目相关，又需要包含共享全局知识。
+适用于记忆必须属于某个**特定范围交集**的情况（例如，只返回同时与某位用户和某个项目相关的记忆），同时仍显示共享的全局知识。
 
-#### `all_strict`：AND 匹配，排除无标签记忆 {#all_strict--and-matching-excludes-untagged}
+#### `all_strict` — AND 匹配，排除无标签记忆 {#all_strict--and-matching-excludes-untagged}
 
-返回具有指定**全部**标签的记忆，并排除无标签记忆。
+返回带有每一个指定标签的记忆，并排除无标签记忆。
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -312,39 +312,33 @@ MCP `recall` 工具仅在存在 `tags` 时转发 `tags_match`。
 </TabItem>
 </Tabs>
 
-适用于严格限制范围，要求记忆显式属于指定的**所有**上下文的场景。
+适用于需要严格执行范围约束、记忆必须明确属于**所有**指定上下文的情况。
 
-:::tip 允许额外标签
-在 `all_strict` 下，标签为 `["user:alice", "team", "project:x"]` 的记忆仍匹配 `["user:alice", "team"]`。额外标签没有影响，筛选只要求记忆**至少**包含指定标签。
+:::tip 可以有额外标签
+带有 `["user:alice", "team", "project:x"]` 标签的记忆，在 `all_strict` 模式下仍会匹配 `["user:alice", "team"]` 过滤器；记忆带有额外标签不会造成问题。过滤器只要求记忆至少包含指定标签。
 :::
 
-#### `exact`：集合相等，排除无标签记忆 {#exact--set-equality-excludes-untagged}
+#### `exact` — 集合完全相等，排除无标签记忆 {#exact--set-equality-excludes-untagged}
 
-返回标签集合与指定标签完全相等的记忆，忽略标签顺序。与 `all_strict` 不同，存在额外标签的记忆不会匹配。
+返回标签集合与指定标签完全相等的记忆，不受标签顺序影响。与 `all_strict` 不同，带有额外标签的记忆不会匹配。
 
-适用于精确筛选 `GET /v1/default/banks/{bank_id}/observations/scopes` 返回的观察范围，例如 `["user:alice"]` 不应匹配范围为 `["user:alice", "project:x"]` 的观察。
+适用于筛选 `GET /v1/default/banks/{bank_id}/observations/scopes` 返回的精确观测范围。例如，`["user:alice"]` 不应同时匹配范围为 `["user:alice", "project:x"]` 的观测。
 
-:::tip 只筛选全局（无标签）观察
-空范围是真实存在的范围，`observation_scopes: "shared"` 在此写入整合结果。设置 `tags_match: "exact"` 且**不提供标签**（省略 `tags` 或传入 `[]`），可只召回无标签／全局记忆，排除所有带标签的记忆：
+:::tip 仅筛选全局（无标签）观测
+空范围是一种真实存在的范围；`observation_scopes: "shared"` 整合出的内容就会写入其中。设置 `tags_match: "exact"` 并且**不提供标签**（省略 `tags` 或传入 `[]`），即可只召回无标签/全局记忆，并排除所有有标签记忆：
 
 ```json
 { "query": "...", "tags": [], "tags_match": "exact" }
 ```
 
-其他 `tags_match` 模式下，缺少或空的 `tags` 表示不按标签筛选，所有记忆都可返回。只有 `exact` 将缺少或空标签解释为“全局范围”。使用了更具体的范围后，可用此方式单独读取全局观察。
+使用其他任何 `tags_match` 模式时，`tags` 缺省或为空都表示“不进行标签过滤”（所有记忆均符合条件）。只有在 `exact` 模式下，缺省或空的标签才表示选择“全局范围”。如果你已经开始使用更具体的范围，这就是读取全局观测的方式。
 :::
 
-### tag_groups
+### tag_groups {#tag_groups}
 
-`tag_groups` 是复合布尔标签筛选列表，顶层按 AND 组合。每组是递归布尔表达式：**叶节点** `{tags, match}`，或**复合节点** `{and: [...]}`、`{or: [...]}`、`{not: ...}`。
+`tag_groups` 是一个复合布尔标签过滤器列表。列表中的组在顶层通过 AND 连接。每个组都是递归布尔表达式：可以是 `{tags, match}` **叶节点**，也可以是 `{and: [...]}`、`{or: [...]}` 或 `{not: ...}` **复合节点**。
 
-`tag_groups` 默认为 `null`。公开 REST 和 MCP 请求模型将
-`tag_groups` 与 `tags` 视为互斥参数，
-同时提供会被拒绝。复合筛选应单独使用 `tag_groups`，通常将
-顶层 `tags_match` 保持为默认 `any`。每个叶节点具有自己的
-`match`。例外是顶层 `tags_match: "exact"`：
-完全匹配会赋予缺少平铺标签特殊含义，新增仅全局范围的约束，
-再与复合表达式按 AND 组合。
+`tag_groups` 默认值为 `null`。公共 REST 和 MCP 请求模型将 `tag_groups` 与 `tags` 设为互斥参数：如果两者都出现，请求会被拒绝。使用复合过滤时，请单独使用 `tag_groups`，通常让顶层 `tags_match` 保持默认值 `any`。每个 `tag_groups` 叶节点都有自己的 `match` 值。例外情况是顶层 `tags_match: "exact"`：由于精确匹配会赋予缺省平面标签特定含义，它会增加一个仅限全局范围的平面约束，并通过 AND 与复合表达式组合。
 
 #### 叶节点 {#leaf-node}
 
@@ -352,17 +346,17 @@ MCP `recall` 工具仅在存在 `tags` 时转发 `tags_match`。
 { "tags": ["step:5", "step:8"], "match": "any_strict" }
 ```
 
-`match` 支持与 `tags_match` 相同的值：`any`、`all`、`any_strict`、`all_strict`、`exact`，默认 `any_strict`。
+`match` 接受与 `tags_match` 相同的值：`any`、`all`、`any_strict`、`all_strict`、`exact`。默认值为 `any_strict`。
 
 #### 模糊叶节点 {#fuzzy-leaves}
 
-叶节点可设置 `resolve: "fuzzy"`（默认 `"exact"`），按三元组相似度而非字面值匹配记忆库标签，因此 `typsecript` 仍能找到带 `typescript` 标签的记忆：
+叶节点可以设置 `resolve: "fuzzy"`（默认值为 `"exact"`），以三元组相似度将其标签与记忆库标签进行匹配，而不是要求字面相同。因此，过滤器中的 `typsecript` 仍能匹配带有 `typescript` 标签的记忆：
 
 ```json
 { "tags": ["typsecript"], "match": "any_strict", "resolve": "fuzzy" }
 ```
 
-每个标签会解析为相似度至少 0.45 的记忆库标签，叶节点再与这些标签精确匹配，因此 `resolve` 可与任何 `match` 模式组合。相似度对长度敏感：`kubernets` 可匹配 `kubernetes`，但短标签的三元组太少，无法承受一次编辑，`kakfa` 不匹配 `kafka`。没有解析结果的标签不会匹配任何记忆，筛选条件不会被丢弃。记忆库超过 5000 个不同标签，或 `resolve: "fuzzy"` 且 `match: "exact"` 的叶节点展开为超过 32 个候选范围时，返回 422。
+每个标签都会解析为相似度至少为 0.45 的记忆库标签，随后叶节点按精确方式匹配这些标签，因此 `resolve` 可与所有 `match` 模式组合使用。相似度受标签长度影响：`kubernets` 可匹配 `kubernetes`，但较短标签的三元组太少，无法容忍一次编辑（`kakfa` 无法匹配 `kafka`）。如果某标签没有解析到任何内容，就不会匹配任何内容；过滤器绝不会被丢弃。如果记忆库有超过 5000 个不同标签，或者 `resolve: "fuzzy"` 且 `match: "exact"` 的叶节点扩展出的候选范围超过 32 个，则会返回 422。
 
 #### 复合节点 {#compound-nodes}
 
@@ -374,7 +368,7 @@ MCP `recall` 工具仅在存在 `tags` 时转发 `tags_match`。
 
 #### 示例 {#examples}
 
-**步骤筛选 AND 用户范围**：两个顶层分组按 AND 组合：
+**步骤过滤器 AND 用户范围**——两个顶层组以 AND 连接：
 
 ```json
 {
@@ -385,7 +379,7 @@ MCP `recall` 工具仅在存在 `tags` 时转发 `tags_match`。
 }
 ```
 
-**AND 内嵌 OR**：必须匹配用户，并匹配步骤或优先级之一：
+**AND 中嵌套 OR**——用户必须匹配，并且步骤或优先级至少有一个匹配：
 
 ```json
 {
@@ -399,7 +393,7 @@ MCP `recall` 工具仅在存在 `tags` 时转发 `tags_match`。
 }
 ```
 
-**排除**：必须匹配用户，但排除已归档记忆：
+**排除**——用户必须匹配，但排除已归档的记忆：
 
 ```json
 {
@@ -410,134 +404,134 @@ MCP `recall` 工具仅在存在 `tags` 时转发 `tags_match`。
 }
 ```
 
-### trace
+### trace {#trace}
 
-设为 `true` 后，响应包含详细调试跟踪，涵盖查询嵌入、入口点、各策略检索结果、RRF 融合候选项、重排序结果、解析出的时间约束和各阶段耗时。不改变检索逻辑，适合解释某条记忆为何返回或未返回。
+设为 `true` 后，响应会包含详细的调试跟踪信息，涵盖查询嵌入、入口点、各策略的检索结果、RRF 融合候选项、重排结果、检测到的时间约束以及各阶段耗时。它不会影响检索逻辑本身。此选项有助于了解为什么某些记忆会或不会出现在结果中。
 
-### min_scores
+### min_scores {#min_scores}
 
-可选的各阶段最低分数对象，使用**包含边界**的比较（`>=`）。未设置的字段没有下限；完全省略 `min_scores`（默认）时不按分数筛选。四个字段作用于流程的**两个不同层级**，决定每个返回结果保证满足什么条件：
+可选的对象，用于设置各阶段分数下限，并按**包含边界**的方式比较（`>=`）。任何未设置的字段都不施加下限；完全省略 `min_scores`（默认情况）时，不进行任何分数过滤。这四个字段作用于流程中的**两个不同层级**，结果会因所在层级而具有不同保证：
 
-| 字段 | 层级 | 作用 | 每条结果都保证满足？ |
+| 字段 | 层级 | 效果 | 每条返回结果都保证满足吗？ |
 |---|---|---|---|
-| `semantic` | 检索 | 最低向量相似度，进入**语义分支** SQL，在融合前排除弱向量匹配；覆盖本次请求的全局相似度下限 | 否 |
-| `keyword` | 检索 | 最低关键词／全文（BM25）分数，进入**关键词分支** SQL，在融合前排除弱关键词匹配 | 否 |
-| `reranker` | 查询后 | 对排序结果应用最低归一化交叉编码器分数 | 是 |
-| `final` | 查询后 | 对排序结果应用最低最终排名分数 | 是 |
+| `semantic` | 检索阶段 | 最低向量相似度；传入**语义检索分支**的 SQL，在融合前剔除较弱的向量匹配（对本次请求覆盖全局相似度下限） | 否 |
+| `keyword` | 检索阶段 | 最低关键词/全文（BM25）分数；传入**关键词检索分支**的 SQL，在融合前剔除较弱的关键词匹配 | 否 |
+| `reranker` | 查询后 | 应用于排序结果的最低归一化交叉编码器分数 | 是 |
+| `final` | 查询后 | 应用于排序结果的最低最终排序分数 | 是 |
 
 ```json
 { "query": "...", "min_scores": { "reranker": 0.5 } }
 ```
 
-#### 检索下限约束单个分支，不约束最终结果 {#retrieval-floors-constrain-one-arm-not-the-result}
+#### 检索阶段的下限约束的是一个分支，而不是结果 {#retrieval-floors-constrain-one-arm-not-the-result}
 
-Recall 使用[四个检索分支](#results)：语义、关键词、图和时间。任一分支找到的记忆都可进入响应。`semantic` 和 `keyword` 只在各自分支内裁剪，改变*候选项集合*及最终顺序，**并不是对每条返回结果的判断条件**：
+Recall 会运行[四个检索分支](#results)：语义、关键词、图和时间检索；只要**任一**分支检出了某条记忆，它就会进入响应。`semantic` 和 `keyword` 会在各自指定的分支内部剔除候选项，因此改变的是*哪些候选项会被考虑*，最终排序也会随之变化。它们**不是针对每条返回结果的谓词**：
 
-- 仅由语义搜索找到的结果返回 `"keyword": null`，无论如何设置 `min_scores.keyword`。
-- 仅由关键词搜索找到的结果返回 `"semantic": null`，无论如何设置 `min_scores.semantic`。
-- 由图或时间分支找到的结果**两者都为空**，不受这两个下限影响。
+- 仅由语义检索找到的结果会报告 `"keyword": null`，无论你为 `min_scores.keyword` 设置了什么值；
+- 仅由关键词检索找到的结果会报告 `"semantic": null`，无论你为 `min_scores.semantic` 设置了什么值；
+- 经图或时间检索分支找到的结果会同时报告这两项为 **null**，且不受任何一个下限影响。
 
-因此，同时设置 `semantic` 和 `keyword` 不会将结果限制为同时满足两者的记忆。这是有意的：取交集会排除混合检索本就希望找到的强单分支匹配，例如与查询没有共同词语的改写，或嵌入得分较低的精确标识符 `amber-17`。
+因此，同时设置 `semantic` 和 `keyword` 并不会将响应限制为同时超过两项下限的结果。这是有意设计的：取交集会丢掉混合检索旨在找到的强单分支匹配，例如与查询没有词汇重合的释义，或嵌入模型打分较低的精确标识符 `amber-17`。
 
-#### 需要在低置信度时不返回结果，使用 `reranker` 或 `final` {#for-abstention-use-reranker-or-final}
+#### 如需弃答，请使用 `reranker` 或 `final` {#for-abstention-use-reranker-or-final}
 
-查询后下限在融合和重排序后应用于每条有分数的结果，因此返回结果都满足下限，没有结果满足时返回空列表。低置信度或无意义查询需要停止返回记忆时，应使用这些下限。但它们约束的是*综合*信号：`final` 结合 RRF 排名、交叉编码器相关性、新鲜度／时间和策略加权，`reranker` 取决于交叉编码器校准，均不等同于检索阶段阈值。
+查询后下限会在融合和重排之后应用于每个已评分结果，因此返回结果一定达到这些下限；如果没有任何结果达到下限，查询就会返回空结果。若希望召回在低置信度或无意义的查询上弃答，应使用这类下限。请注意，它们约束的是*组合信号*：`final` 综合了 RRF 排名、交叉编码器相关性、近期性/时间和策略加权；`reranker` 则取决于交叉编码器的校准。因此两者都不能直接替代检索阶段的截止阈值。
 
-因为空出的名额**不会**补齐，设置下限可能使结果数量低于预算可容纳的数量。
+腾出的名额**不会**用其他结果补齐，因此应用任何下限后，返回结果都可能少于预算允许的数量。
 
-**谨慎使用分数下限。** 重排序分数适合判断*顺序*，不适合作为*绝对*值。同一条明显相关的记忆，在一次查询中可能得分 `~0.001`，另一次却为 `~1.0`，固定阈值可能静默丢弃好结果。请先不设置 `min_scores` 进行召回，观察 [`scores`](#scores)，再根据实际分数校准阈值。使用固定阈值前，请阅读 [`scores`](#scores) 关于相对尺度的说明。
+**谨慎使用分数下限。** 重排器的分数适合用于*排序*，但不适合作为*绝对值*：一条明显相关的记忆，在某个查询中可能得分为 `~0.001`，在另一个查询中却可能是 `~1.0`，因此固定阈值可能会悄然丢弃有用结果。请根据实际观察到的分数校准阈值（先在不设置 `min_scores` 的情况下召回，再检查 [`scores`](#scores) 对象）。依赖固定阈值前，请阅读 [`scores`](#scores) 下方关于分数尺度为相对值而非绝对值的说明。
 
-**TypeSafe 重排序模型不支持此下限。** TypeSafe 一次对整个候选池排序，返回排名位置而非相关性分数；每次查询的首条记忆都是 `1.0`，因此 `reranker` 下限只会保留固定比例的结果。配置 TypeSafe 时，`min_scores.reranker` 返回 HTTP 400；故障转移链回退到 TypeSafe 时跳过该下限。请改用 `final`。
+**TypeSafe 重排器不支持此功能。** TypeSafe 会一次性为整个候选池排序，并返回每条记忆的名次，而不是相关性分数：每次查询中排名第一的记忆都是 `1.0`，因此设置 `reranker` 下限只会固定保留一定比例的结果。配置 TypeSafe 作为重排器时，Recall 会针对 `min_scores.reranker` 返回 HTTP 400；如果故障转移链回退到 TypeSafe，则会跳过此下限。请改用 `final`。
 
 ---
 
 ## 响应 {#response}
 
-### results
+### results {#results}
 
-按相关性排序的召回事实主列表。语义相似度、BM25 关键词、图遍历和时间四种检索策略并行运行，通过倒数排名融合（RRF）合并排名，再用交叉编码器依据原始查询为候选项重新评分。
+主要召回事实列表，按相关性排序。相关性通过并行运行四种检索策略计算：语义相似度、BM25 关键词、图遍历和时间检索；然后使用倒数排名融合（RRF）融合各自的排序，最后将合并后的候选项与原始查询一起交给交叉编码器重排器重新评分。
 
-每条结果都有 [`scores`](#scores) 对象。它们是**相对**信号，反映单次查询中的排序，不是跨查询可比的绝对置信度；一次查询的 `0.8` 不能与另一次的 `0.8` 比较。多数智能体应按顺序使用记忆，让 `max_tokens` 决定容纳多少条，而非按分数筛选。`scores` 和 [`min_scores`](#min_scores) 用于观察排名或裁剪低置信度尾部；阈值应依据未筛选查询的实际分数校准。
+每条结果都带有 [`scores`](#scores) 对象（见下文）。这些是**相对**信号：它们反映单次查询内的排序，而非跨查询的绝对置信度；一次查询得出的 `0.8` 与另一次查询的 `0.8` 不可比较。对大多数智能体而言，正确做法是按顺序使用记忆，让 `max_tokens` 决定可容纳多少内容，而不是按分数过滤。`scores` 对象和 [`min_scores`](#min_scores) 参数供希望检查排序或剔除低置信度尾部结果的调用方使用；请根据未过滤查询中实际看到的分数校准阈值。
 
-`results` 的每项包含以下字段：
+`results` 中的每一项都包含以下字段：
 
-#### id
+#### id {#id}
 
-事实的唯一标识符，用于与 `source_facts` 交叉关联或在应用层去重。
+此事实的唯一标识符。可用它与 `source_facts` 交叉引用，或在应用层执行去重。
 
-#### text
+#### text {#text}
 
-记忆库中保存的已提取事实文本。
+存储在记忆库中的提取事实文本。
 
-#### type
+#### type {#type}
 
-事实类别：`world` 为客观信息，`experience` 为事件和对话，`observation` 为随时间整合的知识。
+事实类别：`world` 表示客观信息，`experience` 表示事件和对话，`observation` 表示经过一段时间综合生成的整合知识。
 
-#### context
+#### context {#context}
 
-存储事实时提供的上下文标签，例如 `"团队会议"`、`"slack"`；未设置时为 `null`。
+存入该事实时提供的上下文标签（例如 `"team meeting"`、`"slack"`）。未设置时为 `null`。
 
-#### metadata
+#### metadata {#metadata}
 
-存储事实时附加的字符串键值对；未设置时为 `null`。
+存入该事实时附加的键值字符串对。未设置时为 `null`。
 
-#### tags
+#### tags {#tags-1}
 
-附加在事实上的可见范围标签。
+附加到此事实、用于限定可见范围的标签。
 
-#### entities
+#### entities {#entities-1}
 
-与事实关联的规范实体名称字符串列表。仅在启用 `include.entities`（默认）时填充，否则为 `null`。
+与此事实关联的规范实体名称字符串列表。仅当启用 `include.entities`（默认值）时才会填充；否则为 `null`。
 
-#### occurred_start / occurred_end
+#### occurred_start / occurred_end {#occurred_start--occurred_end}
 
-描述事件开始和结束时间的 ISO 8601 日期时间，由 LLM 在存储时从内容中提取。没有时间信息时为 `null`。
+表示所述事件开始和结束时间的 ISO 8601 日期时间。由 LLM 在存入过程中从内容中提取。内容中没有时间信息时为 `null`。
 
-#### mentioned_at
+#### mentioned_at {#mentioned_at}
 
-事实存入记忆库时的 ISO 8601 日期时间。
+此事实存入记忆库时的 ISO 8601 日期时间。
 
-#### document_id
+#### document_id {#document_id}
 
-存储时设置的所属文档 ID。
+此事实所属的文档 ID，在存入时设定。
 
-#### chunk_id
+#### chunk_id {#chunk_id}
 
-提取该事实的来源文本分块 ID，启用 `include.chunks` 时用于与响应中的 `chunks` 关联。
+提取此事实所依据的来源文本分块 ID。启用 `include.chunks` 时，可用它与响应中的 `chunks` 交叉引用。
 
-#### source_fact_ids
+#### source_fact_ids {#source_fact_ids}
 
-仅 `observation` 结果返回：生成该观察的原始事实 ID，与响应中的 `source_facts` 关联。其他类型或未启用 `include.source_facts` 时为 `null`。
+仅适用于 `observation` 类型的结果：此观测综合生成所依据的原始事实 ID。用于与响应中的 `source_facts` 交叉引用。其他类型，或未启用 `include.source_facts` 时为 `null`。
 
-#### scores
+#### scores {#scores}
 
-该结果各阶段的分数对象。`source_facts` 条目按来源关系附加而非排名，因此为 `null`。字段包括：
+包含此结果各阶段分数的对象。`source_facts` 条目通过来源关系附加，而不是经过排序，因此其 `scores` 为 `null`。字段如下：
 
-- **`final`**：事实的排名分数（交叉编码器相关性 × 新鲜度／时间／证据加权），`results` 按其降序排列。它是相对信号，不是校准后的概率。
-- **`reranker`**：交叉编码器归一化相关性（`0`～`1`）。使用透传重排序（RRF/interleave）或返回排名位置而非分数的模型（TypeSafe）时为 `null`。
-- **`semantic`**：原始向量余弦相似度（`0`～`1`）；未被语义搜索找到时为 `null`。
-- **`keyword`**：原始关键词／全文（BM25）分数（`≥ 0`，无上限）；未被关键词搜索找到时为 `null`。
+- **`final`** — 此事实据以排序的分数（交叉编码器相关性 × 近期性/时间/证据加权）。`results` 按此分数降序排列。它是相对信号，不是经过校准的概率（参见上文说明）。
+- **`reranker`** — 交叉编码器归一化后的相关性分数（`0`–`1`）。部署使用直通式重排器（RRF/interleave 模式），或使用返回名次而非分数的重排器（TypeSafe）时为 `null`。
+- **`semantic`** — 原始向量余弦相似度（`0`–`1`）。此结果不是由语义检索找到时为 `null`。
+- **`keyword`** — 原始关键词/全文（BM25）分数（`≥ 0`，无上限）。此结果不是由关键词检索找到时为 `null`。
 
-每个字段也可作为 [`min_scores`](#min_scores) 下限，但 `semantic` 和 `keyword` 约束各自检索分支，因此即使设置下限，该值也可能为 `null`。非空值始终满足下限，详情见 [`min_scores`](#min_scores)。
+每个字段也都可以作为 [`min_scores`](#min_scores) 下限；但 `semantic` 和 `keyword` 约束的是各自的检索分支，而不是返回结果，因此即使设置了相应下限，此处为 `null` 也是预期行为。非 `null` 的值一定达到该下限。参见 [`min_scores`](#min_scores)。
 
 ---
 
-### source_facts
+### source_facts {#source_facts-1}
 
-以事实 ID 为键的字典，包含参与生成观察结果的来源事实完整 `RecallResult` 对象。仅启用 `include.source_facts` 时返回。事实会去重，两个观察共享的来源事实只出现一次。
+以事实 ID 为键的字典，其中包含对观测结果有贡献的来源事实的完整 `RecallResult` 对象。仅在启用 `include.source_facts` 时出现。事实会去重；如果两条观测共享同一个来源事实，该事实只出现一次。
 
-### source_facts_truncated
+### source_facts_truncated {#source_facts_truncated}
 
-token 预算是否截断了 `source_facts` 字典。为 `true` 时，部分 `results[].source_fact_ids` 因预算耗尽而没有对应条目，并不表示引用失效。仅启用 `include.source_facts` 时返回。
+表示 token 预算是否导致 `source_facts` 映射被截短。若值为 `true`，说明预算用尽，导致 `results[].source_fact_ids` 中的一些 ID 在 `source_facts` 中没有对应项；这些引用并非悬空引用。仅在启用 `include.source_facts` 时出现。
 
-### chunks
+### chunks {#chunks-1}
 
-以分块 ID 为键的字典，包含与返回事实关联的原始来源文本分块。仅启用 `include.chunks` 时返回。每个分块包含 `id`、`text`、`chunk_index` 和 `truncated`（文本是否为适应预算而截断）。
+以分块 ID 为键的字典，其中包含与返回事实关联的原始来源文本分块。仅在启用 `include.chunks` 时出现。每个分块包含 `id`、`text`、`chunk_index` 和 `truncated`（文本是否因适配 token 预算而被截断）。
 
-### entities
+### entities {#entities-2}
 
-以规范实体名称为键的实体状态字典。仅启用 `include.entities` 时返回。每项包含 `entity_id`、`canonical_name` 和 `observations`。
+以规范实体名称为键的字典，其中包含实体状态对象。仅在启用 `include.entities` 时出现。每个条目包含 `entity_id`、`canonical_name` 和 `observations`。
 
-### trace
+### trace {#trace-1}
 
-仅请求设置 `trace: true` 时返回的调试对象，包含各阶段耗时、检索明细和 RRF 融合详情。
+仅当请求中设置了 `trace: true` 时才会出现的调试对象，包含各阶段耗时、检索明细和 RRF 融合详情。

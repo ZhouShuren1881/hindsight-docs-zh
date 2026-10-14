@@ -167,13 +167,13 @@ export default function IntegrationsHub(): React.ReactElement {
   const communityCount = integrations.filter((i) => i.type === 'community').length;
 
   return (
-    <Layout title="集成中心" description="浏览 Hindsight 智能体记忆的官方与社区集成">
+    <Layout title="集成中心" description="浏览 Hindsight 智能体记忆的官方集成与社区集成">
 
       {/* Full-width hero with its own background */}
       <div className={clsx('hs-hero-band', styles.heroSection)}>
         <h1 className={styles.heroTitle}>集成中心</h1>
         <p className={styles.heroSubtitle}>
-          将 Hindsight 接入你的技术栈，浏览官方集成与社区构建的连接器。
+          将 Hindsight 接入你的技术栈，浏览官方集成和社区构建的连接器。
         </p>
 
         <div className={styles.hubSearchWrapper}>
@@ -244,7 +244,7 @@ export default function IntegrationsHub(): React.ReactElement {
               <span className={styles.groupCount}>{harnesses.length}</span>
             </h3>
             <p className={styles.harnessNote}>
-              均可通过同一个{' '}
+              这些智能体都由同一个{' '}
               <Link to="/sdks/integrations/coding-agents">Coding Agents</Link> 插件安装。
             </p>
             <div className={styles.harnessGrid}>

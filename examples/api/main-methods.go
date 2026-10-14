@@ -21,20 +21,20 @@ func main() {
 	ctx := context.Background()
 
 	// [docs:main-retain]
-	// 将事实或对话存入记忆库
+	// Store a fact or conversation into a memory bank
 	client.MemoryAPI.RetainMemories(ctx, "my-bank").
 		RetainRequest(hindsight.RetainRequest{
 			Items: []hindsight.MemoryItem{
-				{Content: hindsight.TextContent("Alice 于 2024 年 3 月加入 Google，担任高级机器学习工程师")},
+				{Content: hindsight.TextContent("Alice joined Google in March 2024 as a Senior ML Engineer")},
 			},
 		}).Execute()
 	// [/docs:main-retain]
 
 	// [docs:main-recall]
-	// 使用自然语言查询搜索记忆
+	// Search for memories using a natural language query
 	resp, _, _ := client.MemoryAPI.RecallMemories(ctx, "my-bank").
 		RecallRequest(hindsight.RecallRequest{
-			Query: "Alice 在 Google 做什么工作？",
+			Query: "What does Alice do at Google?",
 		}).Execute()
 
 	for _, r := range resp.Results {
@@ -43,18 +43,18 @@ func main() {
 	// [/docs:main-recall]
 
 	// [docs:main-reflect]
-	// 结合记忆和性格倾向生成推理回答
+	// Generate a reasoned response using memories and bank disposition
 	answer, _, _ := client.MemoryAPI.Reflect(ctx, "my-bank").
 		ReflectRequest(hindsight.ReflectRequest{
-			Query: "后端应该采用 TypeScript 吗？",
+			Query: "Should we adopt TypeScript for our backend?",
 		}).Execute()
 
 	fmt.Println(answer.GetText())
 	// [/docs:main-reflect]
 
-	// 清理，文档中不展示
+	// Cleanup (not shown in docs)
 	req, _ := http.NewRequest("DELETE", fmt.Sprintf("%s/v1/default/banks/my-bank", apiURL), nil)
 	http.DefaultClient.Do(req)
 
-	fmt.Println("main-methods.go: 所有示例通过")
+	fmt.Println("main-methods.go: All examples passed")
 }

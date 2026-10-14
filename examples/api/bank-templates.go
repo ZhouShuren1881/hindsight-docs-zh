@@ -16,29 +16,29 @@ func main() {
 	}
 
 	// =============================================================================
-	// 文档示例
+	// Doc Examples
 	// =============================================================================
 
 	// [docs:import-template]
 	template := map[string]interface{}{
 		"version": "1",
 		"bank": map[string]interface{}{
-			"retain_mission":      "提取客户问题、解决方案和情绪。",
+			"retain_mission":      "Extract customer issues, resolutions, and sentiment.",
 			"enable_observations": true,
-			"observations_mission": "跟踪重复出现的客户痛点。",
+			"observations_mission": "Track recurring customer pain points.",
 		},
 		"mental_models": []map[string]interface{}{
 			{
 				"id":           "sentiment-overview",
-				"name":         "客户情绪概览",
-				"source_query": "整体情绪趋势是什么？",
+				"name":         "Customer Sentiment Overview",
+				"source_query": "What is the overall sentiment trend?",
 				"trigger":      map[string]interface{}{"refresh_after_consolidation": true},
 			},
 		},
 		"directives": []map[string]interface{}{
 			{
-				"name":     "认可不满情绪",
-				"content":  "提供解决方案前，始终先认可用户的不满情绪。",
+				"name":     "Acknowledge frustration",
+				"content":  "Always acknowledge frustration before offering solutions.",
 				"priority": 10,
 			},
 		},
@@ -74,12 +74,12 @@ func main() {
 	// [/docs:export-template]
 
 	// [docs:export-reimport]
-	// 从来源记忆库导出
+	// Export from source bank
 	resp, _ = http.Get(apiURL + "/v1/default/banks/source-bank/export")
 	defer resp.Body.Close()
 	srcExported, _ := io.ReadAll(resp.Body)
 
-	// 导入新记忆库
+	// Import into a new bank
 	resp, _ = http.Post(
 		apiURL+"/v1/default/banks/new-bank/import",
 		"application/json",

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Hindsight 心智模型 API 示例 (Node.js)
- * 运行： node examples/api/mental-models.mjs
+ * Mental Models API examples for Hindsight (Node.js)
+ * Run: node examples/api/mental-models.mjs
  */
 import { HindsightClient } from '@vectorize-io/hindsight-client';
 
@@ -9,82 +9,82 @@ const HINDSIGHT_URL = process.env.HINDSIGHT_API_URL || 'http://localhost:8888';
 const BANK_ID = 'mental-models-demo-bank';
 
 // =============================================================================
-// 初始化（不在文档中展示）
+// Setup (not shown in docs)
 // =============================================================================
 const client = new HindsightClient({ baseUrl: HINDSIGHT_URL });
-await client.createBank(BANK_ID, { name: '心智模型演示' });
-await client.retain(BANK_ID, '团队偏好通过 Slack 异步沟通');
-await client.retain(BANK_ID, '紧急问题使用 #incidents 频道');
-await client.retain(BANK_ID, '每周同步会议在周一上午 10 点');
+await client.createBank(BANK_ID, { name: 'Mental Models Demo' });
+await client.retain(BANK_ID, 'The team prefers async communication via Slack');
+await client.retain(BANK_ID, 'For urgent issues, use the #incidents channel');
+await client.retain(BANK_ID, 'Weekly syncs happen every Monday at 10am');
 await new Promise(r => setTimeout(r, 2000));
 
 // =============================================================================
-// 文档示例
+// Doc Examples
 // =============================================================================
 
 // [docs:create-mental-model]
-// 创建心智模型，后台反思
+// Create a mental model (runs reflect in background)
 const result = await client.createMentalModel(
     BANK_ID,
-    '团队沟通偏好',
-    '团队偏好如何沟通？',
+    'Team Communication Preferences',
+    'How does the team prefer to communicate?',
     { tags: ['team', 'communication'] },
 );
 
-// 返回 operation_id，通过操作端点检查完成
-console.log(`操作 ID： ${result.operation_id}`);
+// Returns an operation_id — check operations endpoint for completion
+console.log(`Operation ID: ${result.operation_id}`);
 // [/docs:create-mental-model]
 
 // [docs:create-mental-model-with-id]
-// 创建指定自定义 ID 的心智模型
+// Create a mental model with a specific custom ID
 const resultWithId = await client.createMentalModel(
     BANK_ID,
-    '沟通政策',
-    "团队沟通准则是什么？",
+    'Communication Policy',
+    "What are the team's communication guidelines?",
     { id: 'communication-policy' },
 );
 
-console.log(`使用自定义 ID 创建： ${resultWithId.operation_id}`);
+console.log(`Created with custom ID: ${resultWithId.operation_id}`);
 // [/docs:create-mental-model-with-id]
 
 await new Promise(r => setTimeout(r, 5000));
 
 // [docs:create-mental-model-with-trigger]
-// 创建启用自动刷新的心智模型
+// Create a mental model with automatic refresh enabled
 const result2 = await client.createMentalModel(
     BANK_ID,
-    '项目状态',
-    '当前项目状态如何？',
+    'Project Status',
+    'What is the current project status?',
     { trigger: { refreshCron: '0 3 * * *' } },
 );
 
-// 每天 03:00 UTC 检查，范围记忆改变时刷新
-console.log(`操作 ID： ${result2.operation_id}`);
+// This mental model checks daily at 03:00 UTC and refreshes when scoped memories changed
+console.log(`Operation ID: ${result2.operation_id}`);
 // [/docs:create-mental-model-with-trigger]
 
 // [docs:create-mental-model-tags-match]
-// 覆盖刷新时模型标签筛选来源的方式。
-// 带标签模型默认 all_strict，记忆需包含全部标签；
-// 每条记忆仅单主题时用 any，
-// 刷新读取至少带一个模型标签的记忆。
+// Override how the model's tags filter source memories on refresh.
+// A tagged model defaults to 'all_strict' (a memory must carry EVERY tag);
+// use 'any' when your memories are tagged narrowly (one topic each), so the
+// refresh reads any memory carrying at least one of the model's tags.
 const result3 = await client.createMentalModel(
     BANK_ID,
-    '当前项目',
-    '用户目前处理哪些项目？',
+    'Current Projects',
+    'Which projects is the user currently working on?',
     {
         tags: ['projects', 'mental-model'],
         trigger: { tagsMatch: 'any' },
     },
 );
 
-console.log(`操作 ID： ${result3.operation_id}`);
+console.log(`Operation ID: ${result3.operation_id}`);
 // [/docs:create-mental-model-tags-match]
 
 await new Promise(r => setTimeout(r, 5000));
 
 // [docs:list-mental-models]
-// 列出全部心智模型，默认仅元数据；
-// detail: "content" 添加 source_query/content/trigger。
+// List all mental models in a bank. The list returns metadata by default;
+// detail: "content" adds source_query/content/trigger.
 const mentalModels = await client.listMentalModels(BANK_ID, { detail: "content" });
 
 for (const mm of mentalModels.items) {
@@ -94,91 +94,91 @@ for (const mm of mentalModels.items) {
 
 const mentalModelId = mentalModels.items[0]?.id;
 if (!mentalModelId) {
-    console.log('mental-models.mjs: 全部示例通过 (尚未创建心智模型)');
+    console.log('mental-models.mjs: All examples passed (no mental models created yet)');
     await fetch(`${HINDSIGHT_URL}/v1/default/banks/${BANK_ID}`, { method: 'DELETE' });
     process.exit(0);
 }
 
 // [docs:get-mental-model]
-// 获取指定心智模型
+// Get a specific mental model
 const mentalModel = await client.getMentalModel(BANK_ID, mentalModelId);
 
 console.log(`Name: ${mentalModel.name}`);
 console.log(`Content: ${mentalModel.content}`);
-console.log(`上次刷新： ${mentalModel.last_refreshed_at}`);
+console.log(`Last refreshed: ${mentalModel.last_refreshed_at}`);
 // [/docs:get-mental-model]
 
 // [docs:refresh-mental-model]
-// 刷新心智模型，更新为当前知识
+// Refresh a mental model to update with current knowledge
 const refreshResult = await client.refreshMentalModel(BANK_ID, mentalModelId);
 
-console.log(`刷新操作 ID： ${refreshResult.operation_id}`);
+console.log(`Refresh operation ID: ${refreshResult.operation_id}`);
 // [/docs:refresh-mental-model]
 
 // [docs:clear-mental-model]
-// 清空内容再刷新，完整重新综合
+// Clear a mental model's content, then refresh for a full re-synthesis
 await client.clearMentalModel(BANK_ID, mentalModelId);
 
-// 触发全新完整重建
+// Trigger a fresh full rebuild
 const fullRefreshResult = await client.refreshMentalModel(BANK_ID, mentalModelId);
 
-console.log(`完整刷新操作 ID： ${fullRefreshResult.operation_id}`);
+console.log(`Full refresh operation ID: ${fullRefreshResult.operation_id}`);
 // [/docs:clear-mental-model]
 
 // [docs:update-mental-model]
-// 更新模型元数据
+// Update a mental model's metadata
 const updated = await client.updateMentalModel(BANK_ID, mentalModelId, {
-    name: '更新后的团队沟通偏好',
+    name: 'Updated Team Communication Preferences',
     trigger: { refreshAfterConsolidation: true },
 });
 
-console.log(`更新后名称： ${updated.name}`);
+console.log(`Updated name: ${updated.name}`);
 // [/docs:update-mental-model]
 
 // [docs:get-mental-model-history]
-// 获取模型变更历史
+// Get the change history of a mental model
 const history = await client.getMentalModelHistory(BANK_ID, mentalModelId);
 
 for (const entry of history) {
-    console.log(`变更时间： ${entry.changed_at}`);
-    console.log(`此前内容： ${entry.previous_content}`);
+    console.log(`Changed at: ${entry.changed_at}`);
+    console.log(`Previous content: ${entry.previous_content}`);
 }
 // [/docs:get-mental-model-history]
 
 // [docs:mental-model-detail]
-// 列表默认仅元数据，最小响应
+// List: metadata only, the default (smallest response)
 await client.listMentalModels(BANK_ID);
 
-// 列表包含内容，不含来源链，需显式选择
+// List with content but without provenance chains (opt-in)
 await client.listMentalModels(BANK_ID, { detail: 'content' });
 
-// 获取单模型，默认完整细节
+// Get one model — full detail is the default here
 await client.getMentalModel(BANK_ID, mentalModelId);
 // [/docs:mental-model-detail]
 
 // [docs:dry-run-refresh]
-// 预览刷新，不写入
+// Preview what a refresh would do, without writing anything
 const preview = await client.dryRunRefreshMentalModel(BANK_ID, mentalModelId);
 
-console.log(`模式： ${preview.effective_mode}, 将持久保存： ${preview.would_persist}`);
+console.log(`Mode: ${preview.effective_mode}, would persist: ${preview.would_persist}`);
 console.log(preview.diff);
 // [/docs:dry-run-refresh]
 
 // [docs:keep-trace]
-// 记录每次刷新（含计划）如何得出结果
+// Record how every refresh (scheduled ones too) reached its result
 await client.updateMentalModel(BANK_ID, mentalModelId, {
     trigger: { mode: 'delta', keepTrace: true },
 });
 // [/docs:keep-trace]
 
 // [docs:delete-mental-model]
-// 删除心智模型
+// Delete a mental model
 await client.deleteMentalModel(BANK_ID, mentalModelId);
 // [/docs:delete-mental-model]
 
 // =============================================================================
-// 清理（不在文档中展示）
+// Cleanup (not shown in docs)
 // =============================================================================
 await client.deleteBank(BANK_ID);
 
-console.log('mental-models.mjs: 全部示例通过');
+console.log('mental-models.mjs: All examples passed');

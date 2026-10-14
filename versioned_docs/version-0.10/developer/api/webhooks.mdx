@@ -4,42 +4,42 @@ sidebar_position: 10
 
 # Webhooks {#webhooks}
 
-Hindsight可以通过向您配置的URL发送HTTP POST请求来实时通知您的应用程序。
+Hindsight 会在发生记忆事件时，向你配置的 URL 发送 HTTP POST 请求，实时通知你的应用。
 
 ## 投递与重试 {#delivery-and-retries}
 
-Webhooks 按记忆库注册，并在发生匹配事件时自动触发。跟踪每次交付尝试，并以指数退避重试失败的交付：
+Webhook 按记忆库注册，匹配的事件发生时会自动触发。系统会跟踪每次投递尝试，并对失败的投递采用指数退避重试：
 
-|尝试|失败后延迟|
+| 尝试次数 | 失败后的等待时间 |
 |---------|---------------------|
-|1|5秒|
-|2|5 分钟|
-|3|30分钟|
-|4|2小时|
-|5|5小时|
-|6|永久失败|
+| 1 | 5 秒 |
+| 2 | 5 分钟 |
+| 3 | 30 分钟 |
+| 4 | 2 小时 |
+| 5 | 5 小时 |
+| 6 | 永久失败 |
 
-如果您的终端返回non-2xx状态代码或在配置的超时（默认30秒）内未响应，则视为传送失败。尝试失败 6 次后，交付将被标记为永久失败，并且不会再进行重试。
+如果你的端点返回非 2xx 状态码，或未能在配置的超时时间内响应（默认 30 秒），则此次投递视为失败。连续 6 次尝试失败后，该投递会被标记为永久失败，不再重试。
 
-:::info 至少一次交付
-Webhook 交付任务在与主要操作相同的数据库事务中排队（例如，记忆存储或集成写入）。这意味着如果服务器在提交之后但在发送之前崩溃，交付任务将继续存在并将重试。结果**你的端点可能多次收到同一事件** — 使用 如果需要， `operation_id` 字段可进行重复数据删除。
+:::info 至少一次投递
+Webhook 投递任务与主要操作（例如存入或整合写入）在同一个数据库事务中入队。这意味着，如果服务器在提交之后、发送之前崩溃，投递任务仍会保留下来并在之后重试。因此，**你的端点可能会多次收到同一事件**；如有需要，可使用 `operation_id` 字段去重。
 :::
 
 ## 验证投递 {#verifying-deliveries}
 
-当使用秘密注册 Webhook 时，每次交付都会携带确切请求正文的 HMAC-SHA256 签名。在信任有效负载之前验证它——仅 URL 并不能证明请求来自 Hindsight。
+注册 Webhook 时若配置了密钥，每次投递都会附带针对原始请求正文精确字节计算的 HMAC-SHA256 签名。信任载荷前必须先验证签名；仅凭 URL 不能证明请求来自 Hindsight。
 
-|标题|价值|注释|
+| 标头 | 值 | 说明 |
 |--------|-------|-------|
-|`X-Hindsight-Event`|事件类型，例如`retain.completed`|始终发送|
-|`X-Hindsight-Signature`|`sha256=<hex>`在原始身体上|配置机密时发送|
-|`X-Hub-Signature-256`|与相同 `X-Hindsight-Signature`|此结构的常规名称，因此 GitHub 型接收器开箱即用验证|
-|`X-Hindsight-Signature-V2`|`t=<unix_seconds>,v1=<hex>`超过`<t>.<raw body>`|时间戳变体 - 如果您想要重放保护，请使用此选项|
+| `X-Hindsight-Event` | 事件类型，例如 `retain.completed` | 始终发送 |
+| `X-Hindsight-Signature` | 对原始正文计算的 `sha256=<hex>` | 配置签名密钥后发送 |
+| `X-Hub-Signature-256` | 与 `X-Hindsight-Signature` 完全相同 | 这是此签名构造的常用名称，因此 GitHub 风格的接收端无需额外适配即可验证 |
+| `X-Hindsight-Signature-V2` | 对 `<t>.<raw body>` 计算的 `t=<unix_seconds>,v1=<hex>` | 带时间戳的变体；需要重放防护时使用 |
 
-`X-Hindsight-Signature` 和 `X-Hub-Signature-256` 始终携带相同的值：相同的秘密、相同的算法、相同的字节。验证您的框架已经理解哪一个；没有理由同时检查两者。
+`X-Hindsight-Signature` 和 `X-Hub-Signature-256` 始终携带相同的值：使用相同的密钥、算法和字节。验证你的框架已支持的那个标头即可，无需同时检查两者。
 
-:::warning 更喜欢带时间戳的签名
-`X-Hindsight-Signature` / `X-Hub-Signature-256` 在正文上签名，不要做任何其他事情，所以他们说*此有效负载来自Hindsight*但不是*这个有效负载是新鲜的*。在线捕获的交付永远可以验证。 `X-Hindsight-Signature-V2` 将有效负载与其签名时间绑定 — 检查`t` 在您选择的容差范围内（五分钟是常见的默认值）并拒绝任何较旧的内容。时间戳位于签名字符串内，因此在不破坏 MAC 的情况下无法对其进行编辑。每次重试都会重新签名，因此数小时后重试的交付仍会以新的 到达 `t`。
+:::warning 建议使用带时间戳的签名
+`X-Hindsight-Signature` / `X-Hub-Signature-256` 只对正文签名，不包含其他内容，因此它们只能证明*此载荷来自 Hindsight*，不能证明*此载荷是新近发送的*。从网络上截获的投递内容可以永远通过验证。`X-Hindsight-Signature-V2` 会将载荷绑定到签名时间；请检查 `t` 是否处于你设定的容差范围内（五分钟是常见默认值），并拒绝更早的请求。时间戳包含在签名字符串中，修改它会导致 MAC 验证失败。每次重试都会重新签名，因此数小时后重试的投递仍会带有新鲜的 `t`。
 :::
 
 ```python
@@ -51,12 +51,12 @@ TOLERANCE_SECONDS = 300
 
 
 def verify(secret: str, body: bytes, header: str) -> bool:
-    """根据原始请求正文验证 X-Hindsight-Signature-V2 标头。"""
+    """Verify an X-Hindsight-Signature-V2 header against the raw request body."""
     parts = dict(p.split("=", 1) for p in header.split(","))
     timestamp, received = parts["t"], parts["v1"]
 
     if abs(time.time() - int(timestamp)) > TOLERANCE_SECONDS:
-        return False  #太旧（或太远的未来）——视为重播
+        return False  # too old (or too far in the future) — treat as a replay
 
     expected = hmac.new(
         secret.encode(), f"{timestamp}.".encode() + body, hashlib.sha256
@@ -64,20 +64,20 @@ def verify(secret: str, body: bytes, header: str) -> bool:
     return hmac.compare_digest(expected, received)
 ```
 
-任何语言中需要正确处理的两件事：
+无论使用哪种语言，都要正确处理以下两点：
 
-- **对原始字节签名。** 重新序列化解析的JSON更改空格和按键顺序，签名将不匹配。在框架对其进行解码之前阅读正文。
-- **使用常量时间比较** (`hmac.compare_digest`，`crypto.timingSafeEqual`，……），从不与`==`。
+- **对原始字节签名。** 重新序列化已解析的 JSON 会改变空白和键的顺序，导致签名不匹配。应在框架解码请求正文之前读取它。
+- **以恒定时间比较**（`hmac.compare_digest`、`crypto.timingSafeEqual` 等），绝不要使用 `==`。
 
-在 Webhook 上设置的自定义标头 `http_config` 无法覆盖 `X-Hindsight-Event` 或任何签名标头，因此接收者可以信任这些值，无论其他配置如何。
+在 Webhook 的 `http_config` 中设置的自定义标头不能覆盖 `X-Hindsight-Event` 或任何签名标头，因此无论其他配置如何，接收端都可以信任这些值。
 
 ## 事件类型 {#event-types}
 
 ### `consolidation.completed` {#consolidationcompleted}
 
-在Hindsight完成将新记忆整合到记忆库的观察中后触发。
+Hindsight 完成将新记忆整合为某个记忆库的观测后触发。
 
-**请求载荷：**
+**载荷：**
 
 ```json
 {
@@ -97,22 +97,22 @@ def verify(secret: str, body: bytes, header: str) -> bool:
 
 **`data` 字段：**
 
-|字段|类型|说明|
+| 字段 | 类型 | 说明 |
 |-------|------|-------------|
-|`observations_created`|`整数\|空`|创建的新观察数|
-|`observations_updated`|`整数\|空`|现有观察数量已更新|
-|`observations_deleted`|`整数\|空`|删除的观察数|
-|`error_message`|`字符串\|空`|设置当 `status` 是 `"failed"`|
+| `observations_created` | `integer \| null` | 创建的新观测数量 |
+| `observations_updated` | `integer \| null` | 更新的现有观测数量 |
+| `observations_deleted` | `integer \| null` | 删除的观测数量 |
+| `error_message` | `string \| null` | 当 `status` 为 `"failed"` 时设置 |
 
-**`status` 值：**`"completed"`或`"failed"`
+**`status` 值：** `"completed"` 或 `"failed"`
 
 ---
 
 ### `retain.completed` {#retaincompleted}
 
-记忆存储操作完成后（同步和异步）每个文档触发一次。当保留一批 N 个文档时，会触发 N 个单独的事件。
+每份文档的存入操作完成后触发一次（同步和异步操作均如此）。一次存入 N 份文档时，会分别触发 N 个事件。
 
-**请求载荷：**
+**载荷：**
 
 ```json
 {
@@ -131,25 +131,25 @@ def verify(secret: str, body: bytes, header: str) -> bool:
 
 **`data` 字段：**
 
-|字段|类型|说明|
+| 字段 | 类型 | 说明 |
 |-------|------|-------------|
-|`document_id`|`字符串\|空`|文档 ID（如果在记忆存储请求中提供）|
-|`tags`|`字符串[] \|空`|记忆存储期间应用的文档级标签|
-|`memory_unit_count`|`数字\|空`|在此记忆存储之后文档拥有的记忆单位。 `null` 当请求不包含时 `document_id`。|
+| `document_id` | `string \| null` | 如果存入请求提供了文档 ID，则为该 ID |
+| `tags` | `string[] \| null` | 存入时应用于文档的标签 |
+| `memory_unit_count` | `number \| null` | 此次存入后该文档拥有的记忆单元数量。若请求未携带 `document_id`，则为 `null`。 |
 
-**注意事项：**
-- 对于异步记忆存储（`async: true`), `operation_id` 匹配 记忆存储返回的 `operation_id`API。
-- 对于同步记忆存储，`operation_id` 是出于跟踪目的而生成的标识符。
-- 记忆存储请求中的每个内容项都会触发一个事件。
-- `memory_unit_count: 0` 表示事实提取没有为文档返回任何内容。记忆存储仍然成功并且文本被存储，但是`recall` 和 `reflect` 搜索记忆 — 因此文档在之前无法检索 [重新处理](/developer/retain#when-a-mission-excludes-everything-in-a-document)。观看此字段，了解排除了超出预期内容的记忆存储任务。
+**说明：**
+- 对于异步存入（`async: true`），`operation_id` 与存入 API 返回的 `operation_id` 相同。
+- 对于同步存入，`operation_id` 是为跟踪用途生成的标识符。
+- 存入请求中的每个内容项都会触发一个事件。
+- `memory_unit_count: 0` 表示该文档没有提取出任何事实。存入操作仍然成功，文本也已存储，但 `recall` 和 `reflect` 检索的是记忆，因此在[重新处理](/developer/retain#when-a-mission-excludes-everything-in-a-document)之前无法检索到该文档。请关注此字段，以发现存入任务排除范围超出预期的情况。
 
 ---
 
 ### `memory_defense.triggered` {#memory_defensetriggered}
 
-当记忆库时触发 [记忆防护](../memory-defense/index.md) 策略作用于保留的项目 — 每个项目一次，即 **已脱敏**或**已阻止**。顺利通过的项目不会触发事件。需要在记忆库上启用记忆防御策略以及订阅此事件类型的 Webhook。
+当记忆库的 [Memory Defense（记忆防护）](../memory-defense/index.md)策略对已存入的项目采取措施时触发；每个被**脱敏**或**阻止**的项目触发一次。未受影响、正常通过的项目不会触发事件。记忆库必须已启用 Memory Defense 策略，并且有 Webhook 订阅此事件类型。
 
-**请求载荷：**
+**载荷：**
 
 ```json
 {
@@ -163,23 +163,23 @@ def verify(secret: str, body: bytes, header: str) -> bool:
     "detector": "sensitive_data",
     "document_id": "doc-abc123",
     "matched_types": ["github_token", "aws_access_key"],
-    "message": "匹配的敏感数据模式：github_token、aws_access_key"
+    "message": "Sensitive data pattern matched: github_token, aws_access_key"
   }
 }
 ```
 
 **`data` 字段：**
 
-|字段|类型|说明|
+| 字段 | 类型 | 说明 |
 |-------|------|-------------|
-|`action`|`string`|针对该项目采取的行动：`"redact"`或`"block"`|
-|`detector`|`字符串\|空`|匹配的探测器 (`"sensitive_data"`)|
-|`document_id`|`字符串\|空`|文档 ID（如果在记忆存储请求中提供）|
-|`matched_types`|`字符串[] \|空`|触发的密文模式的标签（例如 `github_token`，`ssn_us`)|
-|`message`|`字符串\|空`|匹配内容的人类可读摘要|
+| `action` | `string` | 对该项目采取的操作：`"redact"`（脱敏）或 `"block"`（阻止） |
+| `detector` | `string \| null` | 匹配到的检测器（`"sensitive_data"`） |
+| `document_id` | `string \| null` | 如果存入请求提供了文档 ID，则为该 ID |
+| `matched_types` | `string[] \| null` | 触发的脱敏模式标签（例如 `github_token`、`ssn_us`） |
+| `message` | `string \| null` | 对匹配结果的易读摘要 |
 
-**`status` 值：**镜子`data.action` — `"redact"`或`"block"`。
+**`status` 值**：与 `data.action` 相同，即 `"redact"` 或 `"block"`。
 
-**注意事项：**
-- A`redact`事件意味着秘密被清除，并且编辑过的记忆仍然被存储。 `block`事件表示物品被掉落；如果记忆存储请求中的每个项目都被阻止，则记忆存储调用将返回 `422`。
+**说明：**
+- `redact` 事件表示敏感内容已被清除，脱敏后的记忆仍然存储。`block` 事件表示该项目已被丢弃；如果存入请求中的所有项目都被阻止，存入调用将返回 `422`。
 

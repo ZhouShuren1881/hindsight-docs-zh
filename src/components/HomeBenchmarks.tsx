@@ -53,7 +53,7 @@ export default function HomeBenchmarks(): ReactNode {
 
       <div className={styles.legend}>
         <span className={styles.legendOurs}>Hindsight</span>
-        <span className={styles.legendBest}>排名第二的系统</span>
+        <span className={styles.legendBest}>排名次优的系统</span>
       </div>
 
       <div className={styles.rows}>
@@ -66,7 +66,7 @@ export default function HomeBenchmarks(): ReactNode {
                 <span className={styles.valueOurs}>{r.ours.toFixed(1)}%</span>
               </div>
               {r.best === undefined ? (
-                <span className={styles.noCompare}>暂无公开对比结果</span>
+                <span className={styles.noCompare}>暂无公开对比数据</span>
               ) : (
                 <div className={styles.track}>
                   <div className={styles.barBest} style={{width: `${r.best}%`}} />

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Hindsight 文档 API 示例.
-运行： python examples/api/documents.py
+Documents API examples for Hindsight.
+Run: python examples/api/documents.py
 """
 import os
 import requests
@@ -9,31 +9,31 @@ import requests
 HINDSIGHT_URL = os.getenv("HINDSIGHT_API_URL", "http://localhost:8888")
 
 # =============================================================================
-# 初始化（不在文档中展示）
+# Setup (not shown in docs)
 # =============================================================================
 from hindsight_client import Hindsight
 
 client = Hindsight(base_url=HINDSIGHT_URL)
 
 # =============================================================================
-# 文档示例
+# Doc Examples
 # =============================================================================
 
 # [docs:document-retain]
-# 使用文档 ID 存储
+# Retain with document ID
 client.retain(
     bank_id="my-bank",
-    content="Alice 介绍了第四季度路线图...",
+    content="Alice presented the Q4 roadmap...",
     document_id="meeting-2024-03-15"
 )
 
-# 分章节批量存储文档
+# Batch retain for a document with different sections
 client.retain_batch(
     bank_id="my-bank",
     items=[
-        {"content": "事项 1：产品发布延期至第二季度", "document_id": "meeting-2024-03-15-section-1"},
-        {"content": "事项 2：公布新招聘目标", "document_id": "meeting-2024-03-15-section-2"},
-        {"content": "事项 3：机器学习团队预算获批", "document_id": "meeting-2024-03-15-section-3"}
+        {"content": "Item 1: Product launch delayed to Q2", "document_id": "meeting-2024-03-15-section-1"},
+        {"content": "Item 2: New hiring targets announced", "document_id": "meeting-2024-03-15-section-2"},
+        {"content": "Item 3: Budget approved for ML team", "document_id": "meeting-2024-03-15-section-3"}
     ]
 )
 # [/docs:document-retain]
@@ -43,14 +43,14 @@ client.retain_batch(
 # Original
 client.retain(
     bank_id="my-bank",
-    content="项目截止日期：3 月 31 日",
+    content="Project deadline: March 31",
     document_id="project-plan"
 )
 
-# 更新（删除旧事实，创建新事实）
+# Update (deletes old facts, creates new ones)
 client.retain(
     bank_id="my-bank",
-    content="项目截止日期：4 月 15 日（已延期）",
+    content="Project deadline: April 15 (extended)",
     document_id="project-plan"
 )
 # [/docs:document-update]
@@ -65,31 +65,31 @@ async def list_documents_example():
     api_client = ApiClient(config)
     api = DocumentsApi(api_client)
 
-    # 列出全部文档
+    # List all documents
     result = await api.list_documents(bank_id="my-bank")
-    print(f"文档总数： {result.total}")
+    print(f"Total documents: {result.total}")
 
-    # 按文档 ID 子串筛选
+    # Filter by document ID substring
     result = await api.list_documents(bank_id="my-bank", q="report")
 
-    # 按标签筛选，仅 team-a 文档（排除无标签）
+    # Filter by tags — only docs tagged with "team-a" (untagged excluded)
     result = await api.list_documents(
         bank_id="my-bank",
         tags=["team-a"],
         tags_match="any_strict",
     )
 
-    # 组合 ID 搜索与标签
+    # Combine ID search and tags
     result = await api.list_documents(
         bank_id="my-bank",
         q="meeting",
         tags=["team-a", "team-b"],
-        tags_match="all_strict",  # 必须同时包含两个标签
+        tags_match="all_strict",  # must have both tags
     )
 
     # Paginate
     result = await api.list_documents(bank_id="my-bank", limit=20, offset=40)
-    print(f"本页条目： {len(result.items)}")
+    print(f"Page items: {len(result.items)}")
 
 import asyncio
 asyncio.run(list_documents_example())
@@ -105,15 +105,15 @@ async def get_document_example():
     api_client = ApiClient(config)
     api = DocumentsApi(api_client)
 
-    # 获取文档，扩展召回上下文
+    # Get document to expand context from recall results
     doc = await api.get_document(
         bank_id="my-bank",
         document_id="meeting-2024-03-15"
     )
 
     print(f"Document: {doc.id}")
-    print(f"原始文本： {doc.original_text}")
-    print(f"记忆数量： {doc.memory_unit_count}")
+    print(f"Original text: {doc.original_text}")
+    print(f"Memory count: {doc.memory_unit_count}")
     print(f"Created: {doc.created_at}")
 
 asyncio.run(get_document_example())
@@ -130,7 +130,7 @@ async def update_document_example():
     api_client = ApiClient(config)
     api = DocumentsApi(api_client)
 
-    # 修正文档错误范围标签
+    # Fix tags on a document retained with the wrong scope
     result = await api.update_document(
         bank_id="my-bank",
         document_id="meeting-2024-03-15",
@@ -138,7 +138,7 @@ async def update_document_example():
     )
     print(f"Updated: {result.success}")
 
-    # 移除全部标签，使文档在所有范围可见
+    # Remove all tags (make document visible everywhere)
     await api.update_document(
         bank_id="my-bank",
         document_id="meeting-2024-03-15",
@@ -158,7 +158,7 @@ async def delete_document_example():
     api_client = ApiClient(config)
     api = DocumentsApi(api_client)
 
-    # 删除文档及其全部记忆
+    # Delete document and all its memories
     result = await api.delete_document(
         bank_id="my-bank",
         document_id="meeting-2024-03-15"
@@ -171,8 +171,8 @@ asyncio.run(delete_document_example())
 
 
 # =============================================================================
-# 清理（不在文档中展示）
+# Cleanup (not shown in docs)
 # =============================================================================
 requests.delete(f"{HINDSIGHT_URL}/v1/default/banks/my-bank")
 
-print("documents.py: 全部示例通过")
+print("documents.py: All examples passed")

@@ -1,40 +1,40 @@
 #!/usr/bin/env node
 /**
- * Hindsight 存储 API 示例（Node.js）
- * 运行：node examples/api/retain.mjs
+ * Retain API examples for Hindsight (Node.js)
+ * Run: node examples/api/retain.mjs
  */
 import { HindsightClient } from '@vectorize-io/hindsight-client';
 
 const HINDSIGHT_URL = process.env.HINDSIGHT_API_URL || 'http://localhost:8888';
 
 // =============================================================================
-// 准备，文档中不展示
+// Setup (not shown in docs)
 // =============================================================================
 const client = new HindsightClient({ baseUrl: HINDSIGHT_URL });
 
 // =============================================================================
-// 文档示例
+// Doc Examples
 // =============================================================================
 
 // [docs:retain-basic]
-await client.retain('my-bank', 'Alice 在 Google 担任软件工程师');
+await client.retain('my-bank', 'Alice works at Google as a software engineer');
 // [/docs:retain-basic]
 
 
 // [docs:retain-conversation]
-// 将完整对话作为一个文档存储。
-// 将每条消息写为“姓名（时间戳）：文本”，使 LLM 可将
-// 事实归属于正确的人，并解析对话中的相对时间。
+// Retain an entire conversation as a single document.
+// Format each message as "Name (timestamp): text" so the LLM can attribute
+// facts to the right person and resolve temporal references across the thread.
 const conversation = [
-    'Alice (2024-03-15T09:00:00Z): Bob，你上周最后去看医生了吗？',
-    'Bob (2024-03-15T09:01:00Z): 去了，发现有轻度花生过敏。',
-    'Alice (2024-03-15T09:02:00Z): 哎呀，你还好吗？',
-    'Bob (2024-03-15T09:03:00Z): 还好，不严重，只需随身带抗组胺药。',
-    'Alice (2024-03-15T09:04:00Z): 知道了，团队午餐会避开花生。',
+    'Alice (2024-03-15T09:00:00Z): Hi Bob! Did you end up going to the doctor last week?',
+    'Bob (2024-03-15T09:01:00Z): Yes, finally. Turns out I have a mild peanut allergy.',
+    'Alice (2024-03-15T09:02:00Z): Oh no! Are you okay?',
+    'Bob (2024-03-15T09:03:00Z): Yeah, nothing serious. Just need to carry an antihistamine.',
+    'Alice (2024-03-15T09:04:00Z): Good to know. We\'ll avoid peanuts at the team lunch.',
 ].join('\n');
 
 await client.retain('my-bank', conversation, {
-    context: '团队聊天',
+    context: 'team chat',
     timestamp: '2024-03-15T09:04:00Z',
     documentId: 'chat-2024-03-15-alice-bob',
 });
@@ -42,8 +42,8 @@ await client.retain('my-bank', conversation, {
 
 
 // [docs:retain-with-context]
-await client.retain('my-bank', 'Alice 晋升为高级工程师', {
-    context: '职业变化',
+await client.retain('my-bank', 'Alice got promoted to senior engineer', {
+    context: 'career update',
     timestamp: '2024-03-15T10:00:00Z'
 });
 // [/docs:retain-with-context]
@@ -51,18 +51,18 @@ await client.retain('my-bank', 'Alice 晋升为高级工程师', {
 
 // [docs:retain-batch]
 await client.retainBatch('my-bank', [
-    { content: 'Alice 在 Google 工作', context: 'career', document_id: 'conversation_001_msg_1' },
-    { content: 'Bob 在 Meta 担任数据科学家', context: 'career', document_id: 'conversation_001_msg_2' },
-    { content: 'Alice 和 Bob 是朋友', context: 'relationship', document_id: 'conversation_001_msg_3' }
+    { content: 'Alice works at Google', context: 'career', document_id: 'conversation_001_msg_1' },
+    { content: 'Bob is a data scientist at Meta', context: 'career', document_id: 'conversation_001_msg_2' },
+    { content: 'Alice and Bob are friends', context: 'relationship', document_id: 'conversation_001_msg_3' }
 ]);
 // [/docs:retain-batch]
 
 
 // [docs:retain-async]
-// 开始异步摄取，立即返回
+// Start async ingestion (returns immediately)
 await client.retainBatch('my-bank', [
-    { content: '大批量条目一', document_id: 'large-doc-1' },
-    { content: '大批量条目二', document_id: 'large-doc-2' },
+    { content: 'Large batch item 1', document_id: 'large-doc-1' },
+    { content: 'Large batch item 2', document_id: 'large-doc-2' },
 ], {
     async: true
 });
@@ -70,8 +70,8 @@ await client.retainBatch('my-bank', [
 
 
 // [docs:retain-files]
-// 上传文件，将内容存为记忆。
-// 支持 PDF、DOCX、PPTX、XLSX、图片 OCR、音频转录及文本。
+// Upload files and retain their contents as memories.
+// Supports: PDF, DOCX, PPTX, XLSX, images (OCR), audio (transcription), and text formats.
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -80,29 +80,29 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const pdfBytes = readFileSync(join(__dirname, 'sample.pdf'));
 const result = await client.retainFiles('my-bank', [
     new File([pdfBytes], 'sample.pdf'),
-], { context: '季度报告' });
-console.log(result.operation_ids);  // 通过操作端点跟踪进度
+], { context: 'quarterly report' });
+console.log(result.operation_ids);  // Track processing via the operations endpoint
 // [/docs:retain-files]
 
 
 // [docs:retain-files-batch]
-// 每请求最多十个文件，可分别设置元数据
+// Upload multiple files with per-file metadata (up to 10 files per request)
 const batchResult = await client.retainFiles('my-bank', [
     new File([pdfBytes], 'report.pdf'),
     new File([pdfBytes], 'notes.pdf'),
 ], {
     filesMetadata: [
-        { context: '季度报告', document_id: 'q1-report', tags: ['project:alpha'] },
-        { context: '会议记录', document_id: 'q1-notes', tags: ['project:alpha'] },
+        { context: 'quarterly report', document_id: 'q1-report', tags: ['project:alpha'] },
+        { context: 'meeting notes', document_id: 'q1-notes', tags: ['project:alpha'] },
     ]
 });
-console.log(batchResult.operation_ids);  // 每文件一个操作 ID
+console.log(batchResult.operation_ids);  // One operation ID per file
 // [/docs:retain-files-batch]
 
 
 // =============================================================================
-// 清理，文档中不展示
+// Cleanup (not shown in docs)
 // =============================================================================
 await fetch(`${HINDSIGHT_URL}/v1/default/banks/my-bank`, { method: 'DELETE' });
 
-console.log('retain.mjs: 所有示例通过');
+console.log('retain.mjs: All examples passed');

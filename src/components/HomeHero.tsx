@@ -95,7 +95,7 @@ export default function HomeHero(): ReactNode {
           </h1>
 
           <p className={styles.subtitle}>
-            为你的智能体提供先进的长期记忆。
+            为你的智能体提供业界领先的长期记忆。
           </p>
 
           <div className={styles.ctas}>
@@ -106,7 +106,7 @@ export default function HomeHero(): ReactNode {
             <Link className={styles.ghost} to={REPO}>
               <LuStar size={14} />
               {stars && <span className={styles.starCount}>{stars}</span>}
-              在 GitHub 上
+              前往 GitHub
               <LuArrowUpRight size={13} />
             </Link>
           </div>

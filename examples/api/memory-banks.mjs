@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Hindsight 记忆库 API 示例 (Node.js)
- * 运行： node examples/api/memory-banks.mjs
+ * Memory Banks API examples for Hindsight (Node.js)
+ * Run: node examples/api/memory-banks.mjs
  */
 import { HindsightClient, sdk, createClient, createConfig } from '@vectorize-io/hindsight-client';
 import { readFile, writeFile, rm } from 'node:fs/promises';
@@ -9,12 +9,12 @@ import { readFile, writeFile, rm } from 'node:fs/promises';
 const HINDSIGHT_URL = process.env.HINDSIGHT_API_URL || 'http://localhost:8888';
 
 // =============================================================================
-// 初始化（不在文档中展示）
+// Setup (not shown in docs)
 // =============================================================================
 const client = new HindsightClient({ baseUrl: HINDSIGHT_URL });
 
 // =============================================================================
-// 文档示例
+// Doc Examples
 // =============================================================================
 
 // [docs:create-bank]
@@ -25,10 +25,10 @@ await client.createBank('my-bank');
 // [docs:bank-with-disposition]
 await client.createBank('architect-bank');
 await client.updateBankConfig('architect-bank', {
-    reflectMission: "你是一位高级软件架构师，跟踪系统设计、技术决策和架构模式。",
-    dispositionSkepticism: 4,   // 质疑新技术
-    dispositionLiteralism: 4,   // 关注具体规格
-    dispositionEmpathy: 2,      // 优先技术事实
+    reflectMission: "You're a senior software architect - keep track of system designs, technology decisions, and architectural patterns.",
+    dispositionSkepticism: 4,   // Questions new technologies
+    dispositionLiteralism: 4,   // Focuses on concrete specs
+    dispositionEmpathy: 2,      // Prioritizes technical facts
 });
 // [/docs:bank-with-disposition]
 
@@ -36,7 +36,7 @@ await client.updateBankConfig('architect-bank', {
 // [docs:bank-background]
 await client.createBank('my-bank');
 await client.updateBankConfig('my-bank', {
-    reflectMission: '我是专注机器学习的研究助手。',
+    reflectMission: 'I am a research assistant specializing in machine learning.',
 });
 // [/docs:bank-background]
 
@@ -44,16 +44,16 @@ await client.updateBankConfig('my-bank', {
 // [docs:bank-mission]
 await client.createBank('my-bank');
 await client.updateBankConfig('my-bank', {
-    reflectMission: "你是一位高级软件架构师，跟踪系统设计、技术决策和架构模式。",
+    reflectMission: "You're a senior software architect - keep track of system designs, technology decisions, and architectural patterns.",
 });
 // [/docs:bank-mission]
 
 
 // [docs:update-bank-config]
 await client.updateBankConfig('my-bank', {
-    retainMission: '始终包含技术决策、API 设计选择及架构取舍。忽略会议安排和社交交流。',
+    retainMission: 'Always include technical decisions, API design choices, and architectural trade-offs. Ignore meeting logistics and social exchanges.',
     retainExtractionMode: 'verbose',
-    observationsMission: '观察是关于人员和项目的稳定事实。始终包含偏好、技能和重复模式，忽略一次性事件。',
+    observationsMission: 'Observations are stable facts about people and projects. Always include preferences, skills, and recurring patterns. Ignore one-off events.',
     dispositionSkepticism: 4,
     dispositionLiteralism: 4,
     dispositionEmpathy: 2,
@@ -62,37 +62,37 @@ await client.updateBankConfig('my-bank', {
 
 
 // [docs:get-bank-config]
-// 返回解析配置（服务默认合并库覆盖）及原始覆盖
+// Returns resolved config (server defaults merged with bank overrides) and the raw overrides
 const { config, overrides } = await client.getBankConfig('my-bank');
-// config    — 完整解析配置
-// overrides — 仅库级覆盖字段
+// config    — full resolved configuration
+// overrides — only fields overridden at the bank level
 // [/docs:get-bank-config]
 
 
 // [docs:reset-bank-config]
-// 移除全部库级覆盖，恢复服务默认
+// Remove all bank-level overrides, reverting to server defaults
 await client.resetBankConfig('my-bank');
 // [/docs:reset-bank-config]
 
 
 // =============================================================================
-// 提示预览和库转移
+// Prompt preview and bank transfer
 // =============================================================================
 const apiClient = createClient(createConfig({ baseUrl: HINDSIGHT_URL }));
 const TRANSFER_BANKS = ['transfer-js', 'transfer-js-copy', 'transfer-js-other', 'transfer-js-clone'];
 for (const b of TRANSFER_BANKS) await fetch(`${HINDSIGHT_URL}/v1/default/banks/${b}`, { method: 'DELETE' });
-// chunks 模式原样存文本，无需 LLM。
+// Chunks mode stores text verbatim, so no LLM call is needed.
 await client.createBank('transfer-js', {});
 await client.updateBankConfig('transfer-js', { retainExtractionMode: 'chunks' });
 const retainRes = await fetch(`${HINDSIGHT_URL}/v1/default/banks/transfer-js/memories`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ items: [
-        { content: 'Alice 领导支付团队。', document_id: 'doc-1' },
-        { content: 'Bob 调到柏林办公室。', document_id: 'doc-2' },
+        { content: 'Alice leads the payments team.', document_id: 'doc-1' },
+        { content: 'Bob moved to the Berlin office.', document_id: 'doc-2' },
     ] }),
 });
-if (!retainRes.ok) throw new Error(`存储失败： ${retainRes.status}`);
+if (!retainRes.ok) throw new Error(`retain failed: ${retainRes.status}`);
 await client.createBank('transfer-js-other', {});
 
 async function waitFor(bankId, operationId) {
@@ -106,7 +106,7 @@ async function waitFor(bankId, operationId) {
         }
         await new Promise((r) => setTimeout(r, 1000));
     }
-    throw new Error(`operation ${operationId} 未完成`);
+    throw new Error(`operation ${operationId} did not finish`);
 }
 
 // [docs:prompts-preview]
@@ -117,41 +117,41 @@ const { data: preview } = await sdk.previewPrompt({
 });
 for (const message of preview.messages) console.log(message.role, message.blocks.length);
 // [/docs:prompts-preview]
-if (!preview.messages.length) throw new Error('预览为空');
+if (!preview.messages.length) throw new Error('empty preview');
 
 
 // [docs:transfer-export]
-// 整个库，记忆和配置，不含历史.
-// 提交导出、轮询操作、下载 ZIP。
+// Whole bank, memories + config, no history.
+// Submits the export, polls the operation, downloads the ZIP.
 const archive = await client.exportBank('transfer-js');
 
-// 仅记忆
+// Just the memories
 const memoriesOnly = await client.exportBank('transfer-js', { includeBankConfig: false });
 
-// 特定文档，文档子集不含库级部分.
-// 底层仅提交，需自行轮询。
+// Specific documents (a document subset carries no bank-level sections).
+// The low-level call only submits; poll the returned operation yourself.
 const { data: subset } = await sdk.exportBankTransfer({
     client: apiClient,
     path: { bank_id: 'transfer-js' },
     query: { document_id: ['doc-1', 'doc-2'], include_bank_config: false },
 });
 // [/docs:transfer-export]
-if (archive[0] !== 0x50 || memoriesOnly[0] !== 0x50) throw new Error('不是 ZIP');
+if (archive[0] !== 0x50 || memoriesOnly[0] !== 0x50) throw new Error('not a zip');
 await waitFor('transfer-js', subset.operation_id);
 
 
 // [docs:transfer-import]
-// 以新 ID 恢复库
+// Restore a bank under a new id
 const restoreId = await client.importBank('transfer-js', new Blob([archive]), {
     targetBankId: 'transfer-js-copy',
 });
-// 恢复记录在 URL 的库，在那里轮询
+// The restore is recorded against the bank in the URL — poll it there
 const { data: restoreStatus } = await sdk.getOperationStatus({
     client: apiClient,
     path: { bank_id: 'transfer-js', operation_id: restoreId },
 });
 
-// 将归档文档合并到现有库
+// Merge an archive's documents into an existing bank
 const { data: merge } = await sdk.importBankTransfer({
     client: apiClient,
     path: { bank_id: 'transfer-js-other' },
@@ -167,7 +167,7 @@ if (copied.total !== 2) throw new Error(`restore copied ${copied.total} document
 
 // [docs:clone-bank]
 const cloneId = await client.cloneBank('transfer-js', 'transfer-js-clone');
-// 操作记录在来源库
+// The operation is recorded against the source bank
 const { data: cloneStatus } = await sdk.getOperationStatus({
     client: apiClient,
     path: { bank_id: 'transfer-js', operation_id: cloneId },
@@ -179,8 +179,8 @@ if (cloned.total !== 2) throw new Error(`clone copied ${cloned.total} documents`
 
 
 // [docs:document-export]
-// 提交整库导出，传 { documentIds: [...] } 限定，
-// 轮询至完成，下载归档。
+// Submits the export (whole bank; pass { documentIds: [...] } to scope it),
+// polls the operation until completed, downloads the archive.
 const docArchive = await client.exportDocuments('transfer-js');
 await writeFile('transfer-js-documents.zip', docArchive);
 // [/docs:document-export]
@@ -206,7 +206,7 @@ await rm('transfer-js-documents.zip');
 // [docs:transfer-import-external]
 import { crc32 } from 'node:zlib';
 
-// 最小无压缩 ZIP 写入器，Node 未内置，也可用 jszip。
+// Minimal uncompressed ZIP writer (Node has none built in); a library like jszip works too.
 function zip(files) {
     const locals = [], centrals = [];
     let offset = 0;
@@ -233,10 +233,10 @@ function zip(files) {
 
 const doc = {
     id: 'session-2026-09-22',
-    original_text: '完整原始会话文本...',
-    chunks: [{ chunk_index: 0, chunk_text: '调用方定义的来源区域...' }],
+    original_text: 'Full original session text...',
+    chunks: [{ chunk_index: 0, chunk_text: 'Caller-defined source region...' }],
     facts: [{
-        text: '用户偏好轻量本地语音识别模型。',
+        text: 'The user prefers lightweight local speech recognition models.',
         fact_type: 'experience',
         chunk_index: 0,
         mentioned_at: '2026-09-22T18:34:00Z',
@@ -265,9 +265,9 @@ for (const b of TRANSFER_BANKS) await fetch(`${HINDSIGHT_URL}/v1/default/banks/$
 
 
 // =============================================================================
-// 清理（不在文档中展示）
+// Cleanup (not shown in docs)
 // =============================================================================
 await fetch(`${HINDSIGHT_URL}/v1/default/banks/my-bank`, { method: 'DELETE' });
 await fetch(`${HINDSIGHT_URL}/v1/default/banks/architect-bank`, { method: 'DELETE' });
 
-console.log('memory-banks.mjs: 全部示例通过');
+console.log('memory-banks.mjs: All examples passed');

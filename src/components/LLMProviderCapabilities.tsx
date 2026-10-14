@@ -17,9 +17,9 @@ export function LLMProviderCapabilities() {
     <table>
       <thead>
         <tr>
-          <th>供应商</th>
-          <th style={{textAlign: 'center'}}>批处理 API</th>
-          <th style={{textAlign: 'center'}}>显式提示词缓存</th>
+          <th>服务提供方</th>
+          <th style={{textAlign: 'center'}}>Batch API</th>
+          <th style={{textAlign: 'center'}}>显式提示缓存</th>
         </tr>
       </thead>
       <tbody>

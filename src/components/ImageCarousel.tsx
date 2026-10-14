@@ -94,7 +94,7 @@ export default function ImageCarousel({ images }: ImageCarouselProps): ReactNode
                 <button
                   key={i}
                   onClick={() => setCurrent(i)}
-                  aria-label={`查看第 ${i + 1} 张图片`}
+                  aria-label={`切换到第 ${i + 1} 张图片`}
                   style={{
                     width: i === current ? '1.5rem' : '0.4rem',
                     height: '0.25rem',

@@ -4,7 +4,7 @@ sidebar_position: 0
 
 # 快速开始 {#quick-start}
 
-在 60 秒内启动并使用 Hindsight。
+在 60 秒内启动并运行 Hindsight。
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
@@ -34,7 +34,7 @@ export HINDSIGHT_API_LLM_API_KEY=$OPENAI_API_KEY
 hindsight-api
 ```
 
-API 地址：[http://localhost:8888](http://localhost:8888/docs)
+API 可通过 [http://localhost:8888](http://localhost:8888/docs) 访问
 
 </TabItem>
 <TabItem value="docker" label="Docker（完整体验）">
@@ -50,20 +50,20 @@ docker run -it --pull always --name hindsight --restart unless-stopped --shm-siz
 ```
 
 - **API**：http://localhost:8888
-- **控制平面**（Web 界面）：http://localhost:9999
+- **控制平面**（Web UI）：http://localhost:9999
 
-:::tip 在生产环境中设置稳定的 `HINDSIGHT_API_WORKER_ID`
-工作进程使用容器主机名作为身份，Docker 默认将其设为容器 ID。该值每次重启都会变化，因此容器停止时正在处理的任务会留在旧 ID 下，新容器无法识别这些任务属于自己。
+:::tip 在生产环境中为 `HINDSIGHT_API_WORKER_ID` 设置稳定值
+工作进程使用容器主机名作为身份标识。Docker 默认会将其设为容器 ID。该值每次重启都会变化，因此容器关闭时正在处理的任务会停留在旧 ID 下，新容器也就无法识别这些任务属于自己。
 
-将 `HINDSIGHT_API_WORKER_ID` 设为稳定值，例如 `-e HINDSIGHT_API_WORKER_ID=hindsight-prod`，使工作进程在重启后保持同一身份。即使只有一个容器，也建议这样设置。诊断和恢复命令见[管理 CLI：恢复卡住的操作](/developer/admin-cli#recovering-stuck-or-zombie-operations)。
+将 `HINDSIGHT_API_WORKER_ID` 设为稳定值（例如 `-e HINDSIGHT_API_WORKER_ID=hindsight-prod`），让工作进程在重启后保持相同的身份标识。即使部署中只有一个容器，也建议这样设置。诊断和恢复命令请参阅[管理 CLI - 恢复卡住的操作](/developer/admin-cli#recovering-stuck-or-zombie-operations)。
 :::
 
 </TabItem>
 </Tabs>
 
-:::tip LLM 提供程序
-Hindsight 需要支持结构化输出的 LLM。推荐 **Groq** 搭配 `gpt-oss-20b`，实现快速且经济的推理。
-详情见 [LLM 提供程序](/developer/models#llm)。
+:::tip LLM 服务提供方
+Hindsight 需要支持结构化输出的大语言模型（LLM）。建议使用 **Groq** 和 `gpt-oss-20b`，以快速且经济地进行推理。
+详情请参阅 [LLM 服务提供方](/developer/models#llm)。
 :::
 
 ---
@@ -115,9 +115,9 @@ go get github.com/vectorize-io/hindsight/hindsight-clients/go
 
 | 操作 | 作用 |
 |-----------|--------------|
-| **记忆存储（Retain）** | 处理内容、提取事实、识别实体，并在知识图谱中建立关联 |
-| **记忆召回（Recall）** | 并行运行语义、关键词、图和时间四种搜索策略，找到相关记忆 |
-| **反思（Reflect）** | 利用检索到的记忆，生成考虑性格倾向的回答 |
+| **Retain（存入）** | 处理内容、提取事实、识别实体，并在知识图谱中建立关联 |
+| **Recall（召回）** | 并行运行语义检索、关键词检索、图检索和时间检索四种策略，查找相关记忆 |
+| **Reflect（反思）** | 利用检索到的记忆，生成考虑性格倾向的回答 |
 
 ---
 
@@ -127,8 +127,8 @@ go get github.com/vectorize-io/hindsight/hindsight-clients/go
 
 ## 后续步骤 {#next-steps}
 
-- [**记忆存储**](./retain)：存储记忆的高级选项。
-- [**记忆召回**](./recall)：搜索和检索策略。
-- [**反思**](./reflect)：考虑性格倾向的推理。
-- [**记忆库**](./memory-banks)：配置性格倾向和使命。
-- [**服务器部署**](/developer/installation)：Docker Compose、Helm 和生产环境配置。
+- [**Retain（存入）**](./retain) — 存储记忆的高级选项
+- [**Recall（召回）**](./recall) — 搜索与检索策略
+- [**Reflect（反思）**](./reflect) — 考虑性格倾向的推理
+- [**记忆库**](./memory-banks) — 配置性格倾向和任务说明
+- [**服务器部署**](/developer/installation) — Docker Compose、Helm 和生产环境部署

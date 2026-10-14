@@ -1,6 +1,6 @@
 #!/bin/bash
-# Hindsight 知识页面 API 示例 CLI
-# 运行： bash examples/api/knowledge-pages.sh
+# Knowledge Pages API examples for Hindsight CLI
+# Run: bash examples/api/knowledge-pages.sh
 
 set -e
 
@@ -8,85 +8,85 @@ HINDSIGHT_URL="${HINDSIGHT_API_URL:-http://localhost:8888}"
 BANK_ID="knowledge-pages-demo-bank-cli"
 
 # =============================================================================
-# 初始化（不在文档中展示）
+# Setup (not shown in docs)
 # =============================================================================
-hindsight bank create "$BANK_ID" --name "知识页面演示"
-hindsight memory retain "$BANK_ID" "API 通过滚动更新部署到 Kubernetes"
-hindsight memory retain "$BANK_ID" "CI 通过后从 main 分支部署"
-hindsight memory retain "$BANK_ID" "部署失败时重新部署上一个标签以回滚"
+hindsight bank create "$BANK_ID" --name "Knowledge Pages Demo"
+hindsight memory retain "$BANK_ID" "The API is deployed to Kubernetes with a rolling update"
+hindsight memory retain "$BANK_ID" "Deploys run from the main branch after CI passes"
+hindsight memory retain "$BANK_ID" "A failed deploy is rolled back by redeploying the previous tag"
 sleep 2
 
 # =============================================================================
-# 文档示例
+# Doc Examples
 # =============================================================================
 
 # [docs:create-folder]
-# 创建文件夹，省略 --parent-id 则在根目录
-hindsight knowledge-base create-folder "$BANK_ID" "运维"
+# Create a folder (omit --parent-id to create it at the root)
+hindsight knowledge-base create-folder "$BANK_ID" "Operations"
 # [/docs:create-folder]
 
 FOLDER_ID=$(hindsight knowledge-base tree "$BANK_ID" -o json | jq -r '.roots[0].id')
 
 # [docs:create-page]
-# 创建页面，后台生成内容
+# Create a page — content is generated in the background
 hindsight knowledge-base create-page "$BANK_ID" \
-  "部署 API" \
-  "API 如何部署？" \
+  "Deploying the API" \
+  "How is the API deployed?" \
   --parent-id "$FOLDER_ID" \
   --tags ops,type:runbook
 # [/docs:create-page]
 
-# 等待首次构建
+# Wait for the page's first build
 sleep 20
 
 # [docs:get-tree]
-# 显示文件夹/页面树，不含正文
+# Show the folder/page tree (no page bodies)
 hindsight knowledge-base tree "$BANK_ID"
 # [/docs:get-tree]
 
 PAGE_ID=$(hindsight knowledge-base tree "$BANK_ID" -o json | jq -r '.roots[0].children[0].id')
 
 # [docs:get-page]
-# 以 Markdown 文档读取页面
+# Read a page as a markdown document
 hindsight knowledge-base get-page "$BANK_ID" "$PAGE_ID"
 # [/docs:get-page]
 
 # [docs:search-pages]
-# 整页全文和向量混合搜索
-hindsight knowledge-base search "$BANK_ID" "如何部署" --limit 5
+# Hybrid search (full-text + vector) over whole pages
+hindsight knowledge-base search "$BANK_ID" "how do we deploy" --limit 5
 # [/docs:search-pages]
 
 # [docs:filter-by-tags]
-# 按标签限定树和搜索（召回的 tags / tags_match / tag_groups）
+# Narrow the tree and search to pages carrying a tag (recall's tags / tags_match / tag_groups)
 hindsight knowledge-base tree "$BANK_ID" --tags type:runbook --tags-match any_strict
-hindsight knowledge-base search "$BANK_ID" "如何部署" --tags ops --tags-match all_strict
+hindsight knowledge-base search "$BANK_ID" "how do we deploy" --tags ops --tags-match all_strict
 
-# 复合筛选使用 --tag-groups，此处排除草稿运行手册
-hindsight knowledge-base search "$BANK_ID" "如何部署" \
+# Compound filters use --tag-groups: here, runbooks that are not drafts
+hindsight knowledge-base search "$BANK_ID" "how do we deploy" \
     --tag-groups '[{"and":[{"tags":["type:runbook"]},{"not":{"tags":["draft"]}}]}]'
 # [/docs:filter-by-tags]
 
 # [docs:update-node]
-# 重命名、移动节点或更新页面选项。
-# 修改 --source-query 按新问题重建页面。
+# Rename a node, move it, and/or update a page's options.
+# Changing --source-query rebuilds the page against the new question.
 hindsight knowledge-base update "$BANK_ID" "$PAGE_ID" \
-  --name "部署 API (v2)" \
+  --name "Deploying the API (v2)" \
   --tags ops,type:runbook,reviewed
 # [/docs:update-node]
 
 # [docs:export]
-# 导出为可移植 Markdown 包
+# Export the knowledge base as a portable markdown bundle
 hindsight knowledge-base export "$BANK_ID"
 # [/docs:export]
 
 # [docs:delete-node]
-# 删除文件夹或页面，删除文件夹会移除整棵子树
+# Delete a folder or page — deleting a folder removes its whole subtree
 hindsight knowledge-base delete "$BANK_ID" "$FOLDER_ID" -y
 # [/docs:delete-node]
 
 # =============================================================================
-# 清理（不在文档中展示）
+# Cleanup (not shown in docs)
 # =============================================================================
 curl -s -X DELETE "${HINDSIGHT_URL}/v1/default/banks/${BANK_ID}" > /dev/null
 
-echo "knowledge-pages.sh: 全部示例通过"
+echo "knowledge-pages.sh: All examples passed"

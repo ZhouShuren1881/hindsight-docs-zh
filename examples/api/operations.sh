@@ -1,24 +1,24 @@
 #!/bin/bash
-# Hindsight 操作 API 示例 CLI
-# 运行： bash examples/api/operations.sh
+# Operations API examples for Hindsight CLI
+# Run: bash examples/api/operations.sh
 
 set -e
 
 BANK_ID="my-bank"
 
 # =============================================================================
-# 初始化（不在文档中展示）
+# Setup (not shown in docs)
 # =============================================================================
-# 异步存储创建实际待处理 ID，以测试
-# 后续获取/取消。
+# Submit an async retain so we have a real pending operation_id to exercise
+# get / cancel below.
 OPERATION_ID=$(
-  hindsight memory retain "$BANK_ID" "操作示例初始化 1" --async -o json \
+  hindsight memory retain "$BANK_ID" "setup-1 for ops examples" --async -o json \
     | jq -r '.operation_id'
 )
 
 
 # =============================================================================
-# 文档示例
+# Doc Examples
 # =============================================================================
 
 # [docs:operations-list]
@@ -36,9 +36,9 @@ hindsight operation cancel my-bank "$OPERATION_ID"
 # [/docs:operations-cancel]
 
 
-# 重试初始化：创建并取消另一操作，使其可重试。
+# Setup for retry: create another op and cancel it so it's in a retryable state.
 OPERATION_ID=$(
-  hindsight memory retain "$BANK_ID" "重试示例初始化 2" --async -o json \
+  hindsight memory retain "$BANK_ID" "setup-2 for retry example" --async -o json \
     | jq -r '.operation_id'
 )
 hindsight operation cancel "$BANK_ID" "$OPERATION_ID" >/dev/null
@@ -50,13 +50,13 @@ hindsight operation retry my-bank "$OPERATION_ID"
 
 
 # [docs:operations-async-retain]
-# 提交异步存储，从 JSON 获取 ID。
+# Submit an async retain and capture the operation_id from the JSON response.
 OPERATION_ID=$(
-  hindsight memory retain my-bank "Alice 于 2023 年加入 Google" --async -o json \
+  hindsight memory retain my-bank "Alice joined Google in 2023" --async -o json \
     | jq -r '.operation_id'
 )
 
-# 轮询至完成，completed/failed/cancelled 均终态。
+# Poll until the worker finishes — completed/failed/cancelled are all terminal.
 while true; do
   STATUS=$(hindsight operation get my-bank "$OPERATION_ID" -o json | jq -r '.status')
   if [ "$STATUS" = "completed" ] || [ "$STATUS" = "failed" ] || [ "$STATUS" = "cancelled" ]; then

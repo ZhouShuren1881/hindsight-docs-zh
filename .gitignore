@@ -1,11 +1,14 @@
+# AI Agents
+/.codex
+
+# temporary files
+/temp
+
 # Dependencies
 /node_modules
 
 # Production
 /build
-
-# temporary files
-/temp
 
 # Generated files
 .docusaurus

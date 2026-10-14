@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Hindsight 召回 API 示例。
-运行：python examples/api/recall.py
+Recall API examples for Hindsight.
+Run: python examples/api/recall.py
 """
 import os
 import requests
@@ -9,42 +9,42 @@ import requests
 HINDSIGHT_URL = os.getenv("HINDSIGHT_API_URL", "http://localhost:8888")
 
 # =============================================================================
-# 准备，文档中不展示
+# Setup (not shown in docs)
 # =============================================================================
 from hindsight_client import Hindsight
 
 client = Hindsight(base_url=HINDSIGHT_URL)
 
-# 为召回示例准备数据
-client.retain(bank_id="my-bank", content="Alice 在 Google 担任软件工程师")
-client.retain(bank_id="my-bank", content="Alice 喜欢周末徒步")
-client.retain(bank_id="my-bank", content="Bob 是与 Alice 一起工作的数据科学家")
+# Seed some data for recall examples
+client.retain(bank_id="my-bank", content="Alice works at Google as a software engineer")
+client.retain(bank_id="my-bank", content="Alice loves hiking on weekends")
+client.retain(bank_id="my-bank", content="Bob is a data scientist who works with Alice")
 
 # =============================================================================
-# 文档示例
+# Doc Examples
 # =============================================================================
 
 # [docs:recall-basic]
-response = client.recall(bank_id="my-bank", query="Alice 做什么工作？")
+response = client.recall(bank_id="my-bank", query="What does Alice do?")
 
-# response.results 为 RecallResult 列表，每项包含：
-# - id:             事实 ID
-# - text:           提取的事实
+# response.results is a list of RecallResult objects, each with:
+# - id:             fact ID
+# - text:           the extracted fact
 # - type:           "world", "experience", or "observation"
-# - context:        存储时设置的上下文标签
-# - metadata:       存储时设置的 dict[str, str]
-# - tags:           标签列表
-# - entities:       关联实体名称字符串列表
-# - occurred_start: 事件开始的 ISO 日期时间
-# - occurred_end:   事件结束的 ISO 日期时间
-# - mentioned_at:   事实存储的 ISO 日期时间
-# - document_id:    事实所属文档
-# - chunk_id:       提取此事实的分块
+# - context:        context label set during retain
+# - metadata:       dict[str, str] set during retain
+# - tags:           list of tags
+# - entities:       list of entity name strings linked to this fact
+# - occurred_start: ISO datetime of when the event started
+# - occurred_end:   ISO datetime of when the event ended
+# - mentioned_at:   ISO datetime of when the fact was retained
+# - document_id:    document this fact belongs to
+# - chunk_id:       chunk this fact was extracted from
 
-# response.results 示例：
+# Example response.results:
 # [
-#   RecallResult(id="a1b2...", text="Alice 在 Google 担任软件工程师", type="world", context="career", ...),
-#   RecallResult(id="c3d4...", text="Alice 晋升为高级工程师", type="experience", occurred_start="2024-03-15T00:00:00Z", ...),
+#   RecallResult(id="a1b2...", text="Alice works at Google as a software engineer", type="world", context="career", ...),
+#   RecallResult(id="c3d4...", text="Alice got promoted to senior engineer", type="experience", occurred_start="2024-03-15T00:00:00Z", ...),
 # ]
 # [/docs:recall-basic]
 
@@ -52,80 +52,80 @@ response = client.recall(bank_id="my-bank", query="Alice 做什么工作？")
 # [docs:recall-with-options]
 response = client.recall(
     bank_id="my-bank",
-    query="Alice 做什么工作？",
+    query="What does Alice do?",
     types=["world", "experience"],
     budget="high",
     max_tokens=8000,
     trace=True,
 )
 
-# 访问结果
+# Access results
 for r in response.results:
     print(f"- {r.text}")
 # [/docs:recall-with-options]
 
 
 # [docs:recall-world-only]
-# 仅世界事实，即客观信息
+# Only world facts (objective information)
 world_facts = client.recall(
     bank_id="my-bank",
-    query="Alice 在哪里工作？",
+    query="Where does Alice work?",
     types=["world"]
 )
 # [/docs:recall-world-only]
 
 
 # [docs:recall-experience-only]
-# 仅经历事实，即对话和事件
+# Only experience (conversations and events)
 experience = client.recall(
     bank_id="my-bank",
-    query="我推荐过什么？",
+    query="What have I recommended?",
     types=["experience"]
 )
 # [/docs:recall-experience-only]
 
 
 # [docs:recall-observations-only]
-# 仅观察，即整合知识
+# Only observations (consolidated knowledge)
 observations = client.recall(
     bank_id="my-bank",
-    query="我学到了哪些模式？",
+    query="What patterns have I learned?",
     types=["observation"]
 )
 # [/docs:recall-observations-only]
 
 
 # [docs:recall-with-observations]
-# 召回包含观察
+# Include observations in recall
 results = client.recall(
     bank_id="my-bank",
-    query="Alice 偏好什么编程语言？",
+    query="What programming languages does Alice prefer?",
     types=["world", "experience", "observation"]
 )
 
-# 仅观察
+# Observations only
 observations = client.recall(
     bank_id="my-bank",
-    query="我学到了哪些模式？",
+    query="What patterns have I learned?",
     types=["observation"]
 )
 # [/docs:recall-with-observations]
 
 
 # [docs:recall-source-facts]
-# 召回观察及来源事实
+# Recall observations and include their source facts
 response = client.recall(
     bank_id="my-bank",
-    query="我了解 Alice 的哪些模式？",
+    query="What patterns have I learned about Alice?",
     types=["observation"],
     include_source_facts=True,
     max_source_facts_tokens=4096,
 )
 
 for obs in response.results:
-    print(f"观察： {obs.text}")
+    print(f"Observation: {obs.text}")
     if obs.source_fact_ids and response.source_facts:
-        print("  来源：")
+        print("  Derived from:")
         for fact_id in obs.source_fact_ids:
             fact = response.source_facts.get(fact_id)
             if fact:
@@ -134,54 +134,54 @@ for obs in response.results:
 
 
 # [docs:recall-token-budget]
-# 用相关记忆填充最多 4K token 上下文
-results = client.recall(bank_id="my-bank", query="我对 Alice 了解什么？", max_tokens=4096)
+# Fill up to 4K tokens of context with relevant memories
+results = client.recall(bank_id="my-bank", query="What do I know about Alice?", max_tokens=4096)
 
-# 快速查询使用较小预算
-results = client.recall(bank_id="my-bank", query="Alice 的邮箱", max_tokens=500)
+# Smaller budget for quick lookups
+results = client.recall(bank_id="my-bank", query="Alice's email", max_tokens=500)
 # [/docs:recall-token-budget]
 
 
 
 
 # [docs:recall-budget-levels]
-# 快速查询
-results = client.recall(bank_id="my-bank", query="Alice 的邮箱", budget="low")
+# Quick lookup
+results = client.recall(bank_id="my-bank", query="Alice's email", budget="low")
 
-# 深入探索
-results = client.recall(bank_id="my-bank", query="Alice 和 Bob 有什么关联？", budget="high")
+# Deep exploration
+results = client.recall(bank_id="my-bank", query="How are Alice and Bob connected?", budget="high")
 # [/docs:recall-budget-levels]
 
 
 # [docs:recall-with-tags]
-# 按用户标签筛选召回
+# Filter recall to only memories tagged for a specific user
 response = client.recall(
     bank_id="my-bank",
-    query="用户提供了什么反馈？",
+    query="What feedback did the user give?",
     tags=["user:alice"],
-    tags_match="any"  # OR 匹配，默认包含无标签记忆
+    tags_match="any"  # OR matching, includes untagged (default)
 )
 # [/docs:recall-with-tags]
 
 
 # [docs:recall-tags-strict]
-# 严格模式只返回标签匹配记忆，排除无标签
+# Strict mode: only return memories that have matching tags (exclude untagged)
 response = client.recall(
     bank_id="my-bank",
-    query="用户说了什么？",
+    query="What did the user say?",
     tags=["user:alice"],
-    tags_match="any_strict"  # OR 匹配，排除无标签记忆
+    tags_match="any_strict"  # OR matching, excludes untagged memories
 )
 # [/docs:recall-tags-strict]
 
 
 # [docs:recall-tags-all]
-# AND 匹配，要求包含全部指定标签
+# AND matching: require ALL specified tags to be present
 response = client.recall(
     bank_id="my-bank",
-    query="报告了哪些问题？",
+    query="What bugs were reported?",
     tags=["user:alice", "bug-report"],
-    tags_match="all_strict"  # 记忆必须有两个标签
+    tags_match="all_strict"  # Memory must have BOTH tags
 )
 # [/docs:recall-tags-all]
 
@@ -189,66 +189,66 @@ response = client.recall(
 # [docs:recall-tags-any]
 response = client.recall(
     bank_id="my-bank",
-    query="沟通偏好",
+    query="communication preferences",
     tags=["user:alice"],
     tags_match="any",  # default
 )
-# 返回：
-#   [匹配]    "Alice 偏好异步沟通"     — 包含 "user:alice"
-#   [不匹配] "Bob 不喜欢冗长会议"             — 不相交于 ["user:alice"]
-#   [匹配]    "团队用 Slack 发布通知"      — 包含 "user:alice"
-#   [匹配]    "公司规定：周五不开会" — 无标签，默认包含
+# Returns:
+#   [match]    "Alice prefers async communication"     — has "user:alice"
+#   [no match] "Bob dislikes long meetings"             — no overlap with ["user:alice"]
+#   [match]    "Team uses Slack for announcements"      — has "user:alice"
+#   [match]    "Company policy: no meetings on Fridays" — untagged, included by default
 # [/docs:recall-tags-any]
 
 
 # [docs:recall-tags-any-strict]
 response = client.recall(
     bank_id="my-bank",
-    query="沟通偏好",
+    query="communication preferences",
     tags=["user:alice"],
     tags_match="any_strict",
 )
-# 返回：
-#   [匹配]    "Alice 偏好异步沟通"     — 包含 "user:alice"
-#   [不匹配] "Bob 不喜欢冗长会议"             — 不相交于 ["user:alice"]
-#   [匹配]    "团队用 Slack 发布通知"      — 包含 "user:alice"
-#   [不匹配] "公司规定：周五不开会" — 无标签，排除
+# Returns:
+#   [match]    "Alice prefers async communication"     — has "user:alice"
+#   [no match] "Bob dislikes long meetings"             — no overlap with ["user:alice"]
+#   [match]    "Team uses Slack for announcements"      — has "user:alice"
+#   [no match] "Company policy: no meetings on Fridays" — untagged, excluded
 # [/docs:recall-tags-any-strict]
 
 
 # [docs:recall-tags-all-mode]
 response = client.recall(
     bank_id="my-bank",
-    query="沟通工具",
+    query="communication tools",
     tags=["user:alice", "team"],
     tags_match="all",
 )
-# 返回：
-#   [不匹配] "Alice 偏好异步沟通"     — 缺少 "team"
-#   [不匹配] "Bob 不喜欢冗长会议"             — 缺少两个标签
-#   [匹配]    "团队用 Slack 发布通知"      — 同时包含 "user:alice" and "team"
-#   [匹配]    "公司规定：周五不开会" — 无标签，默认包含
+# Returns:
+#   [no match] "Alice prefers async communication"     — missing "team"
+#   [no match] "Bob dislikes long meetings"             — missing both tags
+#   [match]    "Team uses Slack for announcements"      — has both "user:alice" and "team"
+#   [match]    "Company policy: no meetings on Fridays" — untagged, included by default
 # [/docs:recall-tags-all-mode]
 
 
 # [docs:recall-tags-all-strict]
 response = client.recall(
     bank_id="my-bank",
-    query="沟通工具",
+    query="communication tools",
     tags=["user:alice", "team"],
     tags_match="all_strict",
 )
-# 返回：
-#   [不匹配] "Alice 偏好异步沟通"     — 缺少 "team"
-#   [不匹配] "Bob 不喜欢冗长会议"             — 缺少两个标签
-#   [匹配]    "团队用 Slack 发布通知"      — 同时包含 "user:alice" and "team"
-#   [不匹配] "公司规定：周五不开会" — 无标签，排除
+# Returns:
+#   [no match] "Alice prefers async communication"     — missing "team"
+#   [no match] "Bob dislikes long meetings"             — missing both tags
+#   [match]    "Team uses Slack for announcements"      — has both "user:alice" and "team"
+#   [no match] "Company policy: no meetings on Fridays" — untagged, excluded
 # [/docs:recall-tags-all-strict]
 
 
 # =============================================================================
-# 清理，文档中不展示
+# Cleanup (not shown in docs)
 # =============================================================================
 requests.delete(f"{HINDSIGHT_URL}/v1/default/banks/my-bank")
 
-print("recall.py: 所有示例通过")
+print("recall.py: All examples passed")

@@ -1,5 +1,5 @@
 {
-  "title": "知识页面",
+  "title": "知识页",
   "speed": 1466.6666666666667,
   "elements": [
     {
@@ -8,11 +8,11 @@
       "content": [
         {
           "type": "title",
-          "text": "您团队的工具"
+          "text": "团队使用的工具"
         },
         {
           "type": "subtitle",
-          "text": "发送发生了什么"
+          "text": "发送发生的事情"
         }
       ],
       "minCardHeight": 58,
@@ -28,7 +28,7 @@
         },
         {
           "type": "subtitle",
-          "text": "智能体，队友"
+          "text": "智能体或队友"
         }
       ],
       "minCardHeight": 58,
@@ -56,11 +56,11 @@
       "content": [
         {
           "type": "title",
-          "text": "记忆存储"
+          "text": "存入"
         },
         {
           "type": "subtitle",
-          "text": "接收您发送的内容"
+          "text": "接收你发送的内容"
         }
       ],
       "width": 200
@@ -71,11 +71,11 @@
       "content": [
         {
           "type": "title",
-          "text": "部署API"
+          "text": "部署 API"
         },
         {
           "type": "subtitle",
-          "text": "知识页面"
+          "text": "知识页"
         }
       ],
       "minCardHeight": 238,
@@ -91,7 +91,7 @@
         },
         {
           "type": "subtitle",
-          "text": "找到正确的页面"
+          "text": "找到合适的页面"
         }
       ],
       "width": 200
@@ -148,11 +148,11 @@
       "content": [
         {
           "type": "title",
-          "text": "观察"
+          "text": "观测"
         },
         {
           "type": "subtitle",
-          "text": "它相信什么"
+          "text": "它的认知判断"
         }
       ],
       "minCardHeight": 73,
@@ -230,7 +230,7 @@
         "id": "retain"
       },
       "label": {
-        "text": "记忆存储"
+        "text": "存入"
       }
     },
     {
@@ -302,7 +302,7 @@
         "id": "api"
       },
       "label": {
-        "text": "问"
+        "text": "提问"
       }
     },
     {
@@ -319,66 +319,66 @@
   ],
   "scenes": [
     {
-      "label": "知识页面",
+      "label": "知识页",
       "caption": "",
       "beats": [
         {
           "show": {
             "tools": [
               {
-                "tag": "every day",
+                "tag": "日常",
                 "tone": "gray",
-                "text": "聊天、事件、代码更改"
+                "text": "对话、事件、代码变更"
               }
             ],
             "mem": [
               {
-                "tag": "doc",
+                "tag": "文档",
                 "tone": "purple",
                 "text": "部署运行手册，v3"
               },
               {
-                "tag": "slack",
+                "tag": "Slack",
                 "tone": "purple",
-                "text": "“生产部署需要值班人员批准”"
+                "text": "“生产环境部署需要值班人员批准”"
               },
               {
-                "tag": "incident",
+                "tag": "事件",
                 "tone": "purple",
-                "text": "7 月：缓慢的数据库更改破坏了发布"
+                "text": "7 月：一次缓慢的数据库变更导致发布失败"
               }
             ],
             "consolidate": [
               {
-                "tag": "done",
+                "tag": "完成",
                 "tone": "green",
-                "text": "学到的一切"
+                "text": "已学到的全部内容"
               }
             ],
             "obs": [
               {
-                "text": "合并到 main 即发布 API",
-                "meta": "6 sources"
+                "text": "合并到 main 即会发布 API",
+                "meta": "6 个来源"
               },
               {
-                "text": "生产部署需要批准",
-                "meta": "4 sources"
+                "text": "生产环境部署需要批准",
+                "meta": "4 个来源"
               },
               {
-                "text": "保持数据库更改较小",
-                "meta": "2 sources"
+                "text": "数据库变更应保持小规模",
+                "meta": "2 个来源"
               }
             ],
             "refresh": [
               {
-                "tag": "idle",
+                "tag": "空闲",
                 "tone": "gray",
-                "text": "每页都是最新的"
+                "text": "所有页面均为最新"
               }
             ],
             "page": [
               {
-                "tag": "up to date",
+                "tag": "最新",
                 "tone": "green",
                 "text": ""
               },
@@ -392,64 +392,64 @@
                 "text": "• 合并到 main 后构建并发布 API"
               },
               {
-                "text": "• 生产部署需要批准"
+                "text": "• 生产环境部署需要批准"
               },
               {
                 "text": "**## 数据库变更**"
               },
               {
-                "text": "• 数据库变更先于新流量执行"
+                "text": "• 数据库变更会在新流量到来前执行"
               },
               {
-                "text": "• 变更应保持小规模：一次耗时变更导致 7 月发布失败"
+                "text": "• 变更应保持小规模：一次缓慢的变更导致 7 月发布失败"
               },
               {
                 "text": "**## 回滚**"
               },
               {
-                "text": "• 重新部署以前的版本"
+                "text": "• 重新部署上一版本"
               },
               {
                 "text": "",
-                "meta": "written by Hindsight from what the bank believes"
+                "meta": "由 Hindsight 根据记忆库的认知判断撰写"
               }
             ],
             "app": [
               {
-                "tag": "waiting",
+                "tag": "等待中",
                 "tone": "gray",
                 "text": "稍后会询问部署情况"
               }
             ]
           },
-          "say": "Hindsight 为团队维护知识库。这篇部署页面根据记忆库已有的知识生成。",
+          "say": "Hindsight 为你的团队维护一个 wiki。这篇部署页面根据记忆库已知的信息撰写。",
           "ms": 2400
         },
         {
           "edges": {
             "edge": "send",
-            "data": "what happened"
+            "data": "发生了什么"
           },
           "show": {
             "tools": [
               {
-                "tag": "incident",
+                "tag": "事件",
                 "tone": "purple",
-                "text": "发布挂起 20 分钟：在数据库准备好之前就上线了"
+                "text": "一次发布卡住了 20 分钟：数据库尚未就绪，版本就已上线"
               },
               {
-                "tag": "slack",
+                "tag": "Slack",
                 "tone": "purple",
-                "text": "“现在先向 10% 的用户发布”"
+                "text": "“现在我们会先向 10% 的用户发布”"
               },
               {
-                "tag": "code change",
+                "tag": "代码变更",
                 "tone": "purple",
-                "text": "上线前等待数据库更改"
+                "text": "等待数据库变更完成后再上线"
               }
             ]
           },
-          "say": "随后发生新事件。工具将事件发送给 Hindsight，例如事故、Slack 讨论或代码变更。",
+          "say": "随后有新情况发生。你的工具会将相关内容发送给 Hindsight：例如事件、Slack 讨论或代码变更。",
           "ms": 2533.3333333333335
         },
         {
@@ -457,40 +457,40 @@
           "show": {
             "mem": [
               {
-                "tag": "incident",
+                "tag": "事件",
                 "tone": "purple",
-                "text": "发布挂起 20 分钟：在数据库准备好之前就上线了"
+                "text": "一次发布卡住了 20 分钟：数据库尚未就绪，版本就已上线"
               },
               {
-                "tag": "slack",
+                "tag": "Slack",
                 "tone": "purple",
-                "text": "“现在先向 10% 的用户发布”"
+                "text": "“现在我们会先向 10% 的用户发布”"
               },
               {
-                "tag": "code change",
+                "tag": "代码变更",
                 "tone": "purple",
-                "text": "上线前等待数据库更改"
+                "text": "等待数据库变更完成后再上线"
               }
             ]
           },
-          "say": "Hindsight 将其存储为新记忆。",
+          "say": "Hindsight 将这些内容存为新记忆。",
           "ms": 1733.3333333333333
         },
         {
           "edges": {
             "edge": "learn",
-            "data": "what’s new"
+            "data": "有什么新内容"
           },
           "show": {
             "consolidate": [
               {
-                "tag": "learned",
+                "tag": "已学习",
                 "tone": "orange",
-                "text": "1 个新内容 · 1 个已更正"
+                "text": "新增 1 项 · 更正 1 项"
               }
             ]
           },
-          "say": "它从这些记忆中学习……",
+          "say": "它从中学习……",
           "ms": 1600
         },
         {
@@ -498,44 +498,44 @@
           "show": {
             "obs": [
               {
-                "text": "合并到 main 即发布 API",
-                "meta": "6 sources"
+                "text": "合并到 main 即会发布 API",
+                "meta": "6 个来源"
               },
               {
-                "text": "生产部署需要批准",
-                "meta": "4 sources"
+                "text": "生产环境部署需要批准",
+                "meta": "4 个来源"
               },
               {
-                "text": "发布等待数据库变更完成",
-                "meta": "3 sources",
+                "text": "发布会等待数据库变更完成",
+                "meta": "3 个来源",
                 "mark": "corrected"
               },
               {
-                "text": "先向 10% 的用户发布生产版本",
-                "meta": "2 sources",
+                "text": "生产版本先向 10% 的用户发布",
+                "meta": "2 个来源",
                 "mark": "new"
               }
             ]
           },
-          "say": "……补充新知识，并纠正不再成立的内容。",
+          "say": "……补充新内容，并更正不再成立的内容。",
           "ms": 2133.3333333333335
         },
         {
           "edges": {
             "edge": "changed",
-            "data": "what changed"
+            "data": "发生了哪些变化"
           },
           "show": {
             "refresh": [
               {
-                "tag": "updating",
+                "tag": "正在更新",
                 "tone": "orange",
-                "text": "部署API"
+                "text": "部署 API"
               }
             ],
             "page": [
               {
-                "tag": "out of date",
+                "tag": "待更新",
                 "tone": "orange",
                 "text": ""
               },
@@ -549,58 +549,58 @@
                 "text": "• 合并到 main 后构建并发布 API"
               },
               {
-                "text": "• 生产部署需要批准"
+                "text": "• 生产环境部署需要批准"
               },
               {
                 "text": "**## 数据库变更**"
               },
               {
-                "text": "• 数据库变更先于新流量执行"
+                "text": "• 数据库变更会在新流量到来前执行"
               },
               {
-                "text": "• 变更应保持小规模：一次耗时变更导致 7 月发布失败"
+                "text": "• 变更应保持小规模：一次缓慢的变更导致 7 月发布失败"
               },
               {
                 "text": "**## 回滚**"
               },
               {
-                "text": "• 重新部署以前的版本"
+                "text": "• 重新部署上一版本"
               },
               {
                 "text": "",
-                "meta": "written by Hindsight from what the bank believes"
+                "meta": "由 Hindsight 根据记忆库的认知判断撰写"
               }
             ]
           },
-          "say": "部署页面此时已过时，Hindsight 因而更新它。",
+          "say": "部署页面现在已待更新，因此 Hindsight 会对其进行更新。",
           "ms": 2000
         },
         {
           "edges": {
             "edge": "write",
-            "data": "3 changes"
+            "data": "3 项变更"
           },
           "show": {
             "refresh": [
               {
-                "tag": "added",
+                "tag": "新增",
                 "tone": "green",
-                "text": "10% 推出"
+                "text": "10% 灰度发布"
               },
               {
-                "tag": "fixed",
+                "tag": "已修正",
                 "tone": "green",
                 "text": "数据库建议"
               },
               {
-                "tag": "added",
+                "tag": "新增",
                 "tone": "green",
-                "text": "事件部分"
+                "text": "事件章节"
               }
             ],
             "page": [
               {
-                "tag": "just updated",
+                "tag": "刚刚更新",
                 "tone": "green",
                 "text": ""
               },
@@ -614,71 +614,71 @@
                 "text": "• 合并到 main 后构建并发布 API"
               },
               {
-                "text": "• 生产部署需要批准"
+                "text": "• 生产环境部署需要批准"
               },
               {
                 "tag": "+",
                 "tone": "green",
-                "text": "• 首先向 10% 的用户展示 15 分钟"
+                "text": "• 首先向 10% 的用户发布 15 分钟"
               },
               {
                 "text": "**## 数据库变更**"
               },
               {
-                "text": "• 数据库变更先于新流量执行"
+                "text": "• 数据库变更会在新流量到来前执行"
               },
               {
                 "tag": "−",
                 "tone": "red",
-                "text": "• 变更应保持小规模：一次耗时变更导致 7 月发布失败",
-                "meta": "removed"
+                "text": "• 变更应保持小规模：一次缓慢的变更导致 7 月发布失败",
+                "meta": "已移除"
               },
               {
                 "tag": "+",
                 "tone": "green",
-                "text": "• 等待数据库更改完成后发布"
+                "text": "• 等待数据库变更完成后再发布"
               },
               {
                 "text": "**## 回滚**"
               },
               {
-                "text": "• 重新部署以前的版本"
+                "text": "• 重新部署上一版本"
               },
               {
                 "tag": "+",
                 "tone": "green",
-                "text": "**## 事故记录**"
+                "text": "**## 事件记录**"
               },
               {
                 "tag": "+",
                 "tone": "green",
-                "text": "• 9 月 24 日：发布延迟了 20 分钟，上线过早"
+                "text": "• 9 月 24 日：一次发布卡住了 20 分钟，过早上线"
               },
               {
                 "text": "",
-                "meta": "only what changed; the rest is untouched"
+                "meta": "仅列出发生变化的内容；其余部分保持不变"
               }
             ]
           },
-          "say": "仅修改变化的部分：划掉旧建议，将新事实放到对应位置。",
+          "say": "只改动有变化的部分：划去旧建议，并将新事实放到合适的位置。",
           "ms": 3733.3333333333335
         },
         {
           "edges": {
             "edge": "ask",
-            "data": "“Why did the release hang?”"
+            "data": "“发布为什么卡住了？”"
           },
           "show": {
             "app": [
               {
-                "tag": "question",
+                "tag": "问题",
                 "tone": "gray",
-                "text": "“为什么发布挂起？”"
+                "text": "“发布为什么卡住了？”"
               }
             ],
             "page": [
               {
-                "tag": "up to date",
+                "tag": "最新",
                 "tone": "green",
                 "text": ""
               },
@@ -692,54 +692,54 @@
                 "text": "• 合并到 main 后构建并发布 API"
               },
               {
-                "text": "• 生产部署需要批准"
+                "text": "• 生产环境部署需要批准"
               },
               {
-                "text": "• 首先向 10% 的用户展示 15 分钟"
+                "text": "• 首先向 10% 的用户发布 15 分钟"
               },
               {
                 "text": "**## 数据库变更**"
               },
               {
-                "text": "• 数据库变更先于新流量执行"
+                "text": "• 数据库变更会在新流量到来前执行"
               },
               {
-                "text": "• 等待数据库更改完成后发布"
+                "text": "• 等待数据库变更完成后再发布"
               },
               {
                 "text": "**## 回滚**"
               },
               {
-                "text": "• 重新部署以前的版本"
+                "text": "• 重新部署上一版本"
               },
               {
-                "text": "**## 事故记录**"
+                "text": "**## 事件记录**"
               },
               {
-                "text": "• 9 月 24 日：发布延迟了 20 分钟，上线过早"
+                "text": "• 9 月 24 日：一次发布卡住了 20 分钟，过早上线"
               },
               {
                 "text": "",
-                "meta": "up to date"
+                "meta": "最新"
               }
             ]
           },
-          "say": "之后，另一个客户端发起提问，可能是 AI 智能体，也可能是队友。",
+          "say": "之后，另一个客户端提出问题：它可能是 AI 智能体，也可能是队友。",
           "ms": 2000
         },
         {
           "edges": {
             "edge": "find",
-            "data": "search"
+            "data": "搜索"
           },
-          "say": "Hindsight 找到已生成且保持最新的页面。",
+          "say": "Hindsight 找到已经撰写完成且保持最新的页面。",
           "ms": 1733.3333333333333
         },
         {
           "edges": {
             "edge": "find",
             "back": true,
-            "data": "the page"
+            "data": "该页面"
           },
           "ms": 1333.3333333333333
         },
@@ -747,24 +747,24 @@
           "edges": {
             "edge": "ask",
             "back": true,
-            "data": "the answer"
+            "data": "答案"
           },
           "show": {
             "app": [
               {
-                "tag": "question",
+                "tag": "问题",
                 "tone": "gray",
-                "text": "“为什么发布挂起？”"
+                "text": "“发布为什么卡住了？”"
               },
               {
-                "tag": "answer",
+                "tag": "答案",
                 "tone": "green",
-                "text": "数据库尚未就绪就上线了。现在发布会等待数据库变更完成。",
+                "text": "数据库尚未就绪，版本就已上线。现在发布会等待数据库就绪。",
                 "mark": "✓"
               }
             ]
           },
-          "say": "答案已经包含刚发生的事件，无需人工更新知识库。",
+          "say": "答案已经包含刚刚发生的情况。无需任何人手动更新 wiki。",
           "ms": 2800
         }
       ]

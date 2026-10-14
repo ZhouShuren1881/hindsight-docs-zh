@@ -22,26 +22,22 @@ import directivesGo from '!!raw-loader!@site/examples/api/directives.go';
 
 ## 什么是记忆库？ {#what-is-a-memory-bank}
 
-A 记忆库是一个完整的、独立的存储单元，包含：
+记忆库是一个完整且隔离的存储单元，其中包含：
 
 - **记忆** — 从对话中保留的事实和信息
 - **文档** — 为检索建立索引的文件和内容
 - **实体** — 从记忆中提取的人物、地点、概念
 - **关系** — 知识图中实体之间的连接
-- **指令** — 智能体在铰操作过程中必须遵循的硬性规则
+- **强制指令** — 智能体在反思操作中必须遵守的硬性规则
 
 记忆库彼此完全隔离——存储在一个记忆库中的记忆对另一个记忆库不可见。
 
-您不需要预先创建记忆库。当您第一次使用时，Hindsight会自动以默认设置创建它。
+无需预先创建记忆库。首次使用时，Hindsight 会自动按默认设置创建。
 
-仅*写道*创建一个记忆库——保留、更新其配置文件、更改其配置。 **阅读了
-不存在的记忆库返回`404`**，所以拼写错误，重命名或删除`bank_id` 已报告
-而不是用空结果来回答。如果您正在监控记忆库，这很重要：`GET .../stats`
-在丢失的记忆库上失败很大，而不是返回看起来健康的归零计数器，
-空记忆库。
+只有写操作才会创建记忆库，例如存入记忆、更新其资料或更改其配置。**读取不存在的记忆库会返回 `404`**，因此拼错、已重命名或已删除的 `bank_id` 会被明确报告，而不会以空结果作答。这对监控记忆库很重要：对不存在的记忆库执行 `GET .../stats` 会明确失败，而不是返回一组看似健康、实际只是计数归零的空库指标。
 
 :::tip 先决条件
-确保您已完成[快速开始](./quickstart) 安装客户端并启动服务器。
+请先完成[快速开始](./quickstart)，安装客户端并启动服务器。
 :::
 
 ## 创建记忆库 {#creating-a-memory-bank}
@@ -56,16 +52,16 @@ A 记忆库是一个完整的、独立的存储单元，包含：
 <TabItem value="cli" label="CLI">
 <CodeSnippet code={memoryBanksSh} section="create-bank" language="bash" />
 </TabItem>
-<TabItem value="go" label="开始">
+<TabItem value="go" label="Go">
 <CodeSnippet code={memoryBanksGo} section="create-bank" language="go" />
 </TabItem>
 </Tabs>
 
 ## 别名 {#aliases}
 
-安**别名** 是记忆库回答的额外 ID。每个接受记忆库 ID 的端点也接受其别名，因此别名是进入同一记忆库的第二种方式 - 不会复制、移动或重复任何内容。
+**别名**是记忆库额外接受的一个 ID。每个接受记忆库 ID 的端点也接受其别名，因此别名提供了访问同一记忆库的另一种方式，不会复制、移动或重复任何内容。
 
-之所以存在，是因为记忆库的id是其所有数据的关键，因此更改它意味着重写每一行并立即切断所有客户端（即[`rename-bank`](/developer/admin-cli#rename-bank)，并且需要停机）。别名允许您分阶段进行相同的迁移：添加新 ID，在两个 ID 都工作时一次移动几个客户端，并在没有任何内容调用旧 ID 时停止。
+之所以提供别名，是因为记忆库 ID 是其所有数据的键。更改 ID 就意味着重写每一行数据，并让所有客户端同时切换（这需要停机，可使用 [`rename-bank`](/developer/admin-cli#rename-bank) 完成）。别名允许分阶段迁移：先添加新 ID，在两个 ID 都可用期间逐批迁移客户端，等不再有请求使用旧 ID 后再结束迁移。
 
 ```
 POST   /v1/default/banks/{bank_id}/aliases             {"alias": "new-id"}
@@ -76,159 +72,159 @@ DELETE /v1/default/banks/{bank_id}/aliases/{alias}
 
 ### 在别名下显示记忆库 {#showing-a-bank-under-an-alias}
 
-一旦调用者移动，控制平面就可以在新的 ID（而不是创建它时使用的 ID）下显示记忆库。 `PATCH` 与 `primary: true` 提升别名； `primary: false` 返回记忆库以显示其自己的 id，而不删除别名。
+客户端完成迁移后，控制平面可以用新 ID（而不是创建记忆库时使用的 ID）显示该库。将 `PATCH` 请求中的 `primary` 设为 `true` 可提升别名；设为 `false` 则让控制平面恢复显示记忆库自身的 ID，但不会删除别名。
 
-这是**仅供显示**。 `bank_id` 保留记忆库的身份：授权、计量、导出和审核日志都继续使用它，这也是每个响应报告的内容。控制平面显示真实 ID 和别名，因此两者永远不会混淆。
+这项设置**只影响显示**。`bank_id` 仍是记忆库的身份标识：授权、计量、导出和审计日志仍使用它，所有响应也都会报告它。控制平面会同时显示真实 ID 和别名，以免混淆。
 
-- **可选，无默认值。** 记忆库自己的id不是别名，所以“未在别名下显示”是正常状态。
-- **最多一个。** 在单个事务中提升别名会降低之前显示的别名。
-- **它的有效期不会超过别名。** 删除升级后的别名将使记忆库恢复显示其自己的 ID。
+- **可选，没有默认值。** 记忆库自己的 ID 不是别名，因此通常不会以别名显示。
+- **最多一个。** 提升一个别名时，会在同一事务中取消此前显示的别名。
+- **别名删除后，主显示设置也随之失效。** 删除已提升的别名后，控制平面会恢复显示记忆库自身的 ID。
 
 **需要了解：**
 
-- **一个记忆库可以有多个别名**，因此一次可以退役多个旧ID。
-- **记忆库名称与别名共用唯一的命名空间。** 添加已命名记忆库或另一个别名的返回 `409`，所以一个别名永远不可能达到两个记忆库。
-- **别名始终不会替换记忆库自身的 ID。** 真实 ID 持续有效，并且是每个响应报告的内容，包括对通过别名发出的请求的响应。删除记忆库的真实 ID 是不可能的 — 这就是 `rename-bank` 是为了。
-- **删除别名只会关闭这一访问入口。** 记忆库及其记忆未受影响，仍然使用删除的 ID 的调用者将获得其存在之前所获得的完全相同的内容。
+- **一个记忆库可以有多个别名**，因此可以同时逐步淘汰多个旧 ID。
+- **记忆库 ID 和别名在所有记忆库之间必须唯一。** 如果添加的名称已被某个记忆库或其他别名占用，请求会返回 `409`，因此一个别名不可能指向两个记忆库。
+- **别名不会取代记忆库自身的 ID。** 真实 ID 始终有效，所有响应（包括通过别名发送的请求所获响应）都会报告该 ID。无法删除记忆库的真实 ID；如需更改它，请使用 `rename-bank`。
+- **删除别名只会关闭这条访问路径。** 记忆库及其记忆不会受影响；仍使用已删除别名的客户端会收到与该别名从未存在时相同的结果。
 - **删除记忆库会移除其别名**，释放这些名称以供重复使用。
-- **导出、导入或克隆不会携带别名。** 他们描述了哪些 id 到达了记忆库*这个*部署，因此副本不会继承它们 - 故意将它们添加到目标。
-- **更改需要几秒钟才能传递到所有 API 副本。** 参见[`HINDSIGHT_API_BANK_ALIAS_CACHE_TTL_SECONDS`](/developer/configuration)。
+- **导出、导入或克隆不会携带别名。** 别名描述的是在*当前部署*中哪些 ID 可以访问某个记忆库，因此副本不会继承别名；需要时请在目标库上自行添加。
+- **更改需要几秒钟才能传播到所有 API 副本。** 参见 [`HINDSIGHT_API_BANK_ALIAS_CACHE_TTL_SECONDS`](/developer/configuration)。
 
 ## 记忆库配置 {#bank-configuration}
 
-每个记忆库都可以根据操作独立配置。可以通过 设置配置 [记忆库配置 API](#updating-configuration)，[控制平面界面](/)，或[服务器级环境变量](/developer/configuration)。
+每个记忆库都可以针对不同操作单独配置。可以通过[记忆库配置 API](#updating-configuration)、[控制平面界面](/)或[服务器级环境变量](/developer/configuration)设置配置。
 
 ### retain_mission {#retain-configuration}
 
-用通俗易懂的语言描述这个记忆库在提取过程中应该注意什么。任务与内置规则一起注入提取提示中 - 它可以在不替换提取逻辑的情况下引导焦点。
+用通俗语言说明记忆库在提取过程中应关注什么。任务说明会与内置规则一同注入提取提示，用来引导关注重点，但不会取代提取逻辑。
 
 ```
-例如：始终包含技术决策、API 设计选择和架构权衡。
-     忽略会议安排、问候和社交交流。
+e.g. Always include technical decisions, API design choices, and architectural trade-offs.
+     Ignore meeting logistics, greetings, and social exchanges.
 ```
 
-可与任何提取模式一起使用。留空用于通用提取。
+可与任何提取模式配合使用。留空则采用通用提取方式。
 
-### retain_extraction_mode {#retainextractionmode}
+### retain_extraction_mode {#retain_extraction_mode}
 
-控制如何积极地提取事实：
+控制事实提取的详细程度：
 
 |模式|说明|
 |------|-------------|
-|`concise`*（默认）*|选择性 — 只选择值得长期记住的事实|
-|`verbose`|提取每条事实的更多细节；速度较慢，消耗的 token 更多|
-|`custom`|通过编写自己的提取规则 `retain_custom_instructions`|
-|`verbatim`|将每个块的原始文本存储为一个记忆； LLM 提取元数据，例如实体和日期|
-|`chunks`|将每个块存储为一个记忆，无需LLM调用；仅调用者提供的实体可用|
+|`concise` *（默认）*|选择性提取，只保留值得长期记忆的事实|
+|`verbose`|每条事实提取更多细节；速度较慢且消耗更多 token|
+|`custom`|通过 `retain_custom_instructions` 编写自己的提取规则|
+|`verbatim`|将每个文本分块的原文作为一条记忆存储；LLM 仍会提取实体、日期等元数据|
+|`chunks`|不调用 LLM，将每个文本分块直接存为一条记忆；只有调用方提供的实体可用|
 
-### retain_custom_instructions {#retaincustominstructions}
+### retain_custom_instructions {#retain_custom_instructions}
 
-仅在 时有效 `retain_extraction_mode` 是 `custom`。用您自己的指令完全替换内置提取规则。
+仅当 `retain_extraction_mode` 为 `custom` 时生效。此设置会用你提供的指令完全替换内置提取规则。
 
-### retain_chunk_size {#retainchunksize}
+### retain_chunk_size {#retain_chunk_size}
 
-分割内容进行事实提取时每个块的最大字符数。更大的块意味着更少的LLM调用，但可能会降低长输入的提取质量；较小的块可以提高粒度，但代价是需要更多的调用。
+为提取事实而拆分内容时，每个文本分块允许的最大字符数。分块越大，LLM 调用次数越少，但长输入的提取质量可能下降；分块越小，内容粒度越细，但调用次数会增加。
 
 默认：`3000`
 
-### retain_structured_chunk_size {#retainstructuredchunksize}
+### retain_structured_chunk_size {#retain_structured_chunk_size}
 
-单个 JSONL 行或会话的最大字符数，当超过 时保持完整 `retain_chunk_size`。未设置时，限制恰好为 `retain_chunk_size`；为结构化日志或聊天记录设置较大的值，其中拆分单个记录会丢失有用的上下文。
+当单行 JSONL 记录或单轮对话超过 `retain_chunk_size` 时，仍保持完整的最大字符数。未设置时，上限与 `retain_chunk_size` 完全相同。对于拆开单条记录会丢失有用上下文的结构化日志或聊天记录，可以将此值设得更大。
 
-默认：未设置，使用`retain_chunk_size`
+默认：未设置，此时使用 `retain_chunk_size` 的值
 
-参见[记忆存储配置](/developer/configuration#retain) 用于环境变量名称和默认值。
+参见[Retain 配置](/developer/configuration#retain)，了解环境变量名称和默认值。
 
 ### entity_labels {#entity-labels}
 
-定义的受控词汇 `key:value` 在记忆存储时提取并存储为实体的分类标签。因为标签成为实体，所以它们会自动链接知识图中的记忆（两个带有的记忆） `pedagogy:scaffolding` 链接），改善语义和BM25检索，并可选择通过标准过滤记忆 `tags`/`tags_match`API当 `tag: true` 设置在一个组上。
+定义一套受控的 `key:value` 分类标签，在存入时提取并存储为实体。标签会成为实体，因此会自动在知识图中关联记忆（例如，两条带有 `pedagogy:scaffolding` 的记忆会彼此关联），并改善语义检索和 BM25 检索。若某个组设置了 `tag: true`，还可以通过标准 `tags` / `tags_match` API 筛选记忆。
 
-中的每个条目 `entity_labels` 是一个 **标签组** — 一个分类维度：
+`entity_labels` 中的每个条目都是一个**标签组**，代表一个分类维度：
 
 ```json
 {
   "entity_labels": [
     {
       "key": "engagement",
-      "description": "课程期间学生的参与程度",
+      "description": "Student engagement level during the session",
       "type": "value",
       "optional": true,
       "values": [
-        { "value": "active",  "description": "学生积极参与" },
-        { "value": "passive", "description": "学生在听但没有参与" }
+        { "value": "active",  "description": "Student is actively participating" },
+        { "value": "passive", "description": "Student is listening but not participating" }
       ]
     },
     {
       "key": "pedagogy",
-      "description": "使用的教学策略",
+      "description": "Teaching strategies used",
       "type": "multi-values",
       "values": [
-        { "value": "scaffolding",          "description": "将复杂的任务分解为更小的步骤" },
-        { "value": "direct_instruction",   "description": "老师的明确讲解" },
-        { "value": "socratic_questioning", "description": "通过问题而不是答案进行指导" }
+        { "value": "scaffolding",          "description": "Breaking complex tasks into smaller steps" },
+        { "value": "direct_instruction",   "description": "Explicit explanation by the teacher" },
+        { "value": "socratic_questioning", "description": "Guiding through questions rather than answers" }
       ]
     }
   ]
 }
 ```
 
-|领域|默认|说明|
+|字段|默认值|说明|
 |-------|---------|-------------|
-|`key`|—|标签组标识符。成为中的前缀 `key:value`实体（或`key:field:value` `"map"`）。|
-|`description`|`""`|显示给LLM 以指导标签分配。|
-|`type`|`"value"`|`"value"` → 选择一个枚举值； `"multi-values"` → 选择多个； `"text"` → 自由格式字符串； `"multi-text"` → 任意数量的自由格式字符串； `"map"` → 具有命名字段的结构化组。|
-|`values`|`[]`|的允许值 `"value"` 和 `"multi-values"`类型。忽略 `"text"`，`"multi-text"` 和 `"map"`。|
-|`fields`|`{}`|的字段定义 `"map"`类型。每个字段都是自己键入的（`"text"`，`"multi-text"`，`"value"`，`"multi-values"`，或嵌套`"map"`）。对于非地图类型将被忽略。|
-|`optional`|`true`|当`true`  如果不适用，LLM可以跳过标签。当`false` 如果不适用，LLM必须始终分配一个值。对没有影响 `"multi-values"`或`"multi-text"` 组（始终可选）。|
-|`tag`|`false`|当`true`，提取`key:value` 标签也被写为记忆单元上的标签，可以通过进行过滤 `tags`/`tags_match` 在recall/reflect。|
+|`key`|—|标签组标识符。它会成为 `key:value` 实体的前缀；对于 `"map"` 类型，则成为 `key:field:value` 的前缀。|
+|`description`|`""`|提供给 LLM，用于指导标签分配。|
+|`type`|`"value"`|`"value"`：选择一个枚举值；`"multi-values"`：选择多个值；`"text"`：自由文本字符串；`"multi-text"`：任意数量的自由文本字符串；`"map"`：包含命名字段的结构化组。|
+|`values`|`[]`|`"value"` 和 `"multi-values"` 类型的允许值。对于 `"text"`、`"multi-text"` 和 `"map"` 类型会被忽略。|
+|`fields`|`{}`|`"map"` 类型的字段定义。每个字段都带有自己的类型（`"text"`、`"multi-text"`、`"value"`、`"multi-values"` 或嵌套的 `"map"`）。对非 map 类型会被忽略。|
+|`optional`|`true`|为 `true` 时，若标签不适用，LLM 可以跳过它；为 `false` 时，LLM 必须始终为标签赋值。对 `"multi-values"` 和 `"multi-text"` 组无效，因为这两类组始终可选。|
+|`tag`|`false`|为 `true` 时，提取出的 `key:value` 标签也会写入记忆单元的 tags 字段，因此可在 Recall / Reflect 中通过 `tags` / `tags_match` 筛选。|
 
-**枚举标签组** (`type: "value"`或`type: "multi-values"`)：LLM从预定义的中选择 `values`列表；列表之外的任何内容都会被悄悄删除。词汇保持稳定，图表链接保持紧密。使用`"multi-values"` 当一个事实可以同时属于多个值时。
+**枚举组**（`type: "value"` 或 `type: "multi-values"`）：LLM 从预定义的 `values` 列表中选择；列表之外的值会被直接丢弃。这样可以保持词汇稳定，并使图中的关联更准确。当一条事实可能同时属于多个值时，使用 `"multi-values"`。
 
-**自由文本标签组** (`type: "text"`)：LLM写入任何字符串。使用`description`字段提供示例和指导。图聚类的可靠性不如枚举组，因为模型可能会在会话中以不同的方式表达相同的概念。
+**自由文本组**（`type: "text"`）：LLM 可以写入任意字符串。可通过 `description` 字段提供示例和指导。由于模型可能在不同会话中用不同说法表达同一概念，这类组在图中的聚类不如枚举组可靠。
 
 ```json
 {
   "key": "topic",
-  "description": "正在讨论的具体主题。例如：代数、二次方程、几何。",
+  "description": "Specific subject being discussed. Examples: algebra, quadratic equations, geometry.",
   "type": "text",
   "optional": true,
   "values": []
 }
 ```
 
-**开放词汇标签组** (`type: "multi-text"`): 喜欢`"text"`，但是LLM写了一个*列表*字符串而不是一个——因此一个事实可以携带多个值，而没有人在记忆库配置中枚举这些值。当有趣的值仅存在于内容中时使用它：事物的名称（规范名称加上缩写、首字母缩略词和替代拼写）、事实引用的票证引用、产品代码或 SKU。每个值都有自己的`key:value`实体，并且带有`tag: true` 每个都被写成标签，因此记忆库可以从内容中导出分类，然后在记忆召回中对其进行过滤，而无需调用者提供词汇。
+**开放词汇组**（`type: "multi-text"`）：与 `"text"` 类似，但 LLM 会写入字符串*列表*，因此一条事实可以携带多个未在记忆库配置中预先枚举的值。适用于只有内容本身才提供相关值的情况，例如某个对象的所有名称（规范名称、缩写、首字母缩略词和其他拼写）、事实引用的工单编号、产品代码或 SKU。每个值都会成为独立的 `key:value` 实体；若设置 `tag: true`，每个值也会写成标签。这样，记忆库便可从内容中推导分类，并在后续召回时据此筛选，无需调用方提供词汇表。
 
 ```json
 {
   "key": "name",
-  "description": "该事实的主题的每个名称都是已知的 - 规范名称加上缩写词、首字母缩略词、缩写形式和替代拼写。",
+  "description": "Every name the subject of this fact is known by — canonical name plus abbreviations, acronyms, short forms and alternative spellings.",
   "type": "multi-text",
   "tag": true
 }
 ```
 
-保留*“我们将服务部署到 EKS 上的Kubernetes 集群 - 团队通常只是说k8s，或 kube”*产生实体和标签 `name:kubernetes`，`name:k8s` 和 `name:kube`，所以`{"tags": ["name:k8s"], "tags_match": "any_strict"}`发现事实。 `"text"`组只保留三人中的一个。
+存入 *“We deploy services to a Kubernetes cluster on EKS — the team usually just says k8s, or kube”* 后，会生成实体和标签 `name:kubernetes`、`name:k8s`、`name:kube`，因此 `{"tags": ["name:k8s"], "tags_match": "any_strict"}` 可以找到这条事实。`"text"` 组则只能保留这三个名称中的一个。
 
-**映射标签组** (`type: "map"`)：定义具有命名字段的结构化实体类型。每个字段都是自己键入的（`"text"`，`"multi-text"`，`"value"`，`"multi-values"`，或嵌套`"map"`），因此您可以描述丰富的实体，例如具有姓名、角色和组织的人。每个提取的字段都存储为一个平面 `key:field:value` 实体字符串（例如 `person:name:Alice`），重用现有的实体存储，无需更改架构 - 因此映射字段以与单值标签相同的方式参与知识图谱和检索。
+**映射组**（`type: "map"`）：定义包含命名字段的结构化实体类型。每个字段本身也带有类型（`"text"`、`"multi-text"`、`"value"`、`"multi-values"` 或嵌套的 `"map"`），因此可以描述由姓名、角色和组织等信息构成的丰富实体。提取出的每个字段都会存储为扁平的 `key:field:value` 实体字符串（例如 `person:name:Alice`），复用现有实体存储，无需更改架构。因此，映射字段与单值标签一样参与知识图和检索。
 
 ```json
 {
   "key": "person",
-  "description": "文中提到的一个人",
+  "description": "A person mentioned in the text",
   "type": "map",
   "fields": {
-    "name":         { "type": "text", "description": "此人的全名" },
-    "role":         { "type": "text", "description": "职位或角色" },
-    "organization": { "type": "text", "description": "公司或组织" }
+    "name":         { "type": "text", "description": "Full name of the person" },
+    "role":         { "type": "text", "description": "Job title or role" },
+    "organization": { "type": "text", "description": "Company or organization" }
   }
 }
 ```
 
-**标签实体的解析方式。** 常规实体模糊解析，因此相近的名称变体合并（“Alice”/“Alice Chen”）。标签实体是不同的：它们的规范名称是用户定义的，因此两个看起来相似的值（`use:use-001` / `use:use-002`）必须保持独特。因此他们通过解决 **仅精确匹配** 并与 一起存储 `entity_kind = "label"`，这使它们完全脱离模糊名称匹配——积累数千个相似值的自由文本标签组不会减慢记忆库常规实体的分辨率。实体首次存储时分类是固定的；稍后删除标签组不会对其现有实体进行重新分类。
+**标签实体的解析方式。** 普通实体采用模糊解析，因此相近的人名变体（例如 “Alice” 和 “Alice Chen”）会合并。标签实体则不同：其规范名称由用户定义，所以两个外观相似的值（`use:use-001` 和 `use:use-002`）必须保持区分。标签实体只通过**精确匹配**解析，并以 `entity_kind = "label"` 存储，因此完全不会参与模糊名称匹配。即使自由文本标签组累积了数千个相似值，也不会拖慢记忆库中普通实体的解析。实体首次存储时即确定分类；之后删除标签组也不会重新分类已有实体。
 
-### entities_allow_free_form {#entitiesallowfreeform}
+### entities_allow_free_form {#entities_allow_free_form}
 
-默认提取实体标签**同时** 常规命名实体（人、地点、概念）。设置为 `false` 禁用自由格式提取，以便仅存储标签实体：
+默认情况下，除常规命名实体（人物、地点、概念）外，也会提取实体标签。将此项设为 `false` 可禁用自由形式实体提取，只存储标签实体：
 
 ```json
 {
@@ -239,51 +235,51 @@ DELETE /v1/default/banks/{bank_id}/aliases/{alias}
 
 ### enable_observations {#observations-configuration}
 
-打开或关闭观察整合。当`false`，这个记忆库没有运行任何整合——既不是自动也不是手动。默认为 `true` 当服务器上启用观察功能时。
+启用或停用观测整合。设为 `false` 时，此记忆库不会运行自动或手动整合。服务器启用观测功能时，默认值为 `true`。
 
-### enable_auto_consolidation {#enableautoconsolidation}
+### enable_auto_consolidation {#enable_auto_consolidation}
 
-控制在记忆存储、删除和更新操作后是否自动运行整合。当`false`，整合仅在通过 显式触发时运行 [整合端点](/developer/observations#trigger-consolidation)。默认为 `true`。
+控制存入、删除和更新操作后是否自动运行整合。设为 `false` 时，只有通过[整合端点](/developer/observations#trigger-consolidation)明确触发，才会运行整合。默认值为 `true`。
 
-当您想要完全控制整合时间时，这非常有用 - 例如，在合并或运行之前对许多保留进行批处理 [定向整合](/developer/observations#targeted-consolidation) 仅适用于特定范围。
+当你需要完全控制整合时机时，这项设置会很有用。例如，可以先批量存入多条记忆，再统一整合；也可以针对特定范围运行[定向整合](/developer/observations#targeted-consolidation)。
 
-### observations_mission {#observationsmission}
+### observations_mission {#observations_mission}
 
-定义这个记忆库应该将什么合成为持久的观察。完全替换内置的集成规则 - 留空以使用服务器默认值。
-
-```
-例如：观察是关于人员与项目的稳定事实。
-     始终包含偏好、技能与反复出现的模式。
-     忽略一次性事件与临时状态。
-```
-
-### consolidation_llm_batch_size {#consolidationllmbatchsize}
-
-发送到的事实数量  一次整合调用中的LLM。较高的值会减少LLM调用并提高吞吐量，但代价是更大的提示。设置为 `1` 禁用批处理。保留未设置以使用服务器默认值 (`8`）。
-
-### consolidation_source_facts_max_tokens {#consolidationsourcefactsmaxtokens}
-
-整合提示中的观察包含的源事实的总token 预算。来源事实给出了LLM将新事实与现有观察进行比较的证据。 `-1` = 无限。保留未设置以使用服务器默认值 (`-1`）。
-
-### consolidation_source_facts_max_tokens_per_observation {#consolidationsourcefactsmaxtokensperobservation}
-
-集成提示中源事实的每观察令牌上限。每个观察最多独立获取这么多源事实的标记，从而防止具有许多源事实的单个观察消耗整个预算。 `-1` = 无限。保留未设置以使用服务器默认值 (`256`）。
-
-参见[观察配置](/developer/configuration#observations) 用于环境变量名称和默认值。
-
-### reflect_mission {#reflectmission}
-
-第一人称叙述，为提供身份和框架背景 `reflect`。智能体以此为基础进行推理并应用一致的观点。
+定义此记忆库应综合生成哪些持久观测。此设置会完全替换内置整合规则；留空则使用服务器默认值。
 
 ```
-例如：你是一位资深工程助手。
-     始终基于有记录的决策及其理由回答。
-     忽略猜测，直接且准确地回答。
+e.g. Observations are stable facts about people and projects.
+     Always include preferences, skills, and recurring patterns.
+     Ignore one-off events and ephemeral state.
 ```
 
-### disposition_skepticism {#dispositionskepticism}
+### consolidation_llm_batch_size {#consolidation_llm_batch_size}
 
-在期间评估声明时，对记忆库的怀疑与信任程度如何 `reflect`。量表 1-5。
+单次整合调用中发送给 LLM 的事实数量。数值越大，LLM 调用越少、吞吐量越高，但提示也会更长。设为 `1` 可禁用批处理。留空则使用服务器默认值（`8`）。
+
+### consolidation_source_facts_max_tokens {#consolidation_source_facts_max_tokens}
+
+整合提示中随观测一同提供的来源事实总 token 预算。来源事实为 LLM 提供证据，使其能够将新事实与现有观测进行比较。`-1` 表示不设上限。留空则使用服务器默认值（`-1`）。
+
+### consolidation_source_facts_max_tokens_per_observation {#consolidation_source_facts_max_tokens_per_observation}
+
+整合提示中每条观测的来源事实 token 上限。每条观测都会单独受此上限约束，避免某条含有大量来源事实的观测耗尽全部预算。`-1` 表示不设上限。留空则使用服务器默认值（`256`）。
+
+参见[观测配置](/developer/configuration#observations)，了解环境变量名称和默认值。
+
+### reflect_mission {#reflect_mission}
+
+以第一人称叙述的文字，为 `reflect` 提供身份和背景信息。智能体会据此推理并保持一致的视角。
+
+```
+e.g. You are a senior engineering assistant.
+     Always ground answers in documented decisions and rationale.
+     Ignore speculation. Be direct and precise.
+```
+
+### disposition_skepticism {#disposition_skepticism}
+
+在 `reflect` 评估主张时，记忆库持怀疑态度还是信任态度。范围为 1–5。
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -295,43 +291,44 @@ DELETE /v1/default/banks/{bank_id}/aliases/{alias}
 <TabItem value="cli" label="CLI">
 <CodeSnippet code={memoryBanksSh} section="bank-with-disposition" language="bash" />
 </TabItem>
-<TabItem value="go" label="开始">
+<TabItem value="go" label="Go">
 <CodeSnippet code={memoryBanksGo} section="bank-with-disposition" language="go" />
 </TabItem>
 </Tabs>
 
-|价值|行为|
+|取值|行为|
 |-------|-----------|
 |`1`|信任——接受表面信息|
 |`3`*（默认）*|平衡|
-|`5`|持怀疑态度 — 问题和怀疑主张|
+|`5`|怀疑 — 会质疑并审视主张|
 
-### disposition_literalism {#dispositionliteralism}
+### disposition_literalism {#disposition_literalism}
 
-如何从字面上解释期间的信息 `reflect`。量表 1-5。
+在 `reflect` 期间，按字面解释信息的倾向。范围为 1–5。
 
 |价值|行为|
 |-------|-----------|
 |`1`|灵活——读懂字里行间，考虑上下文|
 |`3`*（默认）*|平衡|
-|`5`|字面意义 — 完全按照规定行事|
+|`5`|字面 — 完全按照表述内容理解|
 
-### disposition_empathy {#dispositionempathy}
+### disposition_empathy {#disposition_empathy}
 
-在期间进行推理时，情感背景的权重是多少 `reflect`。量表 1-5。
+在 `reflect` 推理时，对情感背景赋予多大权重。范围为 1–5。
 
 |价值|行为|
 |-------|-----------|
-|`1`|独立——注重事实和逻辑|
+|`1`|疏离——侧重事实和逻辑|
 |`3`*（默认）*|平衡|
 |`5`|同理心 — 考虑情感背景|
 
-:::info 性格特征和`reflect_mission` 只影响`reflect`操作。 `retain_mission` 和 `observations_mission` 是单独的每个操作设置。
+:::info
+性格倾向和 `reflect_mission` 只影响 `reflect` 操作。`retain_mission` 和 `observations_mission` 是分别针对各项操作设置的独立选项。
 :::
 
-### mcp_enabled_tools {#mcpenabledtools}
+### mcp_enabled_tools {#mcp_enabled_tools}
 
-许可名单MCP为此记忆库启用的工具名称。设置后，只能调用列出的工具；任何不在列表中的工具都会返回错误（工具仍然出现在MCP协议兼容性工具列表）。设置为 `null`（或省略）以允许所有工具。
+此记忆库允许使用的 MCP 工具名称清单。设置后，只能调用清单中的工具；调用未列出的工具会返回错误（为兼容协议，这些工具仍会出现在 MCP 工具列表中）。设为 `null` 或省略此项可允许使用所有工具。
 
 ```json
 ["recall", "reflect"]
@@ -339,9 +336,9 @@ DELETE /v1/default/banks/{bank_id}/aliases/{alias}
 
 可用工具名称：`retain`，`recall`，`reflect`，`list_banks`，`create_bank`，`list_mental_models`，`get_mental_model`，`create_mental_model`，`update_mental_model`，`delete_mental_model`，`refresh_mental_model`，`list_directives`，`create_directive`，`delete_directive`，`list_memories`，`get_memory`，`list_documents`，`get_document`，`delete_document`，`list_operations`，`get_operation`，`cancel_operation`，`list_tags`，`get_bank`，`get_bank_stats`，`update_bank`，`delete_bank`，`clear_memories`，`get_knowledge_base_tree`，`search_knowledge_base`，`get_knowledge_page`，`create_knowledge_folder`，`create_knowledge_page`，`update_knowledge_node`，`delete_knowledge_node`。
 
-### llm_gemini_safety_settings {#llmgeminisafetysettings}
+### llm_gemini_safety_settings {#llm_gemini_safety_settings}
 
-控制内容过滤阈值Gemini和 VertexAI 提供商。接受 中的安全设置对象列表 [Google AI 安全设置格式](https://ai.google.dev/api/generate-content#v1beta.SafetySetting)。当`null`（默认），  使用Gemini的内置安全默认设置。
+控制 Gemini 和 VertexAI 提供商的内容过滤阈值。接受符合 [Google AI 安全设置格式](https://ai.google.dev/api/generate-content#v1beta.SafetySetting)的安全设置对象列表。为 `null`（默认值）时，使用 Gemini 内置的安全默认值。
 
 ```json
 [
@@ -350,16 +347,16 @@ DELETE /v1/default/banks/{bank_id}/aliases/{alias}
 ]
 ```
 
-仅适用于 `HINDSIGHT_API_LLM_PROVIDER` 是 `gemini`或`vertexai`。
+仅当 `HINDSIGHT_API_LLM_PROVIDER` 为 `gemini` 或 `vertexai` 时适用。
 
 ### recall_budget_function {#recall-budget-configuration}
 
-选择[`recall` 请求的 `budget` 参数](./recall) (`low` / `mid` / `high`) 映射到内部 `thinking_budget` 每种检索方法使用的整数（语义、BM25，图表，时间）。支持两个功能：
+选择 [`recall` 请求中的 `budget` 参数](./recall)（`low` / `mid` / `high`）如何映射为各检索方法（语义、BM25、图和时间检索）使用的内部整数 `thinking_budget`。支持两种映射函数：
 
-|功能|行为|
+|函数|行为|
 |----------|-----------|
-|`fixed`*（默认）*|`thinking_budget = recall_budget_fixed_<level>` — 独立于 `max_tokens`。保留遗留行为。|
-|`adaptive`|`thinking_budget = round(max_tokens * recall_budget_adaptive_<level>)`，夹至 `[recall_budget_min, recall_budget_max]`。检索宽度与请求的输出大小成比例。|
+|`fixed` *（默认）*|`thinking_budget = recall_budget_fixed_<level>`，不受 `max_tokens` 影响。保留旧版行为。|
+|`adaptive`|`thinking_budget = round(max_tokens * recall_budget_adaptive_<level>)`，并限制在 `[recall_budget_min, recall_budget_max]` 范围内。检索范围会随请求的输出大小调整。|
 
 ```json
 {
@@ -372,52 +369,52 @@ DELETE /v1/default/banks/{bank_id}/aliases/{alias}
 }
 ```
 
-### recall_budget_fixed_low / recall_budget_fixed_mid / recall_budget_fixed_high {#recallbudgetfixedlow--recallbudgetfixedmid--recallbudgetfixedhigh}
+### recall_budget_fixed_low / recall_budget_fixed_mid / recall_budget_fixed_high {#recall_budget_fixed_low--recall_budget_fixed_mid--recall_budget_fixed_high}
 
-当`recall_budget_function` 是 `fixed`（默认），这些正整数直接用作每个的每个方法的检索限制 `budget`级别。默认值：`100` / `300` / `1000` — 完全匹配传统的硬编码映射。
+当 `recall_budget_function` 为 `fixed`（默认值）时，这些正整数会直接作为每种方法在相应 `budget` 级别下的检索上限。默认值为 `100` / `300` / `1000`，与旧版硬编码映射完全一致。
 
-### recall_budget_adaptive_low / recall_budget_adaptive_mid / recall_budget_adaptive_high {#recallbudgetadaptivelow--recallbudgetadaptivemid--recallbudgetadaptivehigh}
+### recall_budget_adaptive_low / recall_budget_adaptive_mid / recall_budget_adaptive_high {#recall_budget_adaptive_low--recall_budget_adaptive_mid--recall_budget_adaptive_high}
 
-当`recall_budget_function` 是 `adaptive`，这些正比率乘以请求的 `max_tokens` 导出每个方法的检索限制。默认值：`0.025` / `0.075` / `0.25` — 选择大致匹配 处的固定默认值 `max_tokens = 4096`。
+当 `recall_budget_function` 为 `adaptive` 时，这些正比例值会乘以请求的 `max_tokens`，得出每种方法的检索上限。默认值为 `0.025` / `0.075` / `0.25`，选择这些值是为了让 `max_tokens = 4096` 时的结果大致匹配固定模式的默认值。
 
-### recall_budget_min / recall_budget_max {#recallbudgetmin--recallbudgetmax}
+### recall_budget_min / recall_budget_max {#recall_budget_min--recall_budget_max}
 
-应用于自适应函数结果的下限和上限（比率相乘之后）。两者都必须是正整数并且 `min ≤ max`。默认值：`20` / `2000`。
+对自适应函数计算结果（比例乘法之后）应用的下限和上限。两者都必须是正整数，且 `min ≤ max`。默认值为 `20` / `2000`。
 
-参见[记忆召回预算映射](/developer/configuration#recall-budget-mapping) 用于环境变量名称和完整默认值。
+参见[Recall 预算映射](/developer/configuration#recall-budget-mapping)，了解环境变量名称和全部默认值。
 
 ### memory_defense {#memory_defense}
 
-每记忆库 记忆防御政策。默认为不存在（在此记忆库上禁用记忆防御）。
+每个记忆库的 Memory Defense 策略。默认未设置（此记忆库禁用 Memory Defense）。
 
-|领域|类型|默认|说明|
+|字段|类型|默认值|说明|
 |---|---|---|---|
 |`enabled`|bool|`false`|主开关。|
 |`default_action`|`allow`\|`redact`\|`quarantine`\|`block`|`allow`|没有规则匹配时的后备操作。|
-|`protected_tag_namespaces`|`list[str]`|`[]`|在这些命名空间中使用标签进行写入 (`ns:*`) 受 `protected_key`探测器。|
+|`protected_tag_namespaces`|`list[str]`|`[]`|写入时若标签属于这些命名空间（`ns:*`），则交由 `protected_key` 检测器处理。|
 |`immutable_tag_namespaces`|`list[str]`|`[]`|对这些命名空间的写入被阻止。|
 |`rules`|`list[Rule]`|`[]`|检测器到动作的映射（见下文）。|
-|`detector_overrides`|`dict`|`{}`|每个探测器调整（例如 `size_anomaly.max_size`）。|
+|`detector_overrides`|`dict`|`{}`|针对各检测器的参数调整（例如 `size_anomaly.max_size`）。|
 
-`Rule`形状：
+`Rule` 的结构：
 
-|领域|必填|说明|
+|字段|必填|说明|
 |---|---|---|
-|`on`|是的|探测器名称 (`prompt_injection`，`sensitive_data`，`protected_key`，`immutable_key`，`size_anomaly`) 或 `*` 任何。|
-|`action`|是的|之一 `allow`，`redact`，`quarantine`，`block`。|
-|`min_severity`|没有|最低严重程度 (`low`，`medium`，`high`，`critical`) 用于触发规则。默认为 `low`。|
+|`on`|是|检测器名称（`prompt_injection`、`sensitive_data`、`protected_key`、`immutable_key`、`size_anomaly`），或表示任意检测器的 `*`。|
+|`action`|是|可选值：`allow`、`redact`、`quarantine`、`block`。|
+|`min_severity`|否|触发规则所需的最低严重级别（`low`、`medium`、`high`、`critical`）。默认值为 `low`。|
 
-无效策略在 PATCH 上被拒绝，HTTP 422。
+通过 PATCH 提交的无效策略会被拒绝，并返回 HTTP 422。
 
-参见[记忆防护指南](../memory-defense/index.md) 使用示例。
+使用示例请参见 [Memory Defense 指南](../memory-defense/index.md)。
 
 ---
 
 ## 预览提示 {#previewing-prompts}
 
-任务只有在你看到任务着陆的提示时才有意义。`POST /v1/default/banks/{bank_id}/prompts/preview` 渲染准确的消息 `retain`，`consolidation`或`reflect` 会发送记忆库 — 不LLM调用，不读取，不存储任何内容。
+只有看到任务实际写入提示的内容，任务说明才有意义。`POST /v1/default/banks/{bank_id}/prompts/preview` 会呈现记忆库在 `retain`、`consolidation` 或 `reflect` 操作中将要发送的完整消息；不会调用 LLM、读取记忆或存储任何内容。
 
-操作就是整个请求。形成提示的所有内容都是从记忆库中读取的——其解析的配置、配置文件和指令——并且给出的操作的运行时数据是固定的括号占位符：
+预览操作本身就是完整请求。影响提示的所有内容均从记忆库读取，包括最终生效的配置、资料和强制指令。操作运行时才会提供的数据则由固定的方括号占位符表示：
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -429,16 +426,16 @@ DELETE /v1/default/banks/{bank_id}/aliases/{alias}
 <TabItem value="cli" label="CLI">
 <CodeSnippet code={memoryBanksSh} section="prompts-preview" language="bash" />
 </TabItem>
-<TabItem value="go" label="开始">
+<TabItem value="go" label="Go">
 <CodeSnippet code={memoryBanksGo} section="prompts-preview" language="go" />
 </TabItem>
 </Tabs>
 
-对于`retain`，添加`"strategy": "<name>"` 在记忆库的命名记忆存储策略之一下进行渲染。省略它和记忆库的`retain_default_strategy` 适用——就像它对没有命名的记忆存储一样——所以你看到的就是记忆存储会发送的内容。该响应与中应用的策略相呼应 `strategy`，并在中列出记忆库的策略名称 `strategies` 因此拣选员不需要第二次调用。
+对于 `retain`，添加 `"strategy": "<name>"` 可按记忆库中指定的某个存入策略呈现提示。省略此项时会采用记忆库的 `retain_default_strategy`，与未指定策略的实际存入请求行为完全相同，因此预览结果就是存入操作将发送的内容。响应会在 `strategy` 字段中返回实际采用的策略，并在 `strategies` 字段中列出该记忆库的策略名称，因此选择器无需再次调用 API。
 
-没有刻意要覆盖的内容。预览回答“这个记忆库发送什么”；让调用者传递自己的任务或示例文本只会将该问题移至记忆库无法回答的地方。要尝试候选值，请将其保存并再次查看 - 响应会说明哪些设置是可编辑的。
+预览接口不接受可覆盖值。它回答的是“这个记忆库会发送什么”；如果调用方可以传入自己的任务说明或示例文本，问题就变成了记忆库本身无法回答的内容。若要测试候选值，请先保存该值再查看预览；响应会指出哪些设置可以编辑。
 
-响应按发送顺序携带消息，每个消息都分为构建它的块：
+响应会按发送顺序返回消息，并将每条消息拆分为构成它的各个文本块：
 
 ```json
 {
@@ -447,7 +444,7 @@ DELETE /v1/default/banks/{bank_id}/aliases/{alias}
       "role": "system",
       "blocks": [
         {
-          "text": "从文本中提取重要事实...",
+          "text": "Extract SIGNIFICANT facts from text...",
           "source": "builtin",
           "field": "retain_extraction_mode",
           "section": "",
@@ -476,34 +473,35 @@ DELETE /v1/default/banks/{bank_id}/aliases/{alias}
 }
 ```
 
-- **`messages`** — 请求，系统优先，与模型收到的请求完全相同。
-- **`blocks`** — **活跃** 消息块准确地连接回其文本：没有任何丢失、重复或重新排序。 `source` 说明了每个的产生原因：`config` 可以更改的设置，`builtin` 为Hindsight自己的措辞。给定操作的运行时数据不是一个块——它是文本中的一个洞，用 内联标记 `«…»`。
-- **未激活的记忆块** (`active: false`) 没有文字。它们标记了一个已关闭的设置，此时它*会*土地 — 因此您尚未编写的任务仍然可以看到它要去的地方。
-- **标识记忆块** — 以其中适用者为准，按顺序：`field`是后面的config字段； `section` 是一个没有单个字段拥有的部分的 slug (`bank_identity`，`disposition`，`directives`); `heading` 是提示文本本身携带的部分标题。这三个都是机器值。响应带有**不生成展示副本** — 一个块的名称以及打开一个关闭的块会做什么，是由客户端用它运行时使用的语言说出的。
-- **`editable`** — 对于服务器级字段（例如 ）为 false `llm_output_language`，它塑造提示但不能被每个记忆库覆盖。
+- **`messages`** — 请求消息，先列出系统消息，内容与模型实际收到的完全相同。
+- **`blocks`** — 消息中所有**启用的**文本块按原样拼接后，必须与消息文本完全一致：不丢失、不重复，也不改变顺序。`source` 表示每个块的来源：`config` 表示可更改的设置，`builtin` 表示 Hindsight 内置文本。操作收到的运行时数据不是文本块，而是消息中的一个空位，以 `«…»` 内联标出。
+- **未启用的文本块**（`active: false`）不含文本。它们标明某项已关闭设置原本会出现的位置，因此即使尚未编写任务说明，也能看出它会插入在哪里。
+- **识别文本块** — 按优先顺序使用适用的字段：`field` 是对应的配置字段；`section` 是没有单个字段归属的部分的 slug（`bank_identity`、`disposition`、`directives`）；`heading` 是提示文本自身带有的部分标题。这三项都是机器值。响应**不包含用于显示的标签文本**；文本块的名称，以及启用某个关闭设置后会产生什么效果，应由客户端使用其运行语言呈现。
+- **`editable`** — 对于 `llm_output_language` 等服务器级字段为 `false`；这些字段会影响提示，但无法按记忆库覆盖。
 
-**同时返回两条消息是有意为之。** 对于`retain` 和 `consolidation` 任务在*用户*消息，而不是系统提示：保持每个记忆库的系统提示相同，可以让一个提供者端提示缓存为所有记忆库提供服务，这对于大批量摄取来说可以节省大量成本。只有`reflect`将其任务放入系统提示中。
+**有意同时返回这两条消息。** 对 `retain` 和 `consolidation` 来说，任务说明放在*用户消息*中，而不是系统提示中：让所有记忆库共用相同的系统提示，可使提供商侧的单个提示缓存服务于所有记忆库，从而为高吞吐量摄取节省大量成本。只有 `reflect` 会将其任务说明放入系统提示。
 
 ### 没有提示时 {#when-there-is-no-prompt}
 
-`chunks` 提取模式逐字存储每个块并且从不调用LLM。没有提示显示，所以`messages` 为空且 `skipped_reason`解释原因：
+`chunks` 提取模式会逐字存储每个文本分块，且从不调用 LLM。由于没有提示可显示，`messages` 会为空，而 `skipped_reason` 会说明原因：
 
 ```json
 {
   "operation": "retain",
   "messages": [],
-  "skipped_reason": "块模式将每个块逐字存储为自己的记忆，并且从不调用LLM，..."
+  "skipped_reason": "Chunks mode stores each chunk verbatim as its own memory and never calls an LLM, ..."
 }
 ```
 
-控制平面中，记忆库上的每个任务字段**配置** 选项卡有一个 **预览提示词**按钮，可以在那里编辑每个块的设置并保存到记忆库。
+在控制平面中，记忆库**配置**选项卡里的每个任务说明字段都有一个**预览提示**按钮；你可以在该处编辑各文本块对应的设置，并将更改保存到记忆库。
 
-:::tip [试运行提取](/developer/api/memories) 是付费对应物：它花费真实的LLM调用以显示相同的配置实际上是什么*摘录*。它以相同的方式解析其配置，包括策略，因此两者一致。控制平面将它们在一个提示测试器中配对。
+:::tip
+[试运行提取](/developer/api/memories)是需要付费的对应功能：它会实际调用 LLM，展示相同配置最终*提取*出的内容。它以相同方式解析配置（包括策略），因此两者结果一致。控制平面会在同一个提示测试器中并列提供这两项功能。
 :::
 
 ## 更新配置 {#updating-configuration}
 
-记忆库配置字段（记忆存储任务、提取模式、观察任务等）通过进行管理 **独立的配置 API**，不是`create_bank` 打电话。这使您可以独立于记忆库的身份和配置来更改操作设置。
+记忆库的配置字段（例如存入任务说明、提取模式和观测任务说明）通过**独立的配置 API**管理，而不是通过 `create_bank` 调用设置。这样可以让你独立于记忆库身份和性格倾向，更改其操作设置。
 
 ### 设置配置覆盖 {#setting-configuration-overrides}
 
@@ -517,12 +515,12 @@ DELETE /v1/default/banks/{bank_id}/aliases/{alias}
 <TabItem value="cli" label="CLI">
 <CodeSnippet code={memoryBanksSh} section="update-bank-config" language="bash" />
 </TabItem>
-<TabItem value="go" label="开始">
+<TabItem value="go" label="Go">
 <CodeSnippet code={memoryBanksGo} section="update-bank-config" language="go" />
 </TabItem>
 </Tabs>
 
-您可以更新字段的任何子集 - 只有您提供的键才会更改。
+可以只更新任意一部分字段；只有请求中提供的键会发生更改。
 
 ### 读取当前配置 {#reading-the-current-configuration}
 
@@ -536,14 +534,14 @@ DELETE /v1/default/banks/{bank_id}/aliases/{alias}
 <TabItem value="cli" label="CLI">
 <CodeSnippet code={memoryBanksSh} section="get-bank-config" language="bash" />
 </TabItem>
-<TabItem value="go" label="开始">
+<TabItem value="go" label="Go">
 <CodeSnippet code={memoryBanksGo} section="get-bank-config" language="go" />
 </TabItem>
 </Tabs>
 
-响应区分：
-- **`config`** — 完全解析的配置（服务器默认值与记忆库覆盖合并）
-- **`overrides`** — 仅此记忆库明确覆盖的字段
+响应会区分：
+- **`config`** — 完整生效的配置（由服务器默认值与记忆库覆盖项合并而成）
+- **`overrides`** — 仅列出此记忆库明确覆盖的字段
 
 ### 重置为默认值 {#resetting-to-defaults}
 
@@ -557,22 +555,23 @@ DELETE /v1/default/banks/{bank_id}/aliases/{alias}
 <TabItem value="cli" label="CLI">
 <CodeSnippet code={memoryBanksSh} section="reset-bank-config" language="bash" />
 </TabItem>
-<TabItem value="go" label="开始">
+<TabItem value="go" label="Go">
 <CodeSnippet code={memoryBanksGo} section="reset-bank-config" language="go" />
 </TabItem>
 </Tabs>
 
-这将删除所有记忆库级别的覆盖。记忆库恢复为服务器范围的默认值（通过环境变量设置）。
+这会删除所有记忆库级覆盖项。记忆库将恢复使用通过环境变量设置的服务器级默认值。
 
-您也可以直接从更新配置 [控制平面界面](/) — 导航至记忆库并打开 **配置** 选项卡。
+也可以直接在[控制平面界面](/)中更新配置：进入记忆库并打开**配置**选项卡。
 
 ---
 
 ## 指令 {#directives}
 
-指令是智能体在期间必须遵循的硬性规则 [反思](./reflect) 操作。与影响的性格特征不同*如何*智能体原因，指令是明确的指令，只要它们在范围内就会强制执行（参见[指令作用域与标签](#directive-scope-and-tags)）。
+强制指令是智能体在[反思](./reflect)操作中必须遵守的硬性规则。性格倾向会影响智能体*如何*推理，而强制指令是明确的要求，只要适用范围涵盖当前请求，就必须执行（参见[指令范围与标签](#directive-scope-and-tags)）。
 
-:::info 指令仅影响`reflect`操作。它们被注入到提示中，并且智能体需要在所有响应中遵守它们。
+:::info
+强制指令只影响 `reflect` 操作。它们会被注入提示，智能体必须在所有响应中遵守。
 :::
 
 ### 何时使用指令 {#when-to-use-directives}
@@ -586,12 +585,12 @@ DELETE /v1/default/banks/{bank_id}/aliases/{alias}
 
 ### 指令范围和标签 {#directive-scope-and-tags}
 
-指令可携带`tags`，以及那些标签范围**何时** 在期间应用指令 `reflect` — 镜像标签如何影响记忆：
+强制指令可以带有 `tags`。这些标签限定指令在 `reflect` 期间**何时**适用，其作用方式与记忆标签限定记忆的适用范围相似：
 
-- **无标签的指令始终适用**，每个`reflect`。
-- **带标签的指令仅在 `reflect` 请求包含匹配标签时适用**（使用请求的`tags_match`模式）。 `reflect` 不带标签的调用仅适用于未标记的指令。
+- **未带标签的强制指令始终适用**，每次 `reflect` 都会执行。
+- **带标签的强制指令仅在 `reflect` 请求包含匹配标签时适用**（按请求的 `tags_match` 模式匹配）。不带标签的 `reflect` 请求只会应用未带标签的强制指令。
 
-申请**每一个** 主动指令，无论标签如何，设置 `apply_all_directives: true` `reflect`请求。这会忽略指令的标签范围（强制执行未标记和已标记的指令），并且当操作员保留组织的标记指令但希望所有指令都在无标签的反思请求上强制执行时非常有用。
+若要应用**所有**有效强制指令，不论其标签为何，请在 `reflect` 请求中设置 `apply_all_directives: true`。此项会忽略强制指令的标签范围，确保执行所有带标签和未带标签的强制指令。当运维人员用标签整理指令，但仍希望无标签反思请求执行全部指令时，这项设置很有用。
 
 ### 创建指令 {#creating-directives}
 
@@ -605,7 +604,7 @@ DELETE /v1/default/banks/{bank_id}/aliases/{alias}
 <TabItem value="cli" label="CLI">
 <CodeSnippet code={directivesSh} section="create-directive" language="bash" />
 </TabItem>
-<TabItem value="go" label="开始">
+<TabItem value="go" label="Go">
 <CodeSnippet code={directivesGo} section="create-directive" language="go" />
 </TabItem>
 </Tabs>
@@ -622,7 +621,7 @@ DELETE /v1/default/banks/{bank_id}/aliases/{alias}
 <TabItem value="cli" label="CLI">
 <CodeSnippet code={directivesSh} section="list-directives" language="bash" />
 </TabItem>
-<TabItem value="go" label="开始">
+<TabItem value="go" label="Go">
 <CodeSnippet code={directivesGo} section="list-directives" language="go" />
 </TabItem>
 </Tabs>
@@ -639,7 +638,7 @@ DELETE /v1/default/banks/{bank_id}/aliases/{alias}
 <TabItem value="cli" label="CLI">
 <CodeSnippet code={directivesSh} section="update-directive" language="bash" />
 </TabItem>
-<TabItem value="go" label="开始">
+<TabItem value="go" label="Go">
 <CodeSnippet code={directivesGo} section="update-directive" language="go" />
 </TabItem>
 </Tabs>
@@ -656,41 +655,41 @@ DELETE /v1/default/banks/{bank_id}/aliases/{alias}
 <TabItem value="cli" label="CLI">
 <CodeSnippet code={directivesSh} section="delete-directive" language="bash" />
 </TabItem>
-<TabItem value="go" label="开始">
+<TabItem value="go" label="Go">
 <CodeSnippet code={directivesGo} section="delete-directive" language="go" />
 </TabItem>
 </Tabs>
 
 ### 指令与性格倾向 {#directives-vs-disposition}
 
-|方面|指令|性格|
+|方面|强制指令|性格倾向|
 |--------|------------|-------------|
 |**性质**|硬性规则，必须遵守|对推理风格的软影响|
-|**执行约束**|严格 — 如果违反，回复将被拒绝|灵活——形状解读|
-|**用例**|合规性、护栏、约束|个性、性格、语气|
-|**示例**|“永远不要推荐特定股票”|高度怀疑：质疑主张|
+|**执行方式**|严格：违反时会拒绝生成回复|灵活：影响解读方式|
+|**用途**|合规要求、行为边界、限制条件|个性、角色特点、语气|
+|**示例**|“绝不要推荐具体股票”|高度怀疑：会质疑主张|
 
 ---
 
 ## 记忆库传输（导出和导入） {#bank-transfer-export--import}
 
-在记忆库和实例之间移动记忆库（或只是其文档）**无需重新运行 LLM**。一种存档格式、一对端点和三个决定传输内容的标志：
+在记忆库或实例之间迁移整个记忆库，也可以只迁移其中的文档，**无需再次运行 LLM**。流程使用一种归档格式和一对端点，并由三个标志决定传输哪些内容：
 
-|旗帜|默认|它携带什么|
+|标志|默认值|包含的内容|
 |------|---------|-----------------|
-|`include_data`|`true`|文档、原始块、提取的事实、综合观察、实体和链接、附件 **及其字节内容**，无效事实的管理档案、操作日志、维护队列——以及记忆库从所有这些中合成的内容：心智模型、它们的刷新历史以及它们之上的知识页面树。|
-|`include_bank_config`|`true`|记忆库是如何设置的：它的配置覆盖、指令和 webhooks。|
+|`include_data`|`true`|文档、原始文本分块、提取出的事实、整合后的观测、实体及其链接、附件**及附件字节**、已失效事实的人工维护归档、操作日志、维护队列，以及基于这些数据综合生成的心智模型、刷新历史和知识页树。|
+|`include_bank_config`|`true`|记忆库的配置方式，包括配置覆盖项、强制指令和 Webhook。|
 |`include_history`|`false`|`audit_log` 和 `llm_requests`。|
 
-心智模型及知识页计为**数据**，不是配置。心智模型是对记忆库事实的阅读，并在其中通过 id 引用它们 `based_on`证据，因此如果没有证据就携带它，就会恢复一个基础为零的综合。出于同样的原因，他们的刷新历史也随之而来。
+心智模型和知识页属于**数据**，而非配置。心智模型是对记忆库事实的解读，并通过 `based_on` 证据按 ID 引用这些事实；如果没有这些事实，恢复出来的综合内容就会失去依据。基于同样的原因，心智模型的刷新历史也会一并传输。
 
-嵌入和数据库 ID 永远不会被携带：事实使用 *目标* 记忆库的模型重新嵌入，并且实体根据它重新解析，因此存档干净地移动到配置有不同嵌入模型、向量扩展或文本搜索后端的实例。
+归档不会携带嵌入向量或数据库 ID：事实会使用*目标*记忆库的模型重新生成嵌入，实体也会在目标库中重新解析。因此，归档可以迁移到采用不同嵌入模型、向量扩展或文本搜索后端的实例。
 
-Webhooks 与 一起旅行 `include_bank_config`。当复制 webhook 指向每个记忆库使用者的记忆库时，使用 导出 `include_bank_config=false`，或在副本上删除它们。
+Webhook 随 `include_bank_config` 一同传输。如果要复制的记忆库中的 Webhook 指向某个专属消费者，请在导出时设置 `include_bank_config=false`，或在副本上删除这些 Webhook。
 
 ### 导出 {#export}
 
-`POST /v1/default/banks/{bank_id}/transfer/export` — 作为 运行 **后台操作**（整个记忆库导出加载每个单元并压缩一个大档案）。退货`202` 带有 `operation_id`；轮询记忆库的操作端点，然后从 下载存档 `download_url` `result_metadata`。
+`POST /v1/default/banks/{bank_id}/transfer/export` — 以**后台操作**运行（导出整个记忆库需要加载所有记忆单元并压缩成大型归档）。请求返回 `202` 和 `operation_id`；请轮询该记忆库的操作端点，然后从 `result_metadata` 中的 `download_url` 下载归档。
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -702,21 +701,21 @@ Webhooks 与 一起旅行 `include_bank_config`。当复制 webhook 指向每个
 <TabItem value="cli" label="CLI">
 <CodeSnippet code={memoryBanksSh} section="transfer-export" language="bash" />
 </TabItem>
-<TabItem value="go" label="开始">
+<TabItem value="go" label="Go">
 <CodeSnippet code={memoryBanksGo} section="transfer-export" language="go" />
 </TabItem>
 </Tabs>
 
-文档子集也必须通过 `include_bank_config=false`（然后离开`include_history` 关闭）。 记忆库级部分的范围不能限定为文档，因此服务器拒绝与 的组合 `400`。
+导出部分文档时，还必须设置 `include_bank_config=false`（并保持 `include_history` 关闭）。记忆库级内容无法按文档筛选，因此服务器会对此组合返回 `400`。
 
 ### 导入 {#import}
 
-`POST /v1/default/banks/{bank_id}/transfer/import` — 分段上传 (`file` = ZIP），也是后台操作。
+`POST /v1/default/banks/{bank_id}/transfer/import` — 通过 multipart 上传 ZIP 文件（`file` 字段），同样以后台操作运行。
 
 |模式|行为|
 |------|-----------|
-|`restore`（默认）|将整个记忆库写入`target_bank_id`，其中 **必须尚不存在**。这就是记忆库被移动到另一个实例，或复制到新 ID 下的方式。|
-|`merge`|将档案文件折叠到 `{bank_id}`。 `document_conflict` 决定如何处理已经存在的文档 id：`skip`（默认），`replace`，`new-id`。|
+|`restore`（默认值）|将整个记忆库恢复到 `target_bank_id`；该 ID **必须尚不存在**。可用此模式将记忆库迁移到另一实例，或以新 ID 创建副本。|
+|`merge`|将归档中的文档合并到 `{bank_id}`。`document_conflict` 决定如何处理已存在的文档 ID：`skip`（默认值）、`replace` 或 `new-id`。|
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -728,22 +727,22 @@ Webhooks 与 一起旅行 `include_bank_config`。当复制 webhook 指向每个
 <TabItem value="cli" label="CLI">
 <CodeSnippet code={memoryBanksSh} section="transfer-import" language="bash" />
 </TabItem>
-<TabItem value="go" label="开始">
+<TabItem value="go" label="Go">
 <CodeSnippet code={memoryBanksGo} section="transfer-import" language="go" />
 </TabItem>
 </Tabs>
 
-包含标志也适用于此，并且只能缩小范围：它们恢复存档所包含内容的子集，再也不会。
+这些 include 标志在导入时同样适用，但只能缩小范围：导入时可恢复归档内容的子集，不能超出归档本身包含的内容。
 
-中`restore` 模式记录操作`{bank_id}` — URL 中的记忆库 — 因为目标记忆库尚不存在。轮询记忆库的操作端点的状态和每个组件的计数。
+在 `restore` 模式下，操作记录在 URL 中的记忆库 `{bank_id}` 上，因为目标库此时尚不存在。请轮询该记忆库的操作端点，以查看状态和各组件的计数。
 
-恢复将操作日志作为历史记录，而不是作为工作：导出记忆库时仍在运行的任何内容都会被留下，因此复制的记忆库永远不会重新运行原始的排队保留或重新触发其 Webhook。飞行中的工作属于导出的记忆库——克隆体运行*里面*这样的操作，因此携带它们会将克隆体自己未完成的记录放入副本中。
+恢复时，操作日志会作为历史记录带入，而不会作为待执行工作带入：导出时仍在进行的任务会留在原库中，因此副本不会重新运行原库中排队的存入操作，也不会再次触发其 Webhook。执行中的任务属于被导出的记忆库；克隆本身就在其中一项此类操作内运行，若一并复制这些任务，就会把克隆自身尚未完成的操作记录放进副本。
 
 ### 导入在 Hindsight 外部提取的事实 {#import-facts-extracted-outside-hindsight}
 
-存档不一定来自导出。如果您运行自己的提取管道，请自行构建存档并使用 导入 `mode=merge`：你的块和事实按照给定的方式存储 - 不LLM调用，无需重新分块 — whileHindsight仍然重新嵌入事实，根据记忆库解析其实体，构建语义、时间、实体和因果链接，并且 - 就像记忆存储一样 - 激发 `retain.completed` webhook 和自动集成（当记忆库启用时）。
+归档不一定必须由导出端点生成。如果你运行自己的提取管道，可以自行构建归档并以 `mode=merge` 导入：文本分块和事实会按提供的内容存储，不调用 LLM，也不会重新分块。同时，Hindsight 仍会重新生成事实的嵌入、根据记忆库解析实体、建立语义、时间、实体和因果链接；如果记忆库启用了相应功能，也会像存入操作一样触发 `retain.completed` Webhook 和自动整合。
 
-存档是带有 的 ZIP `manifest.json` 和一个JSON下每个文档的文件 `documents/`：
+归档是一个 ZIP 文件，其中包含 `manifest.json`，以及 `documents/` 目录下每份文档对应的一个 JSON 文件：
 
 ```text
 import.zip
@@ -757,15 +756,15 @@ import.zip
 ```json
 {
   "id": "session-2026-09-22",
-  "original_text": "完整的原始会话文本...",
+  "original_text": "Full original session text...",
   "tags": ["source:pi"],
-  "chunks": [{ "chunk_index": 0, "chunk_text": "调用者定义的源区域..." }],
+  "chunks": [{ "chunk_index": 0, "chunk_text": "Caller-defined source region..." }],
   "facts": [
     {
-      "text": "用户更喜欢轻量级的本地语音识别模型。",
+      "text": "The user prefers lightweight local speech recognition models.",
       "fact_type": "experience",
       "chunk_index": 0,
-      "context": "本地语音识别讨论",
+      "context": "Discussion of local speech recognition",
       "mentioned_at": "2026-09-22T18:34:00Z",
       "occurred_start": "2026-09-22T18:34:00Z",
       "occurred_end": "2026-09-22T18:34:00Z",
@@ -781,15 +780,15 @@ import.zip
 
 |事实字段|说明|
 |------------|-------------|
-|`text`|必填。记忆，就像会被回忆起来一样。|
-|`fact_type`|必填。 `world`或`experience`。|
+|`text`|必填。将被召回的记忆内容。|
+|`fact_type`|必填。`world` 或 `experience`。|
 |`chunk_index`|可选。 中的块 `chunks`这个事实来自。|
-|`context`，`metadata`，`tags`，`observation_scopes`|可选。与记忆存储项目的含义相同，按事实设置。|
-|`mentioned_at`，`occurred_start`，`occurred_end`|可选 ISO 8601 日期。如果没有设置任何一个，则事实的日期是导入时的。|
-|`entities`|可选实体名称，根据记忆库的现有实体进行解析。|
-|`causal_relations`|​​ 可选。 `[{"relation_type": "caused_by", "target_fact_index": N}]`，其中 `N` 是同一文档中另一个事实的位置 `facts` 列表。|
+|`context`、`metadata`、`tags`、`observation_scopes`|可选。含义与 Retain 项目中的相同，并按事实分别设置。|
+|`mentioned_at`、`occurred_start`、`occurred_end`|可选的 ISO 8601 日期。若这些字段均未设置，则以导入时间作为事实日期。|
+|`entities`|可选的实体名称，会根据记忆库中已有的实体进行解析。|
+|`causal_relations`|可选。格式为 `[{"relation_type": "caused_by", "target_fact_index": N}]`，其中 `N` 是同一文档 `facts` 列表中另一条事实的位置。|
 
-元数据和日期基于每个事实；文档不携带自己的元数据或时间戳。重新发送文档id如下`document_conflict` (`replace`覆盖它）。
+元数据和日期属于单条事实；文档本身不带元数据或时间戳。再次发送相同的文档 ID 时，按 `document_conflict` 处理（使用 `replace` 可覆盖现有文档）。
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -801,14 +800,14 @@ import.zip
 <TabItem value="cli" label="CLI">
 <CodeSnippet code={memoryBanksSh} section="transfer-import-external" language="bash" />
 </TabItem>
-<TabItem value="go" label="开始">
+<TabItem value="go" label="Go">
 <CodeSnippet code={memoryBanksGo} section="transfer-import-external" language="go" />
 </TabItem>
 </Tabs>
 
 ### 克隆记忆库 {#clone-a-bank}
 
-`POST /v1/default/banks/{bank_id}/clone` — 只需一次调用即可将记忆库复制到新记忆库中，而无需亲自处理存档。这是上面在该实例上背靠背运行的导出和导入：没有重新提取任何内容，也没有  调用了LLM，因此克隆的事实与源的事实完全相同，并使用相同的模型重新嵌入。
+`POST /v1/default/banks/{bank_id}/clone` — 一次调用即可将记忆库复制到新库，无需自行处理归档。该操作会在当前实例中连续执行上述导出和导入流程；不会重新提取事实，也不会调用 LLM，因此克隆库中的事实与源库完全相同，并使用相同模型重新生成嵌入。
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -820,35 +819,35 @@ import.zip
 <TabItem value="cli" label="CLI">
 <CodeSnippet code={memoryBanksSh} section="clone-bank" language="bash" />
 </TabItem>
-<TabItem value="go" label="开始">
+<TabItem value="go" label="Go">
 <CodeSnippet code={memoryBanksGo} section="clone-bank" language="go" />
 </TabItem>
 </Tabs>
 
-|查询参数|默认|说明|
+|查询参数|默认值|说明|
 |-------------|---------|-------------|
-|`target_bank_id`|—|必填。创建记忆库；它一定不存在。|
-|`include_data`|`true`|复制记忆，以及记忆背后的一切，以及由此合成的心智模型和知识页面。|
-|`include_bank_config`|`true`|复制记忆库的配置覆盖、指令和 webhooks。|
+|`target_bank_id`|—|必填。要创建的目标记忆库；该 ID 必须尚不存在。|
+|`include_data`|`true`|复制记忆及其所有底层数据，以及基于这些数据综合生成的心智模型和知识页。|
+|`include_bank_config`|`true`|复制记忆库的配置覆盖项、强制指令和 Webhook。|
 |`include_history`|`false`|复制`audit_log` 和 `llm_requests`。|
 
-克隆从制作之日起就是独立的：以后对任一记忆库的保留、整合和编辑不会影响另一个记忆库。
+克隆库自创建时起便与源库相互独立：之后在任一库中存入记忆、整合或编辑，都不会影响另一库。
 
-根据记录操作 **来源** 记忆库，因为目标尚不存在 - 轮询源的操作端点以获取状态和每个组件的计数。
+操作会记录在**源**记忆库上，因为目标库尚不存在；请轮询源库的操作端点，查看状态和各组件的计数。
 
-:::warning 克隆继承了源的 webhooks
-​​Webhook 是记忆库配置的一部分，因此使用默认标志创建的克隆将调用源的 Webhook 端点。通过`include_bank_config=false`，或者当它们指向每个记忆库消费者时在克隆上删除它们。
+:::warning 克隆库会继承源库的 Webhook
+Webhook 属于记忆库配置，因此使用默认标志创建的克隆会调用源库的 Webhook 端点。如果这些端点指向源库专用的消费者，请设置 `include_bank_config=false`，或在克隆库上删除这些 Webhook。
 :::
 
 ### 文档导出和导入（已取代） {#document-export--import-superseded}
 
-下面的端点仍然完全按照记录工作并且没有改变；新的集成应该使用 上面的 `/transfer/export` 和 `/transfer/import`，带有相同的文档档案加上记忆库自己的配置。
+下列端点仍按文档所述工作，且行为没有变化；新集成应使用上文的 `/transfer/export` 和 `/transfer/import`，它们传输相同的文档归档，并额外包含记忆库自身的配置。
 
-在记忆库之间移动文档以及已从中提取的事实**无需重新运行 LLM**。对于测试不同的嵌入模型或在不同的嵌入模型之间复制数据很有用banks/instances无需支付重新提取费用。档案包含文档、原始块和提取的事实（按规范名称、因果关系列出的实体）——但是 **不包含嵌入向量或数据库 ID**。导入时，事实会重新嵌入*目标*记忆库的模型和entities/links会根据它重新计算，因此导入的文档会与已有的文档集成。
+在记忆库之间迁移文档及其已提取的事实，**无需再次运行 LLM**。这适用于测试不同的嵌入模型，或在不同记忆库/实例之间复制数据，避免为重新提取付费。归档包含文档、原始文本分块和提取出的事实（实体使用规范名称，包含因果链接），但**不包含嵌入向量或数据库 ID**。导入时，事实会使用*目标*记忆库的模型重新生成嵌入，实体和链接也会在目标库中重新计算，因此导入文档会与目标库已有内容整合。
 
 ### 导出文档 {#export-documents}
 
-`POST /v1/default/banks/{bank_id}/document-transfer/export` — 作为 运行 **后台操作**（整个记忆库导出加载每个单元并压缩一个大档案，在大记忆库上可能会耗尽记忆并固定连接）。它返回`202` 带有 `operation_id`；轮询记忆库的操作端点，然后从 下载存档 `download_url` `result_metadata`。
+`POST /v1/default/banks/{bank_id}/document-transfer/export` — 以**后台操作**运行（导出整个记忆库需要加载所有记忆单元并压缩成大型归档；对于大型记忆库，这可能耗尽内存并长时间占用连接）。请求返回 `202` 和 `operation_id`；请轮询该记忆库的操作端点，然后从 `result_metadata` 中的 `download_url` 下载归档。
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -860,25 +859,25 @@ import.zip
 <TabItem value="cli" label="CLI">
 <CodeSnippet code={memoryBanksSh} section="document-export" language="bash" />
 </TabItem>
-<TabItem value="go" label="开始">
+<TabItem value="go" label="Go">
 <CodeSnippet code={memoryBanksGo} section="document-export" language="go" />
 </TabItem>
 </Tabs>
 
 |查询参数|说明|
 |-------------|-------------|
-|`document_id`|可重复。仅导出这些文档；省略整个记忆库。|
-|`include_observations`|还导出综合观察（默认 `false`）。仅对 有效 **整个记忆库** 导出 — 与 组合 `document_id`返回`400`。|
+|`document_id`|可重复提供。只导出指定文档；省略此参数则导出整个记忆库。|
+|`include_observations`|同时导出整合后的观测（默认值为 `false`）。仅对**整个记忆库**导出有效；与 `document_id` 同时使用会返回 `400`。|
 
-:::note 同步 `GET …/document-transfer` 已删除
-它将整个记忆库加载到记忆中，并为完整请求保留数据库连接，这可以取消共享  大型记忆库上的API。现在它返回`410`指着这里。使用上面的异步流程。下载路径（`GET /v1/default/files/download/{key}`) 授权调用者使用存档所属的记忆库。
+:::note 同步接口 `GET …/document-transfer` 已移除
+该接口会将整个记忆库加载到内存中，并在整个请求期间占用数据库连接；大型记忆库可能因此拖垮共享 API。现在它会返回 `410` 并指向本文。请使用上文的异步流程。下载路由（`GET /v1/default/files/download/{key}`）会根据调用方对归档所属记忆库的权限进行授权。
 :::
 
-存档与导出一样长**操作记录** — 默认情况下无限期，或者直到时操作被修剪 `HINDSIGHT_API_OPERATION_RETENTION_DAYS` 已设置（存档与行同步删除）。删除操作会立即删除存档。
+归档的保留时间与导出**操作记录**相同：默认无限期保存；若设置了 `HINDSIGHT_API_OPERATION_RETENTION_DAYS`，则会在操作记录被清理时一并删除。删除操作记录会立即删除归档。
 
 ### 导入文档 {#import-documents}
 
-`POST /v1/default/banks/{bank_id}/document-transfer` — 分段上传 (`file` = 邮政编码）。作为 运行 **后台操作**（重新嵌入+实体解析可能需要一段时间），所以它返回`202` 带有 `operation_id`；轮询记忆库的操作端点的状态，结果计入 `result_metadata`。
+`POST /v1/default/banks/{bank_id}/document-transfer` — 通过 multipart 上传 ZIP 文件（`file` 字段）。它以**后台操作**运行（重新生成嵌入并解析实体可能需要一段时间），因此会返回 `202` 和 `operation_id`；请轮询记忆库的操作端点，查看状态和 `result_metadata` 中的结果计数。
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -890,40 +889,40 @@ import.zip
 <TabItem value="cli" label="CLI">
 <CodeSnippet code={memoryBanksSh} section="document-import" language="bash" />
 </TabItem>
-<TabItem value="go" label="开始">
+<TabItem value="go" label="Go">
 <CodeSnippet code={memoryBanksGo} section="document-import" language="go" />
 </TabItem>
 </Tabs>
 
-`on_conflict` 控制当目标记忆库中已存在文档 id 时会发生什么：
+`on_conflict` 用于决定目标记忆库中已存在相同文档 ID 时如何处理：
 
 |模式|行为|
 |------|----------|
-|`skip`（默认）|保持现有文档不变。|
-|`replace`|删除现有文档的数据并重新导入。|
-|`new-id`|使用新​​生成的 ID 导入副本。|
+|`skip`（默认值）|保留现有文档，不作更改。|
+|`replace`|删除现有文档数据并重新导入。|
+|`new-id`|以新生成的 ID 导入副本。|
 
-### 观察 {#observations}
+### 观测 {#observations}
 
-综合观察被排除——目标记忆库在整合过程中从导入的事实中重新生成它们。通过`include_observations=true` 来携带它们：它们无需任何操作即可恢复LLM，它们的源引用重新映射到导入的事实（这些事实被标记为合并的，因此目标不会重新合并它们）。
+默认不包含整合后的观测；目标记忆库会在整合期间根据导入的事实重新生成观测。若要一并传输观测，请设置 `include_observations=true`：观测会直接恢复，无需调用 LLM；其来源引用会重新映射到导入的事实（这些事实会标记为已整合，因此目标库不会再次整合它们）。
 
-因为观察可以从跨越多个文档的事实中得出，`include_observations` 仅在 上受支持 **全库导出**（省略`document_id`);将其与文档子集组合返回 `400`。
+由于一条观测可能由多个文档中的事实共同生成，`include_observations` 仅支持**整个记忆库导出**（省略 `document_id`）；与部分文档导出组合使用会返回 `400`。
 
-:::warning 导入的观察按原样插入 - 不合并
-它们不会针对目标记忆库中已有的观察进行合并或重复数据删除（整合合并相关观察；导入不会）。更喜欢将观察导入到fresh/empty记忆库，或省略`include_observations`并让目标自己巩固导入的事实。
+:::warning 导入的观测会原样插入，不会合并
+它们不会与目标记忆库中已有的观测合并或去重（整合过程会合并相关观测，但导入过程不会）。建议将观测导入空记忆库，或者省略 `include_observations`，让目标库自行整合导入的事实。
 :::
 
 ### 启用/禁用 {#enabling--disabling}
 
-两个端点都由服务器级标志进行门控（默认`true`）。禁用的端点返回 `404`，和`/version` 报告下的状态 `features.document_export_api` / `features.document_import_api`（控制平面相应地隐藏按钮）。
+这两个端点都受服务器级标志控制（默认值为 `true`）。禁用的端点会返回 `404`；`/version` 会在 `features.document_export_api` / `features.document_import_api` 中报告其状态（控制平面会相应隐藏按钮）。
 
-|变量|大门|
+|变量|控制的端点|
 |----------|-------|
 |`HINDSIGHT_API_ENABLE_DOCUMENT_EXPORT_API`|`POST …/document-transfer/export` 和 `GET …/files/download/{key}`|
 |`HINDSIGHT_API_ENABLE_DOCUMENT_IMPORT_API`|`POST …/document-transfer`|
 
 ## 将记忆库迁移到新实例 {#migrating-a-bank-to-a-new-instance}
 
-将记忆库移动到配置有不同的实例 **嵌入模型**，**向量扩展**，或**文本搜索后端** - 无法在填充的记忆库上进行更改 - 导出整个记忆库并将其导入到新实例中，其中每个嵌入和索引都是使用 从存储的文本中重新派生的 **无需 LLM 重新提取**。它携带文档、事实、观察、记忆库配置、心智模型、指令和网络钩子（从不嵌入）。
+若要将记忆库迁移到使用不同**嵌入模型**、**向量扩展**或**文本搜索后端**的实例（已填充数据的记忆库无法原地更改这些设置），请导出整个记忆库并导入新实例。新实例会从存储文本重新生成所有嵌入和索引，**无需再次调用 LLM 提取事实**。归档会包含文档、事实、观测、记忆库配置、心智模型、强制指令和 Webhook，但不包含嵌入向量。
 
-使用`hindsight-admin export-bank` / `import-bank` 命令并遵循 中的蓝绿色操作手册 **[管理 CLI → 将记忆库迁移到新实例](../admin-cli.md#migrating-a-bank-to-a-new-instance)**。
+使用 `hindsight-admin export-bank` / `import-bank` 命令，并按照[管理 CLI → 将记忆库迁移到新实例](../admin-cli.md#migrating-a-bank-to-a-new-instance)中的蓝绿部署手册操作。

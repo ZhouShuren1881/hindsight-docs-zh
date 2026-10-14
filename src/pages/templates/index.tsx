@@ -137,7 +137,7 @@ function ManifestModal({
         <div className={styles.modalFooter}>
           <p className={styles.usageHint}>
             使用此清单调用 <code>POST /v1/default/banks/&#123;bank_id&#125;/import</code>，或
-            将其粘贴到控制面板的记忆库创建对话框中。
+            将其粘贴到控制台的记忆库创建对话框中。
           </p>
         </div>
       </div>

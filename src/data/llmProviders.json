@@ -8,7 +8,7 @@
   {"id": "ollama",         "label": "Ollama",            "iconKey": "ollama",              "color": "#000000",  "colorDark": "#FFFFFF",  "defaultModel": "gemma3:12b"},
   {"id": "ollama-cloud",   "label": "Ollama Cloud",      "iconKey": "ollama",              "color": "#000000",  "colorDark": "#FFFFFF",  "defaultModel": "gemma3:12b"},
   {"id": "lmstudio",       "label": "LM Studio",         "iconKey": "brain",               "color": "#000000",  "colorDark": "#FFFFFF",  "defaultModel": "local-model"},
-  {"id": "llamacpp",       "label": "llama.cpp",         "iconKey": "terminal",                                                          "defaultModel": "gemma-4-e2b-it", "defaultModelNote": "自动下载的 GGUF"},
+  {"id": "llamacpp",       "label": "llama.cpp",         "iconKey": "terminal",                                                          "defaultModel": "gemma-4-e2b-it", "defaultModelNote": "自动下载的 GGUF 模型"},
   {"id": "minimax",        "label": "MiniMax",           "iconKey": "sparkles",            "color": "#E73562",                           "defaultModel": "MiniMax-M3"},
   {"id": "deepseek",       "label": "DeepSeek",          "iconKey": "brain",               "color": "#5786FE",                           "defaultModel": "deepseek-v4-flash"},
   {"id": "zai",            "label": "z.ai",              "iconKey": "sparkles",            "color": "#2D2D2D",  "colorDark": "#FFFFFF",  "defaultModel": "glm-4.5-flash"},

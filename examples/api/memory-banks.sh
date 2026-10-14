@@ -1,13 +1,13 @@
 #!/bin/bash
-# Hindsight 记忆库 API 示例 CLI
-# 运行： bash examples/api/memory-banks.sh
+# Memory Banks API examples for Hindsight CLI
+# Run: bash examples/api/memory-banks.sh
 
 set -e
 
 HINDSIGHT_URL="${HINDSIGHT_API_URL:-http://localhost:8888}"
 
 # =============================================================================
-# 文档示例
+# Doc Examples
 # =============================================================================
 
 # [docs:create-bank]
@@ -16,7 +16,7 @@ hindsight bank create my-bank
 
 # [docs:bank-with-disposition]
 hindsight bank create architect-bank \
-  --mission "你是一位高级软件架构师，跟踪系统设计、技术决策和架构模式。相比前沿技术，优先简单性。" \
+  --mission "You're a senior software architect - keep track of system designs, technology decisions, and architectural patterns. Prefer simplicity over cutting-edge." \
   --skepticism 4 \
   --literalism 4 \
   --empathy 2
@@ -24,40 +24,40 @@ hindsight bank create architect-bank \
 
 # [docs:bank-background]
 hindsight bank create my-bank \
-  --mission "我是专注机器学习的研究助手。"
+  --mission "I am a research assistant specializing in machine learning."
 # [/docs:bank-background]
 
 # [docs:bank-mission]
 hindsight bank create my-bank \
-  --mission "你是一位高级软件架构师，跟踪系统设计、技术决策和架构模式。"
+  --mission "You're a senior software architect - keep track of system designs, technology decisions, and architectural patterns."
 # [/docs:bank-mission]
 
 # [docs:bank-support-agent]
 hindsight bank create support-bank
 hindsight bank set-config support-bank \
-  --observations-mission "我是客户支持智能体，跟踪客户偏好、重复问题和解决历史。"
+  --observations-mission "I am a customer support agent. Track customer preferences, recurring issues, and resolution history."
 # [/docs:bank-support-agent]
 
 # [docs:update-bank-config]
 hindsight bank set-config my-bank \
-  --retain-mission "始终包含技术决策、API 设计选择及架构取舍。忽略会议安排和社交交流。" \
+  --retain-mission "Always include technical decisions, API design choices, and architectural trade-offs. Ignore meeting logistics and social exchanges." \
   --retain-extraction-mode verbose \
-  --observations-mission "观察是关于人员和项目的稳定事实。始终包含偏好、技能和重复模式，忽略一次性事件。" \
+  --observations-mission "Observations are stable facts about people and projects. Always include preferences, skills, and recurring patterns. Ignore one-off events." \
   --disposition-skepticism 4 \
   --disposition-literalism 4 \
   --disposition-empathy 2
 # [/docs:update-bank-config]
 
 # [docs:get-bank-config]
-# 返回解析配置（服务默认合并库覆盖）
+# Returns resolved config (server defaults merged with bank overrides)
 hindsight bank config my-bank
 
-# 仅显示库特定覆盖
+# Show only bank-specific overrides
 hindsight bank config my-bank --overrides-only
 # [/docs:get-bank-config]
 
 # [docs:reset-bank-config]
-# 移除全部库级覆盖，恢复服务默认
+# Remove all bank-level overrides, reverting to server defaults
 hindsight bank reset-config my-bank -y
 # [/docs:reset-bank-config]
 
@@ -69,8 +69,8 @@ curl --fail-with-body -X POST "$HINDSIGHT_URL/v1/default/banks/my-bank/prompts/p
 echo
 
 # -----------------------------------------------------------------------------
-# 转移初始化，不在文档展示：来源库有两文档。
-# chunks 模式原样存文本，无需 LLM。
+# Transfer setup (not shown in docs): a source bank with two documents.
+# Chunks mode stores text verbatim, so no LLM call is needed.
 # -----------------------------------------------------------------------------
 API_KEY="${HINDSIGHT_API_KEY:-}"
 TRANSFER_BANKS="transfer-bank transfer-bank-copy transfer-other-bank transfer-bank-clone"
@@ -81,11 +81,11 @@ hindsight bank create transfer-bank > /dev/null
 hindsight bank set-config transfer-bank --retain-extraction-mode chunks > /dev/null
 curl -sf -X POST "$HINDSIGHT_URL/v1/default/banks/transfer-bank/memories" \
   -H "Content-Type: application/json" \
-  -d '{"items": [{"content": "Alice 领导支付团队。", "document_id": "doc-1"},
-                 {"content": "Bob 调到柏林办公室。", "document_id": "doc-2"}]}' > /dev/null
+  -d '{"items": [{"content": "Alice leads the payments team.", "document_id": "doc-1"},
+                 {"content": "Bob moved to the Berlin office.", "document_id": "doc-2"}]}' > /dev/null
 hindsight bank create transfer-other-bank > /dev/null
 
-# 等待完成，未完成则明确报错。
+# Wait for an operation to finish; fail loudly if it does not complete.
 wait_op() {
   for _ in $(seq 1 120); do
     status=$(curl -s "$HINDSIGHT_URL/v1/default/banks/$1/operations/$2" | jq -r .status)
@@ -95,17 +95,17 @@ wait_op() {
     esac
     sleep 1
   done
-  echo "operation $2 超时" >&2
+  echo "operation $2 timed out" >&2
   return 1
 }
 
 # [docs:document-export]
-# 1. 提交整库导出，可加 ?document_id=… 限定
+# 1. Submit the export (whole bank; add ?document_id=… to scope it)
 OPERATION_ID=$(curl -sf -X POST -H "Authorization: Bearer $API_KEY" \
   "$HINDSIGHT_URL/v1/default/banks/transfer-bank/document-transfer/export" | jq -r .operation_id)
 # -> {"operation_id": "…", "status": "pending"}
 
-# 2. 轮询至完成
+# 2. Poll until completed
 until [ "$(curl -s -H "Authorization: Bearer $API_KEY" \
   "$HINDSIGHT_URL/v1/default/banks/transfer-bank/operations/$OPERATION_ID" | jq -r .status)" = completed ]; do
   sleep 1
@@ -116,7 +116,7 @@ DOWNLOAD_URL=$(curl -s -H "Authorization: Bearer $API_KEY" \
 #      "download_url":"/v1/default/files/download/banks/transfer-bank/exports/…/transfer.zip",
 #      "storage_key":"banks/transfer-bank/exports/…/transfer.zip","byte_size":12345,"filename":"transfer-bank-documents.zip"}}
 
-# 3. 下载归档
+# 3. Download the archive
 curl -sf -H "Authorization: Bearer $API_KEY" \
   "$HINDSIGHT_URL$DOWNLOAD_URL" -o transfer-bank-documents.zip
 # [/docs:document-export]
@@ -135,21 +135,21 @@ echo
 wait_op transfer-other-bank "$OPERATION_ID"
 
 # [docs:transfer-export]
-# 整个库，记忆和配置，不含历史
+# Whole bank, memories + config, no history
 curl --fail-with-body -X POST -H "Authorization: Bearer $API_KEY" \
   "$HINDSIGHT_URL/v1/default/banks/transfer-bank/transfer/export"
 
-# 仅记忆
+# Just the memories
 curl --fail-with-body -X POST -H "Authorization: Bearer $API_KEY" \
   "$HINDSIGHT_URL/v1/default/banks/transfer-bank/transfer/export?include_bank_config=false"
 
-# 特定文档，文档子集不含库级部分
+# Specific documents (a document subset carries no bank-level sections)
 curl --fail-with-body -X POST -H "Authorization: Bearer $API_KEY" \
   "$HINDSIGHT_URL/v1/default/banks/transfer-bank/transfer/export?document_id=doc-1&document_id=doc-2&include_bank_config=false"
 # [/docs:transfer-export]
 echo
 
-# 构建导入示例用整库归档，不在文档展示：
+# Build the whole-bank archive the import examples use (not shown in docs):
 # export, poll, download.
 OPERATION_ID=$(curl -s -X POST "$HINDSIGHT_URL/v1/default/banks/transfer-bank/transfer/export" | jq -r .operation_id)
 wait_op transfer-bank "$OPERATION_ID"
@@ -157,17 +157,17 @@ DOWNLOAD_URL=$(curl -s "$HINDSIGHT_URL/v1/default/banks/transfer-bank/operations
 curl -sf "$HINDSIGHT_URL$DOWNLOAD_URL" -o transfer-bank.zip
 
 # [docs:transfer-import]
-# 以新 ID 恢复库
+# Restore a bank under a new id
 curl --fail-with-body -H "Authorization: Bearer $API_KEY" -F "file=@transfer-bank.zip" \
   "$HINDSIGHT_URL/v1/default/banks/transfer-bank/transfer/import?target_bank_id=transfer-bank-copy"
 
-# 将归档文档合并到现有库
+# Merge an archive's documents into an existing bank
 curl --fail-with-body -H "Authorization: Bearer $API_KEY" -F "file=@transfer-bank.zip" \
   "$HINDSIGHT_URL/v1/default/banks/transfer-other-bank/transfer/import?mode=merge&document_conflict=replace"
 # [/docs:transfer-import]
 echo
 
-# 等待两次导入，恢复记录在来源库。
+# Wait for both imports (the restore is recorded against the source bank).
 for op in $(curl -s "$HINDSIGHT_URL/v1/default/banks/transfer-bank/operations?limit=50" \
     | jq -r '.operations[] | select(.status=="pending" or .status=="processing") | .id'); do
   wait_op transfer-bank "$op"
@@ -196,10 +196,10 @@ echo '{"schema_version": 1, "source_bank_id": "external"}' > external/manifest.j
 cat > external/documents/session-2026-09-22.json <<'JSON'
 {
   "id": "session-2026-09-22",
-  "original_text": "完整原始会话文本...",
-  "chunks": [{"chunk_index": 0, "chunk_text": "调用方定义的来源区域..."}],
+  "original_text": "Full original session text...",
+  "chunks": [{"chunk_index": 0, "chunk_text": "Caller-defined source region..."}],
   "facts": [{
-    "text": "用户偏好轻量本地语音识别模型。",
+    "text": "The user prefers lightweight local speech recognition models.",
     "fact_type": "experience",
     "chunk_index": 0,
     "mentioned_at": "2026-09-22T18:34:00Z",
@@ -224,10 +224,10 @@ rm -rf external import.zip
 rm -f transfer-bank.zip transfer-bank-documents.zip
 
 # =============================================================================
-# 清理（不在文档中展示）
+# Cleanup (not shown in docs)
 # =============================================================================
 for bank_id in my-bank architect-bank support-bank $TRANSFER_BANKS; do
   curl -s -X DELETE "${HINDSIGHT_URL}/v1/default/banks/${bank_id}" > /dev/null
 done
 
-echo "memory-banks.sh: 全部示例通过"
+echo "memory-banks.sh: All examples passed"

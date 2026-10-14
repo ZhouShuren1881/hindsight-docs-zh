@@ -2,23 +2,23 @@
 sidebar_position: 5
 ---
 
-# 知识页面 {#knowledge-pages}
+# 知识页 {#knowledge-pages}
 
-动态 Markdown 文档，按文件夹树组织，并随着记忆库学习新知识而自行更新。
+按文件夹树组织、会随着记忆库不断学习而自行改写的 Markdown 文档。
 
-页面由[心智模型](./mental-models)支撑，但采用面向文档的配置：仅根据记忆库的[观察](../observations)构建，绝不读取其他页面，并在每次整合后增量刷新。有关此 API 背后的概念，请参见[知识页面](../knowledge-pages)。
+知识页以[心智模型](./mental-models)为底层，但配置方式是文档：它只根据记忆库的[观测](../observations)构建，绝不读取其他页面，并会在每次整合后增量刷新。有关 API 背后的概念，请参阅[知识页](../knowledge-pages)。
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import CodeSnippet from '@site/src/components/CodeSnippet';
 
-{/* 导入原始源文件 */}
+{/* Import raw source files */}
 import knowledgePagesPy from '!!raw-loader!@site/examples/api/knowledge-pages.py';
 import knowledgePagesMjs from '!!raw-loader!@site/examples/api/knowledge-pages.mjs';
 import knowledgePagesSh from '!!raw-loader!@site/examples/api/knowledge-pages.sh';
 import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go';
 
-以下所有端点都与记忆库相关：
+以下所有端点均相对于某个记忆库：
 
 ```
 /v1/default/banks/{bank_id}/knowledge-base
@@ -26,9 +26,9 @@ import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go
 
 ---
 
-## 获取树 {#get-the-tree}
+## 获取目录树 {#get-the-tree}
 
-以文件夹和页面的嵌套树返回整个知识库。**不包含**页面正文；请单独获取页面以读取内容。
+以嵌套的文件夹和页面树形式返回整个知识库。**不包含**页面正文；要读取内容，请单独获取页面。
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -40,7 +40,7 @@ import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go
 <TabItem value="cli" label="CLI">
 <CodeSnippet code={knowledgePagesSh} section="get-tree" language="bash" />
 </TabItem>
-<TabItem value="go" label="开始">
+<TabItem value="go" label="Go">
 <CodeSnippet code={knowledgePagesGo} section="get-tree" language="go" />
 </TabItem>
 </Tabs>
@@ -63,11 +63,11 @@ import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go
         {
           "id": "kp-2e85...",
           "kind": "page",
-          "name": "部署API",
+          "name": "Deploying the API",
           "parent_id": "kf-9f2c...",
           "mental_model_id": "mm-77ab...",
           "managed": false,
-          "description": "API如何部署？",
+          "description": "How is the API deployed?",
           "tags": ["ops"],
           "timestamp": "2026-08-03T09:12:44+00:00",
           "is_stale": true,
@@ -79,29 +79,29 @@ import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go
 }
 ```
 
-|字段|说明|
+| 字段 | 说明 |
 |---|---|
-|`kind`|`folder`或`page`|
-|`mental_model_id`|支撑页面的心智模型（仅页面具有）|
-|`description`|页面的源查询，即用于重建页面的问题|
-|`timestamp`|页面的上次刷新、文件夹的上次更新|
-|`is_stale`|仅页面具有：自页面上次读取记忆以来，若有记忆写入*该页面自身*的范围，则为 `true`（见下文）|
-|`last_refresh_failed_at`|仅页面具有：上次刷新失败的时间；成功时为 `null`。该值存在时，页面不会通过触发器自行重建，但仍可显式刷新；刷新成功后会清除此值|
-|`managed`|`true` 当节点被标记为系统拥有而不是手工创作时|
+| `kind` | `folder`（文件夹）或 `page`（页面） |
+| `mental_model_id` | 底层心智模型（仅页面有此字段） |
+| `description` | 页面的来源查询，也就是用于重新生成页面的问题 |
+| `timestamp` | 页面的最后刷新时间；文件夹的最后更新时间 |
+| `is_stale` | 仅页面有此字段：自页面上次读取记忆以来，其自身范围内有记忆被写入时为 `true`（见下文） |
+| `last_refresh_failed_at` | 仅页面有此字段：页面上次刷新失败的时间；成功时为 `null`。此字段有值时，页面不会因触发条件而自动重建；显式发起的刷新仍会执行，刷新成功后该字段会清空 |
+| `managed` | 节点标记为系统管理而非人工编写时为 `true` |
 
-### is_stale 的判定方式 {#how-isstale-is-decided}
+### `is_stale` 的判定方式 {#how-is_stale-is-decided}
 
-每个页面均针对自身范围（标签和 `fact_types`）使用相同的[过时检查](./mental-models#staleness-gating)，以决定计划刷新是否需要执行。被标记的页面会在刷新时重写；未标记的页面保持不变。记忆库其他范围的活动不会标记自身范围内没有变化的页面。
+系统会根据每个页面自身的范围（其标签和 `fact_types`），使用与[待更新状态检查](./mental-models#staleness-gating)相同的规则，判断计划刷新是否需要执行。被标记的页面意味着刷新确实会改写它；未被标记的页面则会原样保留。若某页面自身范围内没有活动，记忆库其他位置的活动不会将它标记为待更新。
 
-整棵树通过一次查询完成检查，因此无论记忆库有三页还是三百页，标志的计算成本都相同。[`GET /mental-models/{id}`](./mental-models) 对页面背后的心智模型返回相同的值。
+整个目录树通过一次查询返回，因此无论记忆库中有 3 个还是 300 个页面，判定标记的成本都相同；[`GET /mental-models/{id}`](./mental-models) 返回的该页面底层模型的状态也完全一致。
 
-该检查无法感知**删除操作**。它只检查自页面上次读取记忆以来发生的*写入*；删除范围内的记忆不会留下写入记录。因此，即使页面引用了已删除的事实，仍会报告自己是最新的。
+有一类变化无法被检测到：**删除**。检查会查询页面上次读取记忆之后有哪些内容被*写入*；删除范围内的记忆不会留下新的写入记录。因此，即使页面引用的事实已被删除，它仍会报告自己是最新的。
 
 ---
 
 ## 创建页面 {#create-a-page}
 
-创建页面会先存储占位内容，并在后台安排首次构建。通过[操作 API](./operations) 轮询返回的 `operation_id`，即可获知内容何时就绪。
+创建页面时，系统会先以占位内容保存页面，并在后台安排首次生成。通过[操作 API](./operations)轮询返回的 `operation_id`，即可确认页面内容何时就绪。
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -113,7 +113,7 @@ import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go
 <TabItem value="cli" label="CLI">
 <CodeSnippet code={knowledgePagesSh} section="create-page" language="bash" />
 </TabItem>
-<TabItem value="go" label="开始">
+<TabItem value="go" label="Go">
 <CodeSnippet code={knowledgePagesGo} section="create-page" language="go" />
 </TabItem>
 </Tabs>
@@ -128,48 +128,48 @@ import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go
 
 ### 参数 {#parameters}
 
-|参数|类型|必填|说明|
+| 参数 | 类型 | 必填 | 说明 |
 |---|---|---|---|
-|`name`|string|是|页面名称。在所属文件夹内必须唯一，比较时不区分大小写；重复名称返回 `409`。（仅在 PostgreSQL 上强制执行。）|
-|`source_query`|string|是|页面回答的问题，每次刷新时都会重新询问。|
-|`parent_id`|string|否|用于在其中创建页面的文件夹。 `null`（或省略）在根创建它。|
-|`tags`|list|否|限定页面构建所用记忆范围的标签，参见[标签是过滤条件](#tags-are-a-filter)。`type:<x>` 标签还设置页面的呈现类型，同时仍参与过滤。|
-|`max_tokens`|int|否|内容的 Token 预算，默认为 `4096`（普通心智模型默认为 `2048`）。|
-|`trigger`|object|否|刷新配置 - 见下文。|
+| `name` | string | 是 | 页面名称。在所属文件夹中必须唯一，且不区分大小写；名称重复时返回 `409`。（仅 PostgreSQL 会执行此检查。） |
+| `source_query` | string | 是 | 页面要回答的问题；每次刷新时都会重新提问。 |
+| `parent_id` | string | 否 | 要在其中创建页面的文件夹。传入 `null`（或省略此参数）会在根目录创建页面。 |
+| `tags` | list | 否 | 用于限定页面构建所依据记忆范围的标签，参见[标签用于筛选范围](#tags-are-a-filter)。`type:<x>` 标签还会设置页面的呈现类型，同时也会参与范围筛选。 |
+| `max_tokens` | int | 否 | 内容预算。默认值为 `4096`（普通心智模型的默认值为 `2048`）。 |
+| `trigger` | object | 否 | 刷新配置，见下文。 |
 
-### 标签是一个过滤器 {#tags-are-a-filter}
+### 标签用于筛选范围 {#tags-are-a-filter}
 
-`tags` 并非仅用于标注页面，而是限定页面构建所用的记忆范围。有标签的页面默认按 **`all_strict`** 匹配：记忆必须包含页面的**每一个**标签，未标记的记忆则被**完全排除**。
+`tags` 不是页面的标签说明，而是页面构建所依据的范围。默认情况下，带标签的页面使用 **`all_strict`** 匹配记忆：一条记忆必须包含页面的**每一个**标签；完全排除不带标签的记忆。
 
-因此创建的页面如下：
+例如，按以下方式创建页面：
 
 ```json
 {
-  "name": "家庭实验室基础设施",
-  "source_query": "NAS、ThinkPad、docker 容器、jellyfin",
+  "name": "Homelab Infrastructure",
+  "source_query": "NAS, ThinkPad, docker containers, jellyfin",
   "tags": ["type:runbook", "homelab", "infrastructure"]
 }
 ```
 
-该页面仅根据同时带有 `type:runbook`、`homelab` **和** `infrastructure` 标签的记忆构建。如果存储记忆时没有附上这些确切的标签（在创建页面时临时编造主题标签通常会出现这种情况），页面将匹配不到任何记忆，并生成*“我没有这方面的信息。”*。对同一查询直接进行[记忆召回](./recall)仍可返回全部结果，因为召回并未使用同样的过滤条件。
+该页面只会根据同时带有 `type:runbook`、`homelab` **和** `infrastructure` 标签的记忆构建。如果存入记忆时没有添加这些完全一致的标签（创建页面时才为主题临时发明标签，通常就会出现这种情况），页面将匹配不到任何内容，生成结果会是 *“我没有这方面的信息。”* 对同一查询直接执行[召回](./recall)仍会返回所有内容，因为召回请求没有使用同一筛选条件。
 
-`type:<x>` 标签尤其容易引发此问题：虽然文档说明它用于设置页面呈现类型，但它也会像其他标签一样缩小检索范围。
+`type:<x>` 标签尤其容易引起混淆：文档说明它会设置页面的呈现类型，但它和其他标签一样也会缩小检索范围。
 
-解决此问题的三种方法：
+有三种正确设置方式：
 
-|你想要|这样做|
+| 目标 | 操作 |
 |---|---|
-|根据整个记忆库构建页面|省略 `tags`（或传入 `[]`）|
-|用于限制页面范围的标签，但仍包含未标记的记忆|保留`tags`，添加`"trigger": {"tags_match": "all"}`|
-|仅带有每个标签的记忆（严格隔离，例如每个用户页面）|保留`tags` 和 `all_strict`默认|
+| 让页面根据整个记忆库构建 | 省略 `tags`（或传入 `[]`） |
+| 用标签限定页面范围，同时仍纳入无标签记忆 | 保留 `tags`，并添加 `"trigger": {"tags_match": "all"}` |
+| 只纳入带齐所有标签的记忆（严格隔离，例如按用户分别创建页面） | 保留 `tags`，使用默认的 `all_strict` |
 
-要修复已生成空内容的页面，请用 `PATCH` 传入 `{"tags": []}` 或扩大 `tags_match` 的匹配范围，再刷新页面。标签存储在支撑页面的心智模型上，并非写死在正文中。
+若页面已生成但内容为空，可通过 `PATCH` 传入 `{"tags": []}`，或使用范围更宽的 `tags_match`，然后刷新页面。标签保存在底层心智模型中，并未固化到页面内容里。
 
-参见[标签匹配模式](./recall#tags) 的完整语义 `any`，`all`，`any_strict`，`all_strict`，和`exact`。
+有关 `any`、`all`、`any_strict`、`all_strict` 和 `exact` 的完整语义，请参阅[标签匹配模式](./recall#tags)。
 
-### 默认触发器 {#default-trigger}
+### 默认触发配置 {#default-trigger}
 
-省略 `trigger` 时，页面采用面向文档的默认配置：
+省略 `trigger` 时，页面会采用面向文档的配置：
 
 ```json
 {
@@ -180,30 +180,30 @@ import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go
 }
 ```
 
-这使页面成为仅根据整合后的观察构建的动态文档：当整合在其范围内产生新知识时增量刷新，且绝不受其他页面影响。
+这样创建的页面会成为持续更新的文档，只根据整合后的观测构建；每当整合过程在其范围内产生新知识时，页面就会增量刷新，而且绝不会受其他页面影响。
 
-|设置|为什么|
+| 设置 | 原因 |
 |---|---|
-|`fact_types: ["observation"]`|页面读取整合后的认知，而非底层原始对话噪声。观察已经去重且有证据支持，因此页面读起来像整理好的文档而非对话记录。此限制由工具结构强制执行：范围仅包含 `observation` 时，刷新智能体根本不会获得原始记忆的召回工具。|
-|`exclude_mental_models: true`|页面绝不基于其他同级页面进行反思。否则页面可能相互引用，形成反馈循环，使一条错误陈述扩散到整个知识库。|
-|`mode: "delta"`|每次刷新都会使用自上次刷新以来的新内容编辑现有文档，而不是重新生成它，因此手动调整的结构和措辞得以保留。参见[刷新模式](./mental-models#refresh-mode)。|
-|`refresh_after_consolidation: true`|当整合在页面范围内产生新知识时重写页面。与其他心智模型一样，该过程受[过时检查](./mental-models#staleness-gating)控制；无关的记忆库活动不会触发重建。|
+| `fact_types: ["observation"]` | 页面读取的是整合后的认知判断，而不是其下层原始对话中的零散内容。观测已经去重并有证据支持，因此页面呈现为经过整理的文档，而非对话记录。此限制由结构保证：范围内只有 `observation` 时，刷新智能体根本不会获得原始记忆召回工具。 |
+| `exclude_mental_models: true` | 页面绝不会对同级页面进行反思。若不排除，页面可能互相引用并陷入反馈循环，让一个错误说法在整个知识库中传播。 |
+| `mode: "delta"` | 每次刷新都会将新内容编辑到现有文档中，而不是重新生成整篇，因此人工调整过的结构和措辞能够保留。参见[刷新模式](./mental-models#refresh-mode)。 |
+| `refresh_after_consolidation: true` | 每当整合在页面范围内产生新知识，页面就会自行改写；是否刷新仍受与其他心智模型相同的[待更新状态检查](./mental-models#staleness-gating)控制，因此记忆库中无关位置的活动不会触发重建。 |
 
 ### 页面生命周期 {#page-lifecycle}
 
-1. **创建** — 页面存储占位符内容并提交后台刷新；调用立即返回并带有 `operation_id`。
-2. **首次构建** — 由于尚无可编辑的文档，执行完整生成。
-3. **整合** — 存储新记忆，并将其整合为观察。
-4. **过时检查** — 对触发器要求检查的页面，按各自范围进行检查（标签和 `fact_types` 均适用）。
-5. **增量刷新** — 通过仅使用新观察编辑现有文档来重写过时页面。
+1. **创建** — 页面以占位内容保存，同时提交后台刷新任务；调用会立即返回 `operation_id`。
+2. **首次生成** — 由于没有可供编辑的旧文档，系统会完整生成页面。
+3. **整合** — 新记忆被存入并整合为观测。
+4. **待更新状态检查** — 对触发配置要求执行检查的页面，根据其自身范围进行检查（标签和 `fact_types` 均会生效）。
+5. **增量刷新** — 对待更新页面进行改写，只将新的观测编辑到现有文档中。
 
-页面*基于观察构建*，但仍可检查观察的底层证据：刷新智能体可将记忆展开为原始文本块或文档（除非记忆库禁用了 `store_document_text`）。启用默认关闭的 `HINDSIGHT_API_REFLECT_SOURCE_FACTS_MAX_TOKENS` 后，观察搜索还会返回每条观察所依据的事实。
+页面是根据观测*构建*的，但仍可检查观测背后的证据：刷新智能体可以将一条记忆展开到其原始文本分块或文档（除非记忆库禁用了 `store_document_text`）；此外，若启用了默认关闭的 `HINDSIGHT_API_REFLECT_SOURCE_FACTS_MAX_TOKENS`，观测搜索还会返回每条观测的依据事实。
 
 :::info
-传入的 `trigger` 是**部分更新**：仅应用实际发送的字段，其余字段保留上述默认值。发送 `{"trigger": {"tags_match": "all"}}` 会扩大标签过滤范围，并保留 `mode`、`fact_types`、`exclude_mental_models` 和 `refresh_after_consolidation`。唯一例外是两个刷新触发器保持互斥：设置 `refresh_cron` 会清除 `refresh_after_consolidation`，反之亦然。
+传入的 `trigger` 会作为**补丁**处理：只应用请求中实际提供的字段，其余字段保留上述默认值。传入 `{"trigger": {"tags_match": "all"}}` 会放宽标签筛选，但 `mode`、`fact_types`、`exclude_mental_models` 和 `refresh_after_consolidation` 都保持原样。只有两个刷新触发方式是例外：它们互斥，设置 `refresh_cron` 会清除 `refresh_after_consolidation`，反之亦然。
 :::
 
-这里支持全部[心智模型触发设置](./mental-models#trigger-settings)，包括用 `refresh_cron` 执行计划重建以替代整合驱动的重建，以及用 `tag_groups` 定义复合标签范围。
+此处接受[心智模型的所有触发设置](./mental-models#trigger-settings)，包括用于按计划重建而非由整合触发重建的 `refresh_cron`，以及用于组合标签范围的 `tag_groups`。
 
 ---
 
@@ -219,23 +219,23 @@ import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go
 <TabItem value="cli" label="CLI">
 <CodeSnippet code={knowledgePagesSh} section="create-folder" language="bash" />
 </TabItem>
-<TabItem value="go" label="开始">
+<TabItem value="go" label="Go">
 <CodeSnippet code={knowledgePagesGo} section="create-folder" language="go" />
 </TabItem>
 </Tabs>
 
-|参数|类型|必填|说明|
+| 参数 | 类型 | 必填 | 说明 |
 |---|---|---|---|
-|`name`|string|是|文件夹名称|
-|`parent_id`|string|否|父文件夹。省略或传入 `null` 表示根目录。|
+| `name` | string | 是 | 文件夹名称 |
+| `parent_id` | string | 否 | 上级文件夹。省略或传入 `null` 表示根目录。 |
 
-若 `parent_id` 不存在，或指向页面而非文件夹，则返回 `400`。
+`parent_id` 指向不存在的位置，或指向页面而非文件夹时，会返回 `400`。
 
 ---
 
 ## 读取页面 {#read-a-page}
 
-返回以 Markdown 文档形式呈现的页面。
+以 Markdown 文档形式返回渲染后的页面。
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -247,7 +247,7 @@ import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go
 <TabItem value="cli" label="CLI">
 <CodeSnippet code={knowledgePagesSh} section="get-page" language="bash" />
 </TabItem>
-<TabItem value="go" label="开始">
+<TabItem value="go" label="Go">
 <CodeSnippet code={knowledgePagesGo} section="get-page" language="go" />
 </TabItem>
 </Tabs>
@@ -255,25 +255,25 @@ import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go
 ```json
 {
   "id": "kp-2e85...",
-  "name": "部署API",
+  "name": "Deploying the API",
   "type": "runbook",
-  "description": "API如何部署？",
+  "description": "How is the API deployed?",
   "tags": ["ops"],
   "timestamp": "2026-08-03T09:12:44+00:00",
-  "body": "# 部署 API\n\n...",
-  "markdown": "---\nid: \"kp-2e85...\"\ntype: \"runbook\"\n...\n---\n\n# 部署 API\n\n..."
+  "body": "# Deploying the API\n\n...",
+  "markdown": "---\nid: \"kp-2e85...\"\ntype: \"runbook\"\n...\n---\n\n# Deploying the API\n\n..."
 }
 ```
 
-- `body` 是单独的合成 Markdown 正文。
-- `markdown` 是完整文档：YAML 前置元数据块（`id`、`type`、`title`、`description`、`tags`、`timestamp`）后跟正文。
-- `type` 由 `type:<x>` 标签决定，默认为 `knowledge-page`。返回的 `tags` 中会移除 `type:` 标签。
+- `body` 仅包含综合生成的 Markdown 正文。
+- `markdown` 是完整文档：先是 YAML frontmatter 块（包含 `id`、`type`、`title`、`description`、`tags`、`timestamp`），后接正文。
+- `type` 取自 `type:<x>` 标签，默认值为 `knowledge-page`。返回的 `tags` 中会移除 `type:` 标签。
 
 ---
 
 ## 搜索页面 {#search-pages}
 
-文档级混合搜索将全文（BM25）匹配和向量相似度匹配通过倒数排名融合（Reciprocal Rank Fusion）合并。没有重排序步骤，因此速度足以作为智能体的首次调用。
+在文档级别进行混合搜索：结合全文匹配（BM25）和向量相似度匹配，再通过 Reciprocal Rank Fusion（倒数排名融合）合并结果。此过程不包含重排步骤，因此速度足够快，可以作为智能体的首次调用。
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -285,7 +285,7 @@ import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go
 <TabItem value="cli" label="CLI">
 <CodeSnippet code={knowledgePagesSh} section="search-pages" language="bash" />
 </TabItem>
-<TabItem value="go" label="开始">
+<TabItem value="go" label="Go">
 <CodeSnippet code={knowledgePagesGo} section="search-pages" language="go" />
 </TabItem>
 </Tabs>
@@ -295,9 +295,9 @@ import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go
   "results": [
     {
       "id": "kp-2e85...",
-      "name": "部署API",
+      "name": "Deploying the API",
       "mental_model_id": "mm-77ab...",
-      "snippet": "API 通过...部署",
+      "snippet": "The API is deployed via ...",
       "score": 0.032,
       "updated_at": "2026-08-03T09:12:44+00:00"
     }
@@ -306,21 +306,21 @@ import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go
 }
 ```
 
-|参数|类型|默认|说明|
+| 参数 | 类型 | 默认值 | 说明 |
 |---|---|---|---|
-|`q`|string|—|必填。搜索查询（最小长度 1）。|
-|`limit`|int|`10`|最大结果，1–50。|
-|`tags`|string[]|—|仅返回带有这些标签的页面，按 `tags_match` 匹配。参见[按标签过滤](#filter-by-tags)。|
-|`tags_match`|string|`any`|`any`，`all`，`any_strict`，`all_strict`，或`exact`。|
-|`tag_groups`|string|—|JSON 编码的复合过滤条件，结构与记忆召回的 `tag_groups` 相同。|
+| `q` | string | — | 必填。搜索查询（最短长度为 1）。 |
+| `limit` | int | `10` | 最大结果数，范围为 1–50。 |
+| `tags` | string[] | — | 仅搜索带有这些标签的页面，并按照 `tags_match` 匹配。参见[按标签筛选](#filter-by-tags)。 |
+| `tags_match` | string | `any` | 可选值：`any`、`all`、`any_strict`、`all_strict` 或 `exact`。 |
+| `tag_groups` | string | — | JSON 编码的组合筛选条件，结构与召回 API 的 `tag_groups` 相同。 |
 
-这里搜索的是整个页面。要搜索单条记忆，请使用[记忆召回](./recall)。
+此操作搜索整个页面。要搜索单条记忆，请使用[召回](./recall)。
 
-### 按标签过滤 {#filter-by-tags}
+### 按标签筛选 {#filter-by-tags}
 
-树查询和搜索使用与[记忆召回](./recall)相同的标签过滤条件：`tags` 配合 `tags_match`，或复合 `tag_groups` 表达式（两者都是 `GET` 请求，因此在查询字符串中进行 JSON 编码）。过滤条件匹配各页面自身的标签。搜索仅对匹配页面排序；树仅保留匹配页面及其祖先文件夹。没有匹配页面的文件夹会被排除，因为其名称也可能泄露与页面一样多的信息。
+目录树和搜索使用与[召回](./recall)相同的标签筛选方式：通过 `tags` 搭配 `tags_match`，或提供组合形式的 `tag_groups` 表达式（由于两者都是 `GET` 请求，表达式须以 JSON 编码后放入查询字符串）。筛选会匹配每个页面自身的标签。搜索只在符合条件的页面中排名；目录树则只保留符合条件的页面及其上级文件夹。如果文件夹下没有符合条件的页面，该文件夹也会被隐藏，因为文件夹名称本身可能泄露与其页面同样多的信息。
 
-与记忆召回一样，`any` 和 `all` 也返回**未标记**的页面。若仅应返回带标签的页面（例如只向用户展示自己的页面），请使用 `any_strict`、`all_strict` 或 `exact`。
+与召回相同，`any` 和 `all` 也会返回**无标签**页面。若只应返回带标签的页面（例如只向用户展示该用户自己的页面），请使用 `any_strict`、`all_strict` 或 `exact`。
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -332,7 +332,7 @@ import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go
 <TabItem value="cli" label="CLI">
 <CodeSnippet code={knowledgePagesSh} section="filter-by-tags" language="bash" />
 </TabItem>
-<TabItem value="go" label="开始">
+<TabItem value="go" label="Go">
 <CodeSnippet code={knowledgePagesGo} section="filter-by-tags" language="go" />
 </TabItem>
 </Tabs>
@@ -341,7 +341,7 @@ import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go
 
 ## 更新或移动节点 {#update-or-move-a-node}
 
-一次 `PATCH` 可以重命名节点、移动节点和/或更新页面选项。各字段仅在请求正文中出现时才生效。
+一次 `PATCH` 可以重命名节点、移动节点和/或更新页面选项。只有请求正文中包含的字段才会生效。
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -353,27 +353,27 @@ import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go
 <TabItem value="cli" label="CLI">
 <CodeSnippet code={knowledgePagesSh} section="update-node" language="bash" />
 </TabItem>
-<TabItem value="go" label="开始">
+<TabItem value="go" label="Go">
 <CodeSnippet code={knowledgePagesGo} section="update-node" language="go" />
 </TabItem>
 </Tabs>
 
-|参数|类型|适用于|说明|
+| 参数 | 类型 | 适用对象 | 说明 |
 |---|---|---|---|
-|`name`|string|两者|新名字|
-|`parent_id`|string \| null|两者|新的父文件夹。显式传入 `null` 可移至根目录。|
-|`source_query`|string|页面|新问题。修改后会安排异步刷新，以便按新问题重建页面。|
-|`tags`|list|页面|替换页面标签，从而修改[构建页面所用的记忆范围](#tags-are-a-filter)。传入 `[]` 会清除标签，并根据整个记忆库重建页面。|
-|`max_tokens`|int|页面|新的内容 Token 预算|
-|`trigger`|object|页面|需修改的刷新设置，以部分更新方式应用。`{"tags_match": "all"}` 保留页面标签，但不再排除未标记的记忆。|
+| `name` | string | 两者 | 新名称 |
+| `parent_id` | string \| null | 两者 | 新的上级文件夹。要移动到根目录，必须显式传入 `null`。 |
+| `source_query` | string | 页面 | 新问题。修改后会安排异步刷新，使页面根据新问题重新生成。 |
+| `tags` | list | 页面 | 替换页面标签，同时替换[构建页面所依据的范围](#tags-are-a-filter)。传入 `[]` 会清空标签，并根据整个记忆库重新构建页面。 |
+| `max_tokens` | int | 页面 | 新的内容预算 |
+| `trigger` | object | 页面 | 要更改的刷新设置，按补丁方式应用。传入 `{"tags_match": "all"}` 会保留页面标签，同时停止排除无标签记忆。 |
 
-发送空正文返回`400`；未知节点返回 `404`。
+发送空请求正文会返回 `400`；节点不存在时会返回 `404`。
 
 ---
 
 ## 删除节点 {#delete-a-node}
 
-删除文件夹或页面**及其整个子树**。支撑被删除页面的心智模型也会一并删除。
+删除文件夹或页面时，会一并删除**其整个子树**。为被删除页面提供底层支持的心智模型也会被删除。
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -385,7 +385,7 @@ import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go
 <TabItem value="cli" label="CLI">
 <CodeSnippet code={knowledgePagesSh} section="delete-node" language="bash" />
 </TabItem>
-<TabItem value="go" label="开始">
+<TabItem value="go" label="Go">
 <CodeSnippet code={knowledgePagesGo} section="delete-node" language="go" />
 </TabItem>
 </Tabs>
@@ -396,9 +396,9 @@ import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go
 
 ---
 
-## 导出为 Markdown 包 {#export-as-a-markdown-bundle}
+## 导出为 Markdown 文件包 {#export-as-a-markdown-bundle}
 
-将整个知识库导出为一组可移植的 Markdown 文件：包含嵌套结构的 `index.md`、每个页面对应的 `<page-id>.md`，以及已重建页面的刷新历史 `<page-id>.log.md`。
+将整个知识库作为一组扁平、可移植的 Markdown 文件返回：包括一个嵌套结构的 `index.md`、每个页面各一个 `<page-id>.md`，以及已重建页面各自的 `<page-id>.log.md` 刷新历史文件。
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -410,7 +410,7 @@ import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go
 <TabItem value="cli" label="CLI">
 <CodeSnippet code={knowledgePagesSh} section="export" language="bash" />
 </TabItem>
-<TabItem value="go" label="开始">
+<TabItem value="go" label="Go">
 <CodeSnippet code={knowledgePagesGo} section="export" language="go" />
 </TabItem>
 </Tabs>
@@ -425,32 +425,32 @@ import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go
 }
 ```
 
-:::tip 将其镜像到磁盘
-`hindsight fs mount --bank my-bank` 通过后台刷新循环使本地文件夹与此捆绑包保持同步，因此 `ls`，`grep`，`rg`，您的编辑器将针对真实文件进行工作。
+:::tip 镜像到磁盘
+运行 `hindsight fs mount --bank my-bank`，即可通过后台刷新循环让本地文件夹与此文件包保持同步，这样便可用 `ls`、`grep`、`rg` 和编辑器直接处理真实文件。
 :::
 
 ---
 
 ## 存储 {#storage}
 
-|表|存储内容|
+| 表 | 内容 |
 |---|---|
-|`knowledge_pages`|树结构：文件夹和页面及其名称、父级和顺序。页面行引用其背后的心智模型；文件夹行没有此引用。|
-|`mental_models`|内容：文档正文、源查询、标签、Token 预算、触发器和刷新历史。|
+| `knowledge_pages` | 目录树：文件夹和页面、名称、上级节点及排序。页面行引用其底层心智模型；文件夹行不引用模型。 |
+| `mental_models` | 页面内容：文档正文、来源查询、标签、token 预算、触发配置和刷新历史。 |
 
-页面层仅负责树结构；所有内容相关信息均存储在背后的心智模型中，因此每项[心智模型](./mental-models)功能均可原样用于页面。
+知识页这一层只负责目录树结构；所有页面内容都保存在底层心智模型中，因此心智模型的每项[功能](./mental-models)也都原样适用于知识页。
 
 ---
 
 ## 端点摘要 {#endpoint-summary}
 
-|方法|路径|说明|
+| 方法 | 路径 | 说明 |
 |---|---|---|
-|`GET`|`/knowledge-base/tree`|带有过时状态的嵌套文件夹/页面树|
-|`POST`|`/knowledge-base/folders`|创建文件夹|
-|`POST`|`/knowledge-base/pages`|创建页面（异步首次构建）|
-|`GET`|`/knowledge-base/pages/{page_id}`|阅读页面为 markdown|
-|`GET`|`/knowledge-base/search`|页面混合搜索|
-|`PATCH`|`/knowledge-base/nodes/{node_id}`|重命名、移动或重新配置节点|
-|`DELETE`|`/knowledge-base/nodes/{node_id}`|删除节点及其子树|
-|`GET`|`/knowledge-base/export`|将整个库导出为markdown 文件|
+| `GET` | `/knowledge-base/tree` | 带待更新状态的嵌套文件夹/页面目录树 |
+| `POST` | `/knowledge-base/folders` | 创建文件夹 |
+| `POST` | `/knowledge-base/pages` | 创建页面（异步执行首次生成） |
+| `GET` | `/knowledge-base/pages/{page_id}` | 以 Markdown 形式读取页面 |
+| `GET` | `/knowledge-base/search` | 对页面进行混合搜索 |
+| `PATCH` | `/knowledge-base/nodes/{node_id}` | 重命名、移动或重新配置节点 |
+| `DELETE` | `/knowledge-base/nodes/{node_id}` | 删除节点及其子树 |
+| `GET` | `/knowledge-base/export` | 将整个知识库导出为 Markdown 文件 |

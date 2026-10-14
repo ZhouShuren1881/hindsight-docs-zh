@@ -1,13 +1,13 @@
 #!/bin/bash
-# Hindsight 配置示例（通过 HTTP 配置记忆库）
-# 运行： bash examples/api/configuration.sh
+# Configuration examples for Hindsight (bank config over HTTP)
+# Run: bash examples/api/configuration.sh
 
 set -e
 
 HINDSIGHT_API_URL="${HINDSIGHT_API_URL:-http://localhost:8888}"
 
 # =============================================================================
-# 文档示例
+# Doc Examples
 # =============================================================================
 
 # [docs:plain-retrieval-bank]
@@ -28,7 +28,7 @@ curl -sf "$HINDSIGHT_API_URL/v1/default/banks/plain-retrieval-bank/config" \
   | jq -e '.overrides.retain_extraction_mode == "chunks" and .overrides.enable_reranking == false' > /dev/null
 
 # [docs:mcp-tools-per-bank]
-# 将特定记忆库限制为只读 MCP 访问
+# Restrict a specific bank to read-only MCP access
 curl -X PATCH http://localhost:8888/v1/default/banks/config-demo-bank/config \
   -H "Content-Type: application/json" \
   -d '{"updates": {"mcp_enabled_tools": ["recall"]}}'
@@ -39,23 +39,23 @@ curl -sf "$HINDSIGHT_API_URL/v1/default/banks/config-demo-bank/config" \
   | jq -e '.overrides.mcp_enabled_tools == ["recall"]' > /dev/null
 
 # [docs:bank-config-examples]
-# 更新记忆库存储设置
+# Update retention settings for a bank
 curl -X PATCH http://localhost:8888/v1/default/banks/config-demo-bank/config \
   -H "Content-Type: application/json" \
   -d '{
     "updates": {
       "retain_chunk_size": 4000,
       "retain_extraction_mode": "custom",
-      "retain_custom_instructions": "关注技术细节和具体实现"
+      "retain_custom_instructions": "Focus on technical details and implementation specifics"
     }
   }'
 
-# 注意：retain_extraction_mode 必须为 "custom" 才能使用 retain_custom_instructions
+# Note: retain_extraction_mode must be "custom" to use retain_custom_instructions
 
-# 查看解析后的配置（遵循权限）
+# View resolved config (respects permissions)
 curl http://localhost:8888/v1/default/banks/config-demo-bank/config
 
-# 重置为默认值
+# Reset to defaults
 curl -X DELETE http://localhost:8888/v1/default/banks/config-demo-bank/config
 # [/docs:bank-config-examples]
 echo
@@ -64,10 +64,10 @@ curl -sf "$HINDSIGHT_API_URL/v1/default/banks/config-demo-bank/config" \
   | jq -e '.overrides == {}' > /dev/null
 
 # =============================================================================
-# 清理（不在文档中展示）
+# Cleanup (not shown in docs)
 # =============================================================================
 for bank_id in plain-retrieval-bank config-demo-bank; do
   curl -s -X DELETE "${HINDSIGHT_API_URL}/v1/default/banks/${bank_id}" > /dev/null
 done
 
-echo "configuration.sh: 全部示例通过"
+echo "configuration.sh: All examples passed"

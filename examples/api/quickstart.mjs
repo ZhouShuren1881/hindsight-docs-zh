@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
- * Hindsight API 快速开始示例（Node.js）
- * 运行：node examples/api/quickstart.mjs
+ * Quickstart examples for Hindsight API (Node.js)
+ * Run: node examples/api/quickstart.mjs
  */
 
 const HINDSIGHT_URL = process.env.HINDSIGHT_API_URL || 'http://localhost:8888';
 
 // =============================================================================
-// 文档示例
+// Doc Examples
 // =============================================================================
 
 // [docs:quickstart-full]
@@ -15,20 +15,20 @@ import { HindsightClient } from '@vectorize-io/hindsight-client';
 
 const client = new HindsightClient({ baseUrl: 'http://localhost:8888' });
 
-// Retain：存储信息
-await client.retain('my-bank', 'Alice 在 Google 担任软件工程师');
+// Retain: Store information
+await client.retain('my-bank', 'Alice works at Google as a software engineer');
 
-// Recall：搜索记忆
-await client.recall('my-bank', 'Alice 做什么工作？');
+// Recall: Search memories
+await client.recall('my-bank', 'What does Alice do?');
 
-// Reflect：生成回答
-await client.reflect('my-bank', '介绍一下 Alice');
+// Reflect: Generate response
+await client.reflect('my-bank', 'Tell me about Alice');
 // [/docs:quickstart-full]
 
 
 // =============================================================================
-// 清理，文档中不展示
+// Cleanup (not shown in docs)
 // =============================================================================
 await fetch(`${HINDSIGHT_URL}/v1/default/banks/my-bank`, { method: 'DELETE' });
 
-console.log('quickstart.mjs: 所有示例通过');
+console.log('quickstart.mjs: All examples passed');

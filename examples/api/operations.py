@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Hindsight 操作 API 示例（异步跟踪）。
-运行： python examples/api/operations.py
+Operations API examples for Hindsight (async tracking).
+Run: python examples/api/operations.py
 """
 import asyncio
 import os
@@ -11,35 +11,35 @@ from hindsight_client import Hindsight
 HINDSIGHT_URL = os.getenv("HINDSIGHT_API_URL", "http://localhost:8888")
 
 # =============================================================================
-# 初始化（不在文档中展示）
+# Setup (not shown in docs)
 # =============================================================================
 client = Hindsight(base_url=HINDSIGHT_URL)
 
 
 async def main() -> None:
-    # 创建实际待处理操作，让后续按 ID 的端点有
-    # 操作对象。使用异步路径（aretain_batch + retain_async=True）
-    # 将全部保留同一事件循环，混合同步便利方法
-    # 和异步 API 会破坏底层 HTTP 客户端。
+    # Seed a real pending operation so the per-id endpoints below have something
+    # to act on. Staying on the async path (aretain_batch + retain_async=True)
+    # keeps everything on one event loop — mixing the sync convenience methods
+    # with the async operations API breaks the underlying HTTP client.
     seeded = await client.aretain_batch(
         bank_id="my-bank",
-        items=[{"content": "Alice 于 2023 年加入 Google"}],
+        items=[{"content": "Alice joined Google in 2023"}],
         retain_async=True,
     )
     seeded_id = seeded.operation_id
 
     # [docs:operations-list]
-    # 列出近期操作，默认最近 20 个。
+    # List recent operations for a bank (default: 20 most recent).
     result = await client.operations.list_operations("my-bank")
     for op in result.operations:
         print(op.id, op.task_type, op.status)
 
-    # 按状态和类型筛选。
+    # Filter by status and type.
     pending_recompute = await client.operations.list_operations(
         "my-bank", status="pending", type="graph_maintenance"
     )
 
-    # 隐藏 retain_batch 父行，仅显示子存储任务。
+    # Hide retain_batch parent rows (show only individual child retain jobs).
     flat = await client.operations.list_operations("my-bank", exclude_parents=True)
     # [/docs:operations-list]
 
@@ -47,40 +47,40 @@ async def main() -> None:
     status = await client.operations.get_operation_status("my-bank", seeded_id)
     print(status.status, status.error_message)
 
-    # 包含提交载荷，批量存储可能较大。
+    # Include the submission payload (can be large for retain batches).
     detailed = await client.operations.get_operation_status(
         "my-bank", seeded_id, include_payload=True
     )
     # [/docs:operations-get]
 
     # [docs:operations-cancel]
-    # Worker 领取前取消待处理操作。
-    # 已 processing/completed/failed 时返回 409。
+    # Cancel a pending operation before a worker claims it.
+    # Returns 409 if the operation is already processing/completed/failed.
     try:
         await client.operations.cancel_operation("my-bank", seeded_id)
     except Exception:
-        # 已非待处理状态，此示例可接受。
+        # Already in a non-pending state — fine for this example.
         pass
     # [/docs:operations-cancel]
 
     # [docs:operations-retry]
-    # 重新排队失败或取消操作。
-    # 非 failed/cancelled 时返回 409。
+    # Re-queue a failed (or cancelled) operation.
+    # Returns 409 if the operation isn't in failed/cancelled state.
     try:
         await client.operations.retry_operation("my-bank", seeded_id)
     except Exception:
-        # 已不可重试终态，此处可接受。
+        # Operation already in a terminal state we can't retry — fine here.
         pass
     # [/docs:operations-retry]
 
     # [docs:operations-async-retain]
-    # 异步提交批量，立即返回
-    # 可轮询的 operation_id。
+    # Submit a batch asynchronously — the call returns immediately with an
+    # operation_id you can poll.
     submission = await client.aretain_batch(
         bank_id="my-bank",
         items=[
-            {"content": "Alice 于 2023 年加入 Google"},
-            {"content": "Bob 比起 JavaScript 更喜欢 Python"},
+            {"content": "Alice joined Google in 2023"},
+            {"content": "Bob prefers Python over JavaScript"},
         ],
         retain_async=True,
     )

@@ -22,28 +22,28 @@ func main() {
 	ctx := context.Background()
 
 	// =============================================================================
-	// 文档示例
+	// Doc Examples
 	// =============================================================================
 
 	// [docs:retain-basic]
 	client.MemoryAPI.RetainMemories(ctx, "my-bank").
 		RetainRequest(hindsight.RetainRequest{
 			Items: []hindsight.MemoryItem{
-				{Content: hindsight.TextContent("Alice 在 Google 担任软件工程师")},
+				{Content: hindsight.TextContent("Alice works at Google as a software engineer")},
 			},
 		}).Execute()
 	// [/docs:retain-basic]
 
 	// [docs:retain-conversation]
-	// 将完整对话作为一个文档存储。
-	conversation := "Alice (2024-03-15T09:00:00Z): Bob，你上周最后去看医生了吗？\n" +
-		"Bob (2024-03-15T09:01:00Z): 去了，发现有轻度花生过敏。\n" +
-		"Alice (2024-03-15T09:02:00Z): 哎呀，你还好吗？\n" +
-		"Bob (2024-03-15T09:03:00Z): 还好，不严重，只需随身带抗组胺药。\n" +
-		"Alice (2024-03-15T09:04:00Z): 知道了，团队午餐会避开花生。"
+	// Retain an entire conversation as a single document.
+	conversation := "Alice (2024-03-15T09:00:00Z): Hi Bob! Did you end up going to the doctor last week?\n" +
+		"Bob (2024-03-15T09:01:00Z): Yes, finally. Turns out I have a mild peanut allergy.\n" +
+		"Alice (2024-03-15T09:02:00Z): Oh no! Are you okay?\n" +
+		"Bob (2024-03-15T09:03:00Z): Yeah, nothing serious. Just need to carry an antihistamine.\n" +
+		"Alice (2024-03-15T09:04:00Z): Good to know. We'll avoid peanuts at the team lunch."
 
 	docID := "chat-2024-03-15-alice-bob"
-	context_ := "团队聊天"
+	context_ := "team chat"
 	ts := "2024-03-15T09:04:00Z"
 	client.MemoryAPI.RetainMemories(ctx, "my-bank").
 		RetainRequest(hindsight.RetainRequest{
@@ -61,13 +61,13 @@ func main() {
 	// [/docs:retain-conversation]
 
 	// [docs:retain-with-context]
-	ctxLabel := "职业变化"
+	ctxLabel := "career update"
 	ts2 := "2024-03-15T10:00:00Z"
 	client.MemoryAPI.RetainMemories(ctx, "my-bank").
 		RetainRequest(hindsight.RetainRequest{
 			Items: []hindsight.MemoryItem{
 				{
-					Content: hindsight.TextContent("Alice 晋升为高级工程师"),
+					Content: hindsight.TextContent("Alice got promoted to senior engineer"),
 					Context: *hindsight.NewNullableString(&ctxLabel),
 					Timestamp: *hindsight.NewNullableTimestamp(&hindsight.Timestamp{
 						String: &ts2,
@@ -86,52 +86,52 @@ func main() {
 	client.MemoryAPI.RetainMemories(ctx, "my-bank").
 		RetainRequest(hindsight.RetainRequest{
 			Items: []hindsight.MemoryItem{
-				{Content: hindsight.TextContent("Alice 在 Google 工作"), Context: *hindsight.NewNullableString(&ctx1), DocumentId: *hindsight.NewNullableString(&doc1)},
-				{Content: hindsight.TextContent("Bob 在 Meta 担任数据科学家"), Context: *hindsight.NewNullableString(&ctx1), DocumentId: *hindsight.NewNullableString(&doc2)},
-				{Content: hindsight.TextContent("Alice 和 Bob 是朋友"), Context: *hindsight.NewNullableString(&ctx2), DocumentId: *hindsight.NewNullableString(&doc3)},
+				{Content: hindsight.TextContent("Alice works at Google"), Context: *hindsight.NewNullableString(&ctx1), DocumentId: *hindsight.NewNullableString(&doc1)},
+				{Content: hindsight.TextContent("Bob is a data scientist at Meta"), Context: *hindsight.NewNullableString(&ctx1), DocumentId: *hindsight.NewNullableString(&doc2)},
+				{Content: hindsight.TextContent("Alice and Bob are friends"), Context: *hindsight.NewNullableString(&ctx2), DocumentId: *hindsight.NewNullableString(&doc3)},
 			},
 		}).Execute()
 	// [/docs:retain-batch]
 
 	// [docs:retain-async]
-	// 开始异步摄取，立即返回
+	// Start async ingestion (returns immediately)
 	asyncTrue := true
 	largeDoc1 := "large-doc-1"
 	largeDoc2 := "large-doc-2"
 	retainResp, _, _ := client.MemoryAPI.RetainMemories(ctx, "my-bank").
 		RetainRequest(hindsight.RetainRequest{
 			Items: []hindsight.MemoryItem{
-				{Content: hindsight.TextContent("大批量条目一"), DocumentId: *hindsight.NewNullableString(&largeDoc1)},
-				{Content: hindsight.TextContent("大批量条目二"), DocumentId: *hindsight.NewNullableString(&largeDoc2)},
+				{Content: hindsight.TextContent("Large batch item 1"), DocumentId: *hindsight.NewNullableString(&largeDoc1)},
+				{Content: hindsight.TextContent("Large batch item 2"), DocumentId: *hindsight.NewNullableString(&largeDoc2)},
 			},
 			Async: &asyncTrue,
 		}).Execute()
 
-	// 检查是否异步处理
+	// Check if it was processed asynchronously
 	fmt.Println("Async:", retainResp.GetAsync())
 	// [/docs:retain-async]
 
 	// [docs:retain-files]
-	// 打开并上传文件，自动转文本并提取记忆。
-	// 支持 PDF、DOCX、PPTX、XLSX、图片 OCR、音频转录及文本。
+	// Open a file and upload it — Hindsight converts it to text and extracts memories.
+	// Supports: PDF, DOCX, PPTX, XLSX, images (OCR), audio (transcription), and text formats.
 	f, err := os.Open("../../hindsight-docs/examples/api/sample.pdf")
 	if err != nil {
-		log.Fatalf("打开文件失败： %v", err)
+		log.Fatalf("Failed to open file: %v", err)
 	}
 	defer f.Close()
 
 	fileResp, _, _ := client.FilesAPI.FileRetain(ctx, "my-bank").
 		Files([]*os.File{f}).
-		Request(`{"files_metadata": [{"context": "季度报告"}]}`).
+		Request(`{"files_metadata": [{"context": "quarterly report"}]}`).
 		Execute()
-	fmt.Println("操作 ID：", fileResp.GetOperationIds()) // 通过操作端点跟踪进度
+	fmt.Println("Operation IDs:", fileResp.GetOperationIds()) // Track processing via the operations endpoint
 	// [/docs:retain-files]
 
 	// =============================================================================
-	// 清理，文档中不展示
+	// Cleanup (not shown in docs)
 	// =============================================================================
 	req, _ := http.NewRequest("DELETE", fmt.Sprintf("%s/v1/default/banks/my-bank", apiURL), nil)
 	http.DefaultClient.Do(req)
 
-	fmt.Println("retain.go: 所有示例通过")
+	fmt.Println("retain.go: All examples passed")
 }

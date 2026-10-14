@@ -1,52 +1,52 @@
 #!/usr/bin/env node
 /**
- * Hindsight 反思 API 示例（Node.js）
- * 运行：node examples/api/reflect.mjs
+ * Reflect API examples for Hindsight (Node.js)
+ * Run: node examples/api/reflect.mjs
  */
 import { HindsightClient } from '@vectorize-io/hindsight-client';
 
 const HINDSIGHT_URL = process.env.HINDSIGHT_API_URL || 'http://localhost:8888';
 
 // =============================================================================
-// 准备，文档中不展示
+// Setup (not shown in docs)
 // =============================================================================
 const client = new HindsightClient({ baseUrl: HINDSIGHT_URL });
 
-// 为反思示例准备数据
-await client.retain('my-bank', 'Alice 在 Google 担任软件工程师');
-await client.retain('my-bank', 'Alice 已在那里工作五年');
-await client.retain('my-bank', 'Alice 最近晋升为高级工程师');
+// Seed some data for reflect examples
+await client.retain('my-bank', 'Alice works at Google as a software engineer');
+await client.retain('my-bank', 'Alice has been working there for 5 years');
+await client.retain('my-bank', 'Alice recently got promoted to senior engineer');
 
 // =============================================================================
-// 文档示例
+// Doc Examples
 // =============================================================================
 
 // [docs:reflect-basic]
-await client.reflect('my-bank', '关于 Alice，我应该了解什么？');
+await client.reflect('my-bank', 'What should I know about Alice?');
 // [/docs:reflect-basic]
 
 
 // [docs:reflect-with-params]
-const response = await client.reflect('my-bank', '你如何看待远程工作？', {
+const response = await client.reflect('my-bank', 'What do you think about remote work?', {
     budget: 'mid',
-    context: "正在考虑混合办公"
+    context: "We're considering a hybrid work policy"
 });
 // [/docs:reflect-with-params]
 
 
 // [docs:reflect-with-context]
-// 上下文帮助 LLM 理解当前情境
-const contextResponse = await client.reflect('my-bank', '你如何看待此提案？', {
-    context: "我们正在预算评审会议讨论第四季度支出"
+// Context helps the LLM understand the current situation
+const contextResponse = await client.reflect('my-bank', 'What do you think about the proposal?', {
+    context: "We're in a budget review meeting discussing Q4 spending"
 });
 // [/docs:reflect-with-context]
 
 
 // [docs:reflect-disposition]
-// 创建具有指定性格倾向的记忆库
+// Create a bank with specific disposition
 await client.createBank('cautious-advisor', {
-    name: '谨慎的顾问',
-    background: '我是关注风险的财务顾问',
+    name: 'Cautious Advisor',
+    background: 'I am a risk-aware financial advisor',
     disposition: {
         skepticism: 5,
         literalism: 4,
@@ -54,18 +54,18 @@ await client.createBank('cautious-advisor', {
     }
 });
 
-// 反思回答体现该性格倾向
-const advisorResponse = await client.reflect('cautious-advisor', '应该投资加密货币吗？');
+// Reflect responses will reflect this disposition
+const advisorResponse = await client.reflect('cautious-advisor', 'Should I invest in crypto?');
 // [/docs:reflect-disposition]
 
 
 // [docs:reflect-sources]
-const sourcesResponse = await client.reflect('my-bank', '介绍一下 Alice', {
+const sourcesResponse = await client.reflect('my-bank', 'Tell me about Alice', {
     includeFacts: true
 });
 
-console.log('回答：', sourcesResponse.text);
-console.log('\n依据：');
+console.log('Response:', sourcesResponse.text);
+console.log('\nBased on:');
 for (const fact of (sourcesResponse.based_on?.memories || [])) {
     console.log(`  - [${fact.type}] ${fact.text}`);
 }
@@ -73,8 +73,8 @@ for (const fact of (sourcesResponse.based_on?.memories || [])) {
 
 
 // [docs:reflect-with-tags]
-// 反思只使用指定用户标签的记忆
-await client.reflect('my-bank', '用户提供了什么反馈？', {
+// Filter reflect to only use memories tagged for a specific user
+await client.reflect('my-bank', 'What feedback did the user give?', {
     tags: ['user:alice'],
     tagsMatch: 'any_strict'
 });
@@ -82,7 +82,7 @@ await client.reflect('my-bank', '用户提供了什么反馈？', {
 
 
 // [docs:reflect-structured-output]
-// 直接定义 JSON schema
+// Define JSON schema directly
 const responseSchema = {
     type: 'object',
     properties: {
@@ -94,22 +94,22 @@ const responseSchema = {
     required: ['recommendation', 'confidence', 'key_factors'],
 };
 
-const structuredResponse = await client.reflect('my-bank', '你了解 Alice 及其职业经历的哪些内容？', {
+const structuredResponse = await client.reflect('my-bank', 'What do you know about Alice and her career?', {
     responseSchema: responseSchema,
 });
 
-// 结构化输出，若返回
+// Structured output (if returned)
 if (structuredResponse.structuredOutput) {
-    console.log('建议：', structuredResponse.structuredOutput.recommendation || 'N/A');
-    console.log('关键因素：', structuredResponse.structuredOutput.key_factors || []);
+    console.log('Recommendation:', structuredResponse.structuredOutput.recommendation || 'N/A');
+    console.log('Key factors:', structuredResponse.structuredOutput.key_factors || []);
 }
 // [/docs:reflect-structured-output]
 
 
 // =============================================================================
-// 清理，文档中不展示
+// Cleanup (not shown in docs)
 // =============================================================================
 await fetch(`${HINDSIGHT_URL}/v1/default/banks/my-bank`, { method: 'DELETE' });
 await fetch(`${HINDSIGHT_URL}/v1/default/banks/cautious-advisor`, { method: 'DELETE' });
 
-console.log('reflect.mjs: 所有示例通过');
+console.log('reflect.mjs: All examples passed');

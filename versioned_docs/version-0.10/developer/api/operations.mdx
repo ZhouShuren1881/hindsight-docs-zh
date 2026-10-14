@@ -4,9 +4,9 @@ sidebar_position: 9
 
 # 操作 {#operations}
 
-Hindsight异步运行多个维护和摄取任务，而不是阻塞  触发它们的API呼叫。这些任务共享一个队列（`async_operations`）和单个工作池，并且相同REST端点——列表、状态、取消、重试——适用于每种类型。
+Hindsight 会异步执行多种维护和摄取任务，避免触发任务的 API 调用被阻塞。这些任务共用一个队列（`async_operations`）和一个工作进程池；同一组 REST 端点——列表、状态、取消、重试——适用于所有类型的任务。
 
-此页面解释了每种操作类型、何时触发以及如何检查或管理它。
+本页介绍各类操作、它们的触发时机，以及如何检查或管理它们。
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
@@ -18,90 +18,90 @@ import operationsMjs from '!!raw-loader!@site/examples/api/operations.mjs';
 import operationsSh from '!!raw-loader!@site/examples/api/operations.sh';
 import operationsGo from '!!raw-loader!@site/examples/api/operations.go';
 
-:::tip 先决条件
-确保您已完成[快速开始](./quickstart)并理解[记忆存储的工作原理](./retain)。
+:::tip 前置条件
+请先完成[快速入门](./quickstart)，并了解 [retain（存入）的工作方式](./retain)。
 :::
 
-## 操作的工作原理 {#how-operations-work}
+## 操作的工作方式 {#how-operations-work}
 
-当API调用需要后台工作，请求处理程序向 写入一行 `async_operations` 带有 的桌子 `status=pending`并立即返回。一个工作人员（在进程内运行API默认情况下，或作为专用服务 — 请参阅 [服务：工作进程服务](../services#worker-service)) 轮询表，声明待处理行，执行相应的处理程序，并标记该行 `completed`或`failed`。
+API 调用需要后台处理时，请求处理程序会向 `async_operations` 表写入一行，状态设为 `pending`，然后立即返回。工作进程（默认在 API 进程内运行，也可以作为独立服务运行，参见[服务 - 工作进程服务](../services#worker-service)）会轮询该表，领取待处理行，执行相应的处理程序，并将状态标记为 `completed` 或 `failed`。
 
-默认情况下，每个操作都在进程内运行：没有外部队列，无需部署额外的进程。当吞吐量需要时，相同的代码路径支持扩展到专用工作进程。
+默认情况下，所有操作都在进程内运行：无需外部队列，也无需部署额外进程。同一套代码路径也支持在吞吐量需求增加时扩展到独立工作进程。
 
 ### 生命周期 {#lifecycle}
 
-|状态|含义|
+| 状态 | 含义 |
 |--------|---------|
-|`pending`|该行已排队。要么还没有工作人员拿起它，要么分机已通过 将其停放 未来的 `next_retry_at`（例如，用于背压）。|
-|`processing`|工作人员已声明该行并正在积极运行处理程序。|
-|`completed`|处理程序成功返回。|
-|`failed`|处理员举起。 `error_message` 携带原因；您可以使用 重新排队 `POST /…/retry`。|
-|`cancelled`|操作已通过 取消 `DELETE /…/operations/{id}`。适用于 `pending` 和 `processing` 操作类似。|
+| `pending` | 该行已进入队列。可能还没有工作进程领取，也可能是扩展通过未来的 `next_retry_at` 暂缓了它（例如用于背压控制）。 |
+| `processing` | 工作进程已领取该行，正在执行处理程序。 |
+| `completed` | 处理程序已成功返回。 |
+| `failed` | 处理程序抛出了异常。`error_message` 中记录原因；可以通过 `POST /…/retry` 重新入队。 |
+| `cancelled` | 操作已通过 `DELETE /…/operations/{id}` 取消。`pending` 和 `processing` 状态的操作都可以取消。 |
 
-工作人员重试失败的操作最多`HINDSIGHT_API_WORKER_MAX_RETRIES` 次才决定`failed`。确定性失败（例如，无效的嵌入维度、完整性违规）会跳过重试 - 它们不会通过重新运行而成功。
+工作进程最多会重试失败的操作 `HINDSIGHT_API_WORKER_MAX_RETRIES` 次，之后将其置为 `failed`。确定性故障（例如嵌入维度无效或完整性约束冲突）会跳过重试，因为重新运行也不会成功。
 
-已完成、失败和取消的操作默认无限期保留。放 `HINDSIGHT_API_OPERATION_RETENTION_DAYS` 为正数天数来限制该历史记录：后台维护循环然后按其自己的计划按有界批次修剪过期的终端行，而不是作为任务处理的副作用。  仅PostgreSQL— 维护循环不在 Oracle 上运行，因此操作历史记录在那里不受限制。整行共享该 TTL，因此在保留操作时，其有效负载保持可用 — 可以重试失败和取消的操作，并使用 检查已完成的操作 `include_payload=true`。保留清理永远不会删除待处理和处理操作。
+默认情况下，`completed`、`failed` 和 `cancelled` 操作会无限期保留。将 `HINDSIGHT_API_OPERATION_RETENTION_DAYS` 设为正数天数，可限制这些历史记录的保留时间：随后后台维护循环会按自己的计划，以有界批次清理过期的终态记录，而不是在处理任务时顺带清理。此功能仅适用于 PostgreSQL；Oracle 上不会运行维护循环，因此操作历史不会因保留期限而清理。整行数据共用此 TTL，所以只要操作记录仍被保留，其负载就仍可用——失败和已取消的操作可以重试，已完成的操作可以通过 `include_payload=true` 检查。保留清理绝不会删除 `pending` 和 `processing` 操作。
 
 ## 操作类型 {#operation-types}
 
-每个操作都有一个数据库中的 `operation_type`和有效载荷中的 `task_type`。它们通常是相同的。
+每个操作在数据库中都有一个 `operation_type`，在负载中都有一个 `task_type`。两者通常相同。
 
 ### `retain` {#retain}
 
-提交者`POST /v1/default/banks/{bank_id}/memories` 与 `async=true`，或按多项`retain_batch` 打电话。处理程序运行与同步记忆存储相同的管道：事实提取（LLM）、嵌入生成、实体解析和链接创建（时间、语义）。
+通过带有 `async=true` 的 `POST /v1/default/banks/{bank_id}/memories` 提交，或通过多项输入的 `retain_batch` 调用提交。处理程序运行与同步存入相同的流程：事实提取（LLM）、嵌入生成、实体消解和链接创建（时间链接、语义链接）。
 
-当您摄取数千个项目并且不想要其他内容时，请使用异步记忆存储HTTP拨打电话等待几分钟。 响应中的 `operation_id`可让您轮询是否完成。
+摄取数千项内容且不希望 HTTP 调用等待数分钟时，可以使用异步存入。响应中的 `operation_id` 可用于轮询操作是否完成。
 
-#### 父操作：retain_batch {#parent-op-retainbatch}
+#### 父操作：`retain_batch` {#parent-op-retain_batch}
 
-对于大量提交，Hindsight自动将输入拆分为子批次并创建单个 `retain_batch` 跟踪子级的父级操作。父母的状态反映了总体 — `pending` 直到至少有一个孩子在运行，`processing` 当孩子们执行时，`completed` 每个孩子完成后，`failed` 如果任何一个孩子失败了。每个孩子本身就是一个`retain` 操作链接到父级，因此您可以深入了解每批次的错误消息。
+对于大型提交，Hindsight 会自动将输入拆分为多个子批次，并创建一个跟踪这些子项的 `retain_batch` 父操作。父操作的状态反映聚合结果：在至少一个子项开始运行前为 `pending`；子项执行期间为 `processing`；所有子项完成后为 `completed`；任一子项失败时为 `failed`。每个子项本身都是关联到父操作的 `retain` 操作，因此可以进一步查看每个批次的错误消息。
 
-当您列出操作时，默认情况下会显示父项及其子项。通过`exclude_parents=true` 隐藏聚合行并仅显示单个 `retain` 工作。
+列出操作时，默认会同时显示父操作及其所有子项。传入 `exclude_parents=true` 可隐藏聚合行，只显示各个 `retain` 任务。
 
-### `file_convert_retain` {#fileconvertretain}
+### `file_convert_retain` {#file_convert_retain}
 
-由文件上传端点提交。该处理程序运行特定于 MIME 的转换（PDF → 文本、DOCX → 文本等），然后将提取的文本传递到记忆存储管道中。这里的失败是默认情况下 **不可重试** — 损坏的 PDF 或丢失的 OCR 在重新运行时不会得到改善，因此操作直接进入`failed`。
+由文件上传端点提交。处理程序会根据 MIME 类型执行转换（PDF → 文本、DOCX → 文本等），然后将提取出的文本传入存入流程。默认情况下，此类故障**不可重试**：损坏的 PDF 或缺少 OCR 不会因重新运行而改善，因此操作会直接进入 `failed` 状态。
 
-哪个解析器运行（`markitdown`，`iris`，或`llama_parse`) 在每次部署时通过 选择 `HINDSIGHT_API_FILE_PARSER`，客户端可以根据请求覆盖它 - 请参阅[配置 → 文件处理](../configuration#file-processing)。
+每个部署通过 `HINDSIGHT_API_FILE_PARSER` 选择使用哪个解析器（`markitdown`、`iris` 或 `llama_parse`）；客户端也可以在每个请求中覆盖该设置，参见[配置 → 文件处理](../configuration#file-processing)。
 
 ### `consolidation` {#consolidation}
 
-产品**观察** 新版world/experience回忆。参见[观察](../observations) 了解它们是什么以及它们是如何合成的。
+根据新的世界事实/经历事实生成**观测**。观测的含义及其综合生成方式请参见[观测](../observations)。
 
-自动触发：
+以下情况会触发：
 
-- 添加每个记忆存储之后world/experience事实（由每个记忆库控制`enable_auto_consolidation` 和 `enable_observations`）。
-- 删除后，使现有观察无效（源记忆消失→派生观察陈旧→使用幸存的共同源记忆重新运行）。
-- 手动通过 `POST /v1/default/banks/{bank_id}/consolidate`。通过`observation_scopes` 仅巩固与特定标签组合匹配的记忆。
+- 每次存入新增世界事实/经历事实后都会触发（受每个记忆库的 `enable_auto_consolidation` 和 `enable_observations` 设置控制）。
+- 删除使现有观测失效后触发（来源记忆消失 → 派生观测待更新 → 根据仍然存在的共同来源记忆重新运行整合）。
+- 也可以通过 `POST /v1/default/banks/{bank_id}/consolidate` 手动触发。传入 `observation_scopes`，只整合与指定标签组合匹配的记忆。
 
-**按记忆库去重**：当一个`consolidation` 作业正在等待记忆库，重复提交返回现有`operation_id`而不是堆叠。一旦作业开始处理，下一个提交将成为下一个待处理槽。
+**按记忆库去重**：当某个记忆库已有一个 `consolidation` 任务处于 `pending` 状态时，重复提交会返回现有的 `operation_id`，不会继续堆积任务。该任务开始处理后，下一次提交会占用下一个待处理位置。
 
-### `refresh_mental_model` {#refreshmentalmodel}
+### `refresh_mental_model` {#refresh_mental_model}
 
-心智模型有一个`source_query` 定义了它总结的记忆。处理程序重新运行该查询，重新汇总结果，并就地更新模型的内容。
+心智模型有一个 `source_query`，用于定义它要概括哪些记忆。处理程序会重新运行该查询，再次概括查询结果，并原位更新心智模型的内容。
 
-通过手动触发 `POST /v1/default/banks/{bank_id}/mental-models/{id}/refresh`，或根据已配置的心智模型的自动刷新计划自动进行。
+可以通过 `POST /v1/default/banks/{bank_id}/mental-models/{id}/refresh` 手动触发；如果某个心智模型配置了自动刷新计划，也可以由该计划自动触发。
 
-### `graph_maintenance` {#graphmaintenance}
+### `graph_maintenance` {#graph_maintenance}
 
-协调删除后变得陈旧的派生状态。每次调用都会耗尽两个队列，两个队列都由删除本身填充，因此运行只会查看删除触及的内容：
+协调删除后变得待更新的派生状态。每次运行都会排空两个由删除操作填充的队列，因此只会处理该次删除所触及的内容：
 
-1. **补充关联。** 排空其输出的单元temporal/semantic链接失去了邻居。对于每个单元，如果该单元低于其上限（20 个时间单元，50 个语义单元），Hindsight重新运行记忆存储使用的相同探针并插入丢失的链接。如果没有这个，记忆存储管道的 top-K 上限将使幸存的单元在每次删除后永久处于上限 - 降低图扩展记忆召回。
-2. **实体裁剪。** 排空删除可能搁浅的实体。没有剩下的`unit_entities` 参考已删除（FK `ON DELETE CASCADE` 删除他们的 `entity_cooccurrences` 行）；对于幸存者，两个端点仍然存在但没有当前的共现行memory_unit引用都被清理了——记录时共现是真实的，但目击它的每个单位都已被删除。
+1. **补充链接。** 排空那些因邻居丢失而失去外向时间/语义链接的记忆单元。对于每个记忆单元，如果链接数低于上限（时间链接 20 条，语义链接 50 条），Hindsight 会重新运行存入流程使用的相同探测，并插入缺失的链接。如果没有此处理，存入流程按 top-K 限制链接数的做法会导致幸存的记忆单元每次删除后都永久低于上限，从而降低图扩展召回效果。
+2. **清理实体。** 排空可能因删除而成为孤立状态的实体。没有剩余 `unit_entities` 引用的实体会被删除（外键 `ON DELETE CASCADE` 会连带删除其 `entity_cooccurrences` 行）；对于仍保留的实体，如果两个端点都存在、但当前没有任何 `memory_unit` 同时引用二者，则清理对应的共现行——记录时这次共现确实存在，但见证它的所有记忆单元后来都已删除。
 
-记忆库在提交时进行了重复数据删除，因此针对同一记忆库的并发触发器合并为一个消耗。
+提交时按记忆库去重，因此同一记忆库上的并发触发会合并为一次队列排空。
 
-每次运行都在挂钟预算下按承诺批次进行。对于一次运行来说积压太大（例如批量删除）并不是错误：运行会报告其完成的内容，下一次运行会从停止的地方恢复。
+每次运行都会在墙钟时间预算内，以已提交的批次处理。如果积压任务太多，无法在一次运行中完成（例如批量删除），这不算错误：本次运行会报告已完成的部分，下次运行会从停止处继续。
 
-**触发器：** 任何删除memory_units— `DELETE /documents/{id}`，`DELETE /memories/{id}`，并重新保留现有的`document_id`（更新插入路径）。完整的记忆库擦拭（`delete_bank`) 是一个空操作：记忆库中没有任何内容需要维护。
+**触发条件**：任何会删除 `memory_units` 的删除操作，包括 `DELETE /documents/{id}`、`DELETE /memories/{id}`，以及重新存入已有 `document_id` 的内容（upsert 路径）。清空整个记忆库（`delete_bank`）不会触发处理：库中已无内容需要维护。
 
-### `webhook_delivery` {#webhookdelivery}
+### `webhook_delivery` {#webhook_delivery}
 
-完成某些操作后（例如，使用注册的 Webhook 在记忆库上完成整合），Hindsight入队 `webhook_delivery`任务。处理程序将有效负载 POST 到配置的 URL，并在暂时失败时重试。
+某些操作完成后（例如已注册 webhook 的记忆库完成观测整合），Hindsight 会将 `webhook_delivery` 任务加入队列。处理程序会向配置的 URL 发送包含负载的 POST 请求，并在遇到暂时性故障时重试。
 
 ## 端点 {#endpoints}
 
-以下所有路径的范围均为 `bank_id`。
+以下所有路径都按 `bank_id` 限定范围。
 
 ### 列出操作 {#list-operations}
 
@@ -111,13 +111,13 @@ GET /v1/default/banks/{bank_id}/operations
 
 查询参数：
 
-|参数|说明|
+| 参数 | 说明 |
 |-------|-------------|
-|`status`|筛选条件 `pending`，`processing`，`completed`，`failed`，`cancelled`。|
-|`type`|筛选条件 `retain`，`file_convert_retain`，`consolidation`，`refresh_mental_model`，`graph_maintenance`，`webhook_delivery`。|
-|`limit`|1–100，默认 20。|
-|`offset`|分页偏移。|
-|`exclude_parents`|从结果中排除父批处理操作（大 `retain_batch` 调用创建一个父级 + N 个子级）。|
+| `status` | 按 `pending`、`processing`、`completed`、`failed`、`cancelled` 筛选。 |
+| `type` | 按 `retain`、`file_convert_retain`、`consolidation`、`refresh_mental_model`、`graph_maintenance`、`webhook_delivery` 筛选。 |
+| `limit` | 1–100，默认值为 20。 |
+| `offset` | 分页偏移量。 |
+| `exclude_parents` | 从结果中排除批次父操作（大型 `retain_batch` 调用会创建一个父操作和 N 个子项）。 |
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -129,14 +129,14 @@ GET /v1/default/banks/{bank_id}/operations
 <TabItem value="cli" label="CLI">
 <CodeSnippet code={operationsSh} section="operations-list" language="bash" />
 </TabItem>
-<TabItem value="go" label="开始">
+<TabItem value="go" label="Go">
 <CodeSnippet code={operationsGo} section="operations-list" language="go" />
 </TabItem>
 </Tabs>
 
-`items_count` 是特定于操作的 - 仅对于记忆存储形状的操作非零（它对提交中的内容项进行计数）。
+`items_count` 因操作类型而异；只有存入类操作的值非零（它统计提交中的内容项数）。
 
-### 获取运行状态 {#get-operation-status}
+### 获取操作状态 {#get-operation-status}
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -148,42 +148,42 @@ GET /v1/default/banks/{bank_id}/operations
 <TabItem value="cli" label="CLI">
 <CodeSnippet code={operationsSh} section="operations-get" language="bash" />
 </TabItem>
-<TabItem value="go" label="开始">
+<TabItem value="go" label="Go">
 <CodeSnippet code={operationsGo} section="operations-get" language="go" />
 </TabItem>
 </Tabs>
 
 查询参数：
 
-|参数|说明|
+| 参数 | 说明 |
 |-------|-------------|
-|`include_payload`|将原始任务有效负载（提交参数）包含在响应中，如下所示 `task_payload`。默认`false`；可能很大。|
+| `include_payload` | 在响应的 `task_payload` 中包含原始任务负载（提交参数）。默认值为 `false`；负载可能很大。 |
 
-一些响应字段值得一提：
+以下响应字段值得特别说明：
 
-|字段|说明|
+| 字段 | 说明 |
 |-------|-------------|
-|`updated_at`|操作行最后一次更改的时间 — 声明、进度心跳或完成。|
-|`progress`|正在运行的操作的最后已知进度快照，或 `null` 如果没有记录（立即完成或预功能行）。|
-|`task_payload`|原始提交参数；仅当 时才填充 `include_payload=true`。|
+| `updated_at` | 操作记录最近一次变更的时间，例如被领取、进度心跳或完成时。 |
+| `progress` | 正在运行的操作最近一次记录的进度快照；如果没有记录（例如即时完成的操作或该功能推出前的记录），则为 `null`。 |
+| `task_payload` | 原始提交参数；仅当 `include_payload=true` 时填充。 |
 
-`progress` 是粗写的phase/batch边界（集成、批量记忆存储），让您区分健康的长期运行作业和冻结作业：如果 `processed` 在民意调查中不断前进，工作仍然存在； 中没有移动的相同数字 `at` 表示卡住了。其形状：
+`progress` 会在较粗略的阶段/批次边界写入（例如观测整合、批量存入），可用于区分健康运行的长任务和停滞任务：如果轮询时 `processed` 持续增加，说明任务仍在运行；如果数字完全相同且 `at` 没有变化，说明任务已卡住。其结构如下：
 
-|字段|说明|
+| 字段 | 说明 |
 |-------|-------------|
-|`stage`|最后报告的操作的粗略阶段（例如 `processing_batch`）。|
-|`at`|ISO-8601 写入此快照时的时间戳。|
-|`processed`|已知时，到目前为止已完成的工作单元（子批次、记忆）。|
-|`total`|操作的总工作单位（已知时）。|
-|`detail`|特定于操作的计数器（例如 `observations_created`，`round`，`items_in_sub_batch`）。|
+| `stage` | 操作最近报告的粗略阶段（例如 `processing_batch`）。 |
+| `at` | 写入此快照时的 ISO-8601 时间戳。 |
+| `processed` | 已完成的工作单元数（子批次、记忆），如果已知。 |
+| `total` | 操作的工作单元总数，如果已知。 |
+| `detail` | 操作特有的计数器（例如 `observations_created`、`round`、`items_in_sub_batch`）。 |
 
 ### 取消操作 {#cancel-an-operation}
 
-取消 `pending` 或 `processing` 状态的操作。如果操作已处于终态（`completed`、`failed` 或 `cancelled`），返回 `409`。
+可以取消处于 `pending` 或 `processing` 状态的操作。如果操作已进入终态（`completed`、`failed`、`cancelled`），则返回 `409`。
 
-记录会立即标记为 `cancelled`，但正在执行的任务采用**协作式取消，不会立即停止**。工作进程会在下一个检查点发现取消请求并停止：记忆存储在子批次或文档边界检查，整合在 LLM 批次边界检查。已提交的工作不会回滚，当前批次仍可能完成。没有检查点的操作会运行到结束；记录仍保持 `cancelled`，因为工作进程不能覆盖这一状态。
+记录会立即标记为 `cancelled`，但取消正在运行的工作采用**协作式方式，并非立即生效**。执行操作的工作进程会在下一个检查点发现取消请求——对于存入操作，检查点位于子批次或文档之间；对于观测整合，检查点位于 LLM 批次之间——然后在该处停止。因此，已经提交的内容会保留，正在处理的批次也可能仍会完成。没有检查点的操作类型会继续运行到结束；无论哪种情况，记录都会保持 `cancelled`，因为工作进程不得写入覆盖该状态。
 
-这也可以清理工作进程在完成前被终止、因而卡在 `processing` 的操作。此时没有任务在执行，取消会立即生效。随后使用 `POST /…/operations/{id}/retry` 重新排队。
+如果某个工作进程在完成操作前被终止，导致操作卡在 `processing`，也可以用此方式清理：此时已没有任务在运行，因此取消会立即生效。之后可以通过 `POST /…/operations/{id}/retry` 将工作重新入队。
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -195,14 +195,14 @@ GET /v1/default/banks/{bank_id}/operations
 <TabItem value="cli" label="CLI">
 <CodeSnippet code={operationsSh} section="operations-cancel" language="bash" />
 </TabItem>
-<TabItem value="go" label="开始">
+<TabItem value="go" label="Go">
 <CodeSnippet code={operationsGo} section="operations-cancel" language="go" />
 </TabItem>
 </Tabs>
 
 ### 重试失败的操作 {#retry-a-failed-operation}
 
-该行的状态重置为`pending`，工人又把它捡了起来。退货`409` 如果操作不在中 `failed`或`cancelled`状态。
+记录状态会重置为 `pending`，工作进程会再次领取它。如果操作不处于 `failed` 或 `cancelled` 状态，则返回 `409`。
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -214,14 +214,14 @@ GET /v1/default/banks/{bank_id}/operations
 <TabItem value="cli" label="CLI">
 <CodeSnippet code={operationsSh} section="operations-retry" language="bash" />
 </TabItem>
-<TabItem value="go" label="开始">
+<TabItem value="go" label="Go">
 <CodeSnippet code={operationsGo} section="operations-retry" language="go" />
 </TabItem>
 </Tabs>
 
-## 异步记忆存储示例 {#async-retain-example}
+## 异步存入示例 {#async-retain-example}
 
-异步提交一批并轮询直到操作完成：
+异步提交一个批次，并轮询直到操作完成：
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -233,18 +233,18 @@ GET /v1/default/banks/{bank_id}/operations
 <TabItem value="cli" label="CLI">
 <CodeSnippet code={operationsSh} section="operations-async-retain" language="bash" />
 </TabItem>
-<TabItem value="go" label="开始">
+<TabItem value="go" label="Go">
 <CodeSnippet code={operationsGo} section="operations-async-retain" language="go" />
 </TabItem>
 </Tabs>
 
 ## 工作进程调优 {#worker-tuning}
 
-每个worker都有一个并发预算（`HINDSIGHT_API_WORKER_MAX_SLOTS`，默认 10) 在所有操作类型之间共享。每种类型的时段预订 (`HINDSIGHT_API_WORKER_<TYPE>_MAX_SLOTS`) 在该预算内制定保证容量；剩余的槽形成一个共享池，任何类型都可以使用。参见[配置 → 工作进程配置](../configuration#distributed-workers) 代表整张桌子。
+每个工作进程都有一个由所有操作类型共用的并发预算（`HINDSIGHT_API_WORKER_MAX_SLOTS`，默认值为 10）。按类型预留的槽位（`HINDSIGHT_API_WORKER_<TYPE>_MAX_SLOTS`）会在此预算内划出保证容量；其余槽位构成所有类型均可使用的共享池。完整配置表请参见[配置 → 工作进程配置](../configuration#distributed-workers)。
 
-对于大多数部署，默认值就可以了。如果您发现某个操作类型被另一种类型的洪水淹没（例如，在删除繁重的工作负载上出现长 file_convert_retain 阻塞 graph_maintenance），请为该操作类型保留插槽。
+大多数部署使用默认值即可。如果某类操作曾因另一类操作大量涌入而得不到处理，可以为其预留槽位（例如，在删除频繁的工作负载中，长时间运行的 `file_convert_retain` 阻塞了 `graph_maintenance`）。
 
-插槽也在记忆库中轮换。每个声明依次服务于下一个记忆库（一次操作），然后从任何地方从最旧的到第一个填充池的其余部分。因此，当另一个记忆库的单个写入在其积压后面等待时，批量摄取的记忆库无法拥有整个池，并且它也不会受到限制：当没有其他人在等待时，它仍然占用每个槽。
+槽位也会在不同记忆库之间轮转。每次领取都会依次服务下一个记忆库中的一个操作，然后从所有记忆库中按创建时间从早到晚填满池中剩余槽位。因此，一个正在批量摄取的记忆库不会独占整个池，让另一个记忆库的单次写入排在积压任务之后等待；同时它也不会被限流：没有其他记忆库在等待时，它仍可占用所有槽位。
 
 ## 后续步骤 {#next-steps}
 

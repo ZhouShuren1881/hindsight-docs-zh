@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Hindsight 记忆 API 示例 — 读取、列出和整理记忆单元。
-运行： python examples/api/memories.py
+Memories API examples for Hindsight — read, list, and curate memory units.
+Run: python examples/api/memories.py
 """
 import asyncio
 import os
@@ -14,12 +14,12 @@ BANK_ID = "memories-demo-bank"
 
 
 async def wait_for_idle(client, bank_id, *, attempts=120, interval=0.5):
-    """阻塞至记忆库没有 pending/processing 异步操作。
+    """Block until the bank has no pending/processing async operations.
 
-    存储及每次 update_memory 编辑都会在后台重新嵌入和整合。
-    整理步骤之间排空队列可让示例行为确定，
-    否则后一步可能与前一步重新整合竞争，
-    在单元正被改写时产生 404。
+    Retain and every update_memory edit re-embed and re-consolidate in the
+    background. Draining that queue between curation steps keeps the example
+    deterministic — otherwise a later step can race the prior step's
+    re-consolidation and 404 on a unit that is mid-rewrite.
     """
     await asyncio.sleep(interval)  # let the just-submitted operation register
     for _ in range(attempts):
@@ -38,53 +38,53 @@ async def wait_for_idle(client, bank_id, *, attempts=120, interval=0.5):
 
 async def main():
     # =========================================================================
-    # 初始化（不在文档中展示）
+    # Setup (not shown in docs)
     # =========================================================================
     client = Hindsight(base_url=HINDSIGHT_URL)
-    await client.acreate_bank(bank_id=BANK_ID, name="记忆演示")
-    await client.aretain(bank_id=BANK_ID, content="助手在 2023 年访问巴黎。")
-    await client.aretain(bank_id=BANK_ID, content="部署服务器 srv-04 运行 PostgreSQL 14。")
+    await client.acreate_bank(bank_id=BANK_ID, name="Memories Demo")
+    await client.aretain(bank_id=BANK_ID, content="The assistant visited Paris in 2023.")
+    await client.aretain(bank_id=BANK_ID, content="The deploy server srv-04 runs PostgreSQL 14.")
     await wait_for_idle(client, BANK_ID)  # let extraction + consolidation finish
 
     # =========================================================================
-    # 文档示例
+    # Doc Examples
     # =========================================================================
 
     # [docs:list-memories]
-    # 列出记忆单元，默认包含失效行。
+    # List memory units in a bank. Invalidated rows are included by default.
     memories = await client.memory.list_memories(bank_id=BANK_ID)
     for unit in memories.items:
         print(f"- [{unit.fact_type}] {unit.text}")
 
-    # 仅筛选失效事实，如审查重复项.
+    # Filter to only the invalidated facts (e.g. to review duplicates).
     invalidated = await client.memory.list_memories(bank_id=BANK_ID, state="invalidated")
-    print(f"{len(invalidated.items)} 条失效事实")
+    print(f"{len(invalidated.items)} invalidated fact(s)")
     # [/docs:list-memories]
 
-    # 派生观察展示来源到达时的演变。应在
-    # 以下编辑/失效/恢复之前读取；每次 update_memory
-    # 都重新整合并以新 ID 创建观察，因此提前获取的 ID
-    # 之后会过时，get_observation_history 会 404。
+    # An observation (derived) exposes how it evolved as sources arrived. Read
+    # it here, before the edit/invalidate/restore below: any update_memory call
+    # re-consolidates and recreates observations with new ids, so an id captured
+    # before those steps is stale afterward (get_observation_history would 404).
     observation = next((u for u in memories.items if u.fact_type == "observation"), None)
     if observation is not None:
         # [docs:observation-history]
-        # 获取派生观察刷新历史.
+        # Get the refresh history of a derived observation.
         history = await client.memory.get_observation_history(
             bank_id=BANK_ID, memory_id=observation.id
         )
-        print(f"观察历史条目： {len(history)}")
+        print(f"Observation history entries: {len(history)}")
         # [/docs:observation-history]
 
-    # 选择原始事实供后续示例整理。
+    # Grab a raw fact (world/experience) to curate in the examples below.
     fact = next((u for u in memories.items if u.fact_type in ("world", "experience")), None)
     if fact is None:
         await client.adelete_bank(bank_id=BANK_ID)
-        print("memories.py: 全部示例通过 (尚未提取事实)")
+        print("memories.py: All examples passed (no facts extracted yet)")
         return
     memory_id = fact.id
 
     # [docs:get-memory]
-    # 获取单个记忆单元（含元数据、实体、日期、状态）。
+    # Fetch a single memory unit (includes metadata, entities, dates, and state).
     memory = await client.memory.get_memory(bank_id=BANK_ID, memory_id=memory_id)
 
     print(f"Text: {memory['text']}")
@@ -92,27 +92,27 @@ async def main():
     # [/docs:get-memory]
 
     # [docs:edit-memory]
-    # 修正文本，重新嵌入、移除派生观察及链接，
-    # 自动重新整合并重算图。
+    # Correct the fact's text. Re-embeds, drops derived observations/links,
+    # re-consolidates, and recomputes the graph automatically.
     await client.memory.update_memory(
         bank_id=BANK_ID,
         memory_id=memory_id,
         update_memory_request=UpdateMemoryRequest(
-            text="用户在 2023 年访问巴黎。",
-            reason="主体错误",
+            text="The user visited Paris in 2023.",
+            reason="wrong subject",
         ),
     )
     # [/docs:edit-memory]
 
-    # 文本编辑在后台重新整合；等待完成再进行下一次编辑，
-    # 避免再次访问时单元正被重写。
+    # The text edit re-consolidates in the background; let it settle before the
+    # next edit so the unit isn't mid-rewrite when we touch it again.
     await wait_for_idle(client, BANK_ID)
 
     # [docs:edit-memory-fields]
-    # 一次修正日期、类型和实体。空字符串清字段；
-    # entities 替换集合（[] 全解除），省略则不变。
-    # resolve_entities=False 防止输入实体名匹配
-    # 到已有的相似实体。
+    # Correct dates, fact type, and entities in one call. "" clears a field;
+    # entities replaces the set ([] detaches all); omit to leave unchanged.
+    # resolve_entities=False keeps the entity names you wrote from being matched
+    # onto a similar entity that already exists.
     await client.memory.update_memory(
         bank_id=BANK_ID,
         memory_id=memory_id,
@@ -128,24 +128,24 @@ async def main():
     await wait_for_idle(client, BANK_ID)
 
     # [docs:invalidate-memory]
-    # 使事实软失效：移出召回/整合/图，剪除链接，
-    # 重新计算不含它的观察，但保留审计。
+    # Soft-retire a fact: removed from recall/consolidation/graph, links pruned,
+    # derived observations recomputed without it — but kept for audit.
     await client.memory.update_memory(
         bank_id=BANK_ID,
         memory_id=memory_id,
         update_memory_request=UpdateMemoryRequest(
             state="invalidated",
-            reason="服务器于 2026-06-01 停用",
+            reason="server decommissioned 2026-06-01",
         ),
     )
     # [/docs:invalidate-memory]
 
-    # 失效也在后台派生观察；先排空队列，
-    # 避免后续恢复与跨表移动单元竞争。
+    # Invalidation also re-derives observations in the background; drain it so the
+    # restore below doesn't race a unit that is being moved between tables.
     await wait_for_idle(client, BANK_ID)
 
     # [docs:restore-memory]
-    # 恢复此前失效事实。
+    # Restore a previously invalidated fact.
     await client.memory.update_memory(
         bank_id=BANK_ID,
         memory_id=memory_id,
@@ -154,10 +154,10 @@ async def main():
     # [/docs:restore-memory]
 
     # =========================================================================
-    # 清理（不在文档中展示）
+    # Cleanup (not shown in docs)
     # =========================================================================
     await client.adelete_bank(bank_id=BANK_ID)
-    print("memories.py: 全部示例通过")
+    print("memories.py: All examples passed")
 
 
 asyncio.run(main())

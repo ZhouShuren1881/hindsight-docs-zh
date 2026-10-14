@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
-Hindsight 多语言示例。
-运行： python examples/api/multilingual.py
+Multilingual examples for Hindsight.
+Run: python examples/api/multilingual.py
 """
 import os
 
 HINDSIGHT_URL = os.getenv("HINDSIGHT_API_URL", "http://localhost:8888")
 
 # =============================================================================
-# 文档示例
+# Doc Examples
 # =============================================================================
 
 # [docs:retain-chinese]
@@ -16,7 +16,7 @@ from hindsight_client import Hindsight
 
 hindsight = Hindsight(base_url=HINDSIGHT_URL)
 
-# 存储中文内容
+# Retain Chinese content
 hindsight.retain(
     bank_id="multilingual-user",
     content="""
@@ -26,13 +26,13 @@ hindsight.retain(
     context="团队概述"
 )
 
-# 中文查询，返回中文结果
+# Query in Chinese - get Chinese results
 results = hindsight.recall(
     bank_id="multilingual-user",
     query="告诉我关于张伟的信息"
 )
 
-# 事实以中文返回：
+# Facts are returned in Chinese:
 # - 张伟是一位资深软件工程师，在腾讯工作了五年
 # - 张伟专门研究分布式系统，并领导了公司微服务架构的开发
 # [/docs:retain-chinese]
@@ -48,7 +48,7 @@ hindsight.retain(
     context="チームプロフィール"
 )
 
-# 使用日语查询
+# Query in Japanese
 results = hindsight.recall(
     bank_id="multilingual-user",
     query="田中さんについて教えてください"
@@ -57,7 +57,7 @@ results = hindsight.recall(
 
 
 # [docs:reflect-chinese]
-# 存储团队成员事实（中文）
+# Store facts about team members (in Chinese)
 hindsight.retain(
     bank_id="multilingual-team-eval",
     content="张伟是一位优秀的软件工程师，完成了五个重大项目。他总是按时交付，代码整洁有良好的文档。",
@@ -70,13 +70,13 @@ hindsight.retain(
     context="绩效评估"
 )
 
-# 中文反思
+# Reflect in Chinese
 result = hindsight.reflect(
     bank_id="multilingual-team-eval",
     query="谁是更可靠的工程师？"
 )
 
-# 响应为中文：
+# Response is in Chinese:
 # "我认为张伟更可靠。张伟完成了五个重大项目，按时交付，代码质量高..."
 # [/docs:reflect-chinese]
 
@@ -92,7 +92,7 @@ hindsight.retain(
     context="员工资料"
 )
 
-# 事实保留两种语言：
+# Facts preserve both languages:
 # - 王芳在Google北京办公室工作，担任高级产品经理
 # - 王芳曾在Microsoft和Amazon工作过
 # - 王芳负责管理YouTube在中国市场的推广策略
@@ -100,10 +100,10 @@ hindsight.retain(
 
 
 # =============================================================================
-# 清理（不在文档中展示）
+# Cleanup (not shown in docs)
 # =============================================================================
 hindsight.delete_bank("multilingual-user")
 hindsight.delete_bank("multilingual-team-eval")
 hindsight.close()
 
-print("multilingual.py: 全部示例通过")
+print("multilingual.py: All examples passed")

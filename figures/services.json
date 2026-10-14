@@ -1,5 +1,5 @@
 {
-  "title": "服务",
+  "title": "服务架构",
   "speed": 1900,
   "elements": [
     {
@@ -8,7 +8,7 @@
       "content": [
         {
           "type": "title",
-          "text": "你的应用程序"
+          "text": "你的应用"
         },
         {
           "type": "subtitle",
@@ -23,7 +23,7 @@
       "content": [
         {
           "type": "title",
-          "text": "控制平面"
+          "text": "控制台"
         },
         {
           "type": "subtitle",
@@ -73,7 +73,7 @@
         },
         {
           "type": "subtitle",
-          "text": "默认开启"
+          "text": "默认启用"
         }
       ],
       "width": 190
@@ -104,7 +104,7 @@
         },
         {
           "type": "subtitle",
-          "text": "事实·观察·模型"
+          "text": "事实 · 观测 · 心智模型"
         }
       ],
       "width": 200
@@ -186,7 +186,7 @@
         },
         {
           "type": "subtitle",
-          "text": "OpenAI，Anthropic，…"
+          "text": "OpenAI、Anthropic 等"
         }
       ]
     },
@@ -196,7 +196,7 @@
       "content": [
         {
           "type": "title",
-          "text": "嵌入·重排序器"
+          "text": "嵌入模型与重排器"
         },
         {
           "type": "subtitle",
@@ -324,7 +324,7 @@
         "id": "iworker"
       },
       "label": {
-        "text": "领取任务"
+        "text": "领取"
       },
       "quiet": true
     },
@@ -339,7 +339,7 @@
         "id": "w1"
       },
       "label": {
-        "text": "领取任务"
+        "text": "领取"
       }
     },
     {
@@ -391,7 +391,7 @@
   ],
   "scenes": [
     {
-      "label": "记忆存储·异步",
+      "label": "Retain（存入）· 异步",
       "caption": "",
       "beats": [
         {
@@ -404,17 +404,17 @@
               {
                 "tag": "retain",
                 "tone": "gray",
-                "text": "“Alice于三月加入Google。”",
+                "text": "“Alice 于三月加入 Google。”",
                 "meta": "async=true"
               }
             ]
           },
-          "say": "记忆存储需要 LLM 读取内容，耗时较长。设置 async=true 后，API 不会在请求内执行这项工作。"
+          "say": "存入操作处理耗时较长：LLM 需要读取内容。设置 async=true 后，API 不会在当前请求中执行这项工作。"
         },
         {
           "edges": {
             "edge": "http-ops",
-            "data": "op_7f3 · pending"
+            "data": "op_7f3 · 等待处理"
           },
           "show": {
             "ops": [
@@ -422,11 +422,11 @@
                 "tag": "retain",
                 "tone": "orange",
                 "text": "op_7f3",
-                "meta": "pending"
+                "meta": "等待处理"
               }
             ]
           },
-          "say": "API 将任务记录写入 async_operations。队列就是同一数据库中的一张表。"
+          "say": "API 会向 async_operations 写入一条任务记录；队列只是同一数据库中的一张表。"
         },
         {
           "edges": {
@@ -439,17 +439,17 @@
               {
                 "tag": "retain",
                 "tone": "gray",
-                "text": "“Alice于三月加入Google。”",
+                "text": "“Alice 于三月加入 Google。”",
                 "meta": "async=true"
               },
               {
-                "tag": "accepted",
+                "tag": "已接收",
                 "tone": "green",
                 "text": "op_7f3"
               }
             ]
           },
-          "say": "立即返回操作 ID。"
+          "say": "API 会立即返回操作 ID。"
         },
         {
           "edges": [
@@ -464,7 +464,7 @@
                 "tag": "retain",
                 "tone": "orange",
                 "text": "op_7f3",
-                "meta": "processing · worker-1"
+                "meta": "处理中 · worker-1"
               }
             ],
             "w1": [
@@ -476,32 +476,32 @@
             ],
             "w2": [
               {
-                "text": "行已锁定，跳过它",
-                "meta": "idle"
+                "text": "该行已锁定，跳过",
+                "meta": "空闲"
               }
             ]
           },
-          "say": "每个工作进程每 500 ms 轮询这张表。领取任务时锁定记录，确保只有一个进程获得任务，其他进程跳过。",
+          "say": "每个工作进程每 500 ms 轮询一次该表。领取任务时会锁定该行，因此恰有一个工作进程能领取该任务，其余进程会跳过。",
           "ms": 2800
         },
         {
           "edges": {
             "edge": "w-models",
-            "data": "extract · embed"
+            "data": "提取 · 生成嵌入"
           },
           "show": {
             "llm": [
               {
-                "text": "摘录事实"
+                "text": "提取事实"
               }
             ],
             "emb": [
               {
-                "text": "嵌入 1 个事实"
+                "text": "为 1 条事实生成嵌入"
               }
             ]
           },
-          "say": "工作进程调用 LLM 提取事实，并生成嵌入。"
+          "say": "工作进程调用 LLM 提取事实并为其生成嵌入。"
         },
         {
           "edges": {
@@ -512,19 +512,19 @@
             "mem": [
               {
                 "tag": "world",
-                "text": "Alice加入Google",
+                "text": "Alice 加入 Google",
                 "meta": "Mar 2026",
                 "mark": "new"
               }
             ]
           },
-          "say": "随后将事实写入记忆库。"
+          "say": "随后，工作进程将这些事实写入记忆库。"
         },
         {
           "edges": {
             "edge": "claim-w1",
             "back": true,
-            "data": "completed"
+            "data": "已完成"
           },
           "show": {
             "ops": [
@@ -532,14 +532,14 @@
                 "tag": "retain",
                 "tone": "orange",
                 "text": "op_7f3",
-                "meta": "completed",
+                "meta": "已完成",
                 "mark": "✓"
               },
               {
                 "tag": "consolidation",
                 "tone": "orange",
                 "text": "op_8a1",
-                "meta": "pending"
+                "meta": "等待处理"
               }
             ],
             "w1": [
@@ -550,29 +550,29 @@
               }
             ]
           },
-          "say": "任务标记为 completed。新事实会排队后续工作：启用自动整合时执行整合，并维护图与索引。",
+          "say": "任务状态标记为 `completed`。新事实会触发后续任务入队：启用自动整合时执行整合，并维护图和索引。",
           "ms": 2800
         },
         {
           "edges": {
             "edge": "cp-http",
-            "data": "operation status"
+            "data": "操作状态"
           },
           "show": {
             "cp": [
               {
                 "text": "op_7f3",
-                "meta": "completed",
+                "meta": "已完成",
                 "mark": "✓"
               }
             ]
           },
-          "say": "控制平面连接相同 API，因此可以在那里查看操作状态。"
+          "say": "控制台连接到同一个 API，因此可以在那里查看操作状态。"
         }
       ]
     },
     {
-      "label": "背景",
+      "label": "后台处理",
       "caption": "",
       "beats": [
         {
@@ -586,7 +586,7 @@
                 "tag": "consolidation",
                 "tone": "orange",
                 "text": "op_8a1",
-                "meta": "processing · worker-2"
+                "meta": "处理中 · worker-2"
               }
             ],
             "w2": [
@@ -597,21 +597,21 @@
               }
             ]
           },
-          "say": "后台任务通过同一队列执行。这次 worker-2 成功领取任务。"
+          "say": "后台任务也经由同一队列处理。这次由 worker-2 领取了任务。"
         },
         {
           "edges": {
             "edge": "w-models",
-            "data": "consolidate"
+            "data": "整合"
           },
           "show": {
             "llm": [
               {
-                "text": "将事实融入观察"
+                "text": "将事实整合进观测"
               }
             ]
           },
-          "say": "整合要求 LLM 将新事实合并到观察中。"
+          "say": "观测整合会让 LLM 将新事实整合到观测中。"
         },
         {
           "edges": {
@@ -623,8 +623,8 @@
               {
                 "tag": "observation",
                 "tone": "green",
-                "text": "Alice在Google工作",
-                "meta": "1 source",
+                "text": "Alice 在 Google 工作",
+                "meta": "1 条来源",
                 "mark": "new"
               }
             ]
@@ -634,7 +634,7 @@
           "edges": {
             "edge": "claim-w2",
             "back": true,
-            "data": "refresh queued"
+            "data": "已加入刷新队列"
           },
           "show": {
             "ops": [
@@ -642,14 +642,14 @@
                 "tag": "consolidation",
                 "tone": "orange",
                 "text": "op_8a1",
-                "meta": "completed",
+                "meta": "已完成",
                 "mark": "✓"
               },
               {
                 "tag": "refresh_mental_model",
                 "tone": "orange",
                 "text": "op_9c4",
-                "meta": "pending"
+                "meta": "等待处理"
               }
             ],
             "w2": [
@@ -660,13 +660,13 @@
               }
             ]
           },
-          "say": "配置为整合后刷新、且当前已过时的心智模型，会获得各自的刷新任务。",
+          "say": "配置为在整合后刷新的心智模型，如果此时内容已待更新，就会各自获得一条刷新任务。",
           "ms": 2600
         },
         {
           "edges": {
             "edge": "claim-iw",
-            "data": "claim"
+            "data": "领取"
           },
           "show": {
             "ops": [
@@ -674,7 +674,7 @@
                 "tag": "refresh_mental_model",
                 "tone": "orange",
                 "text": "op_9c4",
-                "meta": "processing · api"
+                "meta": "处理中 · API"
               }
             ],
             "iworker": [
@@ -685,21 +685,21 @@
               }
             ]
           },
-          "say": "API 内置工作进程也从同一张表领取任务。设置 HINDSIGHT_API_WORKER_ENABLED=false 后，仅独立工作进程领取任务。",
+          "say": "API 的内置工作进程也从同一张表领取任务。设置 HINDSIGHT_API_WORKER_ENABLED=false 后，只有独立工作进程会领取任务。",
           "ms": 3000
         },
         {
           "edges": {
             "edge": "iw-mem",
-            "data": "rewrite model"
+            "data": "重写心智模型"
           },
           "show": {
             "mem": [
               {
                 "tag": "observation",
                 "tone": "green",
-                "text": "Alice在Google工作",
-                "meta": "1 source"
+                "text": "Alice 在 Google 工作",
+                "meta": "1 条来源"
               },
               {
                 "tag": "model",
@@ -716,13 +716,13 @@
               }
             ]
           },
-          "say": "所有工作进程都能执行所有任务，使用相同软件包、镜像与数据库，增加进程即可扩容。",
+          "say": "所有工作进程都能执行任何任务：它们共用软件包、镜像和数据库，因此增加工作进程即可扩展处理能力。",
           "ms": 3000
         }
       ]
     },
     {
-      "label": "记忆召回·同步",
+      "label": "Recall（召回）· 同步",
       "caption": "",
       "beats": [
         {
@@ -735,22 +735,22 @@
               {
                 "tag": "recall",
                 "tone": "gray",
-                "text": "“Alice在哪里工作？”"
+                "text": "“Alice 在哪里工作？”"
               }
             ]
           },
-          "say": "之后进行记忆召回。与反思及其他读取一样，它在 API 进程内直接响应，不进入队列。"
+          "say": "之后，应用调用 Recall。与 Reflect 及其他读取操作一样，API 进程会直接处理并返回结果，不会将其加入队列。"
         },
         {
           "edges": {
             "edge": "http-emb",
-            "data": "embed the query"
+            "data": "为查询生成嵌入"
           },
           "show": {
             "http": [
               {
                 "text": "记忆召回",
-                "meta": "bank alice-team",
+                "meta": "记忆库 alice-team",
                 "mono": true
               }
             ],
@@ -760,29 +760,29 @@
               }
             ]
           },
-          "say": "查询由进程内加载的模型或远程嵌入服务转换为嵌入。"
+          "say": "查询会通过进程内加载的模型或远程嵌入服务转换为嵌入。"
         },
         {
           "edges": {
             "edge": "http-mem",
-            "data": "4-way search"
+            "data": "四路搜索"
           },
           "show": {
             "mem": [
               {
                 "tag": "world",
-                "text": "Alice加入Google",
+                "text": "Alice 加入 Google",
                 "meta": "Mar 2026",
                 "mark": "✓"
               }
             ]
           },
-          "say": "四路搜索以 PostgreSQL 查询执行，各记忆库都存储在其中。"
+          "say": "四路搜索会以查询的形式在 PostgreSQL 中执行，所有记忆库都存储在其中。"
         },
         {
           "edges": {
             "edge": "http-emb",
-            "data": "rerank"
+            "data": "重排"
           },
           "show": {
             "emb": [
@@ -790,34 +790,34 @@
                 "text": "查询 → 向量"
               },
               {
-                "text": "交叉编码器重新排序"
+                "text": "交叉编码器重排"
               }
             ]
           },
-          "say": "交叉编码器对候选结果重新排序，与嵌入服务一样，可以在本地或远程运行。"
+          "say": "交叉编码器会对候选结果重新排序；与嵌入服务一样，它可以在本地或远程运行。"
         },
         {
           "edges": {
             "edge": "app-http",
             "back": true,
-            "data": "ranked memories"
+            "data": "排序后的记忆"
           },
           "show": {
             "app": [
               {
                 "tag": "recall",
                 "tone": "gray",
-                "text": "“Alice在哪里工作？”"
+                "text": "“Alice 在哪里工作？”"
               },
               {
-                "tag": "result",
+                "tag": "结果",
                 "tone": "green",
-                "text": "Alice加入Google",
+                "text": "Alice 加入 Google",
                 "mark": "✓"
               }
             ]
           },
-          "say": "API 不持有自身状态，可以在负载均衡器后部署任意数量的副本。"
+          "say": "API 本身不持有状态，因此可以在负载均衡器后运行任意数量的副本。"
         }
       ]
     }

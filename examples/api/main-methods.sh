@@ -1,6 +1,6 @@
 #!/bin/bash
-# Hindsight CLI 核心方法示例
-# 运行：bash examples/api/main-methods.sh
+# Main Methods overview examples for Hindsight CLI
+# Run: bash examples/api/main-methods.sh
 
 set -e
 
@@ -8,55 +8,55 @@ HINDSIGHT_URL="${HINDSIGHT_API_URL:-http://localhost:8888}"
 BANK_ID="main-methods-sh-demo-bank"
 
 # =============================================================================
-# 准备，文档中不展示
+# Setup (not shown in docs)
 # =============================================================================
 WORKDIR=$(mktemp -d)
 cd "$WORKDIR"
 mkdir docs
-echo "Alice：完成了机器学习流水线评审。Bob：很好，发布吧。" > conversation.txt
-echo "团队使用 GitHub 进行代码评审." > docs/process.txt
+echo "Alice: I finished the ML pipeline review. Bob: Great, let's ship it." > conversation.txt
+echo "The team uses GitHub for code reviews." > docs/process.txt
 
 # =============================================================================
-# 文档示例
+# Doc Examples
 # =============================================================================
 
 # [docs:main-retain]
-# 存储单条事实
-hindsight memory retain "$BANK_ID" "Alice 于 2024 年 3 月加入 Google，担任高级机器学习工程师"
+# Store a single fact
+hindsight memory retain "$BANK_ID" "Alice joined Google in March 2024 as a Senior ML Engineer"
 
-# 从文件存储
-hindsight memory retain-files "$BANK_ID" conversation.txt --context "每日站会"
+# Store from a file
+hindsight memory retain-files "$BANK_ID" conversation.txt --context "Daily standup"
 
-# 存储多个文件
+# Store multiple files
 hindsight memory retain-files "$BANK_ID" docs/
 # [/docs:main-retain]
 
 # [docs:main-recall]
-# 基本搜索
-hindsight memory recall "$BANK_ID" "Alice 在 Google 做什么工作？"
+# Basic search
+hindsight memory recall "$BANK_ID" "What does Alice do at Google?"
 
-# 附带选项搜索
-hindsight memory recall "$BANK_ID" "去年春天发生了什么？" \
+# Search with options
+hindsight memory recall "$BANK_ID" "What happened last spring?" \
     --budget high \
     --max-tokens 8192 \
     --fact-type world,experience
 
-# 详细输出
-hindsight memory recall "$BANK_ID" "介绍一下 Alice" -v
+# Verbose output
+hindsight memory recall "$BANK_ID" "Tell me about Alice" -v
 # [/docs:main-recall]
 
 # [docs:main-reflect]
-# 基本反思
-hindsight memory reflect "$BANK_ID" "后端应该采用 TypeScript 吗？"
+# Basic reflect
+hindsight memory reflect "$BANK_ID" "Should we adopt TypeScript for our backend?"
 
-# 使用更高推理预算
-hindsight memory reflect "$BANK_ID" "分析技术栈" --budget high
+# With higher reasoning budget
+hindsight memory reflect "$BANK_ID" "Analyze our tech stack" --budget high
 # [/docs:main-reflect]
 
 # =============================================================================
-# 清理，文档中不展示
+# Cleanup (not shown in docs)
 # =============================================================================
 rm -rf "$WORKDIR"
 curl -s -X DELETE "${HINDSIGHT_URL}/v1/default/banks/${BANK_ID}" > /dev/null
 
-echo "main-methods.sh: 所有示例通过"
+echo "main-methods.sh: All examples passed"

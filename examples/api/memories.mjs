@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 /**
- * Hindsight 记忆 API 示例 (Node.js) — 读取、列出和整理记忆单元。
- * 运行： node examples/api/memories.mjs
+ * Memories API examples for Hindsight (Node.js) — read, list, and curate memory units.
+ * Run: node examples/api/memories.mjs
  */
 import { HindsightClient } from '@vectorize-io/hindsight-client';
 
 const HINDSIGHT_URL = process.env.HINDSIGHT_API_URL || 'http://localhost:8888';
 const BANK_ID = 'memories-demo-bank';
 
-// 高层客户端尚无 PATCH，整理通过 fetch。
+// PATCH isn't exposed on the high-level client yet, so curation goes through fetch.
 const patchMemory = (memoryId, body) =>
     fetch(`${HINDSIGHT_URL}/v1/default/banks/${BANK_ID}/memories/${memoryId}`, {
         method: 'PATCH',
@@ -17,41 +17,41 @@ const patchMemory = (memoryId, body) =>
     });
 
 // =============================================================================
-// 初始化（不在文档中展示）
+// Setup (not shown in docs)
 // =============================================================================
 const client = new HindsightClient({ baseUrl: HINDSIGHT_URL });
-await client.createBank(BANK_ID, { name: '记忆演示' });
-await client.retain(BANK_ID, '助手在 2023 年访问巴黎。');
-await client.retain(BANK_ID, '部署服务器 srv-04 运行 PostgreSQL 14。');
+await client.createBank(BANK_ID, { name: 'Memories Demo' });
+await client.retain(BANK_ID, 'The assistant visited Paris in 2023.');
+await client.retain(BANK_ID, 'The deploy server srv-04 runs PostgreSQL 14.');
 await new Promise(r => setTimeout(r, 3000));
 
 // =============================================================================
-// 文档示例
+// Doc Examples
 // =============================================================================
 
 // [docs:list-memories]
-// 列出记忆单元，默认包含失效行。
+// List memory units in a bank. Invalidated rows are included by default.
 const memories = await client.listMemories(BANK_ID);
 for (const unit of memories.items) {
     console.log(`- [${unit.fact_type}] ${unit.text}`);
 }
 
-// 仅筛选失效事实，如审查重复项.
+// Filter to only the invalidated facts (e.g. to review duplicates).
 const invalidated = await client.listMemories(BANK_ID, { state: 'invalidated' });
-console.log(`${invalidated.items.length} 条失效事实`);
+console.log(`${invalidated.items.length} invalidated fact(s)`);
 // [/docs:list-memories]
 
-// 选择 world/experience 原始事实整理。
+// Pick a raw fact (world/experience) to curate below.
 const fact = memories.items.find(u => u.fact_type === 'world' || u.fact_type === 'experience');
 if (!fact) {
     await client.deleteBank(BANK_ID);
-    console.log('memories.mjs: 全部示例通过 (尚未提取事实)');
+    console.log('memories.mjs: All examples passed (no facts extracted yet)');
     process.exit(0);
 }
 const memoryId = fact.id;
 
 // [docs:get-memory]
-// 获取单个记忆单元（元数据、实体、日期、状态）.
+// Fetch a single memory unit (metadata, entities, dates, state).
 const memory = await (
     await fetch(`${HINDSIGHT_URL}/v1/default/banks/${BANK_ID}/memories/${memoryId}`)
 ).json();
@@ -60,16 +60,16 @@ console.log(`Type: ${memory.type}  Entities: ${memory.entities}`);
 // [/docs:get-memory]
 
 // [docs:edit-memory]
-// 修正文本，重新嵌入、移除派生观察及链接，
-// 自动重新整合并重算图。
-await patchMemory(memoryId, { text: '用户在 2023 年访问巴黎。', reason: '主体错误' });
+// Correct the fact's text. Re-embeds, drops derived observations/links,
+// re-consolidates, and recomputes the graph automatically.
+await patchMemory(memoryId, { text: 'The user visited Paris in 2023.', reason: 'wrong subject' });
 // [/docs:edit-memory]
 
 // [docs:edit-memory-fields]
-// 一次修正日期、类型和实体。空字符串清字段；
-// entities 替换集合（[] 全解除），省略则不变。
-// resolve_entities: false 防止输入实体名匹配
-// 到已有的相似实体。
+// Correct dates, fact type, and entities in one call. "" clears a field;
+// entities replaces the set ([] detaches all); omit to leave unchanged.
+// resolve_entities: false keeps the entity names you wrote from being matched
+// onto a similar entity that already exists.
 await patchMemory(memoryId, {
     occurred_start: '2023-06-01',
     fact_type: 'experience',
@@ -79,31 +79,31 @@ await patchMemory(memoryId, {
 // [/docs:edit-memory-fields]
 
 // [docs:invalidate-memory]
-// 使事实软失效：移出召回/整合/图，剪除链接，
-// 重新计算不含它的观察，但保留审计。
-await patchMemory(memoryId, { state: 'invalidated', reason: '服务器于 2026-06-01 停用' });
+// Soft-retire a fact: removed from recall/consolidation/graph, links pruned,
+// derived observations recomputed without it — but kept for audit.
+await patchMemory(memoryId, { state: 'invalidated', reason: 'server decommissioned 2026-06-01' });
 // [/docs:invalidate-memory]
 
 // [docs:restore-memory]
-// 恢复此前失效事实。
+// Restore a previously invalidated fact.
 await patchMemory(memoryId, { state: 'valid' });
 // [/docs:restore-memory]
 
-// 派生观察展示来源到达时的演变。
+// An observation (derived) exposes how it evolved as sources arrived.
 const observation = memories.items.find(u => u.fact_type === 'observation');
 if (observation) {
     // [docs:observation-history]
-    // 获取派生观察刷新历史.
+    // Get the refresh history of a derived observation.
     const history = await (
         await fetch(`${HINDSIGHT_URL}/v1/default/banks/${BANK_ID}/memories/${observation.id}/history`)
     ).json();
-    console.log(`观察历史条目： ${history.length}`);
+    console.log(`Observation history entries: ${history.length}`);
     // [/docs:observation-history]
 }
 
 // =============================================================================
-// 清理（不在文档中展示）
+// Cleanup (not shown in docs)
 // =============================================================================
 await client.deleteBank(BANK_ID);
 
-console.log('memories.mjs: 全部示例通过');
+console.log('memories.mjs: All examples passed');

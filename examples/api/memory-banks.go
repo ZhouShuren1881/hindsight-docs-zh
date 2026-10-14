@@ -26,7 +26,7 @@ func main() {
 	ctx := context.Background()
 
 	// =============================================================================
-	// 文档示例
+	// Doc Examples
 	// =============================================================================
 
 	// [docs:create-bank]
@@ -38,8 +38,8 @@ func main() {
 	client.BanksAPI.CreateOrUpdateBank(ctx, "architect-bank").
 		CreateBankRequest(hindsight.CreateBankRequest{
 			ReflectMission: *hindsight.NewNullableString(hindsight.PtrString(
-				"你是一位高级软件架构师，跟踪系统设计、" +
-					"技术决策和架构模式。相比前沿技术，优先简单性。",
+				"You're a senior software architect - keep track of system designs, " +
+					"technology decisions, and architectural patterns. Prefer simplicity over cutting-edge.",
 			)),
 			DispositionSkepticism: *hindsight.NewNullableInt32(hindsight.PtrInt32(4)),
 			DispositionLiteralism: *hindsight.NewNullableInt32(hindsight.PtrInt32(4)),
@@ -51,7 +51,7 @@ func main() {
 	client.BanksAPI.CreateOrUpdateBank(ctx, "my-bank").
 		CreateBankRequest(hindsight.CreateBankRequest{
 			ReflectMission: *hindsight.NewNullableString(hindsight.PtrString(
-				"我是专注机器学习的研究助手。",
+				"I am a research assistant specializing in machine learning.",
 			)),
 		}).Execute()
 	// [/docs:bank-background]
@@ -60,8 +60,8 @@ func main() {
 	client.BanksAPI.CreateOrUpdateBank(ctx, "my-bank").
 		CreateBankRequest(hindsight.CreateBankRequest{
 			ReflectMission: *hindsight.NewNullableString(hindsight.PtrString(
-				"你是一位高级软件架构师，跟踪系统设计、" +
-					"技术决策和架构模式。",
+				"You're a senior software architect - keep track of system designs, " +
+					"technology decisions, and architectural patterns.",
 			)),
 		}).Execute()
 	// [/docs:bank-mission]
@@ -72,8 +72,8 @@ func main() {
 	client.BanksAPI.UpdateBankConfig(ctx, "support-bank").
 		BankConfigUpdate(hindsight.BankConfigUpdate{
 			Updates: map[string]interface{}{
-				"observations_mission": "我是客户支持智能体，跟踪客户偏好、" +
-					"重复问题和解决历史，以提供一致个性化支持。",
+				"observations_mission": "I am a customer support agent. Track customer preferences, " +
+					"recurring issues, and resolution history to provide consistent, personalized support.",
 			},
 		}).Execute()
 	// [/docs:bank-support-agent]
@@ -82,11 +82,11 @@ func main() {
 	client.BanksAPI.UpdateBankConfig(ctx, "my-bank").
 		BankConfigUpdate(hindsight.BankConfigUpdate{
 			Updates: map[string]interface{}{
-				"retain_mission": "始终包含技术决策、API 设计选择及架构取舍。" +
-					"忽略会议安排和社交交流。",
+				"retain_mission": "Always include technical decisions, API design choices, and architectural trade-offs. " +
+					"Ignore meeting logistics and social exchanges.",
 				"retain_extraction_mode": "verbose",
-				"observations_mission": "观察是关于人员和项目的稳定事实。" +
-					"始终包含偏好、技能和重复模式，忽略一次性事件。",
+				"observations_mission": "Observations are stable facts about people and projects. " +
+					"Always include preferences, skills, and recurring patterns. Ignore one-off events.",
 				"disposition_skepticism": 4,
 				"disposition_literalism": 4,
 				"disposition_empathy":    2,
@@ -95,20 +95,20 @@ func main() {
 	// [/docs:update-bank-config]
 
 	// [docs:get-bank-config]
-	// 返回解析配置（服务默认合并库覆盖）及原始覆盖
+	// Returns resolved config (server defaults merged with bank overrides) and the raw overrides
 	result, _, _ := client.BanksAPI.GetBankConfig(ctx, "my-bank").Execute()
-	// result.Config     — 完整解析配置
-	// result.Overrides  — 仅库级覆盖字段
-	fmt.Println("配置键数量：", len(result.GetConfig()))
+	// result.Config     — full resolved configuration
+	// result.Overrides  — only fields overridden at the bank level
+	fmt.Println("Config keys:", len(result.GetConfig()))
 	// [/docs:get-bank-config]
 
 	// [docs:reset-bank-config]
-	// 移除全部库级覆盖，恢复服务默认
+	// Remove all bank-level overrides, reverting to server defaults
 	client.BanksAPI.ResetBankConfig(ctx, "my-bank").Execute()
 	// [/docs:reset-bank-config]
 
 	// =============================================================================
-	// 提示预览和库转移
+	// Prompt preview and bank transfer
 	// =============================================================================
 	transferBanks := []string{"transfer-go", "transfer-go-copy", "transfer-go-other", "transfer-go-clone"}
 	deleteBanks := func(ids []string) {
@@ -123,7 +123,7 @@ func main() {
 		}
 	}
 	deleteBanks(transferBanks)
-	// chunks 模式原样存文本，无需 LLM。
+	// Chunks mode stores text verbatim, so no LLM call is needed.
 	_, _, err := client.BanksAPI.CreateOrUpdateBank(ctx, "transfer-go").
 		CreateBankRequest(hindsight.CreateBankRequest{}).Execute()
 	must(err)
@@ -133,11 +133,11 @@ func main() {
 		}).Execute()
 	must(err)
 	resp, err := http.Post(apiURL+"/v1/default/banks/transfer-go/memories", "application/json", strings.NewReader(
-		`{"items": [{"content": "Alice 领导支付团队。", "document_id": "doc-1"},
-		            {"content": "Bob 调到柏林办公室。", "document_id": "doc-2"}]}`))
+		`{"items": [{"content": "Alice leads the payments team.", "document_id": "doc-1"},
+		            {"content": "Bob moved to the Berlin office.", "document_id": "doc-2"}]}`))
 	must(err)
 	if resp.StatusCode != 200 {
-		panic(fmt.Sprintf("存储失败： %d", resp.StatusCode))
+		panic(fmt.Sprintf("retain failed: %d", resp.StatusCode))
 	}
 	_, _, err = client.BanksAPI.CreateOrUpdateBank(ctx, "transfer-go-other").
 		CreateBankRequest(hindsight.CreateBankRequest{}).Execute()
@@ -154,7 +154,7 @@ func main() {
 			}
 			time.Sleep(time.Second)
 		}
-		panic("operation " + operationID + " 未完成")
+		panic("operation " + operationID + " did not finish")
 	}
 	countDocs := func(bankID string) int32 {
 		docs, _, err := client.DocumentsAPI.ListDocuments(ctx, bankID).Execute()
@@ -173,18 +173,18 @@ func main() {
 	must(err)
 
 	// [docs:transfer-export]
-	// 整个库，记忆和配置，不含历史
+	// Whole bank, memories + config, no history
 	whole, _, err := client.BankTransferAPI.ExportBankTransfer(ctx, "transfer-go").Execute()
 
-	// 仅记忆
+	// Just the memories
 	memoriesOnly, _, err := client.BankTransferAPI.ExportBankTransfer(ctx, "transfer-go").
 		IncludeBankConfig(false).Execute()
 
-	// 特定文档，文档子集不含库级部分
+	// Specific documents (a document subset carries no bank-level sections)
 	subset, _, err := client.BankTransferAPI.ExportBankTransfer(ctx, "transfer-go").
 		DocumentId([]string{"doc-1", "doc-2"}).IncludeBankConfig(false).Execute()
 
-	// 各返回操作 ID，轮询后下载 result_metadata["storage_key"]
+	// Each returns an operation id: poll it, then download result_metadata["storage_key"]
 	fmt.Println(whole.OperationId, memoriesOnly.OperationId, subset.OperationId)
 	// [/docs:transfer-export]
 	must(err)
@@ -197,14 +197,14 @@ func main() {
 	archivePath := archive.Name()
 
 	// [docs:transfer-import]
-	// 以新 ID 恢复库
+	// Restore a bank under a new id
 	file, _ := os.Open(archivePath) // the ZIP downloaded from the export
 	restore, _, err := client.BankTransferAPI.ImportBankTransfer(ctx, "transfer-go").
 		File(file).TargetBankId("transfer-go-copy").Execute()
-	// 恢复记录在 URL 的库，在那里轮询
+	// The restore is recorded against the bank in the URL — poll it there
 	status, _, err := client.OperationsAPI.GetOperationStatus(ctx, "transfer-go", restore.OperationId).Execute()
 
-	// 将归档文档合并到现有库
+	// Merge an archive's documents into an existing bank
 	file, _ = os.Open(archivePath)
 	merge, _, err := client.BankTransferAPI.ImportBankTransfer(ctx, "transfer-go-other").
 		File(file).Mode("merge").DocumentConflict("replace").Execute()
@@ -214,26 +214,26 @@ func main() {
 	waitFor("transfer-go", restore.OperationId)
 	waitFor("transfer-go-other", merge.OperationId)
 	if n := countDocs("transfer-go-copy"); n != 2 {
-		panic(fmt.Sprintf("恢复复制了 %d 个文档", n))
+		panic(fmt.Sprintf("restore copied %d documents", n))
 	}
 
 	// [docs:clone-bank]
 	clone, _, err := client.BankTransferAPI.CloneBank(ctx, "transfer-go").
 		TargetBankId("transfer-go-clone").Execute()
-	// 操作记录在来源库
+	// The operation is recorded against the source bank
 	status, _, err = client.OperationsAPI.GetOperationStatus(ctx, "transfer-go", clone.OperationId).Execute()
 	// [/docs:clone-bank]
 	must(err)
 	waitFor("transfer-go", clone.OperationId)
 	if n := countDocs("transfer-go-clone"); n != 2 {
-		panic(fmt.Sprintf("克隆复制了 %d 个文档", n))
+		panic(fmt.Sprintf("clone copied %d documents", n))
 	}
 
 	// [docs:document-export]
-	// 1. 提交整库导出，可加 .DocumentId([]string{...}) 限定
+	// 1. Submit the export (whole bank; add .DocumentId([]string{...}) to scope it)
 	export, _, err := client.DocumentTransferAPI.ExportDocuments(ctx, "transfer-go").Execute()
 
-	// 2. 轮询至完成
+	// 2. Poll until completed
 	var done *hindsight.OperationStatusResponse
 	for {
 		done, _, err = client.OperationsAPI.GetOperationStatus(ctx, "transfer-go", export.OperationId).Execute()
@@ -243,7 +243,7 @@ func main() {
 		time.Sleep(time.Second)
 	}
 
-	// 3. 下载归档，客户端保存临时文件
+	// 3. Download the archive (the client saves it to a temp file)
 	zipFile, _, err := client.DocumentTransferAPI.
 		DownloadFile(ctx, done.ResultMetadata["storage_key"].(string)).Execute()
 	// [/docs:document-export]
@@ -266,10 +266,10 @@ func main() {
 	// [docs:transfer-import-external]
 	doc := map[string]any{
 		"id":            "session-2026-09-22",
-		"original_text": "完整原始会话文本...",
-		"chunks":        []map[string]any{{"chunk_index": 0, "chunk_text": "调用方定义的来源区域..."}},
+		"original_text": "Full original session text...",
+		"chunks":        []map[string]any{{"chunk_index": 0, "chunk_text": "Caller-defined source region..."}},
 		"facts": []map[string]any{{
-			"text":         "用户偏好轻量本地语音识别模型。",
+			"text":         "The user prefers lightweight local speech recognition models.",
 			"fact_type":    "experience",
 			"chunk_index":  0,
 			"mentioned_at": "2026-09-22T18:34:00Z",
@@ -295,7 +295,7 @@ func main() {
 	importedDoc, _, err := client.DocumentsAPI.GetDocument(ctx, "transfer-go-other", "session-2026-09-22").Execute()
 	must(err)
 	if importedDoc.MemoryUnitCount != 1 {
-		panic(fmt.Sprintf("外部导入保存了 %d 条事实", importedDoc.MemoryUnitCount))
+		panic(fmt.Sprintf("external import stored %d facts", importedDoc.MemoryUnitCount))
 	}
 	os.Remove(zipPath)
 	os.Remove(archivePath)
@@ -303,12 +303,12 @@ func main() {
 	deleteBanks(transferBanks)
 
 	// =============================================================================
-	// 清理（不在文档中展示）
+	// Cleanup (not shown in docs)
 	// =============================================================================
 	for _, bankID := range []string{"my-bank", "architect-bank", "support-bank"} {
 		req, _ := http.NewRequest("DELETE", fmt.Sprintf("%s/v1/default/banks/%s", apiURL, bankID), nil)
 		http.DefaultClient.Do(req)
 	}
 
-	fmt.Println("memory-banks.go: 全部示例通过")
+	fmt.Println("memory-banks.go: All examples passed")
 }

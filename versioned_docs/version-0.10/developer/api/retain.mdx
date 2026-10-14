@@ -4,31 +4,31 @@ sidebar_position: 2
 
 # 摄取数据 {#ingest-data}
 
-将文档、对话和原始内容存入 Hindsight，自动提取并创建记忆。
+将文档、对话和原始内容存入 Hindsight，以便自动提取并创建记忆。
 
-调用 **记忆存储** 时，Hindsight 不只是保存原始文本，还会分析内容、提取有意义的事实、识别实体并构建关联知识图谱，将非结构化信息转化为结构化、可查询的记忆。
+存入内容时，Hindsight 不只是保存原始文本，还会智能分析内容，提取有意义的事实、识别实体，并构建相互关联的知识图谱。这个过程会把非结构化信息转换为结构化、可查询的记忆。
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import CodeSnippet from '@site/src/components/CodeSnippet';
 
-{/* 导入原始示例源文件 */}
+{/* Import raw source files */}
 import retainPy from '!!raw-loader!@site/examples/api/retain.py';
 import retainMjs from '!!raw-loader!@site/examples/api/retain.mjs';
 import retainSh from '!!raw-loader!@site/examples/api/retain.sh';
 import retainGo from '!!raw-loader!@site/examples/api/retain.go';
 
-:::info 记忆存储的工作原理
-事实提取、实体解析和图构建详见[记忆存储架构](/developer/retain)。
+:::info Retain 的工作方式
+请参阅 [Retain 架构](/developer/retain)指南，了解事实提取、实体消解和图谱构建。
 :::
 
 :::tip 前置条件
-请先完成[快速开始](./quickstart)，安装客户端并启动服务器。
+请先完成[快速入门](./quickstart)，安装客户端并启动服务器。
 :::
 
-## 存储文档 {#store-a-document}
+## 存入文档 {#store-a-document}
 
-一次 retain 调用可以接受一个或多个**条目（item）**。每个条目都是一段原始内容，例如对话、文档或笔记，Hindsight 会将其分析并拆解为一条或多条记忆。内容本身不会原样保存，实际存储的是 LLM 提取出的结构化事实。
+一次 Retain 调用可以接收一个或多个**输入项**。每个输入项都是一段原始内容，例如对话、文档或笔记，Hindsight 会分析并将其拆解为一个或多个记忆。原始内容本身不会被逐字存储；实际存储的是 LLM 从中提取的结构化事实。
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -45,9 +45,9 @@ import retainGo from '!!raw-loader!@site/examples/api/retain.go';
 </TabItem>
 </Tabs>
 
-### 存储对话 {#retaining-a-conversation}
+### 存入对话 {#retaining-a-conversation}
 
-完整对话应作为一个条目存储。只要能明确表达谁在何时说了什么，LLM 就能解析纯文本、JSON、Markdown 或其他结构化格式。下面使用简单的 `姓名（时间戳）：文本` 格式。
+应将完整对话作为一个输入项存入。LLM 可以解析任何格式，包括纯文本、JSON、Markdown 或其他结构化表示，只要能清楚说明谁在何时说了什么即可。下面的示例采用简单的 `Name (timestamp): text` 格式。
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -64,33 +64,33 @@ import retainGo from '!!raw-loader!@site/examples/api/retain.go';
 </TabItem>
 </Tabs>
 
-对话增长、收到新消息时，使用相同的 `document_id` 再次存储完整的更新内容。Hindsight 会删除旧版本并重新处理，使记忆始终反映对话的最新状态。
+对话有新消息后，只需再次存入更新后的完整内容，并使用相同的 `document_id`。Hindsight 会删除先前版本并从头重新处理，因此记忆始终反映对话的最新状态。
 
 ---
 
 ## 参数 {#parameters}
 
-### content
+### content {#content}
 
-要存储的原始文本。这是唯一的必填字段。Hindsight 将内容分块，逐块交给 LLM 提取事实，存储生成的结构化事实，而非原文。一个 `content` 值可能根据其信息量产生多条记忆。
+要存入的原始文本。这是唯一必填字段。Hindsight 会将内容切分为文本分块，把每个分块发送给 LLM 提取事实，并存储得到的结构化事实，而不是原始文本。一个 `content` 值可根据所含信息量生成多条记忆。
 
-### timestamp
+### timestamp {#timestamp}
 
-内容描述的事件实际发生的时间，支持三种形式：
+内容所述事件实际发生的时间。接受以下三种形式：
 
 | 值 | 行为 |
 |-------|-----------|
-| 省略 / `null` | 默认使用摄取时的当前时间。 |
-| ISO 8601 字符串，例如 `"2024-01-15T10:30:00Z"` | 使用指定的日期时间。 |
-| `"unset"` | **不附加任何时间戳**。适用于参考文档、书籍或虚构内容等没有真实事件时间的信息。 |
+| 省略 / `null` | 默认为摄取时的当前时间。 |
+| ISO 8601 字符串（例如 `"2024-01-15T10:30:00Z"`） | 使用提供的日期时间。 |
+| `"unset"` | 存储内容时**不附带任何时间戳**。适用于参考文档、书籍或虚构内容等没有真实事件时间的永恒性材料。 |
 
-时间戳会注入 LLM 的事实提取提示词，帮助模型解析相对时间。例如，内容提到“上周一”时，模型以指定时间戳为基准推算实际日期。传入 `"unset"` 后，提示词显示 `Event Date: Unknown`，使模型能为每条事实的 `when` 字段正确返回 `N/A`。真实时间戳也能让“去年春天发生了什么？”这样的时间召回查询正确工作。
+时间戳会注入 LLM 的事实提取提示词，使模型能够解析内容中的相对时间表达。例如，如果内容写着“上周一”，模型会将提供的时间戳作为基准，确定实际日期。传入 `"unset"` 时，提示词会显示 `Event Date: Unknown`，模型因此可以为每条提取事实的 `when` 字段正确返回 `N/A`。提供真实时间戳也能让“去年春天发生了什么？”之类的时间召回查询正常工作。
 
-### context
+### context {#context}
 
-描述来源或情境的简短标签，例如 `"团队会议"`、`"slack"` 或 `"支持工单"`。它直接注入 LLM 提示词，影响事实提取方式。同一句话在不同上下文中可能有完全不同的含义：“项目被终止”出现在“绩效评估”和“产品路线图”上下文中，会产生不同的记忆。
+简短标签，用于描述来源或情境，例如 `"team meeting"`、`"slack"` 或 `"support ticket"`。它会直接注入 LLM 提示词，因而会实际影响事实提取。同一句话在不同上下文中可能含义迥异：在 `"performance review"`（绩效评估）上下文中说“项目被终止”，与在 `"product roadmap"`（产品路线图）上下文中说这句话，会生成不同的记忆。
 
-持续提供上下文，是提高记忆质量最有效的做法之一。
+持续提供上下文，是提升记忆质量最有效的做法之一。
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -107,48 +107,48 @@ import retainGo from '!!raw-loader!@site/examples/api/retain.go';
 </TabItem>
 </Tabs>
 
-### metadata
+### metadata {#metadata}
 
-为条目提供上下文的任意字符串键值对，例如 `{"source": "slack", "channel": "engineering", "thread_id": "T123"}`。元数据会纳入事实提取提示词，LLM 可借助文档标题或来源等额外信息提高准确性。它也存储在每个记忆单元上，并随召回结果返回，便于客户端筛选或静态补充信息，无需额外查询，例如将记忆关联回来源 URL、线程 ID 或应用特定标识符。
+用于补充此输入项上下文的任意字符串键值对。例如：`{"source": "slack", "channel": "engineering", "thread_id": "T123"}`。元数据会包含在事实提取提示词中，LLM 可将其作为额外上下文来提取事实；例如，了解文档标题或来源有助于提高准确性。元数据也会存储在每个记忆单元上，并随每条召回的记忆返回，因此你可以在客户端筛选，或直接补充固定信息，而无需额外查询。例如，可用它将记忆关联回来源 URL、thread ID 或应用特定标识符。
 
-值以字符串形式存储和返回。值为 `null` 的键会被丢弃，不会出现在召回记忆中；若需要保留该键，请发送空字符串。
+值会以字符串形式存储和返回。值为 `null` 的键会被丢弃，不会存储，因此召回记忆时也不会返回；如果需要保留该键，请发送空字符串。
 
-### document_id
+### document_id {#document_id}
 
-由调用方提供的字符串，将一个或多个条目归入同一逻辑文档。它是实现 retain **幂等性**的关键。
+由调用方提供的字符串，用于将一个或多个输入项归入同一逻辑文档。此字段是让 Retain 实现**幂等**的关键。
 
-提供 `document_id` 时，Hindsight 会更新或插入文档。如果记忆库已存在该 ID 的文档，会先删除文档及其关联记忆，再处理和插入新内容。因此可以安全地对更新内容重复调用 retain，例如消息增加后的聊天线程，而不会累积重复记忆。
+提供 `document_id` 后，Hindsight 会对文档执行 upsert：如果记忆库中已存在该 ID 的文档，系统会先删除该文档及其所有关联记忆，再处理并插入新内容。这样，你可以安全地对更新后的内容再次调用 Retain，例如新增消息后的聊天线程，而不会累积重复记忆。
 
-省略 `document_id` 时，Hindsight 会生成随机 UUID，重复摄取同一内容会产生重复记忆。未指定 `document_id` 的条目如何分组，取决于请求的其他条目：
+省略 `document_id` 时，Hindsight 会分配一个随机 UUID，因此再次摄取相同内容会创建重复记忆。没有 `document_id` 的输入项如何分组，取决于请求中的其他内容：
 
 | 请求 | 结果 |
 |---------|--------|
-| 所有条目均无 `document_id` | 所有条目进入**同一个**新文档。若请求超过 `HINDSIGHT_API_RETAIN_BATCH_TOKENS`、无法一次处理，会分成多个部分，每部分各自成为一个文档。 |
-| 一部分条目有 `document_id`，另一部分没有 | 每个未指定 ID 的条目各自形成**独立**的新文档，不会并入其他条目的文档。因此替换或删除其他文档不会影响它。 |
-| 多个条目使用相同 `document_id` | 按请求顺序归入同一文档。 |
+| 所有输入项都没有 `document_id` | 所有输入项进入**同一个**新文档。如果请求太大，无法一次处理（超过 `HINDSIGHT_API_RETAIN_BATCH_TOKENS`），系统会将其拆分为多个部分，每部分各自成为一个文档。 |
+| 部分输入项有 `document_id`，其余没有 | 每个缺少 `document_id` 的输入项都会成为**各自独立的**新文档。它绝不会并入其他输入项的文档，因此替换或删除该文档不会影响其他文档。 |
+| 多个输入项共用同一个 `document_id` | 这些输入项按请求顺序进入该文档。 |
 
-带附件且未指定 `document_id` 的条目始终获得独立文档，因此在上表中按*已指定* ID 的条目处理。
+没有 `document_id` 的附件输入项始终会单独成为一个文档，因此在上表中应视为**有** `document_id` 的输入项。
 
-若希望各条目独立，请分别指定不同的 `document_id`；若希望归入同一文档，请使用相同的 `document_id`。
+若要让每个输入项各自独立，请为每项指定不同的 `document_id`。若要将多个输入项放进同一个文档，请为它们指定相同的 `document_id`。
 
-### update_mode
+### update_mode {#update_mode}
 
-指定已存在的 `document_id` 时，控制 Hindsight 如何处理原有文档。
+当你使用已存在的 `document_id` 调用 Retain 时，此参数控制 Hindsight 如何处理现有文档。
 
 | 值 | 行为 |
 |-------|-----------|
-| `"replace"` *（默认）* | 删除旧文档及其所有记忆，再从头处理新内容，即上文描述的标准更新或插入行为。 |
-| `"append"` | 将新内容追加到已有文档文本，并重新处理合并后的文档。增量存储会自动跳过未变更的分块，仅新增部分触发 LLM 提取。 |
+| `"replace"` *(默认值)* | 删除旧文档及其所有记忆，然后从头处理新内容。这就是上文所述的标准 upsert。 |
+| `"append"` | 将新内容拼接到现有文档文本后面，再重新处理合并后的文档。增量 Retain 会自动跳过未变化的文本分块，因此只有新增部分会触发 LLM 提取。 |
 
-追加模式必须提供 `document_id`，否则没有可追加的已有文档。
+追加模式要求提供 `document_id`；没有它就没有可供追加的现有文档。
 
-**何时使用追加**：`"append"` 适合逐步增长的日志、日记或逐条接收消息的聊天记录。每次更新只需发送新增内容和 `update_mode: "append"`，Hindsight 会高效地与已有内容合并，无需重发全部历史。
+**何时使用追加模式**：对于逐步增长的内容，例如日志文件、日记或逐条收到新消息的聊天记录，请使用 `"append"`。每次更新时无需重新发送全部历史记录，只需通过 `update_mode: "append"` 发送新增内容，Hindsight 就会将它高效地合并到已有内容中。
 
 ```json
 {
   "items": [
     {
-      "content": "追加到已有文档的新条目。",
+      "content": "New entry to add to the existing document.",
       "document_id": "my-growing-doc",
       "update_mode": "append"
     }
@@ -156,119 +156,119 @@ import retainGo from '!!raw-loader!@site/examples/api/retain.go';
 }
 ```
 
-### entities
+### entities {#entities}
 
-需要确保被识别的实体列表，会与 LLM 自动提取的实体合并。每个条目包含 `text`（实体名称）和可选的 `type`，例如 `"PERSON"`、`"ORG"`、`"CONCEPT"`；省略时默认为 `"CONCEPT"`。
+你希望确保得到识别的实体列表，并会与 LLM 自动提取的实体合并。每个条目都有一个 `text` 字段（实体名称）和可选的 `type`（例如 `"PERSON"`、`"ORG"`、`"CONCEPT"`；省略时默认为 `"CONCEPT"`）。
 
-当某些实体很重要，但 LLM 可能遗漏或在不同内容中使用不同称呼时，可显式提供实体，确保它们在知识图谱中建立关联。
+如果你知道某些实体很重要，但 LLM 可能会漏掉它们，或在内容不同部分以不一致的方式提及它们，就可以使用此参数。显式提供实体可确保它们始终关联到知识图谱中。
 
-### resolve_entities
+### resolve_entities {#resolve_entities}
 
-默认情况下，`entities` 中的名称会与记忆库已有实体进行**解析匹配**：与现有名称相近的名称，可能依据名称相似度及其与同一条目内其他名称的共现强度，匹配到已有实体而非新建。通常这是期望行为，例如 `Dr. Waller` 与 `Dr Waller` 会成为同一实体。
+默认情况下，你在 `entities` 中传入的名称会与记忆库中已有的实体进行**消解**：根据名称相似度，以及它与同一输入项中其他名称共同出现的强度，系统可能会将相近名称匹配到已有实体，而不是新建实体。通常这正是你想要的效果；例如，`Dr. Waller` 和 `Dr Waller` 会成为同一个实体，而不是两个。
 
-如果提供的名称是权威名称，必须原样存储，请设置 `resolve_entities: false`。此时仅当名称忽略大小写完全匹配时才复用已有实体，其他名称创建新实体，提供的名称之间也不会合并；`Alice` 和 `Alice Smith` 保持为两个实体。
+当你传入的名称具有权威性、必须按原样存储时，请设置 `resolve_entities: false`。之后只有名称忽略大小写后完全匹配时才会复用已有实体；其他名称都会创建新实体，并且你提供的名称彼此不会合并（`Alice` 和 `Alice Smith` 会保留为两个实体）。
 
-该选项**只影响你提供的实体**。自动提取的实体始终进行解析，因为名称来自提取器的推断；关闭其解析会导致记忆库出现大量近似重复实体。
+这只适用于**你提供的实体**。自动提取的实体始终会进行消解，因为它们是提取器对名称的推测，而非你指定的名称；关闭这类实体的消解会让记忆库充满近似重复实体。
 
-[编辑记忆](./memories#resolving-entity-names)也支持该选项，而且更需要它：手动纠正名称时，不应让相似的已有实体覆盖你的更正。
+[编辑记忆](./memories#resolving-entity-names)时也有同样的标志；在这种场景中它尤其重要：你手动输入的更正，正是不能让相似的已有实体覆盖它的情况。
 
-### tags 与 document_tags {#tags-and-document_tags}
+### tags 和 document_tags {#tags-and-document_tags}
 
-标签控制**可见范围**，决定召回时哪些记忆可见。记忆的标签只有与召回请求中的标签筛选条件相交时才会返回。因此，一个记忆库服务多个用户或会话、各自只应看到自己的记忆时，标签非常有用。
+标签控制**可见性范围**，也就是召回时哪些记忆可见。仅当记忆的标签与召回请求中提供的标签筛选条件有交集时，该记忆才会被返回。因此，当一个记忆库供多个用户或会话共用，且每个用户或会话只能看到自己的记忆时，标签就很有用。
 
-使用一致的命名约定，让标签筛选可预测。常见约定包括：`user:<id>` 按用户划分、`session:<id>` 隔离会话、`room:<id>` 表示聊天室、`topic:<name>` 筛选类别。记忆库还提供标签列表端点，返回所有标签及对应记忆数量，可用于界面自动补全或通配符展开。
+采用一致的命名模式，可使标签筛选更易预测。常见约定包括：用 `user:<id>` 限定用户范围、用 `session:<id>` 隔离会话、用 `room:<id>` 标记聊天室、用 `topic:<name>` 按类别筛选。记忆库还提供一个 list-tags 端点，可返回所有标签及其记忆数量，便于 UI 自动补全或展开通配符。
 
-检索时按标签筛选的方法见[召回 API](./recall#tags)。
+请参阅 [Recall API](./recall#tags)，了解如何在检索时按标签筛选。
 
-### observation_scopes
+### observation_scopes {#observation_scopes}
 
-控制记忆在整合过程中参与生成哪些[观察](../observations)。每个范围单独整合，创建或更新只带有该范围标签的观察。
+控制此记忆在整合时会影响哪些[观测](../observations)。每个范围都会独立执行一轮处理，并创建或更新仅带有该范围标签的观测。
 
 :::info 范围隔离
-整合时，Hindsight 使用 `all_strict` 匹配查找待更新观察，只考虑标签与当前范围完全一致的观察。这能隔离范围：在 `["student:alice"]` 下整合的记忆，不会进入标签为 `["student:alice", "teacher:bob"]` 的观察。
+整合期间，Hindsight 使用 `all_strict` 匹配来查找要更新的已有观测；只有标签与当前范围完全相同的观测才会纳入考虑。这样可以隔离各个范围：在 `["student:alice"]` 下整合的记忆，绝不会渗入标记为 `["student:alice", "teacher:bob"]` 的观测。
 :::
 
-以下示例使用带有 `tags: ["student:alice", "teacher:bob", "session-id:s1"]` 的课程记录。
+以下示例假设存入了一份课程对话记录，其标签为 `tags: ["student:alice", "teacher:bob", "session-id:s1"]`。
 
-#### combined *（默认）* {#combined-default}
+#### combined（默认值） {#combined-default}
 
-将所有标签合在一起整合一次，生成的观察带有完整标签集合。
+将所有标签合在一起执行一轮整合。生成的观测会带上完整标签集。
 
-- 创建的观察：`["student:alice", "teacher:bob", "session-id:s1"]`
-- ✗ *“Alice 在所有课程中有哪些困难？”*：不匹配，因为从未为单独的 `student:alice` 建立观察。
-- ✗ *“Bob 如何教学？”*：没有单独匹配 `teacher:bob` 的观察。
-- ✓ *“Alice 和 Bob 在 s1 课程中发生了什么？”*：完全匹配。
+- 创建的观测：`["student:alice", "teacher:bob", "session-id:s1"]`
+- ✗ *“Alice 在所有课程中遇到哪些困难？”* — 不匹配，因为从未单独为 `student:alice` 创建观测
+- ✗ *“Bob 如何教学？”* — 没有单独匹配 `teacher:bob` 的观测
+- ✓ *“Alice 和 Bob 在课程 s1 中发生了什么？”* — 精确匹配
 
-**适用情形**：记忆只有作为整体才有意义，且不需要单独查询任何标签。
+**适用场景**：只有将记忆视为整体才有意义，并且你永远不需要单独查询任何一个标签。
 
-#### shared
+#### shared {#shared}
 
-在单一的全局**无标签**范围内整合一次。记忆自身的标签不参与观察范围划分，但仍保留在来源事实上用于召回筛选。因此，带有*不同*标签的记忆也会整合到**同一**观察中。
+在单个全局的**无标签**范围内执行一轮整合。记忆自身的标签不会用于观测范围限定（它们仍保留在来源事实中，供召回筛选使用），因此带有*不同*标签的记忆都会整合到**同一个**观测中。
 
-- 创建的观察：一条无标签观察（`[]`）。
-- ✓ 无标签观察可匹配任何召回，不受标签筛选条件限制。
-- 可跨每次调用都变化的标签去重：若每个会话都使用唯一的 `session-id:…`，`combined` 和 `per_tag` 每次都会创建新观察，因为标签不重复；`shared` 则会合并为同一观察。
+- 创建的观测：一个无标签观测（`[]`）
+- ✓ 无标签观测会匹配所有召回请求，无论标签筛选条件是什么
+- 消除每次调用所带临时标签的重复：如果每个会话存入时都带有唯一的 `session-id:…` 标签，`combined` 和 `per_tag` 会在每个会话创建一个新观测（标签不会重复），而 `shared` 会将它们全部归入同一个观测。
 
-**适用情形**：标签表示每次调用的来源，例如会话 ID，用于召回筛选和调试，但不应作为整合边界。保留 `tags`，并设置 `observation_scopes: "shared"`。
+**适用场景**：标签用于记录每次调用的来源信息（例如会话 ID），你希望用它们筛选召回结果和调试，但不希望它们成为整合边界。此时应将标签留在 `tags` 中，并设置 `observation_scopes: "shared"`。
 
 :::caution `shared`、`[[]]` 与 `[]` 的区别
-`shared` 等价于显式范围 `[[]]`，即包含一个空范围的列表。**不要**与 `[]`（空列表）混淆：后者声明了*零个*范围，会静默回退为 `combined`。
+`shared` 等价于显式指定范围 `[[]]`，也就是包含一个空范围的列表。**不要**将它与 `[]`（空列表）混淆：后者声明了**零个**范围，并会静默回退到 `combined`。
 :::
 
-#### per_tag
+#### per_tag {#per_tag}
 
-为每个标签分别整合一次。每个标签拥有独立的观察，随着共享该标签的新记忆增加而增长。
+对每个单独标签分别执行一轮整合。每个标签都有自己的隔离观测；之后每当有新记忆带有该标签，该观测都会继续累积。
 
-- 创建的观察：`["student:alice"]` · `["teacher:bob"]` · `["session-id:s1"]`。
-- ✓ *“Alice 在所有课程中有哪些困难？”*
+- 创建的观测：`["student:alice"]` · `["teacher:bob"]` · `["session-id:s1"]`
+- ✓ *“Alice 在所有课程中遇到哪些困难？”*
 - ✓ *“Bob 如何教学？”*
-- ✓ *“s1 课程中发生了什么？”*
-- ✗ *“Alice 在 Bob 的课上表现如何？”*：没有 `["student:alice", "teacher:bob"]` 组合的观察。
-- ✗ *“Bob 在在线课程中如何教学？”*：没有 `["teacher:bob", "session-id:s1"]` 的观察。
+- ✓ *“课程 s1 中发生了什么？”*
+- ✗ *“Alice 和 Bob 在一起时表现如何？”* — 没有 `["student:alice", "teacher:bob"]` 组合对应的观测
+- ✗ *“Bob 在线上课程中如何教学？”* — 没有 `["teacher:bob", "session-id:s1"]` 对应的观测
 
-**适用情形**：内容涉及多个标签，每个标签代表独立主体。这是对话、课程或支持会话等多方参与内容最常用的选择。
+**适用场景**：内容涉及多个标签，且每个标签都代表一个独立主题。这是对话、课程或支持会话等多方内容最常用的选项。
 
-#### all_combinations
+#### all_combinations {#all_combinations}
 
-为每个标签子集整合一次，包括单个标签、两两组合、三个标签组合等。3 个标签需整合 7 次。
+对标签的每个子集分别执行一轮整合，包括单标签、标签对、标签三元组等。3 个标签会产生 7 轮处理。
 
-- 创建的观察：上述 `"per_tag"` 范围，加上 `["student:alice", "teacher:bob"]` · `["student:alice", "session-id:s1"]` · `["teacher:bob", "session-id:s1"]` · `["student:alice", "teacher:bob", "session-id:s1"]`。
-- ✓ 上述 `"per_tag"` 的所有问题。
-- ✓ *“Alice 在 Bob 的课上表现如何？”*：由 `["student:alice", "teacher:bob"]` 匹配。
+- 创建的观测：上文所有 `"per_tag"` 范围，以及 `["student:alice", "teacher:bob"]` · `["student:alice", "session-id:s1"]` · `["teacher:bob", "session-id:s1"]` · `["student:alice", "teacher:bob", "session-id:s1"]`
+- ✓ 上文 `"per_tag"` 的所有问题
+- ✓ *“Alice 和 Bob 在一起时表现如何？”* — 与 `["student:alice", "teacher:bob"]` 匹配
 
-**适用情形**：需要各个粒度的观察，包括单个标签、标签对和标签组。
+**适用场景**：你需要每种粒度的观测，包括按单个标签、标签对以及标签组划分的观测。
 
-#### custom
+#### custom {#custom}
 
-传入明确的标签集合列表，每个内部列表代表一个范围。
+传入明确的标签集列表。每个内层列表就是一个范围。
 
 ```json
 [["student:alice"], ["teacher:bob"], ["teacher:bob", "session-id:s1"]]
 ```
 
-- 创建的观察：恰好这三个范围，不增加其他范围。
-- ✓ *“Alice 有哪些困难？”*
+- 创建的观测：恰好是这三个范围，不多不少
+- ✓ *“Alice 遇到哪些困难？”*
 - ✓ *“Bob 如何教学？”*
-- ✓ *“Bob 在 s1 课程中具体如何教学？”*
-- ✗ *“不区分教师，s1 课程发生了什么？”*：没有单独包含 `["session-id:s1"]`。
+- ✓ *“Bob 在课程 s1 中具体如何教学？”*
+- ✗ *“不论老师是谁，课程 s1 中发生了什么？”* — 列表中没有单独的 `["session-id:s1"]`
 
-**适用情形**：明确知道哪些组合有意义，希望避免不必要的整合。
+**适用场景**：你清楚哪些组合有意义，并希望避免不必要的处理轮次。
 
 ### 响应 {#response}
 
-同步 retain 响应包含：
+同步 Retain 响应包含：
 
-- `success`：操作是否完成且没有错误。
-- `bank_id`：接收内容的记忆库。
-- `items_count`：已处理的条目数量。
-- `async`：是否异步处理。
-- `usage`：LLM 调用的 token 用量（`input_tokens`、`output_tokens`、`total_tokens`），仅同步操作返回。
+- `success` — 操作是否完成且未发生错误
+- `bank_id` — 接收内容的记忆库
+- `items_count` — 已处理的输入项数量
+- `async` — 处理是否异步运行
+- `usage` — LLM 调用的 token 用量（`input_tokens`、`output_tokens`、`total_tokens`），仅同步操作会返回此字段
 
 ---
 
 ## 批量摄取 {#batch-ingestion}
 
-可在一次请求中提交多个条目。推荐批量摄取，以减少网络开销，并让 Hindsight 优化关联内容的提取。
+可以在一个请求中提交多个输入项。建议采用批量摄取：它能减少网络开销，并让 Hindsight 优化相关内容的提取。
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -290,9 +290,9 @@ import retainGo from '!!raw-loader!@site/examples/api/retain.go';
 
 ## 文件 {#files}
 
-直接上传文件，Hindsight 会自动转换为文本并提取记忆。文件处理始终异步运行，返回用于跟踪的操作 ID。
+直接上传文件，Hindsight 会将其转换为文本并自动提取记忆。文件处理始终以异步方式运行，并返回操作 ID 供跟踪进度。
 
-**支持的格式：** PDF、DOCX、DOC、PPTX、PPT、XLSX、XLS、图片（JPG、PNG、GIF 等，OCR 支持取决于解析器配置）、音频（MP3、WAV、FLAC 等，支持转录）、HTML 和纯文本格式（TXT、MD、CSV、JSON、YAML 等）。
+**支持的格式：** PDF、DOCX、DOC、PPTX、PPT、XLSX、XLS、图像（JPG、PNG、GIF 等；OCR 支持情况取决于配置的解析器）、音频（MP3、WAV、FLAC 等；支持转录）、HTML 和纯文本格式（TXT、MD、CSV、JSON、YAML 等）
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -309,9 +309,9 @@ import retainGo from '!!raw-loader!@site/examples/api/retain.go';
 </TabItem>
 </Tabs>
 
-文件存储端点始终异步返回，响应包含 `operation_ids`，每个上传文件对应一个。可通过 `GET /v1/default/banks/{bank_id}/operations` 轮询进度。
+文件 Retain 端点始终以异步方式返回。响应中包含 `operation_ids`，每个上传文件对应一个 ID；你可以通过 `GET /v1/default/banks/{bank_id}/operations` 轮询，以跟踪处理进度。
 
-每次请求最多上传 10 个文件，总计不超过 100 MB。每个文件成为独立文档，可分别附加元数据：
+每个请求最多上传 10 个文件（总大小上限为 100 MB）。每个文件都会成为一个独立文档，并可单独附带元数据：
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -329,14 +329,14 @@ import retainGo from '!!raw-loader!@site/examples/api/retain.go';
 </Tabs>
 
 :::info 文件存储
-上传文件保存在服务端，默认使用 PostgreSQL，生产环境可使用 S3/GCS/Azure。通过 `HINDSIGHT_API_FILE_STORAGE_TYPE` 配置存储。详情见[配置](../configuration#file-processing)。
+上传的文件存储在服务器端（默认使用 PostgreSQL，生产环境也可使用 S3/GCS/Azure）。通过 `HINDSIGHT_API_FILE_STORAGE_TYPE` 配置存储。详情请参阅[配置](../configuration#file-processing)。
 :::
 
 ---
 
 ## 异步摄取 {#async-ingestion}
 
-大批量内容可使用异步摄取，避免阻塞应用：
+对于大型批次，请使用异步摄取，避免阻塞应用程序：
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -353,37 +353,37 @@ import retainGo from '!!raw-loader!@site/examples/api/retain.go';
 </TabItem>
 </Tabs>
 
-设置 `async: true` 后，调用立即返回 `operation_id`，工作进程服务在后台处理。异步操作不返回 `usage` 指标。
+设置 `async: true` 后，调用会立即返回 `operation_id`。后台工作进程服务会在后台处理任务。异步操作不会返回 `usage` 用量指标。
 
 ### 使用 `operation_id` 安全重试 {#safe-retries-with-operation_id}
 
-异步 retain 响应丢失或超时后，无法确定操作是否已创建。盲目重试可能将同一任务重复入队，导致重复提取、嵌入和提供商费用。
+如果异步 Retain 的响应丢失或超时，你无法判断操作是否已创建。盲目重试可能会将同一任务重复加入队列，导致重复提取、重复生成嵌入，并增加供应商费用。
 
-提供自己的 `operation_id`（任意 UUID）即可安全重试：
+自行提供一个 `operation_id`（任意 UUID），即可安全重试：
 
 ```json
 {
-  "items": [{ "content": "Alice 在 Google 工作", "document_id": "conv_123" }],
+  "items": [{ "content": "Alice works at Google", "document_id": "conv_123" }],
   "async": true,
   "operation_id": "3f2b8c1a-9d4e-4a7b-9c2f-1e6d5a4b3c2d"
 }
 ```
 
-- 使用相同 `operation_id` 重发会返回原操作，不创建新任务。因此确认响应丢失后的重试不会重复执行。
-- 若复用的 `operation_id` 已属于其他操作，返回 HTTP `409`。
-- 省略 `operation_id` 时维持默认行为，每次请求创建新操作。
-- **发送请求前**生成 ID，重试时复用。同步 retain 忽略 `operation_id`；请求中的所有条目必须解析为同一种策略。
+- 使用相同的 `operation_id` 重新提交时，会返回原操作且不会创建新任务，因此确认响应丢失后的重试不会产生其他效果。
+- 如果某个 `operation_id` 已属于另一项操作，重复使用它会返回 HTTP `409`。
+- 省略 `operation_id` 时，保持默认行为：每个请求都会创建一项新操作。
+- 在发送请求**之前**生成 ID，并在重试时重复使用。同步 Retain 会忽略 `operation_id`；此外，请求中的所有输入项必须归入同一种策略。
 
-### 使用提供商批量 API 节省 50% 成本 {#cut-costs-50-with-provider-batch-apis}
+### 使用供应商 Batch API 降低 50% 成本 {#cut-costs-50-with-provider-batch-apis}
 
-异步 retain 可启用提供商 Batch API，将 LLM 事实提取成本降低 50%。OpenAI、Groq 和 Gemini 都提供此折扣，代价是最多 24 小时的处理窗口；retain 本就后台运行时，通常不会明显影响使用体验。
+使用异步 Retain 时，启用供应商 Batch API，可将 LLM 事实提取成本降低 50%。OpenAI、Groq 和 Gemini 均提供这项折扣，代价是处理窗口最长可达 24 小时；由于 Retain 本来就在后台运行，这种取舍通常不会显现出来。
 
 ```bash
 export HINDSIGHT_API_RETAIN_BATCH_ENABLED=true
 ```
 
-Hindsight 将事实提取调用以批任务提交给提供商，轮询完成状态并自动处理结果，无需修改 API 调用。
+Hindsight 会将事实提取调用作为批处理任务提交给供应商，轮询任务完成状态，并自动处理结果。你无需更改 API 调用。
 
 :::note
-批量 API 的成本优惠要求 retain 请求使用 `async=true`，且提供商为 OpenAI、Groq 或 Gemini。
+要享受 Batch API 的成本节省，Retain 请求必须设置 `async=true`，且使用兼容的供应商（OpenAI、Groq 或 Gemini）。
 :::

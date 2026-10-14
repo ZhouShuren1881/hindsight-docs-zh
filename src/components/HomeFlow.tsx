@@ -82,7 +82,7 @@ export default function HomeFlow(): ReactNode {
           <span className={styles.sourceLabel}>编程智能体</span>
           <Icons items={AGENTS} />
           <span className={styles.sourceNote}>
-            一次安装，支持 20 多种智能体工具
+            一次安装，连接 20 多种运行工具
             <LuArrowRight size={13} />
           </span>
 
@@ -91,7 +91,7 @@ export default function HomeFlow(): ReactNode {
               <CodingAgentsChart variant="card" />
               <span className={styles.revealNote}>
                 AMB 的 sdebench：无论是否使用记忆，都能完成 61 项任务中的 60–61 项；
-                使用记忆可以减少纠正次数，降低成本。
+                使用记忆后，纠正次数更少，花费也更低。
               </span>
             </div>
           </div>
@@ -116,7 +116,7 @@ export default function HomeFlow(): ReactNode {
               <div className={styles.chat}>
                 <span className={styles.ask}>里斯本之旅最后是怎么安排的？</span>
                 <span className={styles.reply}>
-                  你定在 5 月 12–19 日出行，说想避开电车排队，
+                  你确定了 5 月 12–19 日出行，说想避开电车排队，
                   还让我记下 Cais do Sodré 附近的两家海鲜餐厅。
                 </span>
               </div>
@@ -142,8 +142,7 @@ await hs.reflect(bank, "我应该推荐 Vue 吗？")`}
                 </code>
               </pre>
               <span className={styles.revealNote}>
-                三个方法，涵盖信息提取、实体关联、四路检索
-                和重排序。
+                三个方法。背后的处理包括信息提取、实体关联、四路检索和重排序。
               </span>
             </div>
           </div>
@@ -157,7 +156,7 @@ await hs.reflect(bank, "我应该推荐 Vue 吗？")`}
 
         <div className={styles.ops}>
           <span><code>retain</code> 存储发生的事情</span>
-          <span><code>recall</code> 召回相关记忆</span>
+          <span><code>recall</code> 检索记忆</span>
           <span><code>reflect</code> 基于记忆进行反思</span>
         </div>
 
@@ -167,10 +166,10 @@ await hs.reflect(bank, "我应该推荐 Vue 吗？")`}
           <span className={styles.bankName}>记忆库</span>
           <div className={styles.bankItems}>
             <span>事实与实体</span>
-            <span>观察</span>
-            <span>知识页面</span>
+            <span>观测</span>
+            <span>知识页</span>
           </div>
-          <span className={styles.bankNote}>每个用户或智能体一个记忆库，完全隔离</span>
+          <span className={styles.bankNote}>每位用户或每个智能体各有独立记忆库，彼此完全隔离</span>
         </div>
       </div>
 
@@ -195,8 +194,8 @@ await hs.reflect(bank, "我应该推荐 Vue 吗？")`}
             <span>无需配置，本地运行</span>
           </li>
           <li>
-            自有集群
-            <span>提供数据库连接字符串</span>
+            使用自己的集群
+            <span>提供数据库连接字符串即可</span>
           </li>
         </ul>
       </div>

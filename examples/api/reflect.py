@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Hindsight 反思 API 示例。
-运行：python examples/api/reflect.py
+Reflect API examples for Hindsight.
+Run: python examples/api/reflect.py
 """
 import os
 import requests
@@ -9,89 +9,89 @@ import requests
 HINDSIGHT_URL = os.getenv("HINDSIGHT_API_URL", "http://localhost:8888")
 
 # =============================================================================
-# 准备，文档中不展示
+# Setup (not shown in docs)
 # =============================================================================
 from hindsight_client import Hindsight
 
 client = Hindsight(base_url=HINDSIGHT_URL)
 
-# 为反思示例准备数据
-client.retain(bank_id="my-bank", content="Alice 在 Google 担任软件工程师")
-client.retain(bank_id="my-bank", content="Alice 已在那里工作五年")
-client.retain(bank_id="my-bank", content="Alice 最近晋升为高级工程师")
+# Seed some data for reflect examples
+client.retain(bank_id="my-bank", content="Alice works at Google as a software engineer")
+client.retain(bank_id="my-bank", content="Alice has been working there for 5 years")
+client.retain(bank_id="my-bank", content="Alice recently got promoted to senior engineer")
 
 # =============================================================================
-# 文档示例
+# Doc Examples
 # =============================================================================
 
 # [docs:reflect-basic]
-client.reflect(bank_id="my-bank", query="关于 Alice，我应该了解什么？")
+client.reflect(bank_id="my-bank", query="What should I know about Alice?")
 # [/docs:reflect-basic]
 
 
 # [docs:reflect-with-params]
 response = client.reflect(
     bank_id="my-bank",
-    query="正在考虑混合办公，你如何看待远程工作？",
+    query="We're considering a hybrid work policy. What do you think about remote work?",
     budget="mid",
 )
 # [/docs:reflect-with-params]
 
 
 # [docs:reflect-with-context]
-# 向 LLM 提供上下文，帮助理解情境
+# Context is passed to the LLM to help it understand the situation
 response = client.reflect(
     bank_id="my-bank",
-    query="你如何看待此提案？",
-    context="我们正在预算评审会议讨论第四季度支出"
+    query="What do you think about the proposal?",
+    context="We're in a budget review meeting discussing Q4 spending"
 )
 # [/docs:reflect-with-context]
 
 
 # [docs:reflect-disposition]
-# 创建具有指定性格倾向的记忆库
+# Create a bank with specific disposition
 client.create_bank(
     bank_id="cautious-advisor",
-    name="谨慎的顾问",
-    mission="我是关注风险的财务顾问",
+    name="Cautious Advisor",
+    mission="I am a risk-aware financial advisor",
     disposition={
-        "skepticism": 5,   # 对陈述持高度怀疑
-        "literalism": 4,   # 关注准确要求
-        "empathy": 2       # 事实优先于感受
+        "skepticism": 5,   # Very skeptical of claims
+        "literalism": 4,   # Focuses on exact requirements
+        "empathy": 2       # Prioritizes facts over feelings
     }
 )
 
-# 反思回答体现该性格倾向
+# Reflect responses will reflect this disposition
 response = client.reflect(
     bank_id="cautious-advisor",
-    query="应该投资加密货币吗？"
+    query="Should I invest in crypto?"
 )
-# 回答很可能强调风险与谨慎
+# Response will likely emphasize risks and caution
 # [/docs:reflect-disposition]
 
 
 # [docs:reflect-sources]
-# include_facts=True 使响应包含 based_on
+# include_facts=True enables the based_on field in the response
 response = client.reflect(
     bank_id="my-bank",
-    query="介绍一下 Alice",
+    query="Tell me about Alice",
     include_facts=True,
 )
 
-print("回答：", response.text)
-print("\n依据：")
+print("Response:", response.text)
+print("\nBased on:")
 for fact in (response.based_on.memories if response.based_on else []):
     print(f"  - [{fact.type}] {fact.text}")
 # [/docs:reflect-sources]
 
 
 # [docs:reflect-with-tags]
-# 反思只考虑指定用户的记忆
+# Filter reflection to only consider memories for a specific user
 response = client.reflect(
     bank_id="my-bank",
-    query="用户如何看待产品？",
+    query="What does this user think about our product?",
     tags=["user:alice"],
-    tags_match="any_strict"  # 仅使用此用户标签记忆
+    tags_match="any_strict"  # Only use memories tagged for this user
 )
 # [/docs:reflect-with-tags]
 
@@ -99,7 +99,7 @@ response = client.reflect(
 # [docs:reflect-structured-output]
 from pydantic import BaseModel
 
-# 用 Pydantic 定义响应结构
+# Define your response structure with Pydantic
 class HiringRecommendation(BaseModel):
     recommendation: str
     confidence: str  # "low", "medium", "high"
@@ -108,22 +108,22 @@ class HiringRecommendation(BaseModel):
 
 response = client.reflect(
     bank_id="hiring-team",
-    query="应该聘 Alice 为机器学习团队负责人吗？",
+    query="Should we hire Alice for the ML team lead position?",
     response_schema=HiringRecommendation.model_json_schema(),
 )
 
-# 将结构化输出解析为 Pydantic 模型
+# Parse structured output into Pydantic model
 result = HiringRecommendation.model_validate(response.structured_output)
-print(f"建议： {result.recommendation}")
-print(f"置信度： {result.confidence}")
-print(f"关键因素： {result.key_factors}")
+print(f"Recommendation: {result.recommendation}")
+print(f"Confidence: {result.confidence}")
+print(f"Key factors: {result.key_factors}")
 # [/docs:reflect-structured-output]
 
 
 # =============================================================================
-# 清理，文档中不展示
+# Cleanup (not shown in docs)
 # =============================================================================
 requests.delete(f"{HINDSIGHT_URL}/v1/default/banks/my-bank")
 requests.delete(f"{HINDSIGHT_URL}/v1/default/banks/cautious-advisor")
 
-print("reflect.py: 所有示例通过")
+print("reflect.py: All examples passed")

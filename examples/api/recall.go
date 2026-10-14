@@ -21,12 +21,12 @@ func main() {
 	ctx := context.Background()
 
 	// =============================================================================
-	// 准备，文档中不展示
+	// Setup (not shown in docs)
 	// =============================================================================
 	for _, content := range []string{
-		"Alice 在 Google 担任软件工程师",
-		"Alice 喜欢周末徒步",
-		"Bob 是与 Alice 一起工作的数据科学家",
+		"Alice works at Google as a software engineer",
+		"Alice loves hiking on weekends",
+		"Bob is a data scientist who works with Alice",
 	} {
 		client.MemoryAPI.RetainMemories(ctx, "my-bank").
 			RetainRequest(hindsight.RetainRequest{
@@ -35,26 +35,26 @@ func main() {
 	}
 
 	// =============================================================================
-	// 文档示例
+	// Doc Examples
 	// =============================================================================
 
 	// [docs:recall-basic]
 	response, _, _ := client.MemoryAPI.RecallMemories(ctx, "my-bank").
 		RecallRequest(hindsight.RecallRequest{
-			Query: "Alice 做什么工作？",
+			Query: "What does Alice do?",
 		}).Execute()
 
-	// response.Results 为 RecallResult 切片，每项包含：
-	// - Id:            事实 ID
-	// - Text:          提取的事实
+	// response.Results is a slice of RecallResult, each with:
+	// - Id:            fact ID
+	// - Text:          the extracted fact
 	// - Type:          "world", "experience", or "observation"
-	// - Context:       存储时设置的上下文标签
-	// - Tags:          标签 []string
-	// - Entities:      关联实体名称 []string
-	// - OccurredStart: 事件开始的 ISO 日期时间
-	// - OccurredEnd:   事件结束的 ISO 日期时间
-	// - MentionedAt:   事实存储的 ISO 日期时间
-	// - DocumentId:    事实所属文档
+	// - Context:       context label set during retain
+	// - Tags:          []string of tags
+	// - Entities:      []string of entity names linked to this fact
+	// - OccurredStart: ISO datetime of when the event started
+	// - OccurredEnd:   ISO datetime of when the event ended
+	// - MentionedAt:   ISO datetime of when the fact was retained
+	// - DocumentId:    document this fact belongs to
 	for _, r := range response.GetResults() {
 		fmt.Println(r.GetText())
 	}
@@ -66,7 +66,7 @@ func main() {
 	traceTrue := true
 	detailedResponse, _, _ := client.MemoryAPI.RecallMemories(ctx, "my-bank").
 		RecallRequest(hindsight.RecallRequest{
-			Query:     "Alice 做什么工作？",
+			Query:     "What does Alice do?",
 			Types:     []string{"world", "experience"},
 			Budget:    &budgetHigh,
 			MaxTokens: &maxTokens,
@@ -79,39 +79,39 @@ func main() {
 	// [/docs:recall-with-options]
 
 	// [docs:recall-world-only]
-	// 仅世界事实，即客观信息
+	// Only world facts (objective information)
 	client.MemoryAPI.RecallMemories(ctx, "my-bank").
 		RecallRequest(hindsight.RecallRequest{
-			Query: "Alice 在哪里工作？",
+			Query: "Where does Alice work?",
 			Types: []string{"world"},
 		}).Execute()
 	// [/docs:recall-world-only]
 
 	// [docs:recall-experience-only]
-	// 仅经历事实，即对话和事件
+	// Only experience (conversations and events)
 	client.MemoryAPI.RecallMemories(ctx, "my-bank").
 		RecallRequest(hindsight.RecallRequest{
-			Query: "我推荐过什么？",
+			Query: "What have I recommended?",
 			Types: []string{"experience"},
 		}).Execute()
 	// [/docs:recall-experience-only]
 
 	// [docs:recall-observations-only]
-	// 仅观察，即整合知识
+	// Only observations (consolidated knowledge)
 	client.MemoryAPI.RecallMemories(ctx, "my-bank").
 		RecallRequest(hindsight.RecallRequest{
-			Query: "我学到了哪些模式？",
+			Query: "What patterns have I learned?",
 			Types: []string{"observation"},
 		}).Execute()
 	// [/docs:recall-observations-only]
 
 	// [docs:recall-source-facts]
-	// 召回观察及来源事实
+	// Recall observations and include their source facts
 	maxSFTokens := int32(4096)
 	sfOpts := hindsight.SourceFactsIncludeOptions{MaxTokens: &maxSFTokens}
 	obsResponse, _, _ := client.MemoryAPI.RecallMemories(ctx, "my-bank").
 		RecallRequest(hindsight.RecallRequest{
-			Query: "我了解 Alice 的哪些模式？",
+			Query: "What patterns have I learned about Alice?",
 			Types: []string{"observation"},
 			Include: &hindsight.IncludeOptions{
 				SourceFacts: *hindsight.NewNullableSourceFactsIncludeOptions(&sfOpts),
@@ -119,7 +119,7 @@ func main() {
 		}).Execute()
 
 	for _, obs := range obsResponse.GetResults() {
-		fmt.Printf("观察： %s\n", obs.GetText())
+		fmt.Printf("Observation: %s\n", obs.GetText())
 		for _, factID := range obs.GetSourceFactIds() {
 			if fact, ok := obsResponse.GetSourceFacts()[factID]; ok {
 				fmt.Printf("  - [%s] %s\n", fact.GetType(), fact.GetText())
@@ -130,88 +130,88 @@ func main() {
 
 	// [docs:recall-budget-levels]
 	budgetLow := hindsight.LOW
-	// 快速查询
+	// Quick lookup
 	client.MemoryAPI.RecallMemories(ctx, "my-bank").
 		RecallRequest(hindsight.RecallRequest{
-			Query:  "Alice 的邮箱",
+			Query:  "Alice's email",
 			Budget: &budgetLow,
 		}).Execute()
 
-	// 深入探索
+	// Deep exploration
 	client.MemoryAPI.RecallMemories(ctx, "my-bank").
 		RecallRequest(hindsight.RecallRequest{
-			Query:  "Alice 和 Bob 有什么关联？",
+			Query:  "How are Alice and Bob connected?",
 			Budget: &budgetHigh,
 		}).Execute()
 	// [/docs:recall-budget-levels]
 
 	// [docs:recall-token-budget]
-	// 用相关记忆填充最多 4K token 上下文
+	// Fill up to 4K tokens of context with relevant memories
 	mt4k := int32(4096)
 	client.MemoryAPI.RecallMemories(ctx, "my-bank").
 		RecallRequest(hindsight.RecallRequest{
-			Query:     "我对 Alice 了解什么？",
+			Query:     "What do I know about Alice?",
 			MaxTokens: &mt4k,
 		}).Execute()
 
-	// 快速查询使用较小预算
+	// Smaller budget for quick lookups
 	mt500 := int32(500)
 	client.MemoryAPI.RecallMemories(ctx, "my-bank").
 		RecallRequest(hindsight.RecallRequest{
-			Query:     "Alice 的邮箱",
+			Query:     "Alice's email",
 			MaxTokens: &mt500,
 		}).Execute()
 	// [/docs:recall-token-budget]
 
 	// [docs:recall-with-tags]
-	// 按用户标签筛选召回
+	// Filter recall to only memories tagged for a specific user
 	tagsMatch := "any"
 	client.MemoryAPI.RecallMemories(ctx, "my-bank").
 		RecallRequest(hindsight.RecallRequest{
-			Query:     "用户提供了什么反馈？",
+			Query:     "What feedback did the user give?",
 			Tags:      []string{"user:alice"},
 			TagsMatch: &tagsMatch,
 		}).Execute()
 	// [/docs:recall-with-tags]
 
 	// [docs:recall-tags-strict]
-	// 严格模式只返回标签匹配记忆，排除无标签
+	// Strict mode: only return memories that have matching tags (exclude untagged)
 	tagsMatchStrict := "any_strict"
 	client.MemoryAPI.RecallMemories(ctx, "my-bank").
 		RecallRequest(hindsight.RecallRequest{
-			Query:     "用户说了什么？",
+			Query:     "What did the user say?",
 			Tags:      []string{"user:alice"},
 			TagsMatch: &tagsMatchStrict,
 		}).Execute()
 	// [/docs:recall-tags-strict]
 
 	// [docs:recall-tags-all]
-	// AND 匹配，要求包含全部指定标签
+	// AND matching: require ALL specified tags to be present
 	tagsMatchAll := "all_strict"
 	client.MemoryAPI.RecallMemories(ctx, "my-bank").
 		RecallRequest(hindsight.RecallRequest{
-			Query:     "报告了哪些问题？",
+			Query:     "What bugs were reported?",
 			Tags:      []string{"user:alice", "bug-report"},
 			TagsMatch: &tagsMatchAll,
 		}).Execute()
 	// [/docs:recall-tags-all]
 
 	// [docs:recall-tags-all-mode]
-	// AND 匹配，包含无标签记忆
+	// AND matching, includes untagged memories
 	tagsMatchAllMode := "all"
 	client.MemoryAPI.RecallMemories(ctx, "my-bank").
 		RecallRequest(hindsight.RecallRequest{
-			Query:     "沟通工具",
+			Query:     "communication tools",
 			Tags:      []string{"user:alice", "team"},
 			TagsMatch: &tagsMatchAllMode,
 		}).Execute()
 	// [/docs:recall-tags-all-mode]
 
 	// =============================================================================
-	// 清理，文档中不展示
+	// Cleanup (not shown in docs)
 	// =============================================================================
 	req, _ := http.NewRequest("DELETE", fmt.Sprintf("%s/v1/default/banks/my-bank", apiURL), nil)
 	http.DefaultClient.Do(req)
 
-	fmt.Println("recall.go: 所有示例通过")
+	fmt.Println("recall.go: All examples passed")
 }

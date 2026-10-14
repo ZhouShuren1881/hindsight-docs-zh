@@ -1,5 +1,5 @@
 {
-  "title": "多策略检索（TEMPR）",
+  "title": "多策略召回（TEMPR）",
   "speed": 2200,
   "elements": [
     {
@@ -8,7 +8,7 @@
       "content": [
         {
           "type": "title",
-          "text": "你的AI智能体"
+          "text": "你的 AI 智能体"
         }
       ],
       "minCardHeight": 133,
@@ -20,11 +20,11 @@
       "content": [
         {
           "type": "title",
-          "text": "语义"
+          "text": "语义检索"
         },
         {
           "type": "subtitle",
-          "text": "意义"
+          "text": "按含义"
         }
       ]
     },
@@ -34,11 +34,11 @@
       "content": [
         {
           "type": "title",
-          "text": "关键字"
+          "text": "关键词检索"
         },
         {
           "type": "subtitle",
-          "text": "精确单词 (BM25)"
+          "text": "精确词语（BM25）"
         }
       ]
     },
@@ -48,7 +48,7 @@
       "content": [
         {
           "type": "title",
-          "text": "图"
+          "text": "图遍历"
         },
         {
           "type": "subtitle",
@@ -62,7 +62,7 @@
       "content": [
         {
           "type": "title",
-          "text": "时间"
+          "text": "时间检索"
         },
         {
           "type": "subtitle",
@@ -74,7 +74,7 @@
       "id": "recall",
       "type": "group",
       "label": {
-        "title": "记忆召回·4臂并联"
+        "title": "Recall · 四条并行路径"
       },
       "children": [
         "semantic",
@@ -105,7 +105,7 @@
       "content": [
         {
           "type": "title",
-          "text": "全文"
+          "text": "全文检索"
         }
       ],
       "minCardHeight": 28
@@ -160,7 +160,7 @@
         },
         {
           "type": "subtitle",
-          "text": "世界事实 · 经验事实 · 观察"
+          "text": "世界事实 · 经历事实 · 观测"
         }
       ],
       "minCardHeight": 193,
@@ -172,7 +172,7 @@
       "content": [
         {
           "type": "title",
-          "text": "RRF融合"
+          "text": "RRF 融合"
         },
         {
           "type": "subtitle",
@@ -192,7 +192,7 @@
         },
         {
           "type": "subtitle",
-          "text": "阅读查询+记忆"
+          "text": "同时读取查询与记忆"
         }
       ],
       "minCardHeight": 73,
@@ -204,11 +204,11 @@
       "content": [
         {
           "type": "title",
-          "text": "提升"
+          "text": "加权"
         },
         {
           "type": "subtitle",
-          "text": "近期 · 时间 · 证据"
+          "text": "时效性 · 时间接近度 · 支持事实数"
         }
       ],
       "minCardHeight": 73,
@@ -220,7 +220,7 @@
       "content": [
         {
           "type": "title",
-          "text": "token 预算"
+          "text": "Token 预算"
         },
         {
           "type": "subtitle",
@@ -405,24 +405,24 @@
         {
           "edges": {
             "edge": "call",
-            "data": "“What did Alice do in March 2026?”"
+            "data": "“Alice 在 2026 年 3 月做了什么？”"
           },
           "show": {
             "agent": [
               {
                 "tag": "query",
                 "tone": "gray",
-                "text": "“Alice在2026年3月做了什么？”"
+                "text": "“Alice 在 2026 年 3 月做了什么？”"
               }
             ]
           },
-          "say": "recall() 收到查询。尚未确定哪种搜索最合适，因此所有适用的检索分支都会运行。"
+          "say": "recall() 收到查询后，还没有确定哪种搜索方式最合适，因此所有适用的检索路径都会启动。"
         },
         {
           "edges": [
             {
               "edge": "s-idx",
-              "data": "≈ “joined”, “moved”"
+              "data": "≈ “加入”, “搬到”"
             },
             {
               "edge": "k-idx",
@@ -434,19 +434,19 @@
             },
             {
               "edge": "t-idx",
-              "data": "Mar 2026"
+              "data": "2026 年 3 月"
             }
           ],
           "show": {
             "vectors": [
               {
-                "text": "意义最接近",
+                "text": "语义最接近",
                 "mark": "✓"
               }
             ],
             "fulltext": [
               {
-                "text": "“Alice”：4 条命中",
+                "text": "“alice”：命中 4 条",
                 "mono": true,
                 "mark": "✓"
               }
@@ -484,51 +484,51 @@
             ],
             "time": [
               {
-                "text": "2026 年 3 月 1 日 – 3 月 31 日",
+                "text": "2026 年 3 月 1 日至 3 月 31 日",
                 "mark": "✓"
               }
             ]
           },
-          "say": "每个分支搜索自身索引：语义向量、精确词语（BM25）、实体图与时间。“2026 年 3 月”转为日期范围；没有日期的查询跳过时间分支。",
+          "say": "每条路径都查询自己的索引：语义路径查向量，关键词路径查精确词语（BM25），图路径查实体图，时间路径查时间。“March 2026”会转换为日期范围；查询不含日期时，时间路径会跳过。",
           "ms": 3600
         },
         {
           "edges": {
             "edge": "lookup",
-            "data": "same memories"
+            "data": "同一批记忆"
           },
           "show": {
             "units": [
               {
                 "tag": "world",
                 "tone": "blue",
-                "text": "Alice加入Google",
-                "meta": "Mar 2026",
+                "text": "Alice 加入了 Google",
+                "meta": "2026 年 3 月",
                 "mark": "4/4"
               },
               {
                 "tag": "observation",
                 "tone": "green",
-                "text": "Alice 在Google研究团队工作",
+                "text": "Alice 在 Google 研究团队工作",
                 "mark": "3/4"
               },
               {
                 "tag": "experience",
                 "tone": "purple",
-                "text": "我建议 Alice 进行 ML",
-                "meta": "Mar 2026",
+                "text": "我推荐 Alice 从事机器学习",
+                "meta": "2026 年 3 月",
                 "mark": "3/4"
               },
               {
                 "tag": "world",
                 "tone": "blue",
-                "text": "Alice 在Microsoft工作",
-                "meta": "Jan 2025",
+                "text": "Alice 在 Microsoft 工作",
+                "meta": "2025 年 1 月",
                 "mark": "2/4"
               }
             ]
           },
-          "say": "四个分支指向同一批记忆，各自返回排序列表。事实与观察在每个列表中共同排名，标记显示各结果被多少个分支找到。",
+          "say": "四条路径都指向同一批记忆，各自返回一份排名列表。事实和观测会在每份列表中共同参与排序；标记表示有多少条路径找到了该条记忆。",
           "ms": 3600
         },
         {
@@ -536,15 +536,15 @@
           "show": {
             "rrf": [
               {
-                "text": "加入Google",
+                "text": "加入 Google",
                 "meta": "0.066"
               },
               {
-                "text": "工作于Google",
+                "text": "在 Google 工作",
                 "meta": "0.048"
               },
               {
-                "text": "建议用于 ML",
+                "text": "推荐从事机器学习",
                 "meta": "0.047"
               },
               {
@@ -553,7 +553,7 @@
               }
             ]
           },
-          "say": "RRF 按排名融合列表，不使用原始分数。被多个分支排在前列的记忆，优于只被单一分支找到的记忆。",
+          "say": "RRF 按排名融合列表，而不比较原始分数：多条路径都排在前列的记忆，会胜过仅被一条路径找到的记忆。",
           "ms": 3000
         },
         {
@@ -561,15 +561,15 @@
           "show": {
             "rerank": [
               {
-                "text": "加入Google",
+                "text": "加入 Google",
                 "meta": "0.86"
               },
               {
-                "text": "工作于Google",
+                "text": "在 Google 工作",
                 "meta": "0.84"
               },
               {
-                "text": "建议用于 ML",
+                "text": "推荐从事机器学习",
                 "meta": "0.66"
               },
               {
@@ -578,7 +578,7 @@
               }
             ]
           },
-          "say": "最多 300 个最优候选交给交叉编码器，同时读取查询与各条记忆，评估匹配程度。",
+          "say": "排名靠前的候选（最多 300 条）会交给交叉编码器。它会同时读取查询和每条记忆，并评估两者的匹配程度。",
           "ms": 3000
         },
         {
@@ -586,17 +586,17 @@
           "show": {
             "boosts": [
               {
-                "text": "加入Google",
+                "text": "加入 Google",
                 "meta": "×1.09",
                 "mark": "0.94"
               },
               {
-                "text": "工作于Google",
+                "text": "在 Google 工作",
                 "meta": "×1.05",
                 "mark": "0.88"
               },
               {
-                "text": "建议用于 ML",
+                "text": "推荐从事机器学习",
                 "meta": "×1.07",
                 "mark": "0.71"
               },
@@ -607,7 +607,7 @@
               }
             ]
           },
-          "say": "小幅乘性加权微调分数：近期记忆、位于查询时间范围内的记忆，以及有更多证据支持的观察获得提升。",
+          "say": "乘法加权会小幅调整分数：较新的记忆、处于所询问时间范围内的记忆，以及有更多证据支持的观测都会得到加权。",
           "ms": 3200
         },
         {
@@ -615,58 +615,58 @@
           "show": {
             "budget": [
               {
-                "text": "加入Google",
+                "text": "加入 Google",
                 "mark": "✓"
               },
               {
-                "text": "工作于Google",
+                "text": "在 Google 工作",
                 "mark": "✓"
               },
               {
-                "text": "建议用于 ML",
+                "text": "推荐从事机器学习",
                 "mark": "✓"
               },
               {
                 "text": "Microsoft",
-                "meta": "over budget",
+                "meta": "超出预算",
                 "mark": "✗"
               }
             ]
           },
-          "say": "按排名从优到劣填入结果，直到耗尽 max_tokens。预算只计算记忆文本。",
+          "say": "按排名从高到低填入结果，直到用完 max_tokens。预算只计算记忆文本。",
           "ms": 3000
         },
         {
           "edges": {
             "edge": "results",
-            "data": "3 memories, ranked"
+            "data": "3 条记忆，按排名排列"
           },
           "show": {
             "agent": [
               {
                 "tag": "query",
                 "tone": "gray",
-                "text": "“Alice在2026年3月做了什么？”"
+                "text": "“Alice 在 2026 年 3 月做了什么？”"
               },
               {
                 "tag": "1",
                 "tone": "green",
-                "text": "Alice加入Google",
-                "meta": "Mar 2026"
+                "text": "Alice 加入了 Google",
+                "meta": "2026 年 3 月"
               },
               {
                 "tag": "2",
                 "tone": "green",
-                "text": "Alice 在Google研究团队工作"
+                "text": "Alice 在 Google 研究团队工作"
               },
               {
                 "tag": "3",
                 "tone": "green",
-                "text": "我建议 Alice 进行 ML"
+                "text": "我推荐 Alice 从事机器学习"
               }
             ]
           },
-          "say": "智能体获得简短的排序列表，可直接放入提示词。",
+          "say": "智能体会得到一份简短的排名列表，可直接放入提示词。",
           "ms": 3200
         }
       ]

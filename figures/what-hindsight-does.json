@@ -1,5 +1,5 @@
 {
-  "title": "Hindsight 的作用",
+  "title": "Hindsight 的工作方式",
   "speed": 2200,
   "elements": [
     {
@@ -243,7 +243,7 @@
         },
         {
           "type": "subtitle",
-          "text": "世界事实 · 经验事实"
+          "text": "世界事实 · 经历事实"
         }
       ],
       "minCardHeight": 163,
@@ -255,11 +255,11 @@
       "content": [
         {
           "type": "title",
-          "text": "观察"
+          "text": "观测"
         },
         {
           "type": "subtitle",
-          "text": "巩固信念"
+          "text": "整合后的认知判断"
         }
       ],
       "minCardHeight": 118,
@@ -310,7 +310,7 @@
       "content": [
         {
           "type": "title",
-          "text": "知识页面"
+          "text": "知识页"
         }
       ]
     },
@@ -318,7 +318,7 @@
       "id": "synth",
       "type": "group",
       "label": {
-        "title": "合成"
+        "title": "综合生成"
       },
       "children": [
         "mm",
@@ -357,7 +357,7 @@
         },
         {
           "type": "subtitle",
-          "text": "事实 → 观察"
+          "text": "事实 → 观测"
         }
       ]
     },
@@ -371,7 +371,7 @@
         },
         {
           "type": "subtitle",
-          "text": "观察 → 页面"
+          "text": "观测 → 知识页"
         }
       ]
     },
@@ -649,19 +649,19 @@
         {
           "edges": {
             "edge": "call-retain",
-            "data": "the conversation"
+            "data": "对话"
           },
           "show": {
             "agent": [
               {
                 "tag": "user",
                 "tone": "gray",
-                "text": "“Alice于三月加入Google，她热爱研究团队。”"
+                "text": "“Alice于三月加入 Google，她热爱研究团队。”"
               },
               {
                 "tag": "agent",
                 "tone": "gray",
-                "text": "“注意了，我会推荐她参加 ML 项目。”"
+                "text": "“记下了，我会建议她参与 ML 项目。”"
               }
             ]
           },
@@ -675,7 +675,7 @@
                 "tag": "chat",
                 "tone": "gray",
                 "text": "9 月 22 日",
-                "meta": "2 messages"
+                "meta": "2 条消息"
               }
             ]
           },
@@ -688,7 +688,7 @@
               {
                 "tag": "#1",
                 "tone": "gray",
-                "text": "“Alice 在三月份加入了Google，她喜欢……”"
+                "text": "“Alice 在三月份加入了 Google，她喜欢……”"
               }
             ]
           },
@@ -704,14 +704,14 @@
               {
                 "tag": "world",
                 "tone": "blue",
-                "text": "Alice 在Microsoft工作",
-                "meta": "Jan 2025"
+                "text": "Alice 在 Microsoft 工作",
+                "meta": "2025 年 1 月"
               },
               {
                 "tag": "world",
                 "tone": "blue",
-                "text": "Alice加入Google",
-                "meta": "Mar 2026",
+                "text": "Alice 加入 Google",
+                "meta": "2026 年 3 月",
                 "mark": "new"
               },
               {
@@ -722,7 +722,7 @@
               }
             ]
           },
-          "say": "LLM 提取事实：关于他人的世界事实，以及关于智能体自身行动的经验事实。记忆库此前已知 Alice 在 Microsoft 工作。",
+          "say": "LLM 提取事实：关于他人的世界事实，以及关于智能体自身行动的经历事实。记忆库此前已知 Alice 在 Microsoft 工作。",
           "ms": 3200
         },
         {
@@ -772,19 +772,19 @@
           "edges": {
             "edge": "call-retain",
             "back": true,
-            "data": "✓ stored"
+            "data": "✓ 已存入"
           },
           "show": {
             "agent": [
               {
                 "tag": "user",
                 "tone": "gray",
-                "text": "“Alice于三月加入Google，她热爱研究团队。”"
+                "text": "“Alice于三月加入 Google，她热爱研究团队。”"
               },
               {
                 "tag": "agent",
                 "tone": "gray",
-                "text": "“注意了，我会推荐她参加 ML 项目。”"
+                "text": "“记下了，我会建议她参与 ML 项目。”"
               },
               {
                 "tag": "result",
@@ -807,18 +807,18 @@
               {
                 "tag": "conflict",
                 "tone": "orange",
-                "text": "Microsoft vs Google"
+                "text": "Microsoft 与 Google"
               }
             ],
             "obs": [
               {
-                "text": "Alice 在Microsoft工作",
-                "meta": "1 source",
+                "text": "Alice 在 Microsoft 工作",
+                "meta": "1 个来源",
                 "mark": "conflict"
               }
             ]
           },
-          "say": "整合处理新事实，与记忆库已有观察核对。其中一条存在矛盾：Microsoft 还是 Google？",
+          "say": "整合处理新事实，与记忆库已有观测核对。其中一条存在矛盾：Microsoft 还是 Google？",
           "ms": 3000
         },
         {
@@ -826,8 +826,8 @@
           "show": {
             "obs": [
               {
-                "text": "Alice 在Google 的研究团队工作",
-                "meta": "2 sources",
+                "text": "Alice 在 Google 的研究团队工作",
+                "meta": "2 个来源",
                 "mark": "updated"
               },
               {
@@ -847,7 +847,7 @@
               }
             ]
           },
-          "say": "更新已有观察而非另建一条：Alice 于 3 月从 Microsoft 转到 Google。两个事实均保留为来源，因此历史不会丢失。",
+          "say": "更新已有观测而非另建一条：Alice 于 3 月从 Microsoft 转到 Google。两个事实均保留为来源，因此历史不会丢失。",
           "ms": 3800
         },
         {
@@ -858,11 +858,11 @@
                 "text": "范围内的新记忆"
               },
               {
-                "text": "2 页现已过时"
+                "text": "2 个内容待更新"
               }
             ]
           },
-          "say": "整合完成后，为配置了整合后刷新、且当前作用域内有新记忆的心智模型与知识页面排队刷新……"
+          "say": "整合完成后，为配置了整合后刷新、且当前作用域内有新记忆的心智模型与知识页排队刷新……"
         },
         {
           "edges": "rewrite",
@@ -897,7 +897,7 @@
         {
           "edges": {
             "edge": "call-recall",
-            "data": "“Where does Alice work?”"
+            "data": "“Alice 在哪里工作？”"
           },
           "show": {
             "agent": [
@@ -914,7 +914,7 @@
           "edges": [
             {
               "edge": "s-idx",
-              "data": "≈ works at"
+              "data": "≈ 任职于"
             },
             {
               "edge": "k-idx",
@@ -928,7 +928,7 @@
           "show": {
             "vectors": [
               {
-                "text": "“加入Google”",
+                "text": "“加入 Google”",
                 "meta": "0.82",
                 "mark": "✓"
               }
@@ -936,7 +936,7 @@
             "fulltext": [
               {
                 "text": "“Alice”·“工作”",
-                "meta": "4 hits",
+                "meta": "4 次命中",
                 "mark": "✓"
               }
             ],
@@ -967,7 +967,7 @@
             "time": [
               {
                 "text": "查询中没有日期",
-                "meta": "skipped"
+                "meta": "已跳过"
               }
             ]
           },
@@ -978,11 +978,11 @@
           "edges": [
             {
               "edge": "to-facts",
-              "data": "facts"
+              "data": "事实"
             },
             {
               "edge": "to-obs",
-              "data": "observations"
+              "data": "观测"
             }
           ],
           "show": {
@@ -990,8 +990,8 @@
               {
                 "tag": "world",
                 "tone": "blue",
-                "text": "Alice加入Google",
-                "meta": "Mar 2026",
+                "text": "Alice 加入 Google",
+                "meta": "2026 年 3 月",
                 "mark": "✓"
               },
               {
@@ -1003,14 +1003,14 @@
               {
                 "tag": "world",
                 "tone": "blue",
-                "text": "Alice 在Microsoft工作",
-                "meta": "Jan 2025"
+                "text": "Alice 在 Microsoft 工作",
+                "meta": "2025 年 1 月"
               }
             ],
             "obs": [
               {
-                "text": "Alice 在Google 的研究团队工作",
-                "meta": "2 sources",
+                "text": "Alice 在 Google 的研究团队工作",
+                "meta": "2 个来源",
                 "mark": "✓"
               },
               {
@@ -1020,14 +1020,14 @@
               }
             ]
           },
-          "say": "事实与观察使用相同索引，因此两者都会返回。合并并重新排序后，旧的 Microsoft 事实排名低于截取范围。",
+          "say": "事实与观测使用相同索引，因此两者都会返回。合并并重新排序后，旧的 Microsoft 事实排名低于截取范围。",
           "ms": 3200
         },
         {
           "edges": {
             "edge": "call-recall",
             "back": true,
-            "data": "3 memories, ranked"
+            "data": "3 条已排序的记忆"
           },
           "show": {
             "agent": [
@@ -1039,18 +1039,18 @@
               {
                 "tag": "1",
                 "tone": "green",
-                "text": "Alice 在Google研究团队工作"
+                "text": "Alice 在 Google 研究团队工作"
               },
               {
                 "tag": "2",
                 "tone": "green",
-                "text": "Alice加入Google",
-                "meta": "Mar 2026"
+                "text": "Alice 加入 Google",
+                "meta": "2026 年 3 月"
               },
               {
                 "tag": "3",
                 "tone": "green",
-                "text": "我建议 Alice 进行 ML"
+                "text": "我建议 Alice 参与 ML"
               }
             ]
           },
@@ -1066,7 +1066,7 @@
         {
           "edges": {
             "edge": "call-reflect",
-            "data": "“Is Alice a good fit…?”"
+            "data": "“Alice 适合 ML 项目吗？”"
           },
           "show": {
             "agent": [
@@ -1097,7 +1097,7 @@
                 "tag": "model",
                 "tone": "orange",
                 "text": "团队概况",
-                "meta": "Alice: research, ML",
+                "meta": "Alice：研究、ML",
                 "mark": "✓"
               }
             ],
@@ -1110,7 +1110,7 @@
               }
             ]
           },
-          "say": "智能体循环决定检索什么，先读取最充分整理的知识：心智模型与知识页面。",
+          "say": "智能体循环决定检索什么，先读取最充分整理的知识：心智模型与知识页。",
           "ms": 3000
         },
         {
@@ -1132,7 +1132,7 @@
               }
             ]
           },
-          "say": "随后使用与记忆召回相同的索引搜索观察。若新事实尚待整合，观察结果会被标记为过时。",
+          "say": "随后使用与记忆召回相同的索引搜索观测。若新事实尚待整合，观测结果会被标记为待更新。",
           "ms": 1800
         },
         {
@@ -1160,8 +1160,8 @@
             ],
             "obs": [
               {
-                "text": "Alice 在Google 的研究团队工作",
-                "meta": "up to date",
+                "text": "Alice 在 Google 的研究团队工作",
+                "meta": "已是最新",
                 "mark": "cited"
               },
               {
@@ -1258,8 +1258,8 @@
               {
                 "tag": "world",
                 "tone": "blue",
-                "text": "Alice加入Google",
-                "meta": "Mar 2026",
+                "text": "Alice 加入 Google",
+                "meta": "2026 年 3 月",
                 "mark": "cited"
               },
               {
@@ -1338,7 +1338,7 @@
               {
                 "text": "5. done",
                 "mono": true,
-                "meta": "3 sources",
+                "meta": "3 个来源",
                 "mark": "✓"
               }
             ]
@@ -1350,7 +1350,7 @@
           "edges": {
             "edge": "call-reflect",
             "back": true,
-            "data": "answer + 3 sources"
+            "data": "答案 + 3 个来源"
           },
           "show": {
             "agent": [
@@ -1362,8 +1362,8 @@
               {
                 "tag": "answer",
                 "tone": "green",
-                "text": "“是的。她在三月份加入了Google的研究团队，很喜欢它，我已经推荐了她。”",
-                "meta": "3 sources"
+                "text": "“是的。她在三月份加入了 Google的研究团队，很喜欢它，我已经推荐了她。”",
+                "meta": "3 个来源"
               }
             ]
           },

@@ -8,7 +8,7 @@
       "content": [
         {
           "type": "title",
-          "text": "你的AI智能体"
+          "text": "你的 AI 智能体"
         }
       ],
       "minCardHeight": 148,
@@ -20,7 +20,7 @@
       "content": [
         {
           "type": "title",
-          "text": "记忆存储"
+          "text": "Retain（存入）"
         },
         {
           "type": "subtitle",
@@ -36,7 +36,7 @@
       "content": [
         {
           "type": "title",
-          "text": "记忆召回"
+          "text": "Recall（召回）"
         },
         {
           "type": "subtitle",
@@ -52,7 +52,7 @@
       "content": [
         {
           "type": "title",
-          "text": "反思"
+          "text": "Reflect（反思）"
         },
         {
           "type": "subtitle",
@@ -147,7 +147,7 @@
         },
         {
           "type": "subtitle",
-          "text": "原始姓名"
+          "text": "按原样保留名称"
         }
       ],
       "minCardHeight": 73,
@@ -323,7 +323,7 @@
         "id": "recall"
       },
       "label": {
-        "text": "用途"
+        "text": "使用"
       }
     }
   ],
@@ -335,23 +335,23 @@
         {
           "edges": {
             "edge": "call-retain",
-            "data": "Chinese content"
+            "data": "中文内容"
           },
           "show": {
             "agent": [
               {
-                "tag": "content",
+                "tag": "内容",
                 "tone": "gray",
-                "text": "“王芳在Google北京办公室工作，她是一位高级产品经理。之前她在Microsoft和Amazon工作过。”"
+                "text": "“王芳在Google北京办公室工作，她是一名高级产品经理。之前她在Microsoft和Amazon工作过。”"
               },
               {
-                "tag": "context",
+                "tag": "上下文",
                 "tone": "gray",
                 "text": "员工资料"
               }
             ]
           },
-          "say": "智能体存储一段提及英文公司名的中文文本。"
+          "say": "你的智能体会存入含有英文公司名称的中文文本。"
         },
         {
           "show": {
@@ -360,11 +360,11 @@
                 "text": "输入语言：中文"
               },
               {
-                "text": "用中文写事实",
+                "text": "使用中文撰写事实",
                 "mark": "✓"
               },
               {
-                "text": "保留原始名称",
+                "text": "名称绝不翻译",
                 "mark": "✓"
               }
             ]
@@ -372,7 +372,7 @@
           "light": [
             "retain"
           ],
-          "say": "系统没有独立的语言检测器，而是要求 LLM 使用输入语言生成事实，并保留原始名称。",
+          "say": "这里没有单独的语言检测器。系统会指示 LLM 使用输入语言撰写事实，并保留名称原样。",
           "ms": 3400
         },
         {
@@ -385,7 +385,7 @@
               {
                 "tag": "world",
                 "tone": "blue",
-                "text": "王芳在Google北京办公室工作，出任高级产品经理",
+                "text": "王芳在Google北京办公室工作，担任高级产品经理",
                 "mark": "new"
               },
               {
@@ -427,7 +427,7 @@
               }
             ]
           },
-          "say": "事实以中文存储。“王芳”仍是“王芳”，不会变成“Wang Fang”；Google 仍是 Google。",
+          "say": "事实以中文存储。王芳仍然是王芳，不会变成“Wang Fang”；Google 也保持原样。",
           "ms": 3400
         },
         {
@@ -437,7 +437,7 @@
               {
                 "text": "bge-m3",
                 "mono": true,
-                "meta": "100+ languages",
+                "meta": "100 多种语言",
                 "mark": "✓"
               }
             ],
@@ -445,41 +445,41 @@
               {
                 "text": "pgroonga",
                 "mono": true,
-                "meta": "splits Chinese text",
+                "meta": "可切分中文文本",
                 "mark": "✓"
               }
             ]
           },
-          "say": "语言影响索引。默认嵌入模型与关键词索引仅支持英语，应选择多语言模型，以及能切分中文的分词器。",
+          "say": "语言会影响索引效果。默认嵌入模型和关键词索引仅支持英语；请选择多语言模型和能够切分中文的分词器。",
           "ms": 3800
         },
         {
           "edges": {
             "edge": "call-retain",
             "back": true,
-            "data": "✓ 2 facts"
+            "data": "✓ 2 条事实"
           },
           "show": {
             "agent": [
               {
-                "tag": "content",
+                "tag": "内容",
                 "tone": "gray",
-                "text": "“王芳在Google北京办公室工作，她是一位高级产品经理。之前她在Microsoft和Amazon工作过。”"
+                "text": "“王芳在Google北京办公室工作，她是一名高级产品经理。之前她在Microsoft和Amazon工作过。”"
               },
               {
-                "tag": "context",
+                "tag": "上下文",
                 "tone": "gray",
                 "text": "员工资料"
               },
               {
-                "tag": "result",
+                "tag": "结果",
                 "tone": "green",
-                "text": "2 个已存储的事实",
+                "text": "已存入 2 条事实",
                 "mark": "✓"
               }
             ]
           },
-          "say": "按输入时的语言存储。",
+          "say": "内容以输入时使用的语言存储。",
           "ms": 1800
         }
       ]
@@ -496,13 +496,13 @@
           "show": {
             "agent": [
               {
-                "tag": "query",
+                "tag": "查询",
                 "tone": "gray",
                 "text": "“王芳在哪里工作？”"
               }
             ]
           },
-          "say": "使用中文查询。"
+          "say": "使用中文提出的查询。"
         },
         {
           "edges": [
@@ -525,13 +525,13 @@
             ],
             "fulltext": [
               {
-                "text": "与名字相符",
-                "meta": "王芳 in 2 facts",
+                "text": "按名称匹配",
+                "meta": "2 条事实中出现王芳",
                 "mark": "✓"
               }
             ]
           },
-          "say": "多语言嵌入按语义匹配；分词器让“王芳”作为一个完整词精确匹配。",
+          "say": "多语言嵌入模型会按含义匹配；分词器则能将准确姓名“王芳”作为词语匹配。",
           "ms": 3200
         },
         {
@@ -541,7 +541,7 @@
               {
                 "tag": "world",
                 "tone": "blue",
-                "text": "王芳在Google北京办公室工作，出任高级产品经理",
+                "text": "王芳在Google北京办公室工作，担任高级产品经理",
                 "mark": "✓"
               },
               {
@@ -552,26 +552,26 @@
               }
             ]
           },
-          "say": "两者都找到中文事实。后续排序的默认重排序模型也仅支持英语，因此同样需要选择多语言模型。",
+          "say": "两种检索都指向中文事实。后续负责排序的重排序模型默认也仅支持英语，因此请选择多语言模型。",
           "ms": 2000
         },
         {
           "edges": {
             "edge": "call-recall",
             "back": true,
-            "data": "2 facts"
+            "data": "2 条事实"
           },
           "show": {
             "agent": [
               {
-                "tag": "query",
+                "tag": "查询",
                 "tone": "gray",
                 "text": "“王芳在哪里工作？”"
               },
               {
                 "tag": "1",
                 "tone": "green",
-                "text": "王芳在Google北京办公室工作，出任高级产品经理"
+                "text": "王芳在Google北京办公室工作，担任高级产品经理"
               },
               {
                 "tag": "2",
@@ -580,7 +580,7 @@
               }
             ]
           },
-          "say": "事实按存储时的原文返回，过程中没有翻译。",
+          "say": "检索结果中的事实与存储时完全一致，过程中没有经过翻译。",
           "ms": 2800
         }
       ]
@@ -597,13 +597,13 @@
           "show": {
             "agent": [
               {
-                "tag": "question",
+                "tag": "问题",
                 "tone": "gray",
                 "text": "“王芳有哪些工作经历？”"
               }
             ]
           },
-          "say": "使用中文提问。"
+          "say": "使用中文提出的问题。"
         },
         {
           "edges": {
@@ -616,11 +616,11 @@
                 "text": "问题语言：中文"
               },
               {
-                "text": "正在搜索……"
+                "text": "正在搜索…"
               }
             ]
           },
-          "say": "反思像之前一样搜索记忆库……"
+          "say": "Reflect 像之前一样搜索记忆库……"
         },
         {
           "edges": [
@@ -637,7 +637,7 @@
               {
                 "tag": "world",
                 "tone": "blue",
-                "text": "王芳在Google北京办公室工作，出任高级产品经理",
+                "text": "王芳在Google北京办公室工作，担任高级产品经理",
                 "mark": "cited"
               },
               {
@@ -649,7 +649,7 @@
             ]
           },
           "ms": 2000,
-          "say": "……找到两个事实。"
+          "say": "……并找到了两条事实。"
         },
         {
           "show": {
@@ -658,10 +658,10 @@
                 "text": "问题语言：中文"
               },
               {
-                "text": "引用2个事实"
+                "text": "引用了 2 条事实"
               },
               {
-                "text": "中文回答",
+                "text": "使用中文作答",
                 "mark": "✓"
               }
             ]
@@ -669,30 +669,30 @@
           "light": [
             "reflect"
           ],
-          "say": "答案使用问题的语言生成。",
+          "say": "回答使用提问者所用的语言。",
           "ms": 2400
         },
         {
           "edges": {
             "edge": "call-reflect",
             "back": true,
-            "data": "answer in Chinese"
+            "data": "使用中文作答"
           },
           "show": {
             "agent": [
               {
-                "tag": "question",
+                "tag": "问题",
                 "tone": "gray",
                 "text": "“王芳有哪些工作经历？”"
               },
               {
-                "tag": "answer",
+                "tag": "回答",
                 "tone": "green",
                 "text": "“王芳目前在Google北京办公室担任高级产品经理，之前在Microsoft和Amazon工作过。”"
               }
             ]
           },
-          "say": "若要让所有输出固定为一种语言，请设置 HINDSIGHT_API_LLM_OUTPUT_LANGUAGE。",
+          "say": "如需强制所有内容都使用同一种语言，请设置 HINDSIGHT_API_LLM_OUTPUT_LANGUAGE。",
           "ms": 3200
         }
       ]

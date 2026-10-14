@@ -28,40 +28,40 @@ func main() {
 	// Retain a memory
 	retainReq := hindsight.RetainRequest{
 		Items: []hindsight.MemoryItem{
-			{Content: hindsight.TextContent("Alice 在 Google 工作")},
+			{Content: hindsight.TextContent("Alice works at Google")},
 		},
 	}
 	client.MemoryAPI.RetainMemories(ctx, "my-bank").RetainRequest(retainReq).Execute()
 
-	// 召回记忆
+	// Recall memories
 	recallReq := hindsight.RecallRequest{
-		Query: "Alice 做什么工作？",
+		Query: "What does Alice do?",
 	}
 	resp, _, _ := client.MemoryAPI.RecallMemories(ctx, "my-bank").RecallRequest(recallReq).Execute()
 	for _, r := range resp.Results {
 		fmt.Println(r.Text)
 	}
 
-	// Reflect：生成回答
+	// Reflect - generate response
 	reflectReq := hindsight.ReflectRequest{
-		Query: "介绍一下 Alice",
+		Query: "Tell me about Alice",
 	}
 	answer, _, _ := client.MemoryAPI.Reflect(ctx, "my-bank").ReflectRequest(reflectReq).Execute()
 	fmt.Println(answer.GetText())
 	// [/docs:quickstart-full]
 
-	// 清理，文档中不展示
+	// Cleanup (not shown in docs)
 	req, _ := http.NewRequest("DELETE", fmt.Sprintf("%s/v1/default/banks/my-bank", apiURL), nil)
 	http.DefaultClient.Do(req)
 
 	// [docs:nullable-fields]
-	// 创建可为空的值
+	// Creating nullable values
 	timestamp := time.Date(2024, 1, 15, 10, 0, 0, 0, time.UTC)
 	retainReq2 := hindsight.RetainRequest{
 		Items: []hindsight.MemoryItem{
 			{
-				Content:   hindsight.TextContent("Alice 晋升了"),
-				Context:   *hindsight.NewNullableString(hindsight.PtrString("职业变化")),
+				Content:   hindsight.TextContent("Alice got promoted"),
+				Context:   *hindsight.NewNullableString(hindsight.PtrString("career update")),
 				Timestamp: *hindsight.NewNullableTimestamp(&hindsight.Timestamp{TimeTime: hindsight.PtrTime(timestamp)}),
 				Tags:      []string{"career"},
 			},
@@ -69,7 +69,7 @@ func main() {
 	}
 	retainResp, _, _ := client.MemoryAPI.RetainMemories(ctx, "my-bank").RetainRequest(retainReq2).Execute()
 
-	// 检查是否设值
+	// Checking if a value is set
 	if retainResp.HasOperationId() {
 		fmt.Println("OperationId:", retainResp.GetOperationId())
 	}
@@ -81,10 +81,10 @@ func main() {
 		Execute()
 
 	if err != nil {
-		log.Fatalf("召回失败： %v", err)
+		log.Fatalf("Recall failed: %v", err)
 	}
 	defer httpResp2.Body.Close()
 	// [/docs:error-handling]
 
-	fmt.Println("quickstart.go: 所有示例通过")
+	fmt.Println("quickstart.go: All examples passed")
 }

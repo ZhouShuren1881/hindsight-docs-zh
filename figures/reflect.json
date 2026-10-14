@@ -1,5 +1,5 @@
 {
-  "title": "反思智能体循环",
+  "title": "Reflect 智能体循环",
   "speed": 2200,
   "elements": [
     {
@@ -8,7 +8,7 @@
       "content": [
         {
           "type": "title",
-          "text": "你的AI智能体"
+          "text": "你的 AI 智能体"
         }
       ],
       "minCardHeight": 133,
@@ -42,7 +42,7 @@
       "content": [
         {
           "type": "title",
-          "text": "指令"
+          "text": "强制指令"
         }
       ],
       "minCardHeight": 28
@@ -99,11 +99,11 @@
       "content": [
         {
           "type": "title",
-          "text": "答案"
+          "text": "回答"
         },
         {
           "type": "subtitle",
-          "text": "最终综合"
+          "text": "最终综合生成"
         }
       ],
       "minCardHeight": 103,
@@ -113,7 +113,7 @@
       "id": "reflect",
       "type": "group",
       "label": {
-        "title": "反思"
+        "title": "Reflect（反思）"
       },
       "children": [
         "loop",
@@ -151,7 +151,7 @@
       "content": [
         {
           "type": "title",
-          "text": "记忆召回"
+          "text": "recall"
         },
         {
           "type": "subtitle",
@@ -165,11 +165,11 @@
       "content": [
         {
           "type": "title",
-          "text": "展开"
+          "text": "expand"
         },
         {
           "type": "subtitle",
-          "text": "记忆 → 块 → 文档"
+          "text": "记忆 → 文本分块 → 文档"
         }
       ]
     },
@@ -209,7 +209,7 @@
       "content": [
         {
           "type": "title",
-          "text": "观察"
+          "text": "观测"
         }
       ],
       "minCardHeight": 88,
@@ -225,7 +225,7 @@
         },
         {
           "type": "subtitle",
-          "text": "世界事实 · 经验事实"
+          "text": "world · experience"
         }
       ],
       "minCardHeight": 118,
@@ -237,7 +237,7 @@
       "content": [
         {
           "type": "title",
-          "text": "分块与文档"
+          "text": "文本分块与文档"
         }
       ],
       "minCardHeight": 43,
@@ -403,7 +403,7 @@
         "id": "answer"
       },
       "label": {
-        "text": "完成"
+        "text": "done"
       }
     },
     {
@@ -426,62 +426,62 @@
         {
           "edges": {
             "edge": "ask",
-            "data": "“Should Alice join the ML project?”"
+            "data": "“Alice 应该加入 ML 项目吗？”"
           },
           "show": {
             "agent": [
               {
-                "tag": "question",
+                "tag": "问题",
                 "tone": "gray",
                 "text": "“Alice 应该加入 ML 项目吗？”"
               }
             ]
           },
-          "say": "reflect() 收到一个需要推理、而非仅靠查找就能回答的问题。"
+          "say": "reflect() 收到的问题需要推理，不能只靠查找来回答。"
         },
         {
           "edges": {
             "edge": "shape",
-            "data": "mission · disposition · directives"
+            "data": "任务说明 · 性格倾向 · 强制指令"
           },
           "show": {
             "mission": [
               {
-                "text": "帮助团队成员匹配合适的项目"
+                "text": "帮助团队为项目合理配置人员"
               }
             ],
             "disposition": [
               {
-                "text": "怀疑主义 4 · 同理心 3"
+                "text": "怀疑倾向 4 · 共情能力 3"
               }
             ],
             "directives": [
               {
-                "text": "绝不分享工资"
+                "text": "绝不透露薪资"
               }
             ],
             "loop": [
               {
-                "tag": "plan",
+                "tag": "计划",
                 "tone": "gray",
                 "text": "从最精炼的知识开始"
               }
             ]
           },
-          "say": "检索前，记忆库的任务说明、性格倾向与指令会加入智能体指令。",
+          "say": "在开始检索前，记忆库的任务说明、性格倾向和强制指令会作为智能体的指令。",
           "ms": 3000
         },
         {
           "edges": {
             "edge": "c-mm",
-            "data": "“Alice ML project”"
+            "data": "“Alice ML 项目”"
           },
           "show": {
             "loop": [
               {
-                "tag": "iteration",
+                "tag": "轮次",
                 "tone": "gray",
-                "text": "第 1 轮 / 最多 10 轮"
+                "text": "第 1 轮，最多 10 轮"
               },
               {
                 "text": "1. search_mental_models",
@@ -490,21 +490,21 @@
               }
             ]
           },
-          "say": "每轮执行一次工具调用。检索从最高层的心智模型开始，这些是经过整理且持续更新的摘要。"
+          "say": "每一轮只调用一个工具。检索从最高层开始，先查心智模型：这些经过维护的摘要会保持更新。"
         },
         {
           "edges": "r-mm",
           "show": {
             "mm": [
               {
-                "tag": "model",
+                "tag": "模型",
                 "tone": "orange",
-                "text": "团队概述：Alice，研究",
+                "text": "团队概览：Alice，研究团队",
                 "mark": "fresh"
               }
             ]
           },
-          "say": "最新心智模型可能足以回答。这里的模型涵盖团队，却不涵盖 ML 项目，因此智能体继续查找。",
+          "say": "最新的心智模型可能已足以回答问题。这条模型介绍的是团队，而非 ML 项目，因此智能体会继续查找。",
           "ms": 2400
         },
         {
@@ -515,9 +515,9 @@
           "show": {
             "loop": [
               {
-                "tag": "iteration",
+                "tag": "轮次",
                 "tone": "gray",
-                "text": "第 2 轮 / 最多 10 轮"
+                "text": "第 2 轮，最多 10 轮"
               },
               {
                 "text": "1. search_mental_models",
@@ -531,7 +531,7 @@
               }
             ]
           },
-          "say": "接着读取观察，即从多个事实整合出的信念。",
+          "say": "接着查询观测：它们是由许多事实整合而成的认知判断。",
           "ms": 1800
         },
         {
@@ -539,17 +539,17 @@
           "show": {
             "obs": [
               {
-                "text": "Alice 在Google研究团队工作",
-                "meta": "3 sources"
+                "text": "Alice 在 Google 研究团队工作",
+                "meta": "3 个来源"
               },
               {
-                "tag": "stale",
+                "tag": "待更新",
                 "tone": "orange",
-                "text": "尚未整合的新事实"
+                "text": "较新的事实尚未整合"
               }
             ]
           },
-          "say": "结果被标记为过时：记忆库有事实尚未整合为观察，所以智能体必须核对原始事实。",
+          "say": "结果被标记为待更新：记忆库中有尚未整合为观测的事实。因此，智能体必须核查原始事实。",
           "ms": 3000
         },
         {
@@ -560,9 +560,9 @@
           "show": {
             "loop": [
               {
-                "tag": "iteration",
+                "tag": "轮次",
                 "tone": "gray",
-                "text": "第 3 轮 / 最多 10 轮"
+                "text": "第 3 轮，最多 10 轮"
               },
               {
                 "text": "1. search_mental_models",
@@ -577,12 +577,12 @@
               {
                 "text": "3. recall",
                 "mono": true,
-                "meta": "verify",
+                "meta": "核验",
                 "mark": "✓"
               }
             ]
           },
-          "say": "recall() 对原始事实执行完整的四路搜索，以获取事实依据。",
+          "say": "recall() 会对原始事实执行完整的四路搜索，以获取核验依据。",
           "ms": 1800
         },
         {
@@ -592,32 +592,32 @@
               {
                 "tag": "world",
                 "tone": "blue",
-                "text": "Alice 请求加入 ML 项目",
-                "meta": "Sep 2026",
+                "text": "Alice 表示想加入 ML 项目",
+                "meta": "2026 年 9 月",
                 "mark": "new"
               },
               {
                 "tag": "experience",
                 "tone": "purple",
-                "text": "我建议 Alice 进行 ML",
-                "meta": "Apr 2026"
+                "text": "我曾建议 Alice 加入 ML 项目",
+                "meta": "2026 年 4 月"
               }
             ]
           },
-          "say": "新事实补齐了过时观察缺失的信息：Alice 本人提出转到 ML 项目。",
+          "say": "待更新的观测缺少的正是这条较新事实：Alice 主动提出想转到 ML 团队。",
           "ms": 3000
         },
         {
           "edges": {
             "edge": "c-expand",
-            "data": "expand → document"
+            "data": "expand → 文档"
           },
           "show": {
             "loop": [
               {
-                "tag": "iteration",
+                "tag": "轮次",
                 "tone": "gray",
-                "text": "第 4 轮 / 最多 10 轮"
+                "text": "第 4 轮，最多 10 轮"
               },
               {
                 "text": "1. search_mental_models",
@@ -632,7 +632,7 @@
               {
                 "text": "3. recall",
                 "mono": true,
-                "meta": "verify",
+                "meta": "核验",
                 "mark": "✓"
               },
               {
@@ -649,14 +649,14 @@
           "show": {
             "chunks": [
               {
-                "tag": "doc",
+                "tag": "文档",
                 "tone": "gray",
-                "text": "Sep 1:1 指出：“我很乐意在机器学习方面工作。”",
+                "text": "9 月 1:1 会议记录：“我很想参与 ML 方面的工作。”",
                 "mark": "read"
               }
             ]
           },
-          "say": "recall 已返回各事实的来源分块。expand 更进一步，读取完整来源文档以获得全部上下文。",
+          "say": "recall 已经会返回每条事实所属的文本分块。expand 还能进一步返回完整的来源文档，以提供全面上下文。",
           "ms": 2600
         },
         {
@@ -667,9 +667,9 @@
           "show": {
             "loop": [
               {
-                "tag": "iteration",
+                "tag": "轮次",
                 "tone": "gray",
-                "text": "第 5 轮 / 最多 10 轮"
+                "text": "第 5 轮，最多 10 轮"
               },
               {
                 "text": "1. search_mental_models",
@@ -684,7 +684,7 @@
               {
                 "text": "3. recall",
                 "mono": true,
-                "meta": "verify",
+                "meta": "核验",
                 "mark": "✓"
               },
               {
@@ -700,48 +700,48 @@
             ],
             "answer": [
               {
-                "text": "模型 · 团队概况",
+                "text": "心智模型 · 团队概览",
                 "mark": "✓"
               },
               {
-                "text": "观察 · alice-google",
+                "text": "观测 · alice-google",
                 "mark": "✓"
               },
               {
-                "text": "事实 · ml-ask",
+                "text": "事实 · ml-request",
                 "mark": "✓"
               },
               {
-                "text": "事实·7f3a",
-                "meta": "never retrieved",
+                "text": "事实 · 7f3a",
+                "meta": "从未检索",
                 "mark": "✗"
               }
             ]
           },
-          "say": "智能体调用 done。每个引用 ID 都会与实际检索结果核对，不匹配的引用会被丢弃。必须先收集证据，最多进行 10 次迭代。",
+          "say": "智能体调用 done 结束流程。系统会逐一核对被引用的 ID 是否确实检索到；其他 ID 都会被舍弃。智能体必须先收集证据，且最多运行 10 轮。",
           "ms": 3800
         },
         {
           "edges": {
             "edge": "reply",
-            "data": "answer + 3 sources"
+            "data": "回答 + 3 个来源"
           },
           "show": {
             "agent": [
               {
-                "tag": "question",
+                "tag": "问题",
                 "tone": "gray",
                 "text": "“Alice 应该加入 ML 项目吗？”"
               },
               {
-                "tag": "answer",
+                "tag": "回答",
                 "tone": "green",
-                "text": "“是的。她是Google研究团队的成员，并要求在9月份加入机器学习。”",
-                "meta": "3 sources"
+                "text": "“可以。她在 Google 研究团队工作，并且在 9 月主动提出想加入 ML 团队。”",
+                "meta": "3 个来源"
               }
             ]
           },
-          "say": "答案遵循指令与记忆库的性格倾向，并附带所依据的记忆。",
+          "say": "回答遵循强制指令和记忆库的性格倾向，并附上其依据的记忆。",
           "ms": 3200
         }
       ]

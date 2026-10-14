@@ -9,7 +9,7 @@ function CloseButton() {
   return (
     <button
       type="button"
-      aria-label="关闭导航栏"
+      aria-label="关闭导航菜单"
       className="clean-btn navbar-sidebar__close"
       onClick={() => mobileSidebar.toggle()}>
       <IconClose color="var(--ifm-color-emphasis-600)" />

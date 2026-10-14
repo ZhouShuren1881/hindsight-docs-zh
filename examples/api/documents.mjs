@@ -1,44 +1,44 @@
 #!/usr/bin/env node
 /**
- * Hindsight 文档 API 示例 (Node.js)
- * 运行： node examples/api/documents.mjs
+ * Documents API examples for Hindsight (Node.js)
+ * Run: node examples/api/documents.mjs
  */
 import { HindsightClient, sdk, createClient, createConfig } from '@vectorize-io/hindsight-client';
 
 const HINDSIGHT_URL = process.env.HINDSIGHT_API_URL || 'http://localhost:8888';
 
 // =============================================================================
-// 初始化（不在文档中展示）
+// Setup (not shown in docs)
 // =============================================================================
 const client = new HindsightClient({ baseUrl: HINDSIGHT_URL });
 
 // =============================================================================
-// 文档示例
+// Doc Examples
 // =============================================================================
 
 // [docs:document-retain]
-// 使用文档 ID 存储
-await client.retain('my-bank', 'Alice 介绍了第四季度路线图...', {
+// Retain with document ID
+await client.retain('my-bank', 'Alice presented the Q4 roadmap...', {
     document_id: 'meeting-2024-03-15'
 });
 
-// 分章节批量存储文档
+// Batch retain for a document with different sections
 await client.retainBatch('my-bank', [
-    { content: '事项 1：产品发布延期至第二季度', document_id: 'meeting-2024-03-15-section-1' },
-    { content: '事项 2：公布新招聘目标', document_id: 'meeting-2024-03-15-section-2' },
-    { content: '事项 3：机器学习团队预算获批', document_id: 'meeting-2024-03-15-section-3' }
+    { content: 'Item 1: Product launch delayed to Q2', document_id: 'meeting-2024-03-15-section-1' },
+    { content: 'Item 2: New hiring targets announced', document_id: 'meeting-2024-03-15-section-2' },
+    { content: 'Item 3: Budget approved for ML team', document_id: 'meeting-2024-03-15-section-3' }
 ]);
 // [/docs:document-retain]
 
 
 // [docs:document-update]
 // Original
-await client.retain('my-bank', '项目截止日期：3 月 31 日', {
+await client.retain('my-bank', 'Project deadline: March 31', {
     document_id: 'project-plan'
 });
 
 // Update
-await client.retain('my-bank', '项目截止日期：4 月 15 日（已延期）', {
+await client.retain('my-bank', 'Project deadline: April 15 (extended)', {
     document_id: 'project-plan'
 });
 // [/docs:document-update]
@@ -47,28 +47,28 @@ await client.retain('my-bank', '项目截止日期：4 月 15 日（已延期）
 // [docs:document-list]
 const apiClient = createClient(createConfig({ baseUrl: 'http://localhost:8888' }));
 
-// 列出全部文档
+// List all documents
 const { data: allDocs } = await sdk.listDocuments({
     client: apiClient,
     path: { bank_id: 'my-bank' }
 });
-console.log(`文档总数： ${allDocs.total}`);
+console.log(`Total documents: ${allDocs.total}`);
 
-// 按文档 ID 子串筛选
+// Filter by document ID substring
 const { data: reportDocs } = await sdk.listDocuments({
     client: apiClient,
     path: { bank_id: 'my-bank' },
     query: { q: 'report' }
 });
 
-// 按标签筛选，仅 team-a 文档（排除无标签）
+// Filter by tags — only docs tagged with "team-a" (untagged excluded)
 const { data: taggedDocs } = await sdk.listDocuments({
     client: apiClient,
     path: { bank_id: 'my-bank' },
     query: { tags: ['team-a'], tags_match: 'any_strict' }
 });
 
-// 组合 ID 搜索与标签
+// Combine ID search and tags
 const { data: filtered } = await sdk.listDocuments({
     client: apiClient,
     path: { bank_id: 'my-bank' },
@@ -81,30 +81,30 @@ const { data: page } = await sdk.listDocuments({
     path: { bank_id: 'my-bank' },
     query: { limit: 20, offset: 40 }
 });
-console.log(`本页条目： ${page.items.length}`);
+console.log(`Page items: ${page.items.length}`);
 // [/docs:document-list]
 
 
 // [docs:document-get]
-// 获取文档，扩展召回上下文
+// Get document to expand context from recall results
 const { data: doc, error } = await sdk.getDocument({
     client: apiClient,
     path: { bank_id: 'my-bank', document_id: 'meeting-2024-03-15-section-1' }
 });
 
 if (error) {
-    throw new Error(`获取文档失败： ${JSON.stringify(error)}`);
+    throw new Error(`Failed to get document: ${JSON.stringify(error)}`);
 }
 
 console.log(`Document: ${doc.id}`);
-console.log(`原始文本： ${doc.original_text}`);
-console.log(`记忆数量： ${doc.memory_unit_count}`);
+console.log(`Original text: ${doc.original_text}`);
+console.log(`Memory count: ${doc.memory_unit_count}`);
 console.log(`Created: ${doc.created_at}`);
 // [/docs:document-get]
 
 
 // [docs:document-update-tags]
-// 修正文档错误范围标签
+// Fix tags on a document retained with the wrong scope
 const { data: updateResult, error: updateError } = await sdk.updateDocument({
     client: apiClient,
     path: { bank_id: 'my-bank', document_id: 'meeting-2024-03-15-section-1' },
@@ -117,7 +117,7 @@ if (updateError) {
 
 console.log(`Updated: ${updateResult.success}`);
 
-// 移除全部标签，使文档在所有范围可见
+// Remove all tags (make document visible everywhere)
 await sdk.updateDocument({
     client: apiClient,
     path: { bank_id: 'my-bank', document_id: 'meeting-2024-03-15-section-1' },
@@ -127,7 +127,7 @@ await sdk.updateDocument({
 
 
 // [docs:document-delete]
-// 删除文档及其全部记忆
+// Delete document and all its memories
 const { data: deleteResult } = await sdk.deleteDocument({
     client: apiClient,
     path: { bank_id: 'my-bank', document_id: 'meeting-2024-03-15-section-1' }
@@ -138,8 +138,8 @@ console.log(`Deleted ${deleteResult.memory_units_deleted} memories`);
 
 
 // =============================================================================
-// 清理（不在文档中展示）
+// Cleanup (not shown in docs)
 // =============================================================================
 await fetch(`${HINDSIGHT_URL}/v1/default/banks/my-bank`, { method: 'DELETE' });
 
-console.log('documents.mjs: 全部示例通过');
+console.log('documents.mjs: All examples passed');

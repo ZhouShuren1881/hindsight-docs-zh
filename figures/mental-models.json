@@ -8,7 +8,7 @@
       "content": [
         {
           "type": "title",
-          "text": "你的应用程序"
+          "text": "你的应用"
         }
       ],
       "minCardHeight": 103,
@@ -24,7 +24,7 @@
         },
         {
           "type": "subtitle",
-          "text": "创建·阅读"
+          "text": "创建 · 读取"
         }
       ]
     },
@@ -38,7 +38,7 @@
         },
         {
           "type": "subtitle",
-          "text": "整合后，或 cron"
+          "text": "整合后，或按 cron 计划"
         }
       ],
       "minCardHeight": 43,
@@ -50,7 +50,7 @@
       "content": [
         {
           "type": "title",
-          "text": "反思"
+          "text": "Reflect（反思）"
         },
         {
           "type": "subtitle",
@@ -99,7 +99,7 @@
       "content": [
         {
           "type": "title",
-          "text": "观察"
+          "text": "观测"
         }
       ],
       "minCardHeight": 103,
@@ -284,7 +284,7 @@
         "id": "trigger"
       },
       "label": {
-        "text": "范围变更"
+        "text": "范围内发生变化"
       }
     },
     {
@@ -325,55 +325,55 @@
         {
           "edges": {
             "edge": "call",
-            "data": "source question"
+            "data": "来源问题"
           },
           "show": {
             "app": [
               {
-                "tag": "question",
+                "tag": "问题",
                 "tone": "gray",
-                "text": "“团队中有哪些人，每个人都做什么工作？”"
+                "text": "“团队中有哪些人，每个人都负责什么工作？”"
               },
               {
-                "tag": "trigger",
+                "tag": "触发器",
                 "tone": "gray",
                 "text": "整合后刷新",
-                "meta": "delta mode"
+                "meta": "增量模式"
               }
             ]
           },
-          "say": "只需定义一次问题，并指定如何保持答案最新。"
+          "say": "你只需定义一次问题，并指定如何让答案保持最新。"
         },
         {
           "edges": {
             "edge": "build",
-            "data": "build it"
+            "data": "构建模型"
           },
           "show": {
             "reflect": [
               {
-                "text": "对这个记忆库的反思",
-                "meta": "in the model’s tag scope"
+                "text": "对这个记忆库进行反思",
+                "meta": "限定在模型的标签范围内"
               }
             ]
           },
-          "say": "Hindsight 在后台通过反思生成答案，标签限定可读取的记忆。"
+          "say": "Hindsight 在后台通过 Reflect 生成答案。标签会限制它可以读取的记忆。"
         },
         {
           "edges": {
             "edge": "read-src",
-            "data": "observations + facts"
+            "data": "观测 + 事实"
           },
           "show": {
             "obs": [
               {
-                "text": "Bob 运行检索评估",
-                "meta": "4 sources",
+                "text": "Bob 负责运行检索评估",
+                "meta": "4 个来源",
                 "mark": "✓"
               },
               {
-                "text": "Carol 转向 ML 来微调排名",
-                "meta": "3 sources",
+                "text": "Carol 转到 ML 团队，负责微调排序器",
+                "meta": "3 个来源",
                 "mark": "✓"
               }
             ],
@@ -381,133 +381,133 @@
               {
                 "tag": "world",
                 "tone": "blue",
-                "text": "Carol 转到 ML 团队",
-                "meta": "Feb 2026",
+                "text": "Carol 转入 ML 团队",
+                "meta": "2026 年 2 月",
                 "mark": "✓"
               }
             ]
           },
-          "say": "先读取整合后的观察，再用原始事实核对细节。",
+          "say": "它先读取整合后的观测，再通过原始事实核对细节。",
           "ms": 2800
         },
         {
           "edges": {
             "edge": "write",
-            "data": "document v1"
+            "data": "文档 v1"
           },
           "show": {
             "mm": [
               {
-                "tag": "research",
+                "tag": "研究",
                 "tone": "blue",
                 "text": "Bob：检索评估"
               },
               {
-                "tag": "ml team",
+                "tag": "ML 团队",
                 "tone": "purple",
-                "text": "Carol：排名微调"
+                "text": "Carol：微调排序器"
               },
               {
-                "text": "依据 2 条观察、1 个事实",
+                "text": "依据 2 条观测、1 条事实",
                 "meta": "v1"
               }
             ]
           },
-          "say": "答案存储为文档，同时保存生成它所依据的证据。",
+          "say": "答案以文档形式存储，同时保留生成它所依据的证据。",
           "ms": 3000
         }
       ]
     },
     {
-      "label": "保持最新状态",
+      "label": "保持最新",
       "caption": "",
       "beats": [
         {
           "show": {
             "obs": [
               {
-                "text": "Bob 运行检索评估",
-                "meta": "4 sources"
+                "text": "Bob 负责运行检索评估",
+                "meta": "4 个来源"
               },
               {
-                "text": "Carol 转向 ML 来微调排名",
-                "meta": "3 sources"
+                "text": "Carol 转到 ML 团队，负责微调排序器",
+                "meta": "3 个来源"
               },
               {
-                "text": "Alice加入研究团队",
-                "meta": "2 sources",
+                "text": "Alice 加入研究团队",
+                "meta": "2 个来源",
                 "mark": "new"
               }
             ],
             "mm": [
               {
-                "tag": "research",
+                "tag": "研究",
                 "tone": "blue",
                 "text": "Bob：检索评估"
               },
               {
-                "tag": "ml team",
+                "tag": "ML 团队",
                 "tone": "purple",
-                "text": "Carol：排名微调"
+                "text": "Carol：微调排序器"
               },
               {
-                "text": "依据 2 条观察、1 个事实",
+                "text": "依据 2 条观测、1 条事实",
                 "meta": "v1"
               }
             ]
           },
-          "say": "记忆库持续学习，整合在模型作用域内生成一条新观察。",
+          "say": "记忆库持续学习；整合过程在该模型的范围内生成一条新观测。",
           "ms": 2800
         },
         {
           "edges": {
             "edge": "changed",
-            "data": "newer than v1"
+            "data": "比 v1 更新"
           },
           "show": {
             "trigger": [
               {
-                "tag": "stale",
+                "tag": "待更新",
                 "tone": "orange",
-                "text": "作用域内存在比 v1 上次读取更新的记忆"
+                "text": "范围内有比 v1 上次读取的记忆更新的内容"
               }
             ]
           },
-          "say": "触发器先检查：模型作用域中是否有比上次刷新读取的最新记忆更新的内容？记忆库其他范围的活动不计入。",
+          "say": "触发器会先检查：该模型范围内是否有比上次刷新所读取的最新记忆更新的内容？记忆库其他范围内的活动不计入。",
           "ms": 3200
         },
         {
           "edges": {
             "edge": "refresh",
-            "data": "refresh"
+            "data": "刷新"
           },
           "show": {
             "reflect": [
               {
-                "text": "仅阅读v1以来的新内容"
+                "text": "仅读取 v1 之后新增的内容"
               }
             ]
           },
-          "say": "增量模式只读取上次刷新后到达的新记忆。"
+          "say": "在增量模式下，刷新只读取上次刷新之后进入记忆库的记忆。"
         },
         {
           "edges": {
             "edge": "read-src",
-            "data": "what’s new"
+            "data": "新增内容"
           },
           "show": {
             "obs": [
               {
-                "text": "Bob 运行检索评估",
-                "meta": "4 sources"
+                "text": "Bob 负责运行检索评估",
+                "meta": "4 个来源"
               },
               {
-                "text": "Carol 转向 ML 来微调排名",
-                "meta": "3 sources"
+                "text": "Carol 转到 ML 团队，负责微调排序器",
+                "meta": "3 个来源"
               },
               {
-                "text": "Alice加入研究团队",
-                "meta": "2 sources",
+                "text": "Alice 加入研究团队",
+                "meta": "2 个来源",
                 "mark": "✓"
               }
             ]
@@ -517,7 +517,7 @@
           "edges": [
             {
               "edge": "write",
-              "data": "append_block → Research"
+              "data": "append_block → 研究"
             },
             {
               "edge": "version",
@@ -527,34 +527,34 @@
           "show": {
             "reflect": [
               {
-                "tag": "edit",
+                "tag": "编辑",
                 "tone": "green",
                 "text": "append_block",
-                "meta": "Research",
+                "meta": "研究",
                 "mono": true
               }
             ],
             "mm": [
               {
-                "tag": "research",
+                "tag": "研究",
                 "tone": "blue",
                 "text": "Bob：检索评估",
                 "mark": "same"
               },
               {
-                "tag": "research",
+                "tag": "研究",
                 "tone": "blue",
-                "text": "Alice：3月加入",
+                "text": "Alice：3 月加入",
                 "mark": "added"
               },
               {
-                "tag": "ml team",
+                "tag": "ML 团队",
                 "tone": "purple",
-                "text": "Carol：排名微调",
+                "text": "Carol：微调排序器",
                 "mark": "same"
               },
               {
-                "text": "证据：3 个观察，1 个事实",
+                "text": "证据：3 条观测、1 条事实",
                 "meta": "v2"
               }
             ],
@@ -562,11 +562,11 @@
               {
                 "tag": "v1",
                 "tone": "gray",
-                "text": "Bob，Carol"
+                "text": "Bob、Carol"
               }
             ]
           },
-          "say": "刷新应用局部编辑而非重写：在研究章节添加一个条目，其余内容原样保留，旧版本存入历史记录。",
+          "say": "它不会重写文档，而是应用编辑：在“研究”部分添加一个项目符号。其余内容原样保留，旧版本则存入历史记录。",
           "ms": 3800
         }
       ]
@@ -578,32 +578,32 @@
         {
           "edges": {
             "edge": "call",
-            "data": "get “Team overview”"
+            "data": "获取“团队概况”"
           },
           "show": {
             "app": [
               {
-                "tag": "read",
+                "tag": "读取",
                 "tone": "gray",
                 "text": "团队概况"
               }
             ]
           },
-          "say": "应用需要答案时，通过 ID 获取模型。"
+          "say": "应用需要答案时，会按 ID 请求对应的模型。"
         },
         {
           "edges": {
             "edge": "read",
-            "data": "database read"
+            "data": "数据库读取"
           },
-          "say": "这只是一次数据库读取，无需检索、调用 LLM 或等待生成。"
+          "say": "这只是一次数据库读取：无需检索、调用 LLM 或等待。"
         },
         {
           "edges": [
             {
               "edge": "read",
               "back": true,
-              "data": "v2 · fresh"
+              "data": "v2 · 最新"
             }
           ],
           "ms": 1600
@@ -612,25 +612,25 @@
           "edges": {
             "edge": "call",
             "back": true,
-            "data": "the document"
+            "data": "文档"
           },
           "show": {
             "app": [
               {
-                "tag": "read",
+                "tag": "读取",
                 "tone": "gray",
                 "text": "团队概况"
               },
               {
-                "tag": "answer",
+                "tag": "答案",
                 "tone": "green",
                 "text": "研究：Bob、Alice · ML：Carol",
-                "meta": "fresh",
+                "meta": "最新",
                 "mark": "✓"
               }
             ]
           },
-          "say": "所有提问者得到同一份文档。反思也优先读取心智模型，并且只在模型未过时时采信它。",
+          "say": "所有提问者都会得到同一份文档。Reflect 也会优先读取心智模型，并且只在其内容为最新时才信任它。",
           "ms": 3400
         }
       ]

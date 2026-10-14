@@ -2,25 +2,25 @@
 sidebar_position: 2
 ---
 
-# 核心方法 {#main-methods}
+# 主要方法 {#main-methods}
 
-Hindsight 提供三个核心操作：**记忆存储**（记忆存储）、**记忆召回**（记忆召回）和 **反思**（反思）。
+Hindsight 提供三项核心操作：**Retain（存入）**、**Recall（召回）** 和 **Reflect（反思）**。
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import CodeSnippet from '@site/src/components/CodeSnippet';
 
-{/* 导入原始示例源文件 */}
+{/* Import raw source files */}
 import mainMethodsPy from '!!raw-loader!@site/examples/api/main-methods.py';
 import mainMethodsMjs from '!!raw-loader!@site/examples/api/main-methods.mjs';
 import mainMethodsSh from '!!raw-loader!@site/examples/api/main-methods.sh';
 import mainMethodsGo from '!!raw-loader!@site/examples/api/main-methods.go';
 
-:::tip 前置条件
-请确保已[安装 Hindsight](../installation)，并完成[快速开始](./quickstart)。
+:::tip 前提条件
+请先[安装 Hindsight](../installation)，并完成[快速入门](./quickstart)。
 :::
 
-## Retain：存储信息 {#retain-store-information}
+## Retain：存入信息 {#retain-store-information}
 
 将对话、文档和事实存入记忆库。
 
@@ -39,15 +39,15 @@ import mainMethodsGo from '!!raw-loader!@site/examples/api/main-methods.go';
 </TabItem>
 </Tabs>
 
-**执行过程：** LLM 处理内容，提取丰富的事实、识别实体，并在知识图谱中建立关联。
+**处理过程：** LLM 会处理内容，提取丰富事实、识别实体，并在知识图谱中建立关联。
 
-高级选项和参数见[记忆存储详情](./retain)。
+**详见：** [Retain 详细说明](./retain)，了解高级选项和参数。
 
 ---
 
 ## Recall：搜索记忆 {#recall-search-memories}
 
-通过多策略检索搜索相关记忆。
+使用多种检索策略查找相关记忆。
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -64,15 +64,15 @@ import mainMethodsGo from '!!raw-loader!@site/examples/api/main-methods.go';
 </TabItem>
 </Tabs>
 
-**执行过程：** 并行运行语义、关键词、图和时间四种搜索策略，再融合并重排序结果。
+**处理过程：** 四种检索策略（语义、关键词、图谱和时间）并行运行，随后融合并重新排序结果。
 
-质量与延迟的调优方法见[记忆召回详情](./recall)。
+**详见：** [Recall 详细说明](./recall)，了解如何调整质量与延迟。
 
 ---
 
-## Reflect：结合性格倾向推理 {#reflect-reason-with-disposition}
+## Reflect：结合性格倾向进行推理 {#reflect-reason-with-disposition}
 
-利用记忆和观察生成考虑性格倾向的回答。
+利用记忆和观测生成考虑性格倾向的回答。
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -89,9 +89,9 @@ import mainMethodsGo from '!!raw-loader!@site/examples/api/main-methods.go';
 </TabItem>
 </Tabs>
 
-**执行过程：** 召回记忆和观察，应用记忆库的性格倾向，LLM 根据证据推理并生成回答。
+**处理过程：** 先召回记忆和观测，再应用记忆库的性格倾向，最后由 LLM 根据证据进行推理并生成回答。
 
-性格倾向配置见[反思详情](./reflect)。
+**详见：** [Reflect 详细说明](./reflect)，了解如何配置性格倾向。
 
 ---
 
@@ -99,18 +99,18 @@ import mainMethodsGo from '!!raw-loader!@site/examples/api/main-methods.go';
 
 | 特性 | Retain | Recall | Reflect |
 |---------|--------|--------|---------|
-| **目的** | 存储信息 | 查找信息 | 根据信息推理 |
-| **输入** | 原始文本／文档 | 搜索查询 | 问题／提示词 |
-| **输出** | 记忆 ID | 排序后的事实与观察 | 推理后的回答 |
+| **用途** | 存储信息 | 查找信息 | 对信息进行推理 |
+| **输入** | 原始文本/文档 | 搜索查询 | 问题/提示 |
+| **输出** | 记忆 ID | 排序后的事实和观测 | 推理生成的回答 |
 | **使用 LLM** | 是（提取） | 否 | 是（生成） |
-| **使用观察** | 否 | 是 | 是 |
+| **使用观测** | 否 | 是 | 是 |
 | **性格倾向** | 否 | 否 | 是 |
 
 ---
 
 ## 后续步骤 {#next-steps}
 
-- [**记忆存储**](./retain)：存储记忆的高级选项。
-- [**记忆召回**](./recall)：优化搜索质量与性能。
-- [**反思**](./reflect)：配置性格倾向。
-- [**记忆库**](./memory-banks)：管理记忆库的性格倾向。
+- [**Retain**](./retain) — 存入记忆的高级选项
+- [**Recall**](./recall) — 调整检索质量和性能
+- [**Reflect**](./reflect) — 配置性格倾向
+- [**Memory Banks**](./memory-banks) — 管理记忆库的性格倾向

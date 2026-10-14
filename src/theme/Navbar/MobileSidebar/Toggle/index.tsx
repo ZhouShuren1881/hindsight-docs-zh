@@ -7,7 +7,7 @@ export default function MobileSidebarToggle(): ReactNode {
   return (
     <button
       onClick={toggle}
-      aria-label="切换导航栏"
+      aria-label="切换导航菜单"
       aria-expanded={shown}
       className="navbar__toggle clean-btn"
       type="button">

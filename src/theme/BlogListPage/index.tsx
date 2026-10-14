@@ -16,7 +16,7 @@ type Category = {slug: string; label: string; tag: string | null};
 const CATEGORIES: Category[] = [
   {slug: 'all', label: '全部', tag: null},
   {slug: 'cloud', label: 'Hindsight Cloud', tag: 'hindsight-cloud'},
-  {slug: 'deep-dives', label: '深入解析', tag: 'deep-dive'},
+  {slug: 'deep-dives', label: '深度解析', tag: 'deep-dive'},
   {slug: 'releases', label: '公告与版本发布', tag: 'release'},
   {slug: 'tutorials', label: '教程与集成', tag: 'tutorial'},
 ];

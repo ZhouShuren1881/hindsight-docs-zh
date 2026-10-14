@@ -3,7 +3,7 @@
     {
       "id": "agent-plugin",
       "name": "Agent Plugins",
-      "description": "为所有 Agent Plugins 客户端（Codex、Cursor、GitHub Copilot、Kiro、VS Code）提供可移植的长期记忆。一个符合标准的插件集成了 Hindsight 的 MCP 服务器与记忆技能，让记忆召回、记忆存储与反思随处可用。",
+      "description": "为 Codex、Cursor、GitHub Copilot、Kiro 和 VS Code 等 Agent Plugins 客户端提供可移植的长期记忆。一个基于标准的插件打包了 Hindsight MCP 服务器和记忆技能，可在各处召回、存入和反思。",
       "type": "official",
       "by": "hindsight",
       "category": "tool",
@@ -13,7 +13,7 @@
     {
       "id": "coding-agents",
       "name": "Coding Agents",
-      "description": "面向 CLI 编程智能体的统一记忆插件，支持 Claude Code、Codex、opencode、Kilo、Cursor、Copilot、Grok、Antigravity、Devin 和 Cline。根据 git 历史与过往会话自动为每个仓库构建记忆库。",
+      "description": "为 CLI 编程智能体提供统一的记忆插件，支持 Claude Code、Codex、opencode、Kilo、Cursor、Copilot、Grok、Antigravity、Devin 和 Cline。根据 Git 历史和过往会话自动为每个代码仓库创建记忆库。",
       "type": "official",
       "by": "hindsight",
       "category": "coding-agent",
@@ -23,7 +23,7 @@
     {
       "id": "eliza",
       "name": "elizaOS",
-      "description": "为 elizaOS 智能体提供长期记忆。插件将相关记忆召回至提示词，并将对话存储到 Hindsight。",
+      "description": "为 elizaOS 智能体提供长期记忆。插件会将相关记忆召回到提示词中，并将对话存入 Hindsight。",
       "type": "official",
       "by": "hindsight",
       "category": "framework",
@@ -33,7 +33,7 @@
     {
       "id": "litellm",
       "name": "LiteLLM",
-      "description": "通过 LiteLLM 代理回调为任意 LLM 添加长期记忆。无需修改代码，一次配置即可让每个模型拥有记忆。",
+      "description": "通过 LiteLLM 代理回调为任意 LLM 添加长期记忆。无需更改代码，只需配置一次，即可让每个模型使用记忆。",
       "type": "official",
       "by": "hindsight",
       "category": "framework",
@@ -43,7 +43,7 @@
     {
       "id": "agent-framework",
       "name": "Microsoft Agent Framework",
-      "description": "通过上下文提供器为 Microsoft Agent Framework（Semantic Kernel 的继任者）提供持久记忆，在每轮交互中自动召回与存储。",
+      "description": "通过上下文提供器为 Microsoft Agent Framework（Semantic Kernel 的继任者）提供持久记忆，每轮交互都会自动召回和存入记忆。",
       "type": "official",
       "by": "hindsight",
       "category": "framework",
@@ -53,7 +53,7 @@
     {
       "id": "composio",
       "name": "Composio",
-      "description": "将 Hindsight 记忆封装为 Composio 自定义工具。记忆存储、记忆召回与反思可直接接入任意 Composio 智能体，记忆自动按会话用户隔离。",
+      "description": "将 Hindsight 记忆作为 Composio 自定义工具接入。存入、召回和反思工具可用于任意 Composio 智能体，并自动按会话用户隔离记忆。",
       "type": "official",
       "by": "hindsight",
       "category": "framework",
@@ -63,7 +63,7 @@
     {
       "id": "crewai",
       "name": "CrewAI",
-      "description": "为 CrewAI 智能体提供跨会话的持久记忆。一次运行中学到的事实可用于之后的每次运行。",
+      "description": "为 CrewAI 智能体提供可跨会话使用的持久记忆。一次运行中学到的事实，在后续每次运行中都可用。",
       "type": "official",
       "by": "hindsight",
       "category": "framework",
@@ -73,7 +73,7 @@
     {
       "id": "pydantic-ai",
       "name": "Pydantic AI",
-      "description": "通过简单的依赖注入模式，将 Hindsight 记忆集成到 Pydantic AI 智能体。",
+      "description": "通过简单的依赖注入模式，将 Hindsight 记忆集成到 Pydantic AI 智能体中。",
       "type": "official",
       "by": "hindsight",
       "category": "framework",
@@ -83,7 +83,7 @@
     {
       "id": "vercel-ai-sdk",
       "name": "Vercel AI SDK",
-      "description": "为 Vercel AI SDK 应用添加持久记忆，适用于 AI SDK 支持的任意模型供应商。",
+      "description": "为 Vercel AI SDK 应用添加持久记忆，支持 AI SDK 可用的任意模型服务提供方。",
       "type": "official",
       "by": "hindsight",
       "category": "framework",
@@ -123,7 +123,7 @@
     {
       "id": "hermes-desktop",
       "name": "Hermes Desktop",
-      "description": "直接在 Hermes 桌面应用中将 Hindsight 配置为记忆供应商：选择模式并粘贴 API 密钥，无需配置文件。",
+      "description": "直接在 Hermes 桌面应用中将 Hindsight 配置为记忆提供方：选择模式并粘贴 API 密钥，无需配置文件。",
       "type": "native",
       "by": "hermes",
       "category": "tool",
@@ -133,7 +133,7 @@
     {
       "id": "local-mcp",
       "name": "MCP 服务器",
-      "description": "将 Hindsight 记忆开放为模型上下文协议（MCP）服务器，兼容 Claude、Cursor 及任意 MCP 客户端。",
+      "description": "将 Hindsight 记忆开放为模型上下文协议服务器。它兼容 Claude、Cursor 和任意 MCP 客户端。",
       "type": "official",
       "by": "hindsight",
       "category": "mcp",
@@ -143,7 +143,7 @@
     {
       "id": "chatgpt",
       "name": "ChatGPT",
-      "description": "通过受 OAuth 保护的 MCP 连接器为 ChatGPT 添加持久的长期记忆。存储对话中的见解，并跨会话召回相关上下文。",
+      "description": "通过受 OAuth 保护的 MCP 连接器为 ChatGPT 添加持久的长期记忆。存储对话中的见解，并在不同会话间召回相关上下文。",
       "type": "official",
       "by": "hindsight",
       "category": "tool",
@@ -173,7 +173,7 @@
     {
       "id": "zcode",
       "name": "ZCode",
-      "description": "通过 Hindsight 钩子为 ZCode（Z.ai 的 GLM 桌面编程智能体）提供无需 MCP 的长期记忆。在每次提示前召回相关上下文，并在每轮交互后存储对话。",
+      "description": "通过 Hindsight 钩子为 ZCode（Z.ai 的 GLM 桌面编程智能体）提供无需 MCP 的长期记忆。在每次提示前召回相关上下文，并在每轮交互后存入对话。",
       "type": "official",
       "by": "hindsight",
       "category": "coding-agent",
@@ -183,7 +183,7 @@
     {
       "id": "claude-agent-sdk",
       "name": "Claude Agent SDK",
-      "description": "为 Anthropic 的 Claude Agent SDK 提供持久的长期记忆。即插即用的 MCP 记忆工具配合钩子，让 Claude 智能体跨会话召回与存储上下文。",
+      "description": "为 Anthropic 的 Claude Agent SDK 提供持久长期记忆。即插即用的 MCP 记忆工具和钩子让 Claude 智能体能跨会话召回并存入上下文。",
       "type": "official",
       "by": "hindsight",
       "category": "framework",
@@ -203,7 +203,7 @@
     {
       "id": "github-copilot",
       "name": "GitHub Copilot",
-      "description": "为 VS Code 中的 GitHub Copilot 提供长期记忆。一个命令即可将 Hindsight MCP 服务器接入 .vscode/mcp.json，并向 .github/copilot-instructions.md 添加召回与存储规则。",
+      "description": "为 VS Code 中的 GitHub Copilot 提供长期记忆。只需一条命令，即可将 Hindsight MCP 服务器接入 .vscode/mcp.json，并在 .github/copilot-instructions.md 中添加召回和存入规则。",
       "type": "official",
       "by": "hindsight",
       "category": "coding-agent",
@@ -213,7 +213,7 @@
     {
       "id": "continue",
       "name": "Continue",
-      "description": "为 Continue.dev 编程助手提供长期记忆。通过 @hindsight 将相关项目记忆召回至聊天，也可通过 Hindsight MCP 服务器启用自动召回与存储。",
+      "description": "为 Continue.dev 编程助手提供长期记忆。通过 @hindsight 将相关项目记忆召回到聊天中，也可通过 Hindsight MCP 服务器启用自动召回和存入。",
       "type": "official",
       "by": "hindsight",
       "category": "coding-agent",
@@ -223,7 +223,7 @@
     {
       "id": "cursor",
       "name": "Cursor",
-      "description": "通过 Hindsight 为 Cursor 编辑器提供仿生长期记忆。在会话开始时召回相关上下文，并存储对话记录供后续会话使用。",
+      "description": "通过 Hindsight 为 Cursor 编辑器提供仿生式长期记忆。在会话开始时召回相关上下文，并存入对话记录供后续会话使用。",
       "type": "official",
       "by": "hindsight",
       "category": "coding-agent",
@@ -233,7 +233,7 @@
     {
       "id": "zed",
       "name": "Zed",
-      "description": "通过 Hindsight MCP 服务器为 Zed 编辑器的 AI 助手提供长期记忆。一个命令即可配置 MCP 上下文服务器和召回与存储规则，让记忆在智能体面板中自动运行。",
+      "description": "通过 Hindsight MCP 服务器为 Zed 编辑器的 AI 助手提供长期记忆。只需一条命令，即可配置 MCP 上下文服务器和召回、存入规则，让记忆在 Agent Panel 中自动运行。",
       "type": "official",
       "by": "hindsight",
       "category": "coding-agent",
@@ -243,7 +243,7 @@
     {
       "id": "cline",
       "name": "Cline",
-      "description": "通过生命周期钩子（无需 MCP）为 Cline 编程智能体提供自动长期记忆。在每个任务前召回相关上下文，并在任务后存储所发生的内容。",
+      "description": "通过生命周期钩子为 Cline 编程智能体提供自动长期记忆，无需 MCP。在每项任务前召回相关上下文，并在任务结束后存入发生的内容。",
       "type": "official",
       "by": "hindsight",
       "category": "legacy",
@@ -253,7 +253,7 @@
     {
       "id": "cursor-cli",
       "name": "Cursor CLI",
-      "description": "通过 Hindsight 钩子为 Cursor CLI 提供自动长期记忆。在每次提示前召回相关上下文，并在每轮交互后存储对话。",
+      "description": "通过 Hindsight 钩子为 Cursor CLI 提供自动长期记忆。在每次提示前召回相关上下文，并在每轮交互后存入对话。",
       "type": "community",
       "by": "Korayem",
       "category": "legacy",
@@ -263,7 +263,7 @@
     {
       "id": "copilot-cli",
       "name": "GitHub Copilot CLI",
-      "description": "通过 Hindsight 钩子为 GitHub Copilot CLI 提供自动长期记忆。在会话开始时及每个子智能体启动时召回相关上下文，并实时存储对话。",
+      "description": "通过 Hindsight 钩子为 GitHub Copilot CLI 提供自动长期记忆。在会话开始时及每个子智能体运行时召回相关上下文，并随着对话进行持续存入内容。",
       "type": "official",
       "by": "hindsight",
       "category": "legacy",
@@ -273,7 +273,7 @@
     {
       "id": "openclaw",
       "name": "OpenClaw",
-      "description": "将 Hindsight 与 OpenClaw 集成，为基于 Claude 的智能体工作流添加记忆能力。",
+      "description": "将 Hindsight 集成到 OpenClaw，为基于 Claude 的智能体工作流添加记忆能力。",
       "type": "official",
       "by": "hindsight",
       "category": "tool",
@@ -283,7 +283,7 @@
     {
       "id": "skills",
       "name": "Claude Code Skills",
-      "description": "通过 Skills 集成为 Claude Code 智能体添加 Hindsight 记忆，在编程会话之间保持持久上下文。",
+      "description": "通过 Skills 集成为 Claude Code 智能体添加 Hindsight 记忆，让编程会话间的上下文得以保留。",
       "type": "official",
       "by": "hindsight",
       "category": "coding-agent",
@@ -293,7 +293,7 @@
     {
       "id": "langgraph",
       "name": "LangGraph / LangChain",
-      "description": "为 LangGraph 与 LangChain 智能体添加持久记忆。支持记忆工具、图节点与 BaseStore 适配器模式。",
+      "description": "为 LangGraph 和 LangChain 智能体添加持久记忆。支持 Memory Tools、Graph Nodes 和 BaseStore 适配器模式。",
       "type": "official",
       "by": "hindsight",
       "category": "framework",
@@ -303,7 +303,7 @@
     {
       "id": "llamaindex",
       "name": "LlamaIndex",
-      "description": "为 LlamaIndex 智能体添加持久记忆。支持由智能体调用的工具（BaseToolSpec）与自动记忆（BaseMemory）。",
+      "description": "为 LlamaIndex 智能体添加持久记忆。支持由智能体驱动的工具（BaseToolSpec）和自动记忆（BaseMemory）。",
       "type": "official",
       "by": "hindsight",
       "category": "framework",
@@ -313,7 +313,7 @@
     {
       "id": "google-adk",
       "name": "Google ADK",
-      "description": "为 Google ADK 智能体提供持久记忆。实现 BaseMemoryService，在会话结束时自动存储，并在 search_memory 时召回，同时提供显式 FunctionTool 封装。",
+      "description": "为 Google ADK 智能体提供持久记忆。实现 BaseMemoryService，在会话结束时自动存入记忆，并在调用 search_memory 时召回；还提供显式的 FunctionTool 封装。",
       "type": "official",
       "by": "hindsight",
       "category": "framework",
@@ -323,7 +323,7 @@
     {
       "id": "haystack",
       "name": "Haystack",
-      "description": "为 Haystack 智能体提供持久记忆。提供记忆存储、记忆召回与反思工具，以及可选自动召回和存储的 HindsightMemoryWrapper。",
+      "description": "为 Haystack 智能体提供持久记忆。提供存入、召回和反思工具，以及可选的 HindsightMemoryWrapper，支持自动召回和存入。",
       "type": "official",
       "by": "hindsight",
       "category": "framework",
@@ -333,7 +333,7 @@
     {
       "id": "nemoclaw",
       "name": "NemoClaw",
-      "description": "为 NemoClaw 沙箱智能体提供持久记忆。一个命令即可完成配置，无需修改代码。",
+      "description": "为 NemoClaw 沙箱中的智能体提供持久记忆。一条命令即可完成配置，无需更改代码。",
       "type": "official",
       "by": "hindsight",
       "category": "tool",
@@ -343,7 +343,7 @@
     {
       "id": "paperclip",
       "name": "Paperclip",
-      "description": "为 Paperclip AI 智能体提供持久记忆。安装一次插件，每个智能体即可在运行前自动召回、运行后自动存储，无需修改代码。",
+      "description": "为 Paperclip AI 智能体提供持久记忆。安装一次插件，每个智能体便会在运行前自动召回记忆、运行后存入记忆，无需更改代码。",
       "type": "official",
       "by": "hindsight",
       "category": "tool",
@@ -353,7 +353,7 @@
     {
       "id": "right-agent",
       "name": "Right Agent",
-      "description": "为 Right Agent 提供持久记忆；这些封闭式 AI 智能体在 OpenShell 沙箱中运行 Claude Code。Hindsight 是原生记忆供应商，可在初始化时选择。",
+      "description": "为 Right Agent 提供持久记忆。它是一种封闭式 AI 智能体，会在 OpenShell 沙箱中运行 Claude Code。Hindsight 是其原生记忆提供方，可在初始化时选择。",
       "type": "official",
       "by": "hindsight",
       "category": "framework",
@@ -363,7 +363,7 @@
     {
       "id": "strands",
       "name": "Strands Agents",
-      "description": "通过 Hindsight 的记忆存储、记忆召回与反思工具，为 Strands 智能体提供持久的长期记忆。",
+      "description": "通过 Hindsight 的存入、召回和反思工具，为 Strands 智能体提供持久长期记忆。",
       "type": "official",
       "by": "hindsight",
       "category": "framework",
@@ -373,7 +373,7 @@
     {
       "id": "ag2",
       "name": "AG2",
-      "description": "通过跨对话的记忆存储、记忆召回与反思工具，为 AG2 智能体提供持久的长期记忆。",
+      "description": "通过跨对话使用的存入、召回和反思工具，为 AG2 智能体提供持久长期记忆。",
       "type": "official",
       "by": "hindsight",
       "category": "framework",
@@ -383,7 +383,7 @@
     {
       "id": "autogen",
       "name": "AutoGen",
-      "description": "通过用于记忆存储、记忆召回与反思的 Hindsight FunctionTool 实例，为 AutoGen 智能体提供持久的长期记忆。",
+      "description": "通过用于存入、召回和反思记忆的 Hindsight FunctionTool 实例，为 AutoGen 智能体提供持久长期记忆。",
       "type": "official",
       "by": "hindsight",
       "category": "framework",
@@ -393,7 +393,7 @@
     {
       "id": "aider",
       "name": "Aider",
-      "description": "为 Aider 结对编程 CLI 提供持久的长期记忆。hindsight-aider 在每次会话前召回相关项目记忆，并在会话后存储对话记录。",
+      "description": "为 Aider 结对编程 CLI 提供持久长期记忆。hindsight-aider 会在每次会话前召回相关项目记忆，并在会话后存入对话记录。",
       "type": "official",
       "by": "hindsight",
       "category": "coding-agent",
@@ -403,7 +403,7 @@
     {
       "id": "opencode",
       "name": "OpenCode",
-      "description": "为 OpenCode 提供持久的长期记忆插件。自动存储对话，在会话开始时召回上下文，并提供记忆存储、记忆召回与反思工具。",
+      "description": "为 OpenCode 提供持久长期记忆插件。它会自动存入对话、在会话开始时召回上下文，并提供存入、召回和反思工具。",
       "type": "official",
       "by": "hindsight",
       "category": "legacy",
@@ -413,7 +413,7 @@
     {
       "id": "eve",
       "name": "Eve",
-      "description": "为 Vercel Eve 智能体提供记忆供应商。每轮交互前按范围召回、交互后自动捕获，并提供反思工具，无需模型调用工具。",
+      "description": "作为 Vercel Eve 智能体的记忆提供方，每轮交互前按范围召回记忆，交互后自动捕获内容，并提供反思工具，无需模型调用工具。",
       "type": "official",
       "by": "hindsight",
       "category": "framework",
@@ -423,7 +423,7 @@
     {
       "id": "n8n",
       "name": "n8n",
-      "description": "为 n8n 工作流提供持久记忆社区节点。记忆存储、记忆召回与反思操作可接入任意工作流，与 Slack、Sheets、OpenAI 及其他 400 多种集成共同使用。",
+      "description": "为 n8n 工作流提供社区维护的持久记忆节点。存入、召回和反思操作可接入任意工作流，与 Slack、Sheets、OpenAI 及其他 400 多种集成共同使用。",
       "type": "official",
       "by": "hindsight",
       "category": "framework",
@@ -433,7 +433,7 @@
     {
       "id": "zapier",
       "name": "Zapier",
-      "description": "为你的 Zap 提供长期记忆。记忆存储、记忆召回、反思操作与即时记忆事件触发器，将 Hindsight 连接到 7,000 多个应用。",
+      "description": "为你的 Zap 提供长期记忆。存入、召回和反思操作，以及即时记忆事件触发器，可将 Hindsight 连接到 7,000 多个应用。",
       "type": "official",
       "by": "hindsight",
       "category": "framework",
@@ -443,7 +443,7 @@
     {
       "id": "openai-agents",
       "name": "OpenAI Agents SDK",
-      "description": "通过用于记忆存储、记忆召回与反思的 Hindsight FunctionTool 实例，为 OpenAI Agents SDK 智能体提供持久的长期记忆。",
+      "description": "通过用于存入、召回和反思记忆的 Hindsight FunctionTool 实例，为 OpenAI Agents SDK 智能体提供持久长期记忆。",
       "type": "official",
       "by": "hindsight",
       "category": "framework",
@@ -453,7 +453,7 @@
     {
       "id": "superagent",
       "name": "Superagent",
-      "description": "通过 Superagent 为 Hindsight 记忆操作提供安全中间件。防范提示词注入，并在内容存储前脱敏个人身份信息（PII）。",
+      "description": "通过 Superagent 为 Hindsight 记忆操作提供安全中间件。它可防范提示注入，并在存储内容前对个人身份信息（PII）进行脱敏。",
       "type": "official",
       "by": "hindsight",
       "category": "tool",
@@ -463,7 +463,7 @@
     {
       "id": "pipecat",
       "name": "Pipecat",
-      "description": "通过 FrameProcessor 为 Pipecat 语音 AI 流水线提供持久记忆，在每轮交互前召回上下文，并在之后存储对话内容。",
+      "description": "通过 FrameProcessor 为 Pipecat 语音 AI 流水线提供持久记忆，在每轮交互前召回上下文，之后存入对话内容。",
       "type": "official",
       "by": "hindsight",
       "category": "tool",
@@ -473,7 +473,7 @@
     {
       "id": "agentcore",
       "name": "Bedrock AgentCore",
-      "description": "为 Amazon Bedrock AgentCore Runtime 智能体提供持久记忆。记忆在短暂的 Runtime 会话结束后仍保留，让智能体在重新配置后继续记住用户、决策与上下文。",
+      "description": "为 Amazon Bedrock AgentCore Runtime 智能体提供持久记忆。记忆会在临时 Runtime 会话结束后继续保留，让智能体在重新配置后仍记得用户、决策和上下文。",
       "type": "official",
       "by": "hindsight",
       "category": "framework",
@@ -483,7 +483,7 @@
     {
       "id": "smolagents",
       "name": "SmolAgents",
-      "description": "通过 Hindsight 的记忆存储、记忆召回与反思工具，为 HuggingFace SmolAgents 提供持久的长期记忆。",
+      "description": "通过 Hindsight 的存入、召回和反思工具，为 HuggingFace SmolAgents 提供持久长期记忆。",
       "type": "official",
       "by": "hindsight",
       "category": "framework",
@@ -493,7 +493,7 @@
     {
       "id": "dify",
       "name": "Dify",
-      "description": "为 Dify 工作流提供持久记忆插件。记忆存储、记忆召回与反思工具可接入任意聊天流或智能体应用，与 Dify 的其他 LLM 和工具节点共同使用。",
+      "description": "为 Dify 工作流提供持久记忆插件。存入、召回和反思工具可接入任意聊天流或智能体应用，与 Dify 的其他 LLM 和工具节点共同使用。",
       "type": "official",
       "by": "hindsight",
       "category": "framework",
@@ -503,7 +503,7 @@
     {
       "id": "vapi",
       "name": "Vapi",
-      "description": "通过 Hindsight webhook 为 Vapi 语音 AI 通话提供持久记忆。在通话开始时召回来电者上下文，并在通话结束时存储对话记录。",
+      "description": "通过 Hindsight Webhook 为 Vapi 语音 AI 通话提供持久记忆。通话开始时召回来电者的上下文，并在通话结束时存入通话记录。",
       "type": "official",
       "by": "hindsight",
       "category": "tool",
@@ -513,7 +513,7 @@
     {
       "id": "roo-code",
       "name": "Roo Code",
-      "description": "通过 Hindsight MCP 为 Roo Code 提供持久记忆。在每个任务前自动召回上下文，并在任务后存储所学内容。",
+      "description": "通过 Hindsight MCP 为 Roo Code 提供持久记忆。在每项任务前自动召回上下文，并在任务后存入学到的内容。",
       "type": "official",
       "by": "hindsight",
       "category": "coding-agent",
@@ -523,7 +523,7 @@
     {
       "id": "omo",
       "name": "OMO (oh-my-openagent)",
-      "description": "通过 Hindsight 钩子为 OMO 智能体运行框架提供自动长期记忆。在每次提示前召回上下文，并存储会话所学内容；云端用户无需配置。",
+      "description": "通过 Hindsight 钩子为 OMO 智能体运行框架提供自动长期记忆。在每次提示前召回上下文，并存入会话中学到的内容；云端用户无需配置。",
       "type": "official",
       "by": "hindsight",
       "category": "coding-agent",
@@ -533,7 +533,7 @@
     {
       "id": "flowise",
       "name": "Flowise",
-      "description": "为 Flowise 可视化聊天流和智能体提供即插即用的 Hindsight 工具节点。记忆存储、记忆召回与反思可与画布中的任意 LangChain 智能体共同使用。",
+      "description": "为 Flowise 可视化聊天流和智能体提供即插即用的 Hindsight 工具节点。存入、召回和反思工具可与画布中的任意 LangChain 智能体配合使用。",
       "type": "official",
       "by": "hindsight",
       "category": "framework",
@@ -543,7 +543,7 @@
     {
       "id": "obsidian",
       "name": "Obsidian",
-      "description": "将 Obsidian 知识库同步到 Hindsight，并与基于笔记作答的智能体聊天。知识库始终是权威数据源，每个回答都会引用其来源笔记。",
+      "description": "将 Obsidian 知识库同步到 Hindsight，并与一位依据笔记作答的智能体对话。你的知识库始终是权威数据源，每个回答都会引用对应的来源笔记。",
       "type": "official",
       "by": "hindsight",
       "category": "tool",
@@ -553,7 +553,7 @@
     {
       "id": "hindclaw",
       "name": "HindClaw",
-      "description": "为 AI 智能体提供生产级记忆基础设施：通过 Hindsight 扩展实现服务端访问控制，以 Terraform 提供器管理用户、组、记忆库和权限，并提供自动管理嵌入服务的 OpenClaw 插件。",
+      "description": "为 AI 智能体提供生产环境级别的记忆基础设施：通过 Hindsight 扩展实现服务端访问控制，通过 Terraform 提供器管理用户、组、记忆库和权限，并提供可自动管理嵌入服务的 OpenClaw 插件。",
       "type": "community",
       "by": "mrkhachaturov",
       "category": "framework",
@@ -563,7 +563,7 @@
     {
       "id": "context-forge",
       "name": "ContextForge",
-      "description": "在 ContextForge 网关中将 Hindsight 注册为 MCP 后端，让每个连接的 AI 工具通过统一的 MCP 中心访问长期记忆。",
+      "description": "在 ContextForge 网关中将 Hindsight 注册为 MCP 后端，让每个已连接的 AI 工具都能通过统一的 MCP 中心访问长期记忆。",
       "type": "community",
       "by": "ooa-andera",
       "category": "mcp",
@@ -573,7 +573,7 @@
     {
       "id": "gemini-spark",
       "name": "Gemini Spark",
-      "description": "通过 MCP 为 Google 的 Gemini Spark 助手提供持久记忆。Spark 通过内置 MCP 客户端调用 Hindsight 的召回与存储工具，支持 Hindsight Cloud 或通过 OAuth 代理连接自托管实例。",
+      "description": "通过 MCP 为 Google Gemini Spark 助手提供持久记忆。Spark 使用内置 MCP 客户端调用 Hindsight 的召回和存入工具，可连接 Hindsight Cloud，也可通过 OAuth 代理连接自托管实例。",
       "type": "official",
       "by": "hindsight",
       "category": "tool",
@@ -583,7 +583,7 @@
     {
       "id": "grok-bot",
       "name": "Grok Bot",
-      "description": "为 Grok Bot 和 Cursor 提供长期记忆。每个 Bot 拥有独立记忆库及共享记忆库，在例行运行之间保留状态，并读取其他 AI 工具写入的记忆库。使用 OAuth 连接，无需 API 密钥。",
+      "description": "为 Grok Bot 和 Cursor 提供长期记忆。每个 Bot 都有自己的记忆库和一个共享记忆库，可在例行运行之间保留状态，并读取其他 AI 工具写入的记忆库。通过 OAuth 连接，无需 API 密钥。",
       "type": "official",
       "by": "hindsight",
       "category": "tool",
@@ -593,7 +593,7 @@
     {
       "id": "meta-muse",
       "name": "Meta Muse",
-      "description": "将其他 AI 工具的记忆带入 Meta Muse。Muse 使用 OAuth 登录 Hindsight，拥有独立记忆库，并读取其他智能体写入的记忆库，通过 MCP 实现记忆召回、记忆存储与反思。",
+      "description": "将其他 AI 工具中的记忆带入 Meta Muse。Muse 通过 OAuth 登录 Hindsight，拥有自己的记忆库，并读取其他智能体写入的记忆库；它通过 MCP 执行记忆的召回、存入和反思。",
       "type": "official",
       "by": "hindsight",
       "category": "tool",
@@ -613,7 +613,7 @@
     {
       "id": "agrasandhany",
       "name": "agrasandhany",
-      "description": "将本地笔记转化为任意智能体都能通过 MCP 召回的长期记忆，支持自动同步、按文件夹限定召回范围及持续更新的摘要。",
+      "description": "将本地笔记转化为任意智能体都能通过 MCP 召回的长期记忆，支持自动同步、按文件夹限定召回范围，以及持续更新的摘要。",
       "type": "community",
       "by": "yugandhar-maram",
       "category": "tool",
@@ -623,7 +623,7 @@
     {
       "id": "openhands",
       "name": "OpenHands",
-      "description": "通过 OpenHands（原名 OpenDevin）的原生 MCP 支持提供长期记忆。一个命令即可将 Hindsight MCP 服务器接入 config.toml，并添加召回与存储规则。",
+      "description": "通过 OpenHands（原名 OpenDevin）的原生 MCP 支持提供长期记忆。一条命令即可将 Hindsight MCP 服务器接入 config.toml，并添加召回和存入规则。",
       "type": "official",
       "by": "hindsight",
       "category": "coding-agent",
@@ -633,7 +633,7 @@
     {
       "id": "devin-desktop",
       "name": "Devin Desktop",
-      "description": "通过 Devin Desktop（原名 Windsurf 的编辑器）的原生 MCP 支持提供长期记忆。一个命令即可将 Hindsight MCP 服务器接入 mcp_config.json 并添加始终启用的召回与存储规则，让记忆自动运行。",
+      "description": "通过 Devin Desktop（原名 Windsurf 的编辑器）的原生 MCP 支持提供长期记忆。一条命令即可将 Hindsight MCP 服务器接入 mcp_config.json，并添加始终启用的召回和存入规则，让记忆自动运行。",
       "type": "official",
       "by": "hindsight",
       "category": "coding-agent",
@@ -643,7 +643,7 @@
     {
       "id": "omnigent",
       "name": "Omnigent",
-      "description": "为在 Omnigent 中运行的每个智能体框架提供持久记忆。一次配置即可将 memory_recall、memory_retain 和 memory_reflect 接入 Claude Code、Codex、Cursor、Hermes、Pi 及任意自定义智能体。",
+      "description": "为你在 Omnigent 中运行的每个智能体框架提供持久记忆。一次配置即可将 memory_recall、memory_retain 和 memory_reflect 接入 Claude Code、Codex、Cursor、Hermes、Pi 及任意自定义智能体。",
       "type": "official",
       "by": "hindsight",
       "category": "framework",
@@ -653,7 +653,7 @@
     {
       "id": "epimetheus",
       "name": "Epimetheus",
-      "description": "为 pi 编程智能体提供记忆。支持记忆存储、记忆召回、反思、过往会话导入等功能，注重灵活性以及记忆质量与最佳实践。",
+      "description": "为 pi 编程智能体提供记忆。支持存入、召回、反思、导入过往会话等功能，并注重灵活性、记忆质量和最佳实践。",
       "type": "community",
       "by": "noctuid",
       "category": "tool",
@@ -663,7 +663,7 @@
     {
       "id": "tealtiger",
       "name": "TealTiger",
-      "description": "具备治理意识的智能体记忆，按重要性加权存储 AI 智能体的治理决策。关键拒绝决定持久保存以满足合规要求，常规批准则自然衰减。",
+      "description": "具备治理意识的智能体记忆，按重要性加权存储 AI 智能体的治理决策。关键拒绝决定会为满足合规要求而持续保留，常规批准则会自然衰减。",
       "type": "community",
       "by": "agentguard-ai",
       "category": "framework",
@@ -673,7 +673,7 @@
     {
       "id": "notion-to-hindsight-sync",
       "name": "Notion Sync",
-      "description": "将 Notion 数据库同步到 Hindsight，让智能体能够召回你的笔记。运行于 Cloudflare Workers，支持增量同步与删除处理。",
+      "description": "将 Notion 数据库同步到 Hindsight，让智能体能够召回你的笔记。它运行在 Cloudflare Workers 上，支持增量同步和删除处理。",
       "type": "community",
       "by": "Nyrest",
       "category": "tool",

@@ -22,13 +22,13 @@ func main() {
 	ctx := context.Background()
 
 	// [docs:document-retain]
-	// 使用文档 ID 存储
+	// Retain with document ID
 	docID := "meeting-2024-03-15"
 	client.MemoryAPI.RetainMemories(ctx, "my-bank").
 		RetainRequest(hindsight.RetainRequest{
 			Items: []hindsight.MemoryItem{
 				{
-					Content:    hindsight.TextContent("Alice 介绍了第四季度路线图..."),
+					Content:    hindsight.TextContent("Alice presented the Q4 roadmap..."),
 					DocumentId: *hindsight.NewNullableString(&docID),
 				},
 			},
@@ -42,18 +42,18 @@ func main() {
 		RetainRequest(hindsight.RetainRequest{
 			Items: []hindsight.MemoryItem{
 				{
-					Content:    hindsight.TextContent("项目截止日期：3 月 31 日"),
+					Content:    hindsight.TextContent("Project deadline: March 31"),
 					DocumentId: *hindsight.NewNullableString(&planDoc),
 				},
 			},
 		}).Execute()
 
-	// 更新（删除旧事实，创建新事实）
+	// Update (deletes old facts, creates new ones)
 	client.MemoryAPI.RetainMemories(ctx, "my-bank").
 		RetainRequest(hindsight.RetainRequest{
 			Items: []hindsight.MemoryItem{
 				{
-					Content:    hindsight.TextContent("项目截止日期：4 月 15 日（已延期）"),
+					Content:    hindsight.TextContent("Project deadline: April 15 (extended)"),
 					DocumentId: *hindsight.NewNullableString(&planDoc),
 				},
 			},
@@ -63,24 +63,24 @@ func main() {
 	// [docs:document-get]
 	doc, _, err := client.DocumentsAPI.GetDocument(ctx, "my-bank", "meeting-2024-03-15").Execute()
 	if err != nil {
-		log.Fatalf("获取文档失败： %v", err)
+		log.Fatalf("Failed to get document: %v", err)
 	}
-	fmt.Printf("文档 ID： %s\n", doc.GetId())
-	fmt.Printf("记忆单元： %d\n", doc.GetMemoryUnitCount())
+	fmt.Printf("Document ID: %s\n", doc.GetId())
+	fmt.Printf("Memory units: %d\n", doc.GetMemoryUnitCount())
 	// [/docs:document-get]
 
 	// [docs:document-update-tags]
-	// 替换文档标签（替换后的完整集合）
+	// Replace the document's tags (the full set it should end up with)
 	updateResult, _, err := client.DocumentsAPI.UpdateDocument(ctx, "my-bank", "meeting-2024-03-15").
 		UpdateDocumentRequest(hindsight.UpdateDocumentRequest{Tags: []string{"team-a", "team-b"}}).
 		Execute()
 	if err != nil {
-		log.Fatalf("更新文档失败： %v", err)
+		log.Fatalf("Failed to update document: %v", err)
 	}
 	fmt.Printf("Updated: %v\n", updateResult.GetSuccess())
 
-	// 移除全部标签，让文档在所有范围可见。传空切片而非 nil：
-	// nil 切片被请求省略，服务器会拒绝没有标签的更新。
+	// Remove all tags (make document visible everywhere). Pass an empty slice, not nil:
+	// a nil slice is left out of the request, and the server rejects an update with no tags.
 	client.DocumentsAPI.UpdateDocument(ctx, "my-bank", "meeting-2024-03-15").
 		UpdateDocumentRequest(hindsight.UpdateDocumentRequest{Tags: []string{}}).
 		Execute()
@@ -88,7 +88,7 @@ func main() {
 
 	cleared, _, err := client.DocumentsAPI.GetDocument(ctx, "my-bank", "meeting-2024-03-15").Execute()
 	if err != nil || len(cleared.GetTags()) != 0 {
-		log.Fatalf("清空后预期无标签，实际为 %v (err %v)", cleared.GetTags(), err)
+		log.Fatalf("Expected no tags after clearing, got %v (err %v)", cleared.GetTags(), err)
 	}
 
 	// [docs:document-delete]
@@ -96,19 +96,19 @@ func main() {
 	// [/docs:document-delete]
 
 	// [docs:document-list]
-	// 列出全部文档
+	// List all documents
 	docs, _, err := client.DocumentsAPI.ListDocuments(ctx, "my-bank").Execute()
 	if err != nil {
-		log.Fatalf("列出文档失败： %v", err)
+		log.Fatalf("Failed to list documents: %v", err)
 	}
 	for _, d := range docs.Items {
-		fmt.Printf("%s: %d 条记忆\n", d.Id, d.GetMemoryUnitCount())
+		fmt.Printf("%s: %d memories\n", d.Id, d.GetMemoryUnitCount())
 	}
 	// [/docs:document-list]
 
-	// 清理（不在文档中展示）
+	// Cleanup (not shown in docs)
 	req, _ := http.NewRequest("DELETE", fmt.Sprintf("%s/v1/default/banks/my-bank", apiURL), nil)
 	http.DefaultClient.Do(req)
 
-	fmt.Println("documents.go: 全部示例通过")
+	fmt.Println("documents.go: All examples passed")
 }
