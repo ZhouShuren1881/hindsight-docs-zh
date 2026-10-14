@@ -1,20 +1,20 @@
 ---
-title: "指南：用Hindsight添加OpenHands记忆"
+title: "指南：使用 Hindsight 为 OpenHands 添加记忆"
 authors: [benfrank241]
 date: 2026-07-17
 tags: [how-to, openhands, coding-agents, memory]
-description: "使用后视开放手包将OpenHands记忆与Hindsight一起添加，它将HindsightMCP服务器连接到OpenHands并添加recall/retain规则，以便智能体在任务开始时回忆记忆并在工作时保留持久的事实。"
+description: "使用 hindsight-openhands 包为 OpenHands 添加 Hindsight 记忆。该包会将 Hindsight MCP 服务器接入 OpenHands，并添加 Recall（召回）/Retain（存入）规则，让智能体在任务开始时召回记忆，并在工作过程中存入值得长期保留的事实。"
 image: /img/guides/guide-openhands-memory-with-hindsight.svg
 hide_table_of_contents: true
 ---
 
 ![指南：使用 Hindsight 为 OpenHands 添加记忆](/img/guides/guide-openhands-memory-with-hindsight.svg)
 
-如果希望**使用 Hindsight 为 OpenHands 添加记忆**，使用 `hindsight-openhands` 包。一个 `init` 命令将 MCP 服务器配置到 OpenHands 的 `config.toml`，并在项目 `AGENTS.md` 添加召回/存储规则，让记忆跨任务延续，无需重新发现相同决策和约定。
+如果想为 OpenHands 添加 Hindsight 记忆，最简便的方式是使用 `hindsight-openhands` 包。只需运行一条 `init` 命令，就能将 Hindsight MCP 服务器接入 OpenHands 的 `config.toml`，并在项目的 `AGENTS.md` 中添加召回/存入规则。这样，OpenHands 就能跨任务使用长期记忆，无需每次开始新任务时都重新发现相同的决策和约定。
 
-这非常适合OpenHands因为OpenHands有原生 Streamable-HTTPMCP支持，所以HindsightMCP端点直接连接，无需桥接。OpenHands也加载`AGENTS.md` 进入智能体的每项任务的上下文，这正是  属于recall/retain规则。两者都到位后，智能体就拥有 `recall`，`retain`，和`reflect` 工具，并在规则的指导下，在任务开始时回忆相关记忆，并在工作时保留持久的事实。
+这种方式很适合 OpenHands，因为它原生支持 Streamable-HTTP MCP，Hindsight MCP 端点可以直接连接，无需桥接。OpenHands 还会在每项任务中将 `AGENTS.md` 加载到智能体上下文，而召回/存入规则正适合放在这里。两者配置就绪后，智能体便可使用 `recall`（Recall，召回）、`retain`（Retain，存入）和 `reflect`（Reflect，反思）工具，并在规则的指导下于任务开始时召回相关记忆、工作过程中存入值得长期保留的事实。
 
-本指南将逐步安装该软件包，并将其指向您的Hindsight后端，了解如何MCP服务器和规则组合在一起，以及快速验证流程，以便您可以确认记忆实际上正在被使用。保留[文档首页](/) 和 [快速入门指南](/developer/api/quickstart) 就在附近。
+本指南将介绍如何安装软件包、将其连接到 Hindsight 后端、了解 MCP 服务器与规则如何配合，以及如何快速验证记忆确实正在使用。操作时可同时参考[文档首页](/)和[快速入门指南](/developer/api/quickstart)。
 
 <!-- truncate -->
 
@@ -22,46 +22,46 @@ hide_table_of_contents: true
 >
 > 1. `pip install hindsight-openhands`。
 > 2. `cd your-project`。
-> 3.运行`hindsight-openhands init --api-token YOUR_HINDSIGHT_API_KEY --bank-id my-project`。
-> 4.开始OpenHands在该项目中 — `recall`/`retain`/`reflect` 工具可用并自动使用。
-> 5.验证后面的任务是否记住前面的任务存储的内容。
+> 3. 运行 `hindsight-openhands init --api-token YOUR_HINDSIGHT_API_KEY --bank-id my-project`。
+> 4. 在该项目中启动 OpenHands，即可使用 `recall`/`retain`/`reflect` 工具；这些工具会自动调用。
+> 5. 检查后续任务是否记得较早任务存入的内容。
 
-## 先决条件 {#prerequisites}
+## 前提条件 {#prerequisites}
 
-开始之前，请确保您拥有：
+开始前，请确保已准备好：
 
-- OpenHands已安装并工作
-- 可达Hindsight后端，[Hindsight Cloud](https://hindsight.vectorize.io) 或自托管服务器
-- 您想要记忆范围的项目目录
+- 已安装并能正常运行的 OpenHands
+- 可访问的 Hindsight 后端：[Hindsight Cloud](https://hindsight.vectorize.io) 或自托管服务器
+- 一个需要启用记忆的项目目录
 
 ## 第 1 步：安装软件包 {#step-1-install-the-package}
 
-使用pip安装软件包。
+使用 pip 安装软件包。
 
 ```bash
 pip install hindsight-openhands
 ```
 
-`hindsight-openhands`是一个小设置CLI。它不作为后台进程运行——它只是编写配置OpenHands读取。
+`hindsight-openhands` 是一个轻量的配置 CLI。它不会作为后台进程运行，只会写入 OpenHands 要读取的配置。
 
-## 第 2 步：连接MCP 服务器和规则 {#step-2-wire-up-the-mcp-server-and-rule}
+## 第 2 步：接入 MCP 服务器并添加规则 {#step-2-wire-up-the-mcp-server-and-rule}
 
-从您想要记忆的项目内部运行`init`：
+在需要启用记忆的项目目录中运行 `init`：
 
 ```bash
 cd your-project
 hindsight-openhands init --api-token YOUR_HINDSIGHT_API_KEY --bank-id my-project
 ```
 
-`init` 合并 `[mcp]`进入`./config.toml` 并写下recall/retain规则为 `./AGENTS.md`。使用[Hindsight Cloud](https://hindsight.vectorize.io) 键，或使用 指向自托管服务器 `--api-url http://localhost:8888`（开放本地服务器不需要令牌）。
+`init` 会将 `[mcp]` 配置项合并到 `./config.toml`，并将召回/存入规则写入 `./AGENTS.md`。可以使用 [Hindsight Cloud](https://hindsight.vectorize.io) 密钥；也可以通过 `--api-url http://localhost:8888` 指定自托管服务器（开放的本地服务器无需令牌）。
 
-如果`config.toml` 无法安全解析，`init` 打印准确的 `[mcp]` 粘贴片段而不是触摸文件。你也可以运行`hindsight-openhands init --print-only` 随时查看代码片段和规则，无需编写任何内容。
+如果 `config.toml` 无法安全解析，`init` 会打印完整的 `[mcp]` 配置片段，供你手动粘贴，而不会修改文件。你也可以随时运行 `hindsight-openhands init --print-only`，查看配置片段和规则，但不写入文件。
 
-完成后，在项目中启动OpenHands。 Hindsight MCP 工具可用并自动使用。
+完成后，在该项目中启动 OpenHands。Hindsight MCP 工具便可使用，并会自动调用。
 
-## MCP服务器和规则如何协同工作 {#how-the-mcp-server-and-rule-work-together}
+## MCP 服务器与规则如何配合 {#how-the-mcp-server-and-rule-work-together}
 
-OpenHands 具有原生 Streamable-HTTP MCP 支持，因此 Hindsight MCP 端点直接连接（无桥接）：
+OpenHands 原生支持 Streamable-HTTP MCP，因此 Hindsight MCP 端点可以直接连接，无需桥接：
 
 ```toml
 [mcp]
@@ -70,24 +70,24 @@ shttp_servers = [
 ]
 ```
 
-这给了智能体`recall`，`retain`，和`reflect`工具。OpenHands也加载`AGENTS.md`（和回购微代理）进入智能体的每项任务的上下文中——这就是recall/retain规则存在，告诉智能体首先进行记忆召回，并在其工作时记忆存储持久的事实。
+这样，智能体就能使用 `recall`、`retain` 和 `reflect` 工具。OpenHands 还会在每项任务中将 `AGENTS.md`（以及仓库级 microagents）加载到智能体上下文；召回/存入规则就写在这里，告诉智能体先召回记忆，再在工作过程中存入值得长期保留的事实。
 
-- **召回（任务开始）：** 规则告诉智能体调用 `recall` 根据用户的请求，在执行之前加载相关决策、偏好和项目上下文。
-- **存储（工作期间）：** 当智能体学习到一个持久的事实 - 架构决策、用户偏好、约定 - 规则告诉它调用 `retain`跨会话存储它。
+- **Recall（任务开始时召回）：** 规则会告诉智能体根据用户请求调用 `recall`，在采取行动前加载相关决策、偏好和项目上下文。
+- **Retain（工作过程中存入）：** 当智能体了解到值得长期保留的事实，例如架构决策、用户偏好或约定时，规则会告诉它调用 `retain`，将这些内容存入记忆，以便在不同会话间使用。
 
-对于较低级别的行为，请阅读[Hindsight 记忆召回 API](/developer/api/recall) 和 [Hindsight 记忆存储 API](/developer/api/retain)。
+有关更底层的行为，请阅读 [Hindsight 的 Recall API](/developer/api/recall) 和 [Hindsight 的 Retain API](/developer/api/retain)。
 
 ## 记忆库 {#memory-banks}
 
-TheMCP服务器连接到记忆库 ID — `--bank-id` 你传给`init`（默认：`openhands`）。记忆库是一个孤立的记忆存储，因此将项目指向自己的记忆库可以使其记忆与不相关的工作分开，而将多个工具指向同一个记忆库可以让它们共享项目记忆。
+MCP 服务器会连接到一个记忆库 ID，也就是传给 `init` 的 `--bank-id`（默认值为 `openhands`）。记忆库是彼此隔离的记忆存储。将项目指向专属记忆库，可使其记忆与无关工作隔离；将多个工具指向同一个记忆库，则可以让它们共享项目记忆。
 
-这意味着，如果您还使用Hindsight与另一个编辑器或针对相同的记忆库编码智能体，它们会从同一个项目记忆中提取。在一种工具中学到的约定在其他工具中也可用。
+因此，如果你也在同一个记忆库中将 Hindsight 与其他编辑器或编程智能体配合使用，它们就能访问同一份项目记忆。在一种工具中学到的约定，也能在其他工具中使用。
 
-记忆库也可以来自`HINDSIGHT_OPENHANDS_BANK_ID`环境变量。有关完整的配置选项集，请参阅 [包 README](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/openhands)。
+记忆库 ID 也可以通过 `HINDSIGHT_OPENHANDS_BANK_ID` 环境变量设置。完整配置选项请参阅[软件包 README](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/openhands)。
 
-## 验证记忆是否有效 {#verify-that-memory-is-working}
+## 验证记忆是否正常工作 {#verify-that-memory-is-working}
 
-可以先检查接线，再检查往返。
+可以先检查配置接入情况，再验证记忆的存入和召回是否连通。
 
 检查服务器和规则是否已配置：
 
@@ -95,60 +95,60 @@ TheMCP服务器连接到记忆库 ID — `--bank-id` 你传给`init`（默认：
 hindsight-openhands status
 ```
 
-那么一个好的测试序列是：
+接着可以按以下步骤测试：
 
-1. 在项目中启动OpenHands，让它记录任务期间的决定或约定
-2. 在同一项目中开始新任务
-3. 询问之前的决定
+1. 在项目中启动 OpenHands，让它在执行任务时记录一项决策或约定。
+2. 在同一项目中启动一项新任务。
+3. 询问它前一项任务中的决策。
 
 例如：
 
-- 一个任务重构了 auth 模块并记录了重试逻辑发生变化的原因
-- 稍后的任务询问当前的身份验证约定是什么
+- 一项任务重构 auth 模块，并记录重试逻辑为何发生变化。
+- 后续任务询问当前的 auth 约定是什么。
 
-如果智能体回忆起之前的决定，则设置正在运行。
+如果智能体能召回先前的决策，说明配置已经生效。
 
 ## 常见错误 {#common-mistakes}
 
-### 在项目外运行 init {#running-init-outside-the-project}
+### 在项目目录外运行 init {#running-init-outside-the-project}
 
-`init` 写`./config.toml` 和 `./AGENTS.md`在当前目录下，所以在运行之前， `cd`进入您想要记忆的项目。
+`init` 会在当前目录中写入 `./config.toml` 和 `./AGENTS.md`，所以运行前要先 `cd` 到需要启用记忆的项目目录。
 
-### 忘记 Cloud 令牌 {#forgetting-the-cloud-token}
+### 忘记提供 Cloud 令牌 {#forgetting-the-cloud-token}
 
-Hindsight Cloud需要令牌。通过`--api-token`（或设置`HINDSIGHT_API_TOKEN`）。自托管开放本地服务器不需要令牌。
+Hindsight Cloud 需要令牌。请传入 `--api-token`，或设置 `HINDSIGHT_API_TOKEN`。自托管的开放本地服务器无需令牌。
 
-### 当 init 无法解析 config.toml 时手动编辑它 {#editing-configtoml-by-hand-when-init-couldnt-parse-it}
+### init 无法解析 config.toml 时仍手动编辑 {#editing-configtoml-by-hand-when-init-couldnt-parse-it}
 
-如果`init` 报告无法安全编辑 `config.toml`，它打印出准确的`[mcp]` 片段 — 将其粘贴进去而不是猜测。
+如果 `init` 报告无法安全编辑 `config.toml`，它会打印完整的 `[mcp]` 配置片段。请直接粘贴该片段，不要自行猜测配置内容。
 
-### 假设记忆在记忆库中是全局的 {#assuming-memory-is-global-across-banks}
+### 误以为不同记忆库之间共享记忆 {#assuming-memory-is-global-across-banks}
 
-记忆的范围是MCP服务器指向的记忆库。不要期望一个记忆库上的项目能够记忆另一个记忆库的上下文。
+记忆的范围由 MCP 服务器所连接的记忆库决定。不要指望连接到一个记忆库的项目能够召回另一个记忆库中的上下文。
 
-## 常见问题解答 {#faq}
+## 常见问题 {#faq}
 
-### 我需要Hindsight Cloud吗？ {#do-i-need-hindsight-cloud}
+### 我需要使用 Hindsight Cloud 吗？ {#do-i-need-hindsight-cloud}
 
-没有。自托管Hindsight服务器也能工作 — 点 `init` 与 `--api-url`（例如`--api-url http://localhost:8888`），并且开放本地服务器不需要令牌。
+不需要。自托管的 Hindsight 服务器也可以使用：通过 `--api-url` 将 `init` 指向该服务器（例如 `--api-url http://localhost:8888`）；开放的本地服务器无需令牌。
 
 ### 这会运行后台进程吗？ {#does-this-run-a-background-process}
 
-没有。 `hindsight-openhands`只写配置。 `recall`/`retain`/`reflect`工具贯穿OpenHands'母语MCP支持。
+不会。`hindsight-openhands` 只写入配置。`recall`/`retain`/`reflect` 工具通过 OpenHands 原生的 MCP 支持运行。
 
-### 记忆的范围是怎样的？ {#how-is-memory-scoped}
+### 记忆的范围由什么决定？ {#how-is-memory-scoped}
 
-按记忆库id — `--bank-id` 传递给`init`（默认`openhands`)，也可以来自`HINDSIGHT_OPENHANDS_BANK_ID`。
+范围由记忆库 ID 决定，也就是传给 `init` 的 `--bank-id`（默认值为 `openhands`）；该值也可以通过 `HINDSIGHT_OPENHANDS_BANK_ID` 设置。
 
-### 如何删除它？ {#how-do-i-remove-it}
+### 如何移除配置？ {#how-do-i-remove-it}
 
-奔跑`hindsight-openhands uninstall` 删除MCP服务器入口和recall/retain规则。
+运行 `hindsight-openhands uninstall`，即可移除 MCP 服务器配置项和召回/存入规则。
 
 ## 后续步骤 {#next-steps}
 
-- 从开始 [Hindsight Cloud](https://hindsight.vectorize.io) 如果您想要托管后端
-- 阅读[完整 Hindsight 文档](/)
-- 跟随[快速入门指南](/developer/api/quickstart)
-- 回顾[Hindsight 记忆召回 API](/developer/api/recall)
-- 回顾[Hindsight 记忆存储 API](/developer/api/retain)
-- 阅读[OpenHands 集成文档](/sdks/integrations/openhands)
+- 如果需要托管后端，请从 [Hindsight Cloud](https://hindsight.vectorize.io) 开始
+- 阅读 [Hindsight 完整文档](/)
+- 阅读[快速入门指南](/developer/api/quickstart)
+- 阅读 [Hindsight 的 Recall API](/developer/api/recall)
+- 阅读 [Hindsight 的 Retain API](/developer/api/retain)
+- 阅读 [OpenHands 集成文档](/sdks/integrations/openhands)

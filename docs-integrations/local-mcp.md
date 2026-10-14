@@ -1,42 +1,42 @@
 ---
 sidebar_position: 2
-title: "Hindsight本地MCP服务器 | Claude 的持久记忆"
-description: "将 Hindsight 作为嵌入了 PostgreSQL 的本地 MCP 服务器运行 — 无需外部设置。非常适合 Claude 代码和 Claude 桌面，可在对话中实现长期记忆。"
+title: "Hindsight 本地 MCP 服务器 | Claude 的持久记忆"
+description: "将 Hindsight 作为本地 MCP 服务器运行，并使用嵌入式 PostgreSQL，无需外部配置。适合 Claude Code 和 Claude Desktop，让 Claude 在不同对话间保留长期记忆。"
 ---
 
-# 本地MCP服务器 {#local-mcp-server}
+# 本地 MCP 服务器 {#local-mcp-server}
 
-Hindsight 提供本地 MCP 服务器，该服务器完全在您的计算机上运行，​​并带有嵌入式 PostgreSQL 数据库。无需外部服务器或数据库设置。
+Hindsight 提供本地 MCP 服务器，可在你的计算机上运行，并使用嵌入式 PostgreSQL 数据库。无需配置外部服务器或数据库。
 
-这非常适合：
-- **在 Claude Code / Claude Desktop 中个人使用** — 给予Claude对话中的长期记忆
-- **开发与测试** — 无需基础设施即可快速设置
-- **重视隐私的配置** — 所有数据都保留在您的计算机上
+适用于以下场景：
+- **在 Claude Code / Claude Desktop 中个人使用** — 让 Claude 在不同对话间拥有长期记忆
+- **开发和测试** — 无需基础设施即可快速设置
+- **注重隐私的配置** — 所有数据都保存在你的计算机上
 
 ## 工作原理 {#how-it-works}
 
-运行`hindsight-local-mcp`开始完整HindsightAPI`localhost:8888` 带有嵌入式PostgreSQL数据库（pg0）。然后您连接您的MCP通过 HTTP 访问它的客户端。
+运行 `hindsight-local-mcp` 后，会在 `localhost:8888` 启动完整的 Hindsight API，并使用嵌入式 PostgreSQL 数据库（pg0）。随后，你可以通过 HTTP 将 MCP 客户端连接到该服务。
 
-- 自动启动嵌入式PostgreSQL (pg0)
+- 自动启动嵌入式 PostgreSQL（pg0）
 - 启动时运行数据库迁移
-- 暴露完整MCP终点位于 `http://localhost:8888/mcp/`
-- 数据持续存在`~/.pg0/hindsight-mcp/` 重新启动
+- 在 `http://localhost:8888/mcp/` 提供完整的 MCP 端点
+- 重启后，数据仍保存在 `~/.pg0/hindsight-mcp/`
 
 ## 设置 {#setup}
 
-### 1。启动服务器 {#1-start-the-server}
+### 1. 启动服务器 {#1-start-the-server}
 
 ```bash
 HINDSIGHT_API_LLM_API_KEY=sk-... uvx --from hindsight-api hindsight-local-mcp
 ```
 
-或使用Ollama（无需API密钥）：
+也可以使用 Ollama（无需 API 密钥）：
 
 ```bash
 HINDSIGHT_API_LLM_PROVIDER=ollama HINDSIGHT_API_LLM_MODEL=llama3.2 uvx --from hindsight-api hindsight-local-mcp
 ```
 
-### 2。配置您的MCP客户端 {#2-configure-your-mcp-client}
+### 2. 配置 MCP 客户端 {#2-configure-your-mcp-client}
 
 **Claude Code：**
 
@@ -44,23 +44,23 @@ HINDSIGHT_API_LLM_PROVIDER=ollama HINDSIGHT_API_LLM_MODEL=llama3.2 uvx --from hi
 claude mcp add --transport http hindsight http://localhost:8888/mcp/
 ```
 
-**其他 MCP 客户端** — 添加指向 的 HTTP 传输条目 `http://localhost:8888/mcp/`。
+**其他 MCP 客户端** — 添加一条 HTTP 传输配置，并将地址指向 `http://localhost:8888/mcp/`。
 
 ## 记忆库模式 {#bank-modes}
 
-本地服务器支持与托管API相同的两种模式：
+本地服务器支持与托管 API 相同的两种模式：
 
 ### 多记忆库模式（默认） {#multi-bank-mode-default}
 
-使用`http://localhost:8888/mcp/` — 公开所有工具，包括记忆库管理。 记忆库是根据请求通过 选择的 `bank_id` 工具参数或`X-Bank-Id`标题。
+使用 `http://localhost:8888/mcp/`，即可访问包括记忆库管理在内的所有工具。每次请求通过 `bank_id` 工具参数或 `X-Bank-Id` 请求头选择记忆库。
 
 ```bash
 claude mcp add --transport http hindsight http://localhost:8888/mcp/
 ```
 
-### 单一记忆库模式 {#single-bank-mode}
+### 单记忆库模式 {#single-bank-mode}
 
-使用`http://localhost:8888/mcp/<bank-id>/` — 将所有工具固定到一个记忆库，否 需要 `bank_id`参数。这取代了旧的`HINDSIGHT_API_MCP_LOCAL_BANK_ID` 环境变量。
+使用 `http://localhost:8888/mcp/<bank-id>/`，可将所有工具固定到一个记忆库，因此无需提供 `bank_id` 参数。此模式取代了旧的 `HINDSIGHT_API_MCP_LOCAL_BANK_ID` 环境变量。
 
 ```bash
 claude mcp add --transport http hindsight http://localhost:8888/mcp/my-bank/
@@ -68,90 +68,90 @@ claude mcp add --transport http hindsight http://localhost:8888/mcp/my-bank/
 
 ## 可用工具 {#available-tools}
 
-本地服务器公开完整的工具集（多记忆库模式下有29个工具，单记忆库模式下有26个工具）：
+本地服务器提供完整的工具集（多记忆库模式下有 29 个工具，单记忆库模式下有 26 个工具）：
 
 **核心记忆**
 
-|工具|说明|
+| 工具 | 说明 |
 |------|-------------|
-|`retain`|使用可选标签、元数据和文档关联将信息存储到长期记忆中|
-|`recall`|使用自然语言、可配置预算、类型过滤器和标签过滤器搜索记忆|
-|`reflect`|将记忆合成为带有可选结构化输出的推理答案|
+| `retain` | 将信息存入长期记忆，可选添加标签、元数据并关联文档 |
+| `recall` | 使用自然语言搜索记忆，并可配置预算、类型过滤器和标签过滤器 |
+| `reflect` | 综合记忆并生成经过推理的答案，可选择附加结构化输出 |
 
 **心智模型**
 
-|工具|说明|
+| 工具 | 说明 |
 |------|-------------|
-|`list_mental_models`|列出记忆库的保存的反思结果|
-|`get_mental_model`|获取特定的心智模型|
-|`create_mental_model`|创建一个带有可选自动刷新触发器的新心智模型|
-|`update_mental_model`|更新心智模型元数据|
-|`delete_mental_model`|删除心智模型|
-|`refresh_mental_model`|重新生成心智模型的内容|
+| `list_mental_models` | 列出记忆库中固定的反思结果 |
+| `get_mental_model` | 获取指定的心智模型 |
+| `create_mental_model` | 创建心智模型，可选择设置自动刷新的触发条件 |
+| `update_mental_model` | 更新心智模型的元数据 |
+| `delete_mental_model` | 删除心智模型 |
+| `refresh_mental_model` | 重新生成心智模型的内容 |
 
-**指令**
+**强制指令**
 
-|工具|说明|
+| 工具 | 说明 |
 |------|-------------|
-|`list_directives`|列出指导记忆处理的指令|
-|`create_directive`|创建一个新指令|
-|`delete_directive`|删除指令|
+| `list_directives` | 列出用于指导记忆处理的强制指令 |
+| `create_directive` | 创建强制指令 |
+| `delete_directive` | 删除强制指令 |
 
-**浏览记忆**
+**记忆浏览**
 
-|工具|说明|
+| 工具 | 说明 |
 |------|-------------|
-|`list_memories`|通过过滤和分页浏览记忆|
-|`get_memory`|通过ID获取特定记忆|
+| `list_memories` | 使用过滤条件和分页浏览记忆 |
+| `get_memory` | 按 ID 获取指定记忆 |
 
 **文档**
 
-|工具|说明|
+| 工具 | 说明 |
 |------|-------------|
-|`list_documents`|列出摄取的文档|
-|`get_document`|获取特定文档|
-|`delete_document`|删除文档及其链接的记忆|
+| `list_documents` | 列出已摄取的文档 |
+| `get_document` | 获取指定文档 |
+| `delete_document` | 删除文档及其关联的记忆 |
 
 **操作**
 
-|工具|说明|
+| 工具 | 说明 |
 |------|-------------|
-|`list_operations`|列出带有状态过滤的异步操作|
-|`get_operation`|检查操作状态和进度|
-|`cancel_operation`|取消挂起或正在运行的操作|
+| `list_operations` | 按状态过滤并列出异步操作 |
+| `get_operation` | 查看操作状态和进度 |
+| `cancel_operation` | 取消待处理或正在运行的操作 |
 
-**标签与记忆库管理**
+**标签和记忆库管理**
 
-|工具|说明|
+| 工具 | 说明 |
 |------|-------------|
-|`list_tags`|列出记忆库中使用的独特标签|
-|`get_bank`|获取记忆库简介（姓名、使命、性格）|
-|`get_bank_stats`|获取记忆库统计信息（仅限多记忆库）|
-|`update_bank`|更新记忆库名称或使命|
-|`delete_bank`|删除整个记忆库及其所有数据|
-|`clear_memories`|清除记忆而不删除记忆库|
-|`list_banks`|列出所有记忆库（仅限多记忆库）|
-|`create_bank`|创建或配置记忆库（仅限多记忆库）|
+| `list_tags` | 列出记忆库中使用的所有唯一标签 |
+| `get_bank` | 获取记忆库资料（名称、任务说明、性格倾向） |
+| `get_bank_stats` | 获取记忆库统计信息（仅限多记忆库模式） |
+| `update_bank` | 更新记忆库名称或任务说明 |
+| `delete_bank` | 删除整个记忆库及其中的所有数据 |
+| `clear_memories` | 清空记忆，但保留记忆库 |
+| `list_banks` | 列出所有记忆库（仅限多记忆库模式） |
+| `create_bank` | 创建或配置记忆库（仅限多记忆库模式） |
 
 **知识库**
 
-|工具|说明|
+| 工具 | 说明 |
 |------|-------------|
-|`get_knowledge_base_tree`|浏览folder/page树|
-|`search_knowledge_base`|知识页面的混合搜索|
-|`get_knowledge_page`|将页面作为 Markdown 文档阅读|
-|`create_knowledge_folder`|创建文件夹|
-|`create_knowledge_page`|创建一个页面（记忆库记忆中的动态文档）|
-|`update_knowledge_node`|Rename/move 节点或更新页面的选项|
-|`delete_knowledge_node`|删除文件夹或页面及其子树|
+| `get_knowledge_base_tree` | 浏览文件夹和页面构成的目录树 |
+| `search_knowledge_base` | 对知识页进行混合搜索 |
+| `get_knowledge_page` | 以 Markdown 文档形式读取页面 |
+| `create_knowledge_folder` | 创建文件夹 |
+| `create_knowledge_page` | 创建页面（根据记忆库中的记忆持续更新的文档） |
+| `update_knowledge_node` | 重命名或移动节点，或更新页面选项 |
+| `delete_knowledge_node` | 删除文件夹或页面及其子树 |
 
-详细参数文档请参见[MCP 服务器参考](/developer/mcp-server#available-tools)。
+参数的详细说明请参阅 [MCP 服务器参考](/developer/mcp-server#available-tools)。
 
 ## 环境变量 {#environment-variables}
 
-全标配支持 [Hindsight 配置变量](/developer/configuration)。本地使用的关键：
+本地服务器支持所有标准的 [Hindsight 配置变量](/developer/configuration)。本地使用时常用的变量如下：
 
-|变量|必填|默认|说明|
+| 变量 | 必填 | 默认值 | 说明 |
 |----------|----------|---------|-------------|
 | `HINDSIGHT_API_LLM_API_KEY` | 是* | — | LLM 提供商的 API 密钥 |
 | `HINDSIGHT_API_LLM_PROVIDER` | 否 | `openai` | LLM 提供商（`openai`、`anthropic`、`ollama` 等） |
@@ -160,27 +160,27 @@ claude mcp add --transport http hindsight http://localhost:8888/mcp/my-bank/
 | `HINDSIGHT_API_PORT` | 否 | `8888` | 监听端口 |
 | `HINDSIGHT_API_LOG_LEVEL` | 否 | `info` | 日志级别 |
 
-*使用Ollama等本地提供商时不需要。
+*使用 Ollama 等本地提供商时无需 API 密钥。
 
 ## 故障排查 {#troubleshooting}
 
-### 首次启动缓慢 {#slow-first-startup}
+### 首次启动较慢 {#slow-first-startup}
 
-第一次启动下载本地嵌入模型（~100MB）并初始化数据库。随后的启动速度会更快。
+首次启动时会下载本地嵌入模型（约 100 MB）并初始化数据库。之后再次启动会更快。
 
-### 端口已在使用中 {#port-already-in-use}
+### 端口已被占用 {#port-already-in-use}
 
-设置不同的端口：
+设置其他端口：
 
 ```bash
 HINDSIGHT_API_LLM_API_KEY=sk-... HINDSIGHT_API_PORT=9000 uvx --from hindsight-api hindsight-local-mcp
 ```
 
-然后更新你的MCP客户端 URL 至 `http://localhost:9000/mcp/`。
+然后将 MCP 客户端 URL 更新为 `http://localhost:9000/mcp/`。
 
-### 检查日志 {#checking-logs}
+### 查看日志 {#checking-logs}
 
-套装`HINDSIGHT_API_LOG_LEVEL=debug` 用于详细输出：
+将 `HINDSIGHT_API_LOG_LEVEL` 设为 `debug`，以输出更详细的日志：
 
 ```bash
 HINDSIGHT_API_LLM_API_KEY=sk-... HINDSIGHT_API_LOG_LEVEL=debug uvx --from hindsight-api hindsight-local-mcp

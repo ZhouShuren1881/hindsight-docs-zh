@@ -1,166 +1,166 @@
 ---
-title: "指南：用Hindsight添加n8n记忆"
+title: "指南：使用 Hindsight 为 n8n 添加记忆"
 authors: [benfrank241]
 date: 2026-07-17
 tags: [how-to, n8n, automation, memory]
-description: "添加n8n记忆与Hindsight使用 @vectorize-io/n8n-nodes-hindsight社区节点，因此任何工作流程都可以与其他工作流程一起对长期记忆进行记忆存储、记忆召回和反思n8n集成。"
+description: "使用 @vectorize-io/n8n-nodes-hindsight 社区节点为 n8n 添加记忆，让任何工作流都能与其他 n8n 集成配合，存入、召回并反思长期记忆。"
 image: /img/guides/guide-n8n-memory-with-hindsight.svg
 hide_table_of_contents: true
 ---
 
 ![指南：使用 Hindsight 为 n8n 添加记忆](/img/guides/guide-n8n-memory-with-hindsight.svg)
 
-如果你愿意**使用 Hindsight 为 n8n 添加记忆**，最干净的设置是`@vectorize-io/n8n-nodes-hindsight`社区节点。它添加了一个**Hindsight** 具有三个操作的节点 — **记忆存储**，**记忆召回**，和**反思** — 您可以将其放入现有 Slack、Sheets、OpenAI，以及其他节点。这为您的自动化提供了长期记忆，而不是在每次运行时都无状态地开始。
+如果你想为 n8n 接入 Hindsight 记忆，最简洁的方案是使用 `@vectorize-io/n8n-nodes-hindsight` 社区节点。它会添加一个 **Hindsight** 节点，提供 **Retain（存入）**、**Recall（召回）** 和 **Reflect（反思）** 三种操作。你可以把它放进任意工作流，与现有的 Slack、Sheets、OpenAI 等节点并用。这样，自动化流程就能拥有长期记忆，而不必在每次运行时都从无状态开始。
 
-这非常适合n8n，因为n8n是自动化的结缔组织：来自 Gmail、Slack、Sheets、Stripe 和 Notion 的触发器，以及跨数百个应用程序的操作。到目前为止，每个工作流运行都是无状态的。通过Hindsight节点，您可以在工作流程中出现记忆存储事实，在LLM步骤之前记忆相关上下文，并期待获得记忆库学到的所有内容的综合答案。
+n8n 很适合与 Hindsight 配合，因为它是自动化流程的连接枢纽：它可以接收来自 Gmail、Slack、Sheets、Stripe 和 Notion 等服务的触发信号，并在数百个应用中执行操作。此前，每次工作流运行都是无状态的。使用 Hindsight 节点后，你可以在工作流中随时存入事实，在 LLM 步骤之前召回相关上下文，并基于记忆库积累的全部内容，通过 Reflect 获取综合生成的答案。
 
-本指南逐步介绍安装社区节点、创建HindsightAPI凭证、使用每个操作以及快速验证流程，以便您可以确认记忆实际上正在被使用。保留[文档首页](/) 和 [快速入门指南](/developer/api/quickstart) 就在附近。
+本指南将逐步介绍如何安装社区节点、创建 Hindsight API 凭证、使用每种操作，并通过一个快速验证流程确认记忆确实正在发挥作用。操作时可以同时打开[文档首页](/)和[快速入门指南](/developer/api/quickstart)。
 
 <!-- truncate -->
 
-> **快速解答**
+> **快速说明**
 >
-> 1.在n8n，前往**设置 → 社区节点 → 安装（Settings → Community Nodes → Install）**并输入`@vectorize-io/n8n-nodes-hindsight`。
-> 2.重新启动n8n； **Hindsight** 节点出现在节点面板中。
-> 3.创建一个**Hindsight API** 与您的凭证APIURL（默认为Hindsight Cloud）和`hsk_...`键。
-> 4.添加一个**Hindsight** 节点并使用记忆库 ID 选择一个操作 - 记忆存储、记忆召回或反思。
-> 5.验证稍后的运行是否能回忆起先前运行保留的内容。
+> 1. 在 n8n 中，前往 **设置 → 社区节点 → 安装**（Settings → Community Nodes → Install），然后输入 `@vectorize-io/n8n-nodes-hindsight`。
+> 2. 重启 n8n；**Hindsight** 节点就会出现在节点面板中。
+> 3. 创建 **Hindsight API** 凭证，填写 API URL（默认为 Hindsight Cloud）和 `hsk_...` 密钥。
+> 4. 添加 **Hindsight** 节点，选择 Retain、Recall 或 Reflect 操作，并填写 Bank ID。
+> 5. 验证后续运行能否召回先前运行存入的内容。
 
-## 先决条件 {#prerequisites}
+## 准备工作 {#prerequisites}
 
-开始之前，请确保您拥有：
+开始之前，请确保你具备以下条件：
 
-- 正在运行的n8n实例（云或自托管）
-- 可达Hindsight后端，[Hindsight Cloud](https://hindsight.vectorize.io) 或自托管服务器
-- AHindsightAPI键（`hsk_...`) 如果您使用的是云
+- 一个正在运行的 n8n 实例（云端或自托管）
+- 一个可访问的 Hindsight 后端：[Hindsight Cloud](https://hindsight.vectorize.io) 或自托管服务器
+- 如果使用云端服务，还需要 Hindsight API 密钥（`hsk_...`）
 
 ## 第一步：安装社区节点 {#step-1-install-the-community-node}
 
-在n8n，前往**设置 → 社区节点 → 安装（Settings → Community Nodes → Install）** 并输入：
+在 n8n 中，前往 **设置 → 社区节点 → 安装**（Settings → Community Nodes → Install），然后输入：
 
 ```
 @vectorize-io/n8n-nodes-hindsight
 ```
 
-或者直接安装在自托管n8n中：
+你也可以在自托管的 n8n 实例中直接安装：
 
 ```bash
 cd ~/.n8n/custom
 npm install @vectorize-io/n8n-nodes-hindsight
 ```
 
-重启n8n和 **Hindsight** 节点出现在节点面板中。
+重启 n8n 后，**Hindsight** 节点就会出现在节点面板中。
 
-## 第 2 步：创建 Hindsight API 凭证 {#step-2-create-a-hindsight-api-credential}
+## 第二步：创建 Hindsight API 凭证 {#step-2-create-a-hindsight-api-credential}
 
-在n8n，创建一个新**Hindsight API** 证书：
+在 n8n 中创建新的 **Hindsight API** 凭证：
 
-- **API 地址（API URL）**：`https://api.hindsight.vectorize.io`（默认值，Hindsight Cloud) 或您的自托管 URL
-- **API 密钥（API Key）**：你的`hsk_...`键。对于未经身份验证的自托管实例，请将其留空。
+- **API URL**：`https://api.hindsight.vectorize.io`（默认值，即 Hindsight Cloud 的地址），或你的自托管服务 URL。
+- **API Key**：你的 `hsk_...` 密钥。如果自托管实例不需要身份验证，请留空。
 
-凭证适用`Bearer` 自动授权头，并且可以针对Hindsight`/health`端点，适用于云和自托管。
+凭证会自动添加 `Bearer` 授权标头。它还可以通过 Hindsight `/health` 端点进行测试；云端和自托管服务都支持该端点。
 
-如果您还没有钥匙，[注册 Hindsight Cloud](https://ui.hindsight.vectorize.io)（免费套餐）并从仪表板上获取一个，或 [自托管](https://hindsight.vectorize.io/developer/installation) 代替。
+如果你还没有密钥，可以[注册 Hindsight Cloud](https://ui.hindsight.vectorize.io)（免费套餐），然后从控制面板获取密钥；也可以改为[自行托管](https://hindsight.vectorize.io/developer/installation)。
 
-## 第3步：添加Hindsight节点并选择操作 {#step-3-add-a-hindsight-node-and-pick-an-operation}
+## 第三步：添加 Hindsight 节点并选择操作 {#step-3-add-a-hindsight-node-and-pick-an-operation}
 
-添加一个**Hindsight** 节点到您的工作流程，选择您创建的凭证，然后选择三个操作之一。每个操作都需要一个**记忆库 ID（Bank ID）** — 如果记忆库不存在，则会在首次使用时创建它，因此您可以以用户、客户或工作流程命名它。
+将 **Hindsight** 节点添加到工作流中，选择刚创建的凭证，然后从三种操作中选择一种。每种操作都需要 **Bank ID（记忆库 ID）**。如果记忆库尚不存在，系统会在首次使用时创建它，因此可以用用户、客户或工作流来命名。
 
-### 记忆存储 {#retain}
+### Retain（存入） {#retain}
 
-将内容存储在记忆库中。 Hindsight 在调用返回后异步提取结构化事实。
+将内容存入记忆库。调用返回后，Hindsight 会异步提取结构化事实。
 
-|领域|说明|
+| 字段 | 说明 |
 |---|---|
-|记忆库ID|存储的记忆库（首次使用时自动创建）|
-|内容|免费文本到记忆存储|
-|标签|应用于存储记忆的逗号分隔标签（例如`user:alex,scope:profile`)|
+| Bank ID（记忆库 ID） | 要存入内容的记忆库（首次使用时自动创建） |
+| Content（内容） | 要存入的自由文本 |
+| Tags（标签） | 应用于所存记忆的逗号分隔标签（例如 `user:alex,scope:profile`） |
 
-### 记忆召回 {#recall}
+### Recall（召回） {#recall}
 
-在记忆库中搜索与查询相关的记忆。返回一个`results`数组。
+在记忆库中搜索与查询相关的记忆，并返回一个 `results` 数组。
 
-|领域|说明|
+| 字段 | 说明 |
 |---|---|
-|记忆库ID|记忆库搜索|
-|查询|自然语言查询|
-|预算|`low` / `mid` / `high` — 控制检索的详尽程度（默认为 `mid`)|
-|最大token数量|返回的记忆最大token数（默认为`4096`)|
-|标签筛选|以逗号分隔的标签来过滤记忆召回（留空表示不过滤）|
+| Bank ID（记忆库 ID） | 要搜索的记忆库 |
+| Query（查询） | 自然语言查询 |
+| Budget（预算） | `low` / `mid` / `high`，用于控制检索的全面程度（默认值为 `mid`） |
+| Max Tokens（最大 token 数） | 最多返回多少 token 的记忆（默认值为 `4096`） |
+| Tags Filter（标签筛选） | 用逗号分隔的标签筛选召回结果（留空表示不筛选） |
 
-### 反思 {#reflect}
+### Reflect（反思） {#reflect}
 
-获取LLM-记忆库积累的知识的综合答案。退货`text`。
+基于记忆库积累的知识，通过 LLM 综合生成答案，并返回 `text`。
 
-|领域|说明|
+| 字段 | 说明 |
 |---|---|
-|记忆库ID|记忆库回顾|
-|查询|使用记忆库的记忆回答问题|
-|预算|`low` / `mid` / `high`（默认为`mid`)|
+| Bank ID（记忆库 ID） | 要进行反思的记忆库 |
+| Query（查询） | 要依据记忆库中的记忆回答的问题 |
+| Budget（预算） | `low` / `mid` / `high`（默认值为 `mid`） |
 
-## 你得到什么 {#what-you-get}
+## 可以用它做什么 {#what-you-get}
 
-该节点具有零运行时依赖性，并使用n8n的内置身份验证HTTP帮助程序，因此它可以在自托管的n8n和n8n云上运行。由于这三个操作是普通的 n8n 节点，因此您可以将它们连接到工作流程中的任何位置：
+该节点无需任何运行时依赖，并使用 n8n 内置的身份验证 HTTP 辅助工具，因此可用于自托管的 n8n 和 n8n Cloud。三种操作都是普通的 n8n 节点，可以连接到工作流中的任意位置：
 
-- **记忆存储**：将已关闭的工单、销售通话摘要或表单提交存入记忆库。
-- **记忆召回** 之前的相关上下文OpenAI,Anthropic，或 Cohere 步骤，以便LLM查看之前的历史
-- **反思** 在工作流程中提出综合性问题（“我们对该客户了解多少？”）
+- 使用 **Retain** 将已结案的支持工单、销售通话摘要或表单提交内容存入记忆库。
+- 在 OpenAI、Anthropic 或 Cohere 步骤之前使用 **Recall** 召回相关上下文，让 LLM 获取此前的交互历史。
+- 在工作流中使用 **Reflect** 提出综合性问题（“我们对这位客户了解多少？”）。
 
-对于较低级别的行为，请阅读[Hindsight 记忆召回 API](/developer/api/recall) 和 [Hindsight 记忆存储 API](/developer/api/retain)。
+如需了解更底层的行为，请阅读 [Hindsight 的 Recall API](/developer/api/recall) 和 [Hindsight 的 Retain API](/developer/api/retain)。
 
-## 验证记忆是否有效 {#verify-that-memory-is-working}
+## 验证记忆是否正常工作 {#verify-that-memory-is-working}
 
-一个好的测试序列是：
+可以按以下步骤测试：
 
-1. 添加一个**Hindsight** 节点设置为 **记忆存储**，记忆库ID如`demo-bank`和一些内容
-2. 运行工作流程以保留内容
-3. 添加第二个**Hindsight** 节点设置为 **记忆召回**，指向同一个记忆库ID
-4. 给它一个与你保留的内容相关的查询
-5. 运行它并检查`results`数组
+1. 添加一个设置为 **Retain** 的 **Hindsight** 节点，填写类似 `demo-bank` 的 Bank ID 和要存入的 Content。
+2. 运行工作流，存入内容。
+3. 再添加一个设置为 **Recall** 的 **Hindsight** 节点，并指定相同的 Bank ID。
+4. 为它填写一个与先前存入内容相关的 Query。
+5. 运行节点并检查 `results` 数组。
 
-例如，记忆存储是关于客户计划的注释，然后在以后的运行中记忆召回客户的名字。如果记忆再现显示较早的音符，则该设置正在工作。
+例如，先存入一条有关客户方案的备注，再在后续运行中按客户姓名进行召回。如果召回结果中出现了先前的备注，就说明配置正常。
 
 ## 常见错误 {#common-mistakes}
 
-### 安装后忘记重启n8n {#forgetting-to-restart-n8n-after-install}
+### 安装后忘记重启 n8n {#forgetting-to-restart-n8n-after-install}
 
-**Hindsight**节点仅在重启后出现在节点面板中  社区节点安装后的n8n。
+安装社区节点后，只有重启 n8n，**Hindsight** 节点才会出现在节点面板中。
 
-### 记忆库ID不匹配 {#mismatched-bank-ids}
+### Bank ID 不匹配 {#mismatched-bank-ids}
 
-记忆存储和记忆召回必须使用相同的记忆库ID才能看到相同的记忆。拼写错误会在第一次使用时创建一个新的、空的记忆库，而不是出错。
+Retain 和 Recall 必须使用相同的 Bank ID，才能访问同一份记忆。若 ID 拼写错误，首次使用时会创建一个新的空记忆库，而不会报错。
 
-### 太早测试记忆能力 {#testing-recall-too-early}
+### 过早测试 Recall {#testing-recall-too-early}
 
-Hindsight 在记忆存储调用返回后异步提取事实。如果你立即记忆，刚刚保留的内容可能还没有被完全处理。
+Retain 调用返回后，Hindsight 仍会异步提取事实。如果立即执行 Recall，刚存入的内容可能还没有处理完毕。
 
-### 错误 API 自托管 URL {#wrong-api-url-for-self-hosted}
+### 自托管时 API URL 填写错误 {#wrong-api-url-for-self-hosted}
 
-凭证默认为Hindsight Cloud。如果您自行托管，请将 API URL 设置为您的部署；对于未经身份验证的自托管实例，请将 API 键留空。
+凭证默认使用 Hindsight Cloud。如果你选择自托管，请将 API URL 设为自己的部署地址；如果自托管实例不需要身份验证，请将 API Key 留空。
 
-## 常见问题解答 {#faq}
+## 常见问题 {#faq}
 
-### 我需要Hindsight Cloud吗？ {#do-i-need-hindsight-cloud}
+### 我必须使用 Hindsight Cloud 吗？ {#do-i-need-hindsight-cloud}
 
-没有。自托管 Hindsight 服务器也可以工作 — 将凭证的 API URL 设置为您的部署，如果未经身份验证，则将 API 密钥留空。
+不必。自托管的 Hindsight 服务器同样可用：将凭证中的 API URL 设为你的部署地址；如果该实例不需要身份验证，就将 API Key 留空。
 
-### 节点安装在哪里？ {#where-do-i-install-the-node}
+### 在哪里安装这个节点？ {#where-do-i-install-the-node}
 
-在n8n下**设置 → 社区节点 → 安装（Settings → Community Nodes → Install）**，或通过`npm install @vectorize-io/n8n-nodes-hindsight` 自托管 `~/.n8n/custom`目录。
+可以在 n8n 中前往 **设置 → 社区节点 → 安装**（Settings → Community Nodes → Install）安装，也可以在自托管实例的 `~/.n8n/custom` 目录中运行 `npm install @vectorize-io/n8n-nodes-hindsight`。
 
-### 记忆的范围是怎样的？ {#how-is-memory-scoped}
+### 记忆的范围如何确定？ {#how-is-memory-scoped}
 
-由记忆库ID。每个操作都需要一个记忆库 ID，并且在首次使用时创建记忆库，因此您可以隔离每个用户、客户或工作流程的记忆。
+范围由 Bank ID 决定。每种操作都需要一个 Bank ID，系统会在首次使用时创建记忆库，因此你可以按用户、客户或工作流隔离记忆。
 
-### 我可以用它构建什么？ {#what-can-i-build-with-it}
+### 可以用它构建什么？ {#what-can-i-build-with-it}
 
-任何受益于持久上下文的东西——可以回忆起过去类似票证的客户支持助理、提取先前接触点的销售电话教练，或者可以记住跨会话对话的 Slack 机器人。
+凡是需要持久上下文的场景都可以使用它，例如：能够召回类似历史工单的客户支持助理、能调取以往客户接触记录的销售通话助手，或能跨会话记住对话内容的 Slack 机器人。
 
 ## 后续步骤 {#next-steps}
 
-- 从开始 [Hindsight Cloud](https://hindsight.vectorize.io) 如果您想要托管后端
-- 阅读[完整 Hindsight 文档](/)
-- 跟随[快速入门指南](/developer/api/quickstart)
-- 回顾[Hindsight 记忆召回 API](/developer/api/recall)
-- 回顾[Hindsight 记忆存储 API](/developer/api/retain)
-- 阅读[n8n 集成文档](/sdks/integrations/n8n)
+- 如果需要托管后端，可以从 [Hindsight Cloud](https://hindsight.vectorize.io) 开始。
+- 阅读 [Hindsight 完整文档](/)。
+- 按照[快速入门指南](/developer/api/quickstart)开始使用。
+- 查看 [Hindsight 的 Recall API](/developer/api/recall)。
+- 查看 [Hindsight 的 Retain API](/developer/api/retain)。
+- 阅读 [n8n 集成文档](/sdks/integrations/n8n)。

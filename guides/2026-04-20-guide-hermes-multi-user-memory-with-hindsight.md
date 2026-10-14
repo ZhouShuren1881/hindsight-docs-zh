@@ -8,7 +8,7 @@ image: /img/blog/guide-hermes-multi-user-memory-with-hindsight.png
 hide_table_of_contents: true
 ---
 
-如果希望 **Hermes 使用 Hindsight 提供多用户记忆**，最重要的设计决策不是 `memory_mode`，而是如何为每个用户生成 `bank_id`。单个静态记忆库适合个人助手，却不适合多用户部署，因为只有记忆库包含正确用户的历史，召回才会更有效。
+如果要让 **Hermes 使用 Hindsight 提供多用户记忆**，最重要的设计决策不是 `memory_mode`，而是如何为每个用户生成 `bank_id`。单个静态记忆库适合个人助手；在多用户部署中则有风险，因为只有记忆库包含正确用户的历史，召回效果才会更好。
 
 安全规则很简单：一个用户对应一个记忆库身份。实践中通常从稳定用户标识符生成 `bank_id`，并经常加入租户标识符，再为每个会话将该值传入 Hermes Hindsight 提供商。这样召回保持相关，记忆隔离也更容易理解。
 
@@ -47,12 +47,12 @@ tenant:acme:user:12345
 tenant:acme:user:12345:env:prod
 ```
 
-关键不是具体字符串格式，而是应该：
+重点不在于具体的字符串格式，而在于它应当：
 
 - 跨会话保持稳定。
 - 每个用户唯一。
 - 调试时容易查看。
-- 在租户和环境之间安全隔离。
+- 能在不同租户和环境之间安全区分。
 
 如果用户可能存在于多个租户，加入租户。如果预发布和生产使用同一后端，也加入环境。
 
@@ -79,11 +79,11 @@ cfg = {
 }
 
 path.write_text(json.dumps(cfg, indent=2) + '\n')
-print(f'已写入 {path}，bank_id={cfg["bank_id"]}')
+print(f'Wrote {path} with bank_id={cfg["bank_id"]}')
 PY
 ```
 
-这是核心步骤。包括记忆模式在内的其他设置，都建立在记忆库身份之上。
+这是关键步骤。包括记忆模式在内的其他设置，都是在记忆库身份的基础上发挥作用。
 
 ### 3. 将隔离与召回行为分开 {#3-separate-isolation-from-recall-behavior}
 
@@ -106,7 +106,7 @@ PY
 
 ### 4. 尽早加入租户和环境边界 {#4-add-tenant-and-environment-boundaries-early}
 
-多用户错误往往要等第二个客户进入同一环境后才出现。因此建议在认为有需要之前，就添加租户和环境标记。
+多用户问题往往要等第二个客户进入同一环境后才会显现。因此，我建议尽早加入租户和环境标记，不要等到觉得需要时才添加。
 
 合适的生产模式如下：
 
@@ -121,14 +121,14 @@ tenant:{tenant_id}:user:{user_id}:env:{environment}
 不要只查看配置，还要测试实际行为。
 
 1. 以用户 A 身份启动 Hermes。
-2. 告诉它持久信息，例如：“记住，我希望每周五收到周报。”
-3. 结束会话，让记忆存储完成。
+2. 告诉它一条长期有效的信息，例如：“Remember that I prefer weekly summaries on Fridays.”
+3. 结束会话，确保记忆存入已完成。
 4. 以用户 B 身份使用不同 `bank_id` 启动 Hermes。
 5. 询问它记得哪些摘要偏好。
 
 预期结果：用户 B 不应继承用户 A 的事实。
 
-然后再次以用户 A 身份启动 Hermes，确认偏好仍然存在。
+然后再次以用户 A 身份启动 Hermes，确认仍能召回这项偏好。
 
 ## 验证是否正常 {#verifying-it-works}
 
@@ -154,7 +154,7 @@ PY
 
 ### 两个用户仍共享上下文 {#two-users-still-share-context}
 
-通常是仍使用同一 `bank_id`，或封装层忘记在启动前覆盖默认配置。
+通常是因为仍在使用同一个 `bank_id`，或者封装层忘了在启动前覆盖默认配置。
 
 ### 回访用户召回为空 {#recall-is-empty-for-returning-users}
 
@@ -168,7 +168,7 @@ PY
 
 ### 应每个用户一个记忆库，还是共用记忆库加标签？ {#should-i-use-one-bank-per-user-or-one-bank-plus-tags}
 
-对多数 Hermes 多用户配置，每人一个记忆库更简单安全。只有确实需要把用户放在同一检索空间时，标签才有帮助。
+对大多数 Hermes 多用户配置而言，每个用户使用一个记忆库更简单、更安全。只有在确实需要将多个用户归入同一个检索空间时，标签才有用。
 
 ### 即使用户 ID 全局唯一，也应加入租户吗？ {#should-i-include-the-tenant-even-if-user-ids-are-globally-unique}
 

@@ -1,5 +1,5 @@
 ---
-title: "为什么您的 AWS Strands 智能体不断从头开始（以及如何阻止它）"
+title: "为什么 AWS Strands 智能体总是从头开始（以及如何解决）"
 authors: [benfrank241]
 date: 2026-03-25T12:00
 tags: [strands, aws, agents, python, memory, tutorial]
@@ -7,62 +7,62 @@ image: /img/blog/strands-persistent-memory.webp
 hide_table_of_contents: true
 ---
 
-![为什么您的 AWS Strands 智能体不断从头开始（以及如何阻止它）](/img/blog/strands-persistent-memory.webp)
+![为什么 AWS Strands 智能体总是从头开始（以及如何解决）](/img/blog/strands-persistent-memory.webp)
 
-AWS Strands 智能体默认是无状态的——每个会话都是冷启动的。以下是如何使用 `hindsight-strands` 添加持久的长期记忆，以便您的智能体记住运行过程中重要的事情。
+AWS Strands 智能体默认是无状态的，每个会话启动时都没有上下文。本文介绍如何使用 `hindsight-strands` 添加持久化的长期记忆，让智能体在多次运行之间记住重要信息。
 
 <!-- truncate -->
 
 ## 概览 {#tldr}
 
-- AWS Strands 智能体默认是无状态的——每个会话都是冷启动的
-- `hindsight-strands` 为任何 Strands 智能体添加了三种原生记忆工具：记忆存储、记忆召回和反思
-- `memory_instructions()` 在智能体启动前将相关记忆直接预加载到系统提示符中
-- 可与任何Strands兼容的LLM后端配合使用：基岩、Anthropic、OpenAI
-- 您可以控制记住什么、回忆多少以及如何使用标签来确定记忆范围
+- AWS Strands 智能体默认是无状态的，每个会话启动时都没有上下文
+- `hindsight-strands` 为任何 Strands 智能体添加三种原生记忆工具：Retain（存入）、Recall（召回）和 Reflect（反思）
+- `memory_instructions()` 会在智能体启动前，将相关记忆直接预加载到系统提示中
+- 兼容任何与 Strands 兼容的 LLM 后端：Bedrock、Anthropic、OpenAI
+- 您可以控制要记住的内容、召回多少内容，以及如何用标签限定记忆范围
 
 ---
 
 ## 问题 {#the-problem}
 
-AWS Strands 为您提供了一种干净的、基于装饰器的方式来构建智能体。定义你的工具，连接一个模型，然后你就可以运行了。问题是：每次谈话都从头开始。
+AWS Strands 提供了一种简洁的装饰器式方法来构建智能体。定义工具、接入模型，就可以运行了。问题在于，每次对话都会从头开始。
 
-让您的智能体记住您的 AWS 区域偏好。会的。下次会议时再问它——它不会知道你在说什么。 `@tool` 模式处理智能体能力的形状，但它与持久性无关。
+让智能体记住您偏好的 AWS 区域，它会记住。等到下一个会话再问它，它就完全不知道您在说什么。`@tool` 模式规定了智能体能力的形式，却没有解决持久化问题。
 
-对于大多数演示用例来说，这并不重要。对于实际应用程序（面向客户的智能体、编码助理、支持机器人）来说，这是一个基本限制。
+对于大多数演示场景，这无关紧要。对于真实应用——面向客户的智能体、编程助手、支持机器人——这却是一个根本限制。
 
 ---
 
-## 方法 {#the-approach}
+## 解决思路 {#the-approach}
 
-[Hindsight](https://github.com/vectorize-io/hindsight)是AI智能体的记忆层。它存储事实，在查询时提取语义相关的事实，并可以从累积的上下文中合成推理的答案。 `hindsight-strands` 包将其包装到本机 Strands 工具中，因此您的智能体可以像使用任何其他功能一样管理自己的记忆。
+[Hindsight](https://github.com/vectorize-io/hindsight) 是面向 AI 智能体的记忆层。它存储事实，在查询时提取语义相关的事实，还能根据累积的上下文综合生成有推理依据的答案。`hindsight-strands` 包将这些能力封装为原生 Strands 工具，因此智能体可以像使用其他能力一样管理自己的记忆。
 
-三种工具被添加到您的智能体中：
+它会为智能体添加三个工具：
 
-- **`hindsight_retain`** — 将一条信息存储到记忆库中
-- **`hindsight_recall`** — 语义搜索记忆并返回相关事实
-- **`hindsight_reflect`** — 从记忆中的所有内容中综合出一个合理的答案
+- **`hindsight_retain`**：将一条信息存入记忆库
+- **`hindsight_recall`**：以语义方式搜索记忆并返回相关事实
+- **`hindsight_reflect`**：根据记忆中的全部内容综合生成有推理依据的答案
 
-还有一个 `memory_instructions()` 帮助程序，可以在智能体启动之前运行记忆召回查询并将结果注入系统提示符中 - 当您希望智能体从第一条消息中感知上下文时非常有用，而不仅仅是在它显式调用工具时有用。
+此外还有一个 `memory_instructions()` 辅助函数，会在智能体启动前执行召回查询，并将结果注入系统提示。当您希望智能体从收到第一条消息起就具备相关上下文，而不是等它显式调用工具后才获得上下文时，这个函数很有用。
 
 ```
-User session
+用户会话
 
 ┌─────────────────────────────────────────┐
-│  System prompt                          │
-│  + memory_instructions() results        │
+│  系统提示                                │
+│  + memory_instructions() 的结果          │
 ├─────────────────────────────────────────┤
-│  Agent (Strands)                        │
-│  ├── hindsight_retain                   │
-│  ├── hindsight_recall                   │
-│  └── hindsight_reflect                  │
+│  智能体（Strands）                       │
+│  ├── hindsight_retain                    │
+│  ├── hindsight_recall                    │
+│  └── hindsight_reflect                   │
 └─────────────────────────────────────────┘
           │                   ▲
-        retain              recall
+        存入                召回
           │                   │
           ▼                   │
     ┌───────────────────────────────┐
-    │        Hindsight bank         │
+    │            Hindsight 记忆库    │
     └───────────────────────────────┘
 ```
 
@@ -76,15 +76,15 @@ User session
 pip install hindsight-strands
 ```
 
-您还需要一个正在运行的Hindsight实例。两种选择：
+您还需要一个正在运行的 Hindsight 实例。有两种选择：
 
-**选项 1 — Hindsight Cloud（无需设置）**
+**选项 1：Hindsight Cloud（无需设置）**
 
-在 [ui.hindsight.vectorize.io](https://ui.hindsight.vectorize.io) 注册并从仪表板获取您的 API URL 和密钥。直接将它们传递给`create_hindsight_tools()`。
+在 [ui.hindsight.vectorize.io](https://ui.hindsight.vectorize.io) 注册，然后从控制面板获取 API URL 和密钥。将它们直接传给 `create_hindsight_tools()`。
 
-> **注意：** 如果您想完全跳过自托管，请使用 Hindsight Cloud — 免费开始。
+> **注意：** 如果您想完全跳过自托管，可以使用 Hindsight Cloud；该服务可免费开始使用。
 
-**选项 2 — 使用 Docker 自托管**
+**选项 2：使用 Docker 自托管**
 
 ```bash
 export OPENAI_API_KEY=sk-...
@@ -96,7 +96,7 @@ docker run --rm -it --pull always \
   ghcr.io/vectorize-io/hindsight:latest
 ```
 
-API 侦听端口 `8888`。 UI 可在 `http://localhost:9999` 获取。 Hindsight 还支持 Anthropic、Gemini、Groq 和 Ollama — 交换 `HINDSIGHT_API_LLM_PROVIDER` 和相应的密钥。
+API 监听端口 `8888`，界面可通过 `http://localhost:9999` 访问。Hindsight 还支持 Anthropic、Gemini、Groq 和 Ollama；相应替换 `HINDSIGHT_API_LLM_PROVIDER` 和密钥即可。
 
 ### 基本设置 {#basic-setup}
 
@@ -112,25 +112,25 @@ tools = create_hindsight_tools(
 agent = Agent(tools=tools)
 ```
 
-`bank_id` 是Hindsight 划分记忆的方式。使用一些有意义的东西：用户 ID、会话命名空间、项目 slug。记忆库是在第一次写入时自动创建的。
+`bank_id` 用于指定 Hindsight 如何划分记忆。请使用有意义的值，例如用户 ID、会话命名空间或项目 slug。首次写入时，系统会自动创建记忆库。
 
-现在智能体拥有三个可以调用的新工具。运行会话：
-
-```python
-agent("请记住，我正在部署到 us-east-1，并且我更喜欢使用 Bedrock Nova Pro 进行推理。")
-```
-
-智能体将调用`hindsight_retain`并告知相关事实。下一届会议：
+现在，智能体有了三个可调用的新工具。运行一个会话：
 
 ```python
-agent("此部署应针对什么型号和区域？")
+agent("Remember that I'm deploying to us-east-1 and I prefer Bedrock Nova Pro for inference.")
 ```
 
-它将调用`hindsight_recall`，检索存储的首选项，并正确回答 - 即使在新的Python过程中也是如此。
+智能体会调用 `hindsight_retain`，存入相关事实。接着在下一个会话中运行：
 
-### 将记忆预加载到系统提示符中 {#pre-loading-memory-into-the-system-prompt}
+```python
+agent("What model and region should I target for this deployment?")
+```
 
-当智能体知道需要查询时，基于工具的召回效果很好。但有时希望第一条消息之前就已有上下文。这就是 `memory_instructions()` 的用途：
+它会调用 `hindsight_recall`，取回已存储的偏好并正确作答，即使运行在全新的 Python 进程中也是如此。
+
+### 将记忆预加载到系统提示中 {#pre-loading-memory-into-the-system-prompt}
+
+当智能体知道需要查找信息时，基于工具的召回方式很有效。但有时您希望智能体在收到第一条消息前就已经具备相关上下文。这正是 `memory_instructions()` 的用途：
 
 ```python
 from strands import Agent
@@ -139,72 +139,72 @@ from hindsight_strands import create_hindsight_tools, memory_instructions
 bank_id = "user-123"
 api_url = "http://localhost:8888"
 
-#智能体开始前的记忆召回相关上下文
+# 在智能体启动前召回相关上下文
 memories = memory_instructions(
     bank_id=bank_id,
     hindsight_api_url=api_url,
-    query="用户偏好和环境设置",
+    query="user preferences and environment setup",
 )
 
 agent = Agent(
     tools=create_hindsight_tools(bank_id=bank_id, hindsight_api_url=api_url),
-    system_prompt=f"你是一位乐于助人的 AWS 基础设施助手。\n\n{memories}",
+    system_prompt=f"You are a helpful AWS infrastructure assistant.\n\n{memories}",
 )
 ```
 
-`memory_instructions()` 同步运行记忆召回查询并返回一个格式化字符串，您可以将其嵌入到提示中的任何位置。输出看起来像：
+`memory_instructions()` 会同步执行召回查询，并返回格式化字符串，您可以将它嵌入提示中的任意位置。输出示例如下：
 
 ```
-##相关回忆
+## Relevant memories
 
 - User prefers Bedrock Nova Pro for inference tasks
 - Default deployment region is us-east-1
 - Project uses CDK for infrastructure
 ```
 
-结合两种方法：使用`memory_instructions()`作为环境上下文，将工具保留在适当的位置，以便智能体在会话期间主动学习新事物。
+可以结合这两种方式：用 `memory_instructions()` 提供常驻上下文，同时保留工具，让智能体在会话期间主动学习新信息。
 
 ### 全局配置 {#global-configuration}
 
-如果您要跨多个模块实例化智能体，则在各处线程化 `hindsight_api_url` 和其他参数会变得乏味。启动时使用一次`configure()`：
+如果您要在多个模块中实例化智能体，每次都传入 `hindsight_api_url` 等参数会很繁琐。可以在启动时调用一次 `configure()`：
 
 ```python
 from hindsight_strands import configure, create_hindsight_tools
 
 configure(
     hindsight_api_url="http://localhost:8888",
-    api_key="YOUR_API_KEY",       #如果启用了身份验证
+    api_key="YOUR_API_KEY",       # 如果启用了身份验证
     budget="mid",                  # low / mid / high
-    tags=["env:prod"],             #标记本次会议编写的所有内容
+    tags=["env:prod"],             # 为本次会话写入的所有内容添加标签
 )
 
-#在其他地方，无需传递连接详细信息
+# 在其他位置无需再传入连接参数
 tools = create_hindsight_tools(bank_id="user-123")
 ```
 
-`budget` 控制在记忆召回上花费了多少token — `low` 快速且便宜，`high` 提取更多上下文。默认为`mid`。
+`budget` 控制召回时使用多少 token：`low` 速度快、成本低，`high` 会提取更多上下文。默认值为 `mid`。
 
-### 基于标签的范围界定 {#tag-based-scoping}
+### 按标签限定范围 {#tag-based-scoping}
 
-标签可让您跨记忆库或环境组织和过滤记忆：
+标签可帮助您跨记忆库或环境整理和筛选记忆：
 
 ```python
 tools = create_hindsight_tools(
     bank_id="user-123",
     hindsight_api_url="http://localhost:8888",
-    tags=["env:prod", "team:platform"],        #适用于保留的所有内容
-    recall_tags=["env:prod"],                  #仅记忆召回带有此标签的记忆
-    recall_tags_match="all",                   #必须匹配所有标签（相对于“任何”）
+    tags=["env:prod", "team:platform"],        # 应用于所有存入的内容
+    recall_tags=["env:prod"],                  # 只召回带有此标签的记忆
+    recall_tags_match="all",                   # 必须匹配所有标签（而非“任意一个”）
 )
 ```
 
-如果您跨环境或团队共享记忆库并希望保持记忆召回范围，这非常有用。
+如果您在多个环境或团队之间共享记忆库，并希望限定召回范围，这种方式就很有用。
 
-### 选择性工具 {#selective-tools}
+### 选择性启用工具 {#selective-tools}
 
-您不必启用所有三个工具。
+不必启用全部三个工具。
 
-只读智能体对于服务最终用户非常有用，他们应该能够查询记忆但不能修改它——例如，面向客户的助手从由单独进程维护的共享知识记忆库中读取内容：
+只读智能体适合服务这样的最终用户：他们可以查询记忆，但不能修改记忆。例如，面向客户的助手可以从由独立进程维护的共享知识库中读取内容：
 
 ```python
 tools = create_hindsight_tools(
@@ -216,7 +216,7 @@ tools = create_hindsight_tools(
 )
 ```
 
-只写智能体对于摄取管道非常有用——一种后台智能体，可以处理文档、支持票证或日志并存储结构化事实，而不会暴露记忆召回：
+只写智能体适合摄取流水线：这类后台智能体处理文档、支持工单或日志，并存储结构化事实，但不提供召回功能：
 
 ```python
 tools = create_hindsight_tools(
@@ -230,52 +230,52 @@ tools = create_hindsight_tools(
 
 ---
 
-## 陷阱和边缘情况 {#pitfalls--edge-cases}
+## 注意事项和边缘情况 {#pitfalls--edge-cases}
 
-**智能体不会记忆存储，除非它决定这样做。**
-记忆工具只是工具——智能体根据上下文调用它们。如果你要求它“记住 X”，它会的。如果您进行一次临时交换并希望它归档某些内容，那么它可能不会。使用`memory_instructions()`注入重要的东西，而不是希望智能体自主地保留它。
+**智能体是否存入记忆，取决于它是否自行决定这样做。**
+记忆工具只是工具，智能体会根据上下文决定是否调用。您要求它“记住 X”，它就会存入；如果只是随意聊了几句，却期待它把某些内容记录下来，它很可能不会这样做。请用 `memory_instructions()` 注入重要信息，不要寄希望于智能体自动存入记忆。
 
-**`bank_id` 是你的一致性原语。**
-如果两个会话使用不同的`bank_id`值，则它们有单独的记忆——句号。确保用户身份在您的应用程序中可靠地映射到`bank_id`。一个常见的错误是使用会话 ID 而不是用户 ID，这会默默地为每个会话提供一张白纸。
+**`bank_id` 是保证一致性的关键。**
+如果两个会话使用不同的 `bank_id` 值，它们就会拥有彼此独立的记忆，这一点毫无例外。请确保应用能将用户身份可靠地映射到 `bank_id`。一个常见错误是使用会话 ID 而不是用户 ID，这会让每个会话都悄无声息地从空白状态开始。
 
-**Asyncio 与Strands 冲突。**
-Strands 运行自己的事件循环。 `hindsight-strands` 包通过在 `ThreadPoolExecutor` 而不是 `asyncio.run()` 中执行 Hindsight 客户端调用来处理此问题。如果您在此基础上进行构建或编写自定义工具，请不要尝试直接在 Strands 工具内调用 `await` Hindsight 调用 — 您将收到“事件循环已在运行”错误。
+**Asyncio 会与 Strands 冲突。**
+Strands 会运行自己的事件循环。`hindsight-strands` 包通过在 `ThreadPoolExecutor` 中执行 Hindsight 客户端调用来处理这个问题，而不是使用 `asyncio.run()`。如果您在此基础上构建功能或编写自定义工具，不要在 Strands 工具内部直接对 Hindsight 调用使用 `await`，否则会遇到“事件循环已在运行”错误。
 
-**`memory_instructions()` 是同步且阻塞的。**
-它在智能体初始化时运行网络调用。如果智能体经常被重建，不要在热循环中或在每个请求中调用它。如果查询是静态的并且您正在启动许多智能体，则缓存结果。
+**`memory_instructions()` 是同步且会阻塞的。**
+它会在智能体初始化时发起网络调用。如果智能体经常被重新创建，不要在紧密循环中或每次请求时调用它。如果查询内容固定，且您会启动许多智能体，请缓存结果。
 
-**​​反思很贵。**
-`hindsight_reflect` 从记忆中综合答案，而不仅仅是检索事实。它对于开放式查询更有用，但会使用更多标记。如果成本是一个问题，请将其禁用并使用记忆召回代替。
+**Reflect 的开销较高。**
+`hindsight_reflect` 会根据记忆综合生成答案，而不只是检索事实。它更适合开放式查询，但会使用更多 token。如果您在意成本，可以关闭它，改用 Recall。
 
 ---
 
 ## 权衡与替代方案 {#tradeoffs--alternatives}
 
-**何时不使用此功能：**
-如果您的会话是完全独立的并且用户期望没有连续性，那么添加记忆工具会带来不必要的复杂性和延迟。并非每个智能体都需要持久状态。
+**何时不适合使用：**
+如果每个会话都完全独立，且用户不需要保持连续性，那么添加记忆工具会带来不必要的复杂性和延迟。并非每个智能体都需要持久状态。
 
 **对话历史与长期记忆：**
-Strands 通过其消息历史记录自动管理会话内上下文。 `hindsight-strands` 用于跨会话记忆——需要在单个对话之外保存的事实。不要用它来代替提示历史记录。
+Strands 会通过消息历史自动管理会话内上下文。`hindsight-strands` 用于跨会话记忆，即需要在单次对话结束后继续保留的事实。不要用它替代提示历史。
 
 **替代方案：**
-- **DynamoDB / RDS**：您可以通过将会话数据写入数据库并将其加载回来来滚动自己的持久性。更多控制，更多代码，无需语义搜索。
-- **Amazon Bedrock AgentCore 记忆**：AWS 针对 Bedrock 智能体的完全托管记忆服务。自动处理短期（会话内）和长期（跨会话）记忆。更紧密的 AWS 集成，但将您锁定在 Bedrock 智能体运行时 — 您无法将其与非 Bedrock 提供商支持的 Strands 智能体一起使用。
-- **LangChain 记忆原语**：如果你已经在LangChain，它的记忆抽象更加成熟。 `hindsight-strands`的存在是因为Strands有自己的工具协议，LangChain记忆无法插入。
+- **DynamoDB / RDS**：您可以自行实现持久化，将会话数据写入数据库，再读取回来。这样控制力更强，但代码更多，也不具备语义搜索。
+- **Amazon Bedrock AgentCore Memory**：AWS 为 Bedrock 智能体提供的全托管记忆服务，可自动处理短期（会话内）和长期（跨会话）记忆。它与 AWS 的集成更紧密，但会让您受限于 Bedrock 智能体运行时，无法与由非 Bedrock 提供商支持的 Strands 智能体搭配使用。
+- **LangChain 记忆原语**：如果您已经在使用 LangChain，它的记忆抽象更加成熟。`hindsight-strands` 之所以存在，是因为 Strands 有自己的工具协议，而 LangChain 的记忆机制无法接入该协议。
 
 ---
 
 ## 回顾 {#recap}
 
-Strands 智能体默认是无状态的。 `hindsight-strands` 添加了三种原生记忆工具——记忆存储、记忆感知、反思——让您的智能体使用与其他所有事物相同的 `@tool` 协议来管理自己的长期记忆。 `memory_instructions()` 处理您希望预加载上下文而不是按需检索上下文的情况。
+Strands 智能体默认是无状态的。`hindsight-strands` 添加了三种原生记忆工具——存入、召回和反思，让智能体能用与其他能力相同的 `@tool` 协议管理自己的长期记忆。`memory_instructions()` 则适用于预先加载上下文，而非按需检索的场景。
 
-心智模型：记忆库的范围为`bank_id`，标签可让您跨环境进行过滤，`budget`控制记忆召回深度。其他一切都只是带有额外工具的Strands智能体。
+可以这样理解：记忆库按 `bank_id` 划分范围，标签可以跨环境筛选记忆，`budget` 控制召回深度。除此之外，它仍然是一个配备了额外工具的 Strands 智能体。
 
 ---
 
 ## 后续步骤 {#next-steps}
 
-- [PyPI 的后见之明](https://pypi.org/project/hindsight-strands/)
-- [Hindsight文档：Strands集成指南](https://hindsight.vectorize.io/sdks/integrations/strands)
-- 使用 Docker 在本地运行 Hindsight 并尝试上面的快速启动
-- 探索`memory_instructions()`在面向客户的应用程序中预热智能体
-- 查看 [CrewAI](/blog/2026/03/02/crewai) 和 [LangGraph](/blog/2026/03/24/langgraph-longterm-memory) 集成帖子，以对类似模式进行比较
+- [PyPI 上的 hindsight-strands](https://pypi.org/project/hindsight-strands/)
+- [Hindsight 文档：Strands 集成指南](https://hindsight.vectorize.io/sdks/integrations/strands)
+- 使用 Docker 在本地运行 Hindsight，并尝试上面的快速入门
+- 探索 `memory_instructions()`，了解如何为面向客户的应用预热智能体
+- 查看 [CrewAI](https://hindsight.vectorize.io/blog/2026-03-02-crewai) 和 [LangGraph](https://hindsight.vectorize.io/blog/2026-03-24-langgraph-longterm-memory) 集成文章，对比类似的集成模式

@@ -1,86 +1,86 @@
 ---
-title: "在 Hindsight 新列表视图中使用心智模型标签"
+title: "在 Hindsight 新版列表视图中使用心智模型标签"
 authors: [benfrank241]
 date: 2026-04-28T14:00:00Z
 tags: [mental-models, tags, control-plane, guide]
-description: "结合新列表视图、服务端标签建议及更安全的筛选，在 Hindsight 刷新和反思工作流中使用心智模型标签。"
+description: "借助新版列表视图、服务端标签建议和更安全的筛选，在 Hindsight 的刷新与反思工作流中使用心智模型标签。"
 image: /img/guides/guide-use-mental-model-tags-in-hindsight-list-view.webp
 hide_table_of_contents: true
 ---
 
-![在 Hindsight 新列表视图中使用心智模型标签](/img/guides/guide-use-mental-model-tags-in-hindsight-list-view.webp)
+![在 Hindsight 新版列表视图中使用心智模型标签](/img/guides/guide-use-mental-model-tags-in-hindsight-list-view.webp)
 
-**在 Hindsight 新列表视图中使用心智模型标签**时，重要变化是控制平面将心智模型视为实际工作文档。页面默认采用分栏列表，标签建议来自真实心智模型标签来源，无需手动记住标签。可参考[心智模型 API 文档](/developer/api/mental-models)、[反思文档](/developer/api/reflect)、[观察文档](/developer/observations)和[文档首页](https://hindsight.vectorize.io)。
+如果你想在 Hindsight 新版列表视图中**使用心智模型标签**，最重要的变化是：控制平面现在将心智模型视为真正用于日常工作的文档。页面默认显示分栏列表，标签建议也来自实际的心智模型标签来源，不必再靠记忆手动输入标签。调整工作流时，可以随时查阅[心智模型 API 文档](/developer/api/mental-models)、[反思文档](/developer/api/reflect)、[观测文档](/developer/observations)和[文档首页](https://hindsight.vectorize.io)。
 
 <!-- truncate -->
 
 ## 快速解答 {#the-quick-answer}
 
-- 心智模型默认以列表视图打开，旧卡片仪表盘仍为次要视图。
-- 标签建议来自新心智模型标签来源，筛选基于模型实际使用的标签。
-- 标签同时影响刷新输入和反思可见性，因此筛选并非只改外观。
+- 心智模型现在默认以列表视图打开，旧版卡片仪表盘仍可作为次要视图使用。
+- 标签建议从新的心智模型标签来源获取，因此筛选依据的是模型实际使用的标签。
+- 心智模型标签会影响刷新输入和反思时的可见性，所以筛选不只是外观上的变化。
 
-## 新列表视图改变什么 {#what-the-new-list-view-changes}
+## 新版列表视图带来哪些变化 {#what-the-new-list-view-changes}
 
-心智模型是长期运维文档，不只是仪表盘卡片，因此列表更适合作默认。一栏浏览名称、来源查询和刷新状态，另一栏查看内容。
+列表视图更适合作为默认视图，因为心智模型是需要长期维护的运维文档，而不只是仪表盘卡片。你可以在一个窗格中浏览名称、来源查询和刷新状态，再在另一个窗格中查看内容。
 
-这虽小，却解决真实流程问题：维护多个心智模型时，卡片网格适合浏览，列表适合实际维护。更新保留两者，但首先显示维护视图。
+这看起来只是小改动，却解决了实际工作流中的问题。维护一个包含多个心智模型的记忆库时，卡片网格便于浏览，列表则更适合实际维护。这次更新保留了两种视图，但会首先打开维护视图。
 
-## 使用实际建议按标签筛选 {#filter-by-tags-with-real-suggestions}
+## 使用真实建议筛选标签 {#filter-by-tags-with-real-suggestions}
 
-新标签建议直接查询心智模型标签来源，使 UI 推荐模型标签，而非普通记忆标签。
+新的标签建议路径很有用，因为它会直接查询心智模型标签来源。这样一来，UI 可以推荐心智模型使用的标签，而不是普通记忆使用的标签。
 
-底层端点形式如下：
+如果要查看底层端点的形式，可以参考：
 
 ```bash
 curl "$BASE_URL/v1/default/banks/$BANK_ID/tags?source=mental_models"
 ```
 
-一个记忆库有大量普通标签，却只有少量模型标签时，正需要这种区分。
+当一个记忆库有许多普通记忆标签，却只有少数标签附加在心智模型上时，这种区分正是你需要的。
 
-## 记住心智模型标签的实际作用 {#remember-what-mental-model-tags-actually-do}
+## 了解心智模型标签的实际作用 {#remember-what-mental-model-tags-actually-do}
 
-标签不只是浏览标记。[心智模型 API 文档](/developer/api/mental-models)说明，它限制刷新期间可读记忆，也影响[反思](/developer/api/reflect)期间可见的心智模型。
+这一点很容易让人困惑：心智模型标签不只是用于浏览的标记。[心智模型 API 文档](/developer/api/mental-models)说明，标签会缩小模型刷新期间可读取的记忆范围，也会影响 [Reflect（反思）](/developer/api/reflect)期间哪些心智模型可见。
 
-模型标记为 `user:alice` 时，刷新只读取也带此必需标签的记忆。这适合限定范围，但标签过严且底层记忆未补齐时，模型可能显得空或过时。
+例如，给心智模型添加 `user:alice` 标签后，刷新时只会读取同样带有这一必需标签的记忆。这样可以限定模型范围；但如果标签加得过多，而底层记忆从未补上相应标签，模型看起来就可能是空的或内容待更新。
 
-## 有意识地选择 any 或 all {#use-any-vs-all-deliberately}
+## 有意选择 any 或 all {#use-any-vs-all-deliberately}
 
-控制平面支持带匹配模式的标签筛选：
+控制平面现在支持使用匹配模式筛选标签。实际使用时，可以采用以下两种方式：
 
-- 浏览、快速找相关模型时，使用 **any**。
-- 调试精确范围、只看匹配全部标签的模型时，使用 **all**。
+- 浏览并快速查找相关心智模型时，使用 **any**。
+- 调试精确范围、只查看匹配整个标签集合的模型时，使用 **all**。
 
-筛选列表突然过小时，先从 **all** 切回 **any**，再检查模型标签是否比预期读取的记忆更严格。
+如果筛选后的列表突然变得很短，首先可以把 **all** 切换回 **any**。接着检查心智模型自身的标签是否比你预期读取的记忆所带的标签限制更严格。
 
-## 排查空结果或误导结果 {#troubleshoot-empty-or-misleading-results}
+## 排查空结果或容易误解的结果 {#troubleshoot-empty-or-misleading-results}
 
-常见情况：
+以下情况很常见：
 
-- **模型存在但内容为空。**通常是模型标签比可用记忆更严格。
-- **需要的标签从不出现。**通常尚无模型带此标签，即使普通记忆有。
-- **反思似乎遗漏模型。**通常请求标签与模型自身标签不重叠。
+- **模型存在，但内容为空。** 通常是模型标签比可用记忆的标签限制更严格。
+- **一直看不到需要的标签选项。** 通常是还没有心智模型带有该标签，即使普通记忆已经带有它。
+- **Reflect 似乎没有找到某个模型。** 通常是 Reflect 调用使用的标签与模型自身的标签没有交集。
 
-不确定时，回看[心智模型 API 文档](/developer/api/mental-models)和[观察指南](/developer/observations)。多数困惑实际是标签范围问题。
+不确定时，可以回头查阅[心智模型 API 文档](/developer/api/mental-models)和[观测指南](/developer/observations)。大多数关于心智模型的困惑，归根结底都是标签范围问题。
 
 ## 常见问题 {#faq}
 
-### 仪表盘视图消失了吗？ {#is-the-dashboard-view-gone}
+### 仪表盘视图取消了吗？ {#is-the-dashboard-view-gone}
 
-没有。仪表盘仍存在，列表更适合日常维护，因此改为默认。
+没有。仪表盘仍然可用。这次更新将列表视图设为默认视图，因为它更适合日常维护。
 
-### 为什么心智模型标签建议需要独立来源？ {#why-do-mental-model-tag-suggestions-need-a-separate-source}
+### 为什么心智模型标签建议需要单独的数据来源？ {#why-do-mental-model-tag-suggestions-need-a-separate-source}
 
-记忆标签和模型标签解决不同浏览问题。建议来自实际筛选的心智模型表时更有用。
+因为记忆标签和心智模型标签解决的是不同的浏览问题。建议直接来自当前正在筛选的心智模型表时，会实用得多。
 
-### 标签能让模型在反思中不可见吗？ {#can-a-tag-make-a-mental-model-disappear-from-reflect}
+### 标签会让反思时看不到某个心智模型吗？ {#can-a-tag-make-a-mental-model-disappear-from-reflect}
 
-能。反思可见性也按标签筛选，请求与模型标签不匹配可能隐藏模型。
+会。反思时也会按标签筛选可见的心智模型，因此请求标签与模型标签不匹配时，模型可能会被隐藏。
 
 ## 后续步骤 {#next-steps}
 
 - [Hindsight Cloud](https://hindsight.vectorize.io)
 - [心智模型 API 文档](/developer/api/mental-models)
 - [反思文档](/developer/api/reflect)
-- [观察指南](/developer/observations)
+- [观测指南](/developer/observations)
 - [文档首页](https://hindsight.vectorize.io)

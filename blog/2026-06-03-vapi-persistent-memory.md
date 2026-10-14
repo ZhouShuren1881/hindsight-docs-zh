@@ -1,95 +1,95 @@
 ---
-title: "记住的语音智能体：使用Hindsight为Vapi添加记忆"
+title: "会记忆的语音智能体：使用 Hindsight 为 Vapi 添加记忆"
 authors: [benfrank241]
 slug: "2026/06/03/vapi-persistent-memory"
 date: 2026-06-03T12:00
 tags: [memory, voice, ai, vapi, phone, agents, webhook, tutorial, hindsight]
-description: "使用一个 webhook 将持久的长期记忆添加到 Vapi 语音 AI 呼叫中。 在通话开始时记忆呼叫者历史记录，在通话结束时记忆存储通话记录 — 无需每轮集成。"
+description: "只需一个 webhook，即可为 Vapi 语音 AI 通话添加持久的长期记忆。在通话开始时召回来电者的历史记录，在通话结束时存入通话转录文本，无需逐轮集成。"
 image: /img/blog/vapi-persistent-memory.webp
 hide_table_of_contents: true
 ---
 
-![记住的语音智能体：Vapi + Hindsight](/img/blog/vapi-persistent-memory.webp)
+![会记忆的语音智能体：Vapi + Hindsight](/img/blog/vapi-persistent-memory.webp)
 
-[Vapi](https://vapi.ai) 使交付智能手机生产变得非常容易 — 托管 STT、流式 TTS、电话、传输和 LLM 循环，所有这些都在单个仪表板和 API 后面。它留给你的部分是记忆。
+[Vapi](https://vapi.ai) 让你可以轻松构建生产级电话智能体：托管式语音转文本（STT）、流式文本转语音（TTS）、电话接入、转接和 LLM 循环，都可以通过一个控制台和 API 管理。记忆则需要你自行添加。
 
-每次Vapi调用都从零开始。昨天解释了帐户问题的来电者今天再次解释了这一问题。三周前预约的顾客必须再次拼写自己的名字。上周二诊断出路由问题的智能体在周三重新发现了该问题。跨调用的持久记忆不是您可以在 Vapi 内部打开的功能 - 但您可以通过 Webhook 插入该功能。
+每次 Vapi 通话都从零开始。昨天解释过账户问题的来电者，今天还得再解释一遍。三周前预约过的客户，又得重新拼一遍自己的名字。上周二诊断出路由问题的智能体，到了周三又得重新发现一次。Vapi 里没有开关可以让记忆跨通话保留，不过你可以通过 webhook 轻松接入这项能力。
 
-`hindsight-vapi` 集成为任何具有一个 HTTP 端点的 Vapi 助手添加了长期记忆。每次通话开始时都会调用记忆，并在结束时保留记录 - 无需每轮集成，无需更改助手配置，无需自定义工具接线。
+`hindsight-vapi` 集成只需一个 HTTP 端点，就能为任何 Vapi 助手添加长期记忆。每次通话开始时都会召回记忆，结束时则存入通话转录文本。无需逐轮集成，也无需修改助手配置或自定义工具接线。
 
 <!-- truncate -->
 
 ## 概览 {#tldr}
 
-- Vapi语音智能体没有内置的交叉调用记忆。
-- `hindsight-vapi` 是一个 webhook 处理程序 - 一个端点覆盖两个方向。
-- 在`assistant-request`，它为调用者调用记忆并将其作为`assistantOverrides`返回（注入系统提示符中）。
-- 在`end-of-call-report`，它保留了完整的记录，即发即忘。
-- 无每转挂钩。通话过程中不会增加延迟。 在通话开始时，记忆被注入**每次通话一次**。
+- Vapi 语音智能体没有内置的跨通话记忆。
+- `hindsight-vapi` 是一个 webhook 处理程序；一个端点即可处理两个方向的操作。
+- 收到 `assistant-request` 时，它会召回来电者的记忆，并通过 `assistantOverrides` 返回（注入系统提示词）。
+- 收到 `end-of-call-report` 时，它会以即发即忘的方式存入完整转录文本。
+- 无需逐轮钩子；通话过程中不会增加延迟。记忆在每次通话开始时注入一次。
 
 ---
 
-## 问题：Vapi 调用从头开始 {#the-problem-vapi-calls-start-from-scratch}
+## 问题：Vapi 通话每次都从头开始 {#the-problem-vapi-calls-start-from-scratch}
 
-Vapi 为您提供了语音智能体堆栈的清晰抽象 — 语音到文本、LLM 循环、文本到语音、呼叫控制、电话提供商。它没有为您提供在调用之间保留的记忆层。每个调用都会获得一个新的 LLM 上下文。文字记录是你可以保留的，但如果你不进行连接，智能体就无法在下次通话时访问它。
+Vapi 为语音智能体技术栈提供了清晰的抽象，包括语音转文本、LLM 循环、文本转语音、通话控制和电话服务提供方。但它没有提供能在通话之间保留信息的记忆层。每次通话都会获得全新的 LLM 上下文。转录文本由你保存，但如果不自行接入，智能体下次通话时就无法查阅它。
 
-您可以使用智能体在对话期间调用的自定义工具来解决此问题（“在响应之前查找呼叫者的历史记录”），但这会增加第一轮的延迟，并且LLM必须记住调用它。您可以在每个助手的系统提示符前面添加一个摘要，但这需要您知道给定的呼叫者将拨打哪个助手，并在新呼叫到达时保持摘要最新。
+你可以添加一个由智能体在对话中调用的自定义工具（例如“回答前先查一下来电者的历史记录”），但这会增加第一轮响应的延迟，而且 LLM 必须记得调用它。你也可以在每个助手的系统提示词前附上一份摘要，但这要求你知道某个来电者会联系哪个助手，还要随着新通话不断更新摘要。
 
-更干净的解决方案是使用 Vapi 现有的服务器 Webhook 事件。 Vapi 已在呼叫开始 (`assistant-request`) 时触发 HTTP 事件，并在呼叫结束 (`end-of-call-report`) 时触发另一个 HTTP 事件。如果您处理了这两个问题，您就拥有了记忆召回和保留的自然插入点 - 无需触摸助手配置，无需增加呼叫中延迟，也无需依赖 LLM 记住调用工具。
+更简洁的方案是使用 Vapi 现有的服务器 webhook 事件。Vapi 会在通话开始时触发一个 HTTP 事件（`assistant-request`），在通话结束时再触发另一个（`end-of-call-report`）。处理这两个事件，就能在自然的节点召回和存入记忆，无需修改助手配置、增加通话中的延迟，也无需依赖 LLM 记得调用工具。
 
-​​这就是`hindsight-vapi`的作用。
+这正是 `hindsight-vapi` 的作用。
 
 ---
 
-## 它是如何工作的 {#how-it-works}
+## 工作原理 {#how-it-works}
 
-Vapi 不会在其服务器架构中公开每回合钩子。因此，在通话开始时会注入记忆**每次通话一次**，然后通话照常运行，并在结束时保留记录。
+Vapi 的服务器架构不提供逐轮钩子。因此，记忆只会在每次通话开始时注入一次，之后通话照常进行，并在结束时存入转录文本。
 
 ```text
 来电
-└─ Vapi 触发“助手请求”webhook
-└─ 记忆召回（查询=来电者的电话号码）
-└─ 作为助理返回并覆盖<hindsight_memories>系统消息
-└─ Vapi 在通话开始前合并到助手配置中
+  └─ Vapi 触发 "assistant-request" webhook
+       └─ 召回记忆（查询 = 来电者的电话号码）
+            └─ 通过 assistantOverrides 返回 <hindsight_memories> 系统消息
+                 └─ Vapi 在通话开始前将其合并到助手配置中
 
-通话正常进行
-（没有每回合挂钩 - LLM 在整个调用过程中使用注入的记忆）
+通话照常进行
+  （没有逐轮钩子，LLM 在整个通话中使用注入的记忆）
 
 通话结束
-└─ Vapi 触发“通话结束报告”webhook
-└─ 记忆存储完整记录（即发即忘 — webhook 立即响应）
+  └─ Vapi 触发 "end-of-call-report" webhook
+       └─ 存入完整转录文本（即发即忘，webhook 立即响应）
 ```
 
-`assistant-request`实际发生了什么：
+收到 `assistant-request` 时具体会发生什么：
 
-1. **记忆再现。** webhook 从 `message.call.customer.number` 中提取呼叫者的电话号码，并在 Hindsight 中查询相关记忆。 （如果没有电话号码——不常见，但可以通过网络呼叫助手实现——它就会退回到通用的“回访者”查询。）
-2. **注射。** 召回的记忆被包装在`<hindsight_memories>`块中并作为`assistantOverrides.model.messages`返回——系统消息Vapi在LLM生成令牌之前合并到活动助手配置中。
-3. **运行呼叫。** LLM 在其上下文中从第一个单词开始就有呼叫者的历史记录。
+1. **召回。** webhook 从 `message.call.customer.number` 中读取来电者的电话号码，并向 Hindsight 查询相关记忆。（如果没有电话号码——这种情况并不常见，但使用 Web 通话助手时可能发生——就会改用通用的“回访来电者”查询。）
+2. **注入。** 召回的记忆会放入 `<hindsight_memories>` 块中，并作为 `assistantOverrides.model.messages` 返回。Vapi 会在 LLM 生成第一个 token 之前，将这条系统消息合并到当前助手配置中。
+3. **开始通话。** 从第一个词开始，来电者的历史记录就已经在 LLM 的上下文中了。
 
-`end-of-call-report` 发生了什么：
+收到 `end-of-call-report` 时会发生什么：
 
-1. ​​**Webhook 立即响应。** Vapi 预计很快会达到 200；积分返回 1。
-2. **保留在后台运行。** 完整的成绩单通过 `asyncio.create_task` 发送到 Hindsight — 即发即忘，无阻塞，没有因保留速度慢而导致 Webhook 失败的风险。
+1. **webhook 立即响应。** Vapi 需要快速收到 200 响应；此集成会立即返回。
+2. **在后台存入记忆。** 完整转录文本会通过 `asyncio.create_task` 发送给 Hindsight，采用即发即忘方式，不会阻塞请求，也不会因存入记忆耗时而导致 webhook 失败。
 
-记忆会在通话中积累。当同一呼叫者打来第二个或第三个电话时，记忆召回会自动显示真实的历史记录——过去的决定、帐户详细信息、陈述的偏好。
+记忆会随着通话不断积累。同一位来电者打来第二或第三次电话后，系统就能自动召回真实的历史信息，例如过去的决定、账户详情和明确表达过的偏好。
 
 ---
 
-## 设置：一个 Webhook，完成 {#setup-one-webhook-done}
+## 设置：一个 Webhook 即可完成 {#setup-one-webhook-done}
 
-集成是一个瘦处理程序，您可以安装在任何 HTTP 服务器上。这是 FastAPI 的端到端版本：
+这个集成是一个轻量的处理程序，可以挂载到任意 HTTP 服务器上。下面是完整的 FastAPI 示例：
 
-### 1。安装 {#1-install}
+### 1. 安装 {#1-install}
 
 ```bash
 pip install hindsight-vapi
 ```
 
-### 2。选择 Hindsight 部署 {#2-pick-a-hindsight-deployment}
+### 2. 选择 Hindsight 部署方式 {#2-pick-a-hindsight-deployment}
 
-**Hindsight Cloud**是最快的路径 - [免费注册](https://ui.hindsight.vectorize.io)，抓住API键，将代码指向`https://api.hindsight.vectorize.io`。没有守护进程可以运行。
+使用 **Hindsight Cloud** 是最快的方式：[免费注册](https://ui.hindsight.vectorize.io)，获取 API key，并将代码指向 `https://api.hindsight.vectorize.io`。无需运行守护进程。
 
-**自托管** 是单个命令：
+**自托管**：只需运行以下命令：
 
 ```bash
 pip install hindsight-all
@@ -97,7 +97,7 @@ export HINDSIGHT_API_LLM_API_KEY=YOUR_OPENAI_KEY
 hindsight-api  # starts at http://localhost:8888
 ```
 
-### 3。连接 Webhook {#3-wire-the-webhook}
+### 3. 接入 Webhook {#3-wire-the-webhook}
 
 ```python
 from fastapi import FastAPI, Request
@@ -118,27 +118,27 @@ async def vapi_webhook(request: Request):
     return response or {}
 ```
 
-这就是整个集成。一个处理程序涵盖两个方向 - `assistant-request` 上的记忆召回，`end-of-call-report` 上的记忆存储，其他一切都返回 200 OK。
+整个集成就是这样。一个处理程序同时处理两个方向：在 `assistant-request` 时召回记忆，在 `end-of-call-report` 时存入记忆，其他所有事件都会返回 200 OK。
 
-### 4。将瓦皮指向它 {#4-point-vapi-at-it}
+### 4. 将 Vapi 指向 Webhook {#4-point-vapi-at-it}
 
-在 Vapi 仪表板中：
+在 Vapi 控制台中：
 
-1. **设置 → 服务器 URL** — 粘贴您的端点（例如，`https://your-domain.com/webhook`）
-2. 启用`assistant-request`和`end-of-call-report`事件类型
+1. 打开 **Settings → Server URL**，粘贴你的端点（例如 `https://your-domain.com/webhook`）。
+2. 启用 `assistant-request` 和 `end-of-call-report` 事件类型。
 
-请参阅[Vapi 的服务器事件文档](https://docs.vapi.ai/server-url)了解本地开发期间的隧道技巧（`ngrok`、`cloudflared`等）。
+本地开发时如需建立隧道，请参阅 [Vapi 服务器事件文档](https://docs.vapi.ai/server-url)（例如使用 `ngrok` 或 `cloudflared`）。
 
-就是这样。对该助理的下一个入站呼叫将通过两端的Hindsight。
+完成后，该助手的下一次来电就会在开始和结束时分别通过 Hindsight 处理。
 
 ---
 
-## 外拨电话 {#outbound-calls}
+## 外呼 {#outbound-calls}
 
-Vapi 的 `assistant-request` webhook 仅针对 **入境** 调用触发。对于出站，您需要在呼叫创建时自行构建记忆覆盖：
+Vapi 的 `assistant-request` webhook 只会为“**呼入**”通话触发。对于外呼，你需要在创建通话时自行构建记忆覆盖项：
 
 ```python
-overrides = await memory.build_assistant_overrides("Vectorize 的 Ben")
+overrides = await memory.build_assistant_overrides("Ben from Vectorize")
 
 vapi.calls.create(
     assistant_id="...",
@@ -147,40 +147,40 @@ vapi.calls.create(
 )
 ```
 
-`build_assistant_overrides()` 运行与入站路径相同的记忆召回逻辑，并返回相同的 `assistantOverrides` 有效负载 - 仅按需使用您提供的查询（呼叫者姓名、账户 ID、呼叫主题）。保留方面保持不变：每当 Vapi 将 `end-of-call-report` 传递到您的 webhook（入站或出站）时，处理程序都会自动保留脚本。
+`build_assistant_overrides()` 会运行与呼入路径相同的记忆召回逻辑，并返回相同的 `assistantOverrides` 载荷。区别在于，你可以按需提供查询内容，例如来电者姓名、账户 ID 或通话主题。存入记忆的流程不变：无论呼入还是外呼，只要 Vapi 将 `end-of-call-report` 发送到你的 webhook，处理程序就会自动存入转录文本。
 
 ---
 
 ## 配置 {#configuration}
 
-一切都可以在构造函数上调整：
+构造函数中的所有选项都可以调整：
 
 ```python
 HindsightVapiWebhook(
-    bank_id="vapi-support",            # Required: memory bank to read/write
-    hindsight_api_url="...",           #Hindsight API 网址
-    api_key="hsk_...",                 #Hindsight Cloudtoken
-    recall_budget="mid",               # "low", "mid", or "high"
-    recall_max_tokens=4096,            #记忆召回块中的token上限
-    enable_recall=True,                #在通话开始时注入记忆
-    enable_retain=True,                #在通话结束时存储文字记录
-    memory_prefix="此前对话中的相关记忆：\n",
+    bank_id="vapi-support",            # 必填：要读取和写入的记忆库
+    hindsight_api_url="...",           # Hindsight API URL
+    api_key="hsk_...",                 # Hindsight Cloud 令牌
+    recall_budget="mid",               # "low"、"mid" 或 "high"
+    recall_max_tokens=4096,            # 召回记忆块的 token 上限
+    enable_recall=True,                # 在通话开始时注入记忆
+    enable_retain=True,                # 在通话结束时存入转录文本
+    memory_prefix="Relevant memories from past conversations:\n",
 )
 ```
 
-**`recall_budget`** 是观看的杠杆。语音呼叫对延迟敏感 - 但由于记忆注入发生在 **通话开始时** 而不是每轮，因此您比流式传输管道拥有更多的空间。 `"mid"` 是大多数助手的正确默认值。如果您的 Vapi 助手配置已经在第一响应预算上紧张，则降至 `"low"`；如果您的助手处理复杂的多线程对话，并且更深层次的记忆召回会带来回报，则可以使用`"high"`。
+需要重点关注的是 **`recall_budget`**。语音通话对延迟很敏感，但由于记忆是在每次通话开始时注入，而不是每轮注入，因此相比流式处理管道，你有更多余量。对大多数助手来说，`"mid"` 是合适的默认值。如果 Vapi 助手配置的首次响应预算已经比较紧张，可以降到 `"low"`；如果助手要处理复杂的多线程对话，而深入召回更有价值，可以调到 `"high"`。
 
-**选择性启用/禁用** 对于分阶段推出很有用。首先运行记忆召回，以显示记忆库中已有的内容，然后在您满意后打开记忆功能：
+按需启用或禁用的功能适合分阶段推出。可以先只启用记忆召回，查看记忆库中已有的内容，满意后再启用记忆存入：
 
 ```python
 memory = HindsightVapiWebhook(
     bank_id="vapi-support",
     enable_recall=True,
-    enable_retain=False,   #先别写——只是观察
+    enable_retain=False,   # 暂不写入，只观察
 )
 ```
 
-**全局配置** 对于多个助手：
+要为多个助手进行**全局配置**：
 
 ```python
 from hindsight_vapi import configure
@@ -191,87 +191,89 @@ configure(
     recall_budget="mid",
 )
 
-#每个助理 webhook 只需要bank_id
+# 每个助手的 webhook 只需指定 bank_id
 support_memory = HindsightVapiWebhook(bank_id="vapi-support")
 booking_memory = HindsightVapiWebhook(bank_id="vapi-booking")
 ```
 
 ---
 
-## 记忆库 范围界定：谁与谁分享记忆？ {#bank-scoping-who-shares-memory-with-whom}
+## 记忆库范围：哪些人共享记忆？ {#bank-scoping-who-shares-memory-with-whom}
 
-`bank_id` 是控制每个呼叫者可以看到的内容的控制杆。
+`bank_id` 决定每位来电者能看到哪些内容。
 
-**每个呼叫者** — 典型的个人助理/客户支持设置。每个电话号码都有自己的记忆库，无交叉污染：
+**每位来电者一个记忆库**——适用于个人助理或客户支持场景。每个电话号码使用自己的记忆库，不会与其他人混杂：
 
 ```python
 caller_number = event["message"]["call"]["customer"]["number"]
 memory = HindsightVapiWebhook(bank_id=f"user-{caller_number}")
 ```
 
-**每个助手** — 当一名 Vapi 助理处理共享工作负载时非常有用（例如，跨多个业务线预订的接待台）：
+**每个助手一个记忆库**——适用于一个 Vapi 助手处理共享工作负载的情况，例如为多个业务线安排预约的接待台：
 
 ```python
 memory = HindsightVapiWebhook(bank_id="vapi-reception")
 ```
 
-**每个帐户** — 您自己的内部客户或帐户 ID，在实例化 Webhook 处理程序之前从电话号码中查找。当一个客户可能从多个号码拨打电话时，这是正确的模式。
+**每个账户一个记忆库**——在实例化 webhook 处理程序前，根据电话号码查找你自己的内部客户或账户 ID。如果同一客户可能用多个电话号码来电，这种方式更合适。
 
-你不必选择一次。接待员 + 每个客户的设置是一个完全合理的组合 - 通过针对不同路径运行两个 Webhooks，共享接待员记忆库用于一般信息，每个客户记忆库用于个人历史记录。
-
----
-
-## Vapi 记忆的闪光点 {#where-vapi-memory-shines}
-
-集成非常适合调用者关系比调用更持久的任何情况：
-
-- **客户支持电话线** — 智能体从上次通话中断的地方继续。过去的票证、什么有效、上一次通话的另一端是谁、解决状态。
-- **销售和资质** — 智能体记住规定的预算、决策时间表以及呼叫者已经询问过哪些产品。不再需要“再次告诉我你在寻找什么”。
-- **日程安排和预订** — 智能体会记住呼叫者的偏好（早上还是晚上、面对面还是视频、重复模式），并且可以建议正确的时段，而无需重新发现。
-- **医疗保健摄入和随访** — 症状历史、用药笔记和之前的摄入答案可以在呼叫中进行，无需手动审查笔记（在您已经运行的任何合规状态下）。
-- **现场服务调度** — 重复致电者询问持续存在的问题，跳过“您的帐号是什么”介绍，智能体已经知道待处理的工作订单。
-
-共同点：记忆的值显示了**第二**有人打电话的时间。这也是他们最痛苦的时候。
+你不必只选一种。接待台共享记忆库与每位客户各自的记忆库可以合理地组合使用：为一般信息使用共享接待台记忆库，为个人历史记录使用各客户的记忆库，并通过不同路径运行两个 webhook。
 
 ---
 
-## 制作笔记 {#production-notes}
+## Vapi 记忆适用的场景 {#where-vapi-memory-shines}
 
-一旦你完成了原型，需要了解一些事情：
+只要来电者关系持续时间超过一次通话，这种集成都很适用：
 
-**延迟。** `assistant-request` 上的记忆召回在 Vapi 开始呼叫之前运行，因此一旦呼叫生效，它就不会增加每回合的延迟。预计记忆召回会增加大约 50-300 毫秒，具体取决于 `recall_budget` 和记忆大小 - 并且因为它在通话开始时而不是在对话中间发生一次，所以预算是宽松的。
+- **客户支持热线**——智能体可以接着上次通话的进度继续处理，包括查看过往工单、有效的解决方法、上次通话的对方是谁以及问题是否已解决。
+- **销售与客户资格评估**——智能体记得客户表达过的预算、决策时间表，以及来电者已经咨询过哪些产品。无需再问“能告诉我你想找什么吗？”
+- **日程安排与预约**——智能体记得来电者的偏好（上午还是晚上、线下还是视频、重复预约习惯），可以直接推荐合适的时段，无需重新确认。
+- **医疗初诊与随访**——症状历史、用药记录和先前的初诊回答可以在不同通话间延续，无需人工查阅记录（具体做法应符合你已有的合规要求）。
+- **现场服务调度**——针对持续问题再次来电的人无需重新回答“你的账户号码是什么”，智能体也已知道尚未完成的工单。
 
-**隐私和保留。** 如果需要删除特定调用者的记忆（被遗忘权、账户关闭），则HindsightPython客户端公开`delete_bank`/`adelete_bank`，而RESTAPI在`DELETE /v1/default/banks/{bank_id}`下提供相同的操作。如果您通过电话号码或帐户 ID 输入记忆库，则只需一次调用即可删除。
+这些场景的共同点是：记忆的价值会在有人第二次来电时体现出来。缺少记忆带来的不便，也恰恰从这时开始变得明显。
 
-**故障隔离。** 记忆召回和保留都会在内部吞下异常并记录它们 - 失败的 Hindsight 调用永远不会中断 Vapi 调用。如果记忆错误，助手会在没有注入记忆的情况下运行（并不比没有集成更糟糕）。如果保留错误，您将丢失一份成绩单；下一次通话仍然可以正常工作。
+---
 
-**多个事件。** 处理程序忽略它不关心的事件类型（调用状态更改、函数调用、运行时转录等）并返回 `None`，FastAPI 将其转换为带有空正文的 200 OK。您可以将这些事件的逻辑与记忆处理程序一起安装 - 它们不会冲突。
+## 生产环境注意事项 {#production-notes}
+
+从原型进入生产环境时，有几点需要了解：
+
+**延迟。** `assistant-request` 上的记忆召回会在 Vapi 开始通话前运行，因此通话接通后不会增加逐轮延迟。根据 `recall_budget` 和记忆量，召回预计会增加约 50–300 ms。由于它只在通话开始时运行一次，而不在对话中途运行，因此延迟预算相对宽裕。
+
+**隐私与保留。** 如果需要删除某位来电者的记忆（例如响应被遗忘权请求或关闭账户），Hindsight Python 客户端提供 `delete_bank` / `adelete_bank`，REST API 也通过 `DELETE /v1/default/banks/{bank_id}` 提供相同操作。如果记忆库以电话号码或账户 ID 为键，调用一次即可删除。
+
+**故障隔离。** 记忆召回和存入逻辑都会在内部捕获异常并记录日志；Hindsight 调用失败不会中断 Vapi 通话。若召回出错，助手会在没有注入记忆的情况下运行（效果不会比没有接入集成更差）。若存入出错，就会丢失这一次通话的转录文本；下一次通话仍可正常进行。
+
+**多个事件。** 处理程序会忽略它不关心的事件类型（例如通话状态变更、函数调用、通话进行中的转录文本），并返回 `None`。FastAPI 会将其转换为带空响应正文的 200 OK。你可以在记忆处理程序旁边挂载自己对这些事件的处理逻辑，两者不会冲突。
 
 ---
 
 ## 回顾 {#recap}
 
-Vapi 语音智能体默认情况下不会记住通话之间的任何内容。添加持久记忆不需要重建您的助手，将工具插入每个对话中，或者运行一个监视呼叫的 sidecar。它需要一个 webhook 处理程序来：
+默认情况下，Vapi 语音智能体无法记住不同通话之间发生的事情。添加持久记忆无需重建助手、在每段对话中加入工具，或运行一个旁路服务来监视通话。你只需要一个 webhook 处理程序来完成以下操作：
 
-- **召回** 通话开始时呼叫者的历史记录，通过`assistantOverrides`注入到系统提示符中
-- **保留** 通话结束时的完整记录，即发即忘
+- 在通话开始时召回来电者的历史记录，并通过 `assistantOverrides` 注入系统提示词。
+- 在通话结束时以即发即忘的方式存入完整转录文本。
 
-两个事件。一个端点。 每次呼叫 Vapi 助手时，记忆都会变得更加复杂。
+两个事件，一个端点；每次与 Vapi 助手通话都会为记忆添砖加瓦。
 
 ---
 
 ## 后续步骤 {#next-steps}
 
-- **使用免费的Hindsight Cloud帐户试用**：[注册](https://ui.hindsight.vectorize.io)，抓住一个密钥，将 FastAPI Webhook 指向 Cloud URL
-- **运行本地示例**：`hindsight-integrations/vapi/`中的`python examples/interactive_webhook.py --bank demo-user`端到端模拟Vapi事件（使用`:script`、`:end <transcript>`、`:call <number>`、`:memories`命令）
-- **调音`recall_budget`**：从`"mid"`开始，如果您要优化第一响应延迟，则降至`"low"`
-- **选择记忆库范围界定策略** 与您的客户模型匹配 - 每个呼叫者、每个助理或每个帐户
-- **浏览[完整集成列表](https://hindsight.vectorize.io/integrations/)** — Hermes, OpenAI智能体，n8n，Paperclip，以及其他 30 多个其他人都具有相同的记忆层
+- **免费试用 Hindsight Cloud**：[注册](https://ui.hindsight.vectorize.io)，获取 API key，并将 FastAPI webhook 指向 Cloud URL。
+- **运行本地示例**：在 `hindsight-integrations/vapi/` 中运行 `python examples/interactive_webhook.py --bank demo-user`，即可端到端模拟 Vapi 事件（支持 `:script`、`:end <transcript>`、`:call <number>` 和 `:memories` 命令）。
+- **调整 `recall_budget`**：从 `"mid"` 开始；如果要优化首次响应延迟，可以降到 `"low"`。
+- **选择符合客户模型的记忆库范围策略**：每位来电者、每个助手或每个账户分别使用记忆库。
+- **浏览[完整集成列表](https://hindsight.vectorize.io/integrations/)**：Hermes、OpenAI Agents、n8n、Paperclip 等 30 多种集成都使用相同的底层记忆层。
 
 ---
 
-**进一步阅读：**
+**延伸阅读：**
 
-- [什么是智能体记忆？](https://vectorize.io/what-is-agent-memory/) — 基本概念
-- [Hindsight Vapi 集成文档](/sdks/integrations/vapi) — 完整配置参考
-- [2026 年最佳 AI 智能体记忆系统](https://vectorize.io/articles/best-ai-agent-memory-systems/) — 全景观比较
+- [什么是智能体记忆？](https://vectorize.io/what-is-agent-memory/)——基础概念。
+- [Hindsight Vapi 集成文档](https://hindsight.vectorize.io/integrations/vapi)——完整配置参考。
+- [2026 年最佳 AI 智能体记忆系统](https://vectorize.io/articles/best-ai-agent-memory-systems/)——全面比较。
+
+---

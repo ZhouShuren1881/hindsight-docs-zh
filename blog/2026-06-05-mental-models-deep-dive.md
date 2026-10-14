@@ -1,84 +1,84 @@
 ---
-title: "Hindsight如何学习：深入探究心智模型"
+title: "Hindsight 如何学习：深入剖析心智模型"
 authors: [benfrank241]
 slug: "2026/06/05/mental-models-deep-dive"
 date: 2026-06-05T16:00
 tags: [hindsight, memory, mental-models, agents, deep-dive, tutorial]
-description: "心智模型是Hindsight学习层次的顶层——对您的智能体在每次课程中提出的主题有持久的、自我刷新的理解。从架构开始的演练。"
+description: "心智模型位于 Hindsight 学习层级的顶端：它们是持久、可自行刷新的认知，用于理解智能体每次会话都会询问的主题。本文从数据库模式开始逐步讲解。"
 image: /img/blog/mental-models-deep-dive.webp
 hide_table_of_contents: true
 ---
 
-![Hindsight如何学习 — 心智模型](/img/blog/mental-models-deep-dive.webp)
+![Hindsight 如何学习——心智模型](/img/blog/mental-models-deep-dive.webp)
 
-Hindsight分三个阶段学习。 **原始事实** 就是所说的——从智能体的对话中提取的个人记忆。 **观察** 是Hindsight 在许多事实中注意到的——自动整合的模式和结论。 **心智模型** 就是Hindsight 到*了解* 的成果——稳定的、命名的文档，每次记忆库获得新证据时都会演变。它们位于检索层次结构的顶部，因为那是学习的所在。
+Hindsight 通过三个阶段学习。原始事实是人们说过的话，即从智能体对话中提取出的单条记忆。观测是 Hindsight 从大量事实中发现的内容，即自动整合出的模式和结论。心智模型则是 Hindsight 已经*理解*的内容：稳定、有名称的文档，每当记忆库获得新证据时都会随之演进。它们位于检索层级的顶端，因为学习就发生在那里。
 
-对于你的智能体在每次会话中提出的问题 - *“该用户的偏好是什么？”*、*“这个项目的惯例是什么？”* - 每次都从原始事实中重新得出答案是浪费的。更糟糕的是，它很脆弱：合成输出会在会话之间漂移，因为每个 ^ 调用都是从头开始。 心智模型用Hindsight一直在完善的持久表示来取代它。
+对于智能体每次会话都会询问的问题——*“这个用户有什么偏好？”*、*“这个项目有哪些约定？”*——每轮都从原始事实重新推导答案很浪费。更糟的是，这样做很脆弱：每次 Reflect 调用都从头开始，因此综合结果会在不同会话间漂移。心智模型用持久化表征取代这种做法，而 Hindsight 一直在持续完善这份表征。
 
-这篇文章是顶层实际如何工作的技术参考——模式、刷新逻辑、悄悄咬人的标签匹配策略，以及你必须选择的两种刷新模式（`full`和`delta`）。
+本文是关于顶层机制如何工作的技术参考，涵盖数据库模式、刷新逻辑、容易让人踩坑的标签匹配策略，以及必须在两种刷新模式（`full` 和 `delta`）之间作出的选择。
 
 <!-- truncate -->
 
-## 心智模型到底是什么 {#what-a-mental-model-actually-is}
+## 心智模型究竟是什么 {#what-a-mental-model-actually-is}
 
-来自文档：
+文档中的定义：
 
-> 心智模型是您为记忆库策划的**已保存的答复**。当您创建心智模型时，Hindsight 使用源查询运行反思操作并存储结果。在后续反思调用中，首先检查这些预先计算的摘要——提供更快、更一致的答案。
+> 心智模型是你为记忆库整理保存的**Reflect 响应**。创建心智模型时，Hindsight 会使用你的源查询执行一次 Reflect 操作，并保存结果。在之后的 Reflect 调用中，系统会先检查这些预先计算的摘要，从而更快、更一致地回答问题。
 
-这就是概念核心。从技术上讲，心智模型是 `mental_models` 表中的一行，其中包含：
+这就是核心概念。从技术上说，心智模型是 `mental_models` 表中的一行，包含：
 
-- A `source_query`（问什么）
-- A `content` 字段（合成答案）
-- A `trigger` 配置（何时刷新）
-- 可选`tags`（哪些记忆喂养它，谁可以看到它）
+- `source_query`（要询问什么）
+- `content` 字段（综合得出的答案）
+- `trigger` 配置（何时刷新）
+- 可选的 `tags`（哪些记忆会为它提供内容，以及谁可以看到它）
 
-^使用三层检索层次结构。智能体收到的系统提示说明了这一点：
+Reflect 使用三层检索层级。Reflect 智能体收到的系统提示会明确说明这一点：
 
 ```text
-### 1. 心智模型 (search_mental_models) - 首先尝试
-- 用户策划的有关特定主题的摘要
-- 最高质量 - 手动创建和维护
-- 如果相关的心智模型存在并且是FRESH，它可以完全回答这个问题
+### 1. MENTAL MODELS (search_mental_models) - Try First
+- User-curated summaries about specific topics
+- HIGHEST quality - manually created and maintained
+- If a relevant mental model exists and is FRESH, it may fully answer the question
 
-### 2. 观察 (search_observations) - 第二优先级
-- 自动巩固记忆中的知识
+### 2. OBSERVATIONS (search_observations) - Second Priority
+- Auto-consolidated knowledge from memories
 
-### 3. RAW FACTS（记忆召回）- 基本事实
-- 个人记忆（世界事实和经历）
+### 3. RAW FACTS (recall) - Ground Truth
+- Individual memories (world facts and experiences)
 ```
 
-心智模型位于该层次结构的顶部。智能体首先观察它们，然后进行观察，然后是原始事实。它走得越远，需要进行的合成就越多，响应也就越慢。
+心智模型位于该层级的顶端。智能体先查看心智模型，再查看观测，最后查看原始事实。检索层级越靠后，智能体需要自行综合的信息就越多，响应也越慢。
 
 ---
 
-## 架构 {#the-schema}
+## 数据库模式 {#the-schema}
 
-`mental_models` 表有以下值得了解的列：
+`mental_models` 表中有以下值得了解的列：
 
-|栏目|注释|
+| 列 | 说明 |
 |---|---|
-|`id` + `bank_id`|复合主键 - 文本 ID，范围按记忆库|
-|`source_query`|自然语言查询刷新贯穿始终|
-|`content`|合成文本 - 智能体在拉动模型时读取的内容|
-|`trigger`|JSONB 配置：`mode`、`refresh_after_consolidation`、`fact_types`、`tags_match` 等。|
-|`tags`|JSONB 数组 — 门控哪些记忆为模型提供数据以及谁可以读取它|
-|`max_tokens`|每个模型的合成输出上限（默认`2048`）|
-|`structured_content`|解析内容的 JSONB AST — 增量模式刷新的秘密武器|
-|`last_refreshed_source_query`|跟踪刷新之间的查询变化以检测主题转移|
-|`reflect_response`|上次刷新的完整负载，包括 `based_on` 出处|
-|`last_refreshed_at`|最近一次成功刷新的 ISO 时间戳|
-|`history`|先前内容版本的 JSONB 数组|
-|`embedding`|`name + content` 的 384 维向量，用于图积分|
+| `id` + `bank_id` | 复合主键，文本 ID，按记忆库划分范围 |
+| `source_query` | 刷新时通过 Reflect 执行的自然语言查询 |
+| `content` | 综合生成的文本，即智能体读取心智模型时看到的内容 |
+| `trigger` | JSONB 配置，包含 `mode`、`refresh_after_consolidation`、`fact_types`、`tags_match` 等字段 |
+| `tags` | JSONB 数组，既限制哪些记忆可为模型提供内容，也限制谁可以读取模型 |
+| `max_tokens` | 每个模型的综合输出上限（默认值为 `2048`）|
+| `structured_content` | 解析后内容的 JSONB AST，是增量模式刷新的关键 |
+| `last_refreshed_source_query` | 记录刷新期间查询的变化，以检测主题转移 |
+| `reflect_response` | 最近一次刷新的完整 Reflect 载荷，包含 `based_on` 来源信息 |
+| `last_refreshed_at` | 最近一次成功刷新的 ISO 时间戳 |
+| `history` | 先前内容版本组成的 JSONB 数组 |
+| `embedding` | `name + content` 的 384 维向量，用于图集成 |
 
-复合`(id, bank_id)`主键意味着每个记忆库的心智模型都存在于自己的命名空间中。您可以在 `bank-alice` 中包含 `user-preferences`，在 `bank-bob` 中包含 `user-preferences`，它们是完全独立的记录 — 整个记忆库中不会发生 `id` 冲突。
+复合主键 `(id, bank_id)` 意味着每个记忆库的心智模型都位于各自的命名空间中。你可以在 `bank-alice` 和 `bank-bob` 中分别创建名为 `user-preferences` 的模型；它们是完全独立的记录，不同记忆库之间不会发生 `id` 冲突。
 
 ---
 
 ## 两种刷新模式 {#the-two-refresh-modes}
 
-这是创建心智模型时最重要的选择。这两种模式实际上是同一工作的两种姿势：将新证据融入模型已经理解的内容中。 `full`从当前证据中重新推导出一切。 `delta` 保留先前的理解并融入新的证据。选择与您的主题实际发展方式相匹配的证据。
+创建心智模型时，最重要的选择就是刷新模式。这两种模式是完成同一任务的两种方式：将新证据融入模型已有的理解。`full` 会根据当前证据重新推导全部内容；`delta` 则保留先前的理解，再融入新证据。应根据主题的实际演进方式选择模式。
 
-`trigger.mode`字段是`Literal["full", "delta"]`。完整的触发器架构：
+`trigger.mode` 字段的类型为 `Literal["full", "delta"]`。完整的触发器模式如下：
 
 ```python
 class MentalModelTriggerOutput(BaseModel):
@@ -94,49 +94,49 @@ class MentalModelTriggerOutput(BaseModel):
     recall_chunks_max_tokens: int | None = ...
 ```
 
-### `full` — 从头开始重新生成（默认） {#full--regenerate-from-scratch-default}
+### `full` — 从头重新生成（默认） {#full--regenerate-from-scratch-default}
 
-默认值。每次刷新都会针对记忆库运行完整的 ^ 管道，从头开始合成一个新文档，并覆盖之前的 `content`。简单、可预测，是最终形状可能随时间变化的短文档或模型的正确选择。
+这是默认模式。每次刷新都会针对记忆库运行完整的 Reflect 流程，从头综合出一份新文档，并覆盖之前的 `content`。这种方式简单、可预测，适合篇幅较短的文档，或最终结构可能随时间变化的模型。
 
-### `delta` — 对现有文档进行外科手术编辑 {#delta--surgical-edits-to-the-existing-document}
+### `delta` — 精细修改现有文档 {#delta--surgical-edits-to-the-existing-document}
 
-Delta模式更有趣。来自参考文档：
+Delta 模式更有意思。参考文档这样描述：
 
-> 刷新发出**类型化操作**：`add section`、`append bullet`、`replace block`、`remove stale paragraph`。 **不是操作的目标，复制字节相同** 节 — 没有释义，没有空白漂移，没有列表式规范化。
+> 刷新会输出**类型化操作：`add section`（添加章节）、`append bullet`（追加项目符号）、`replace block`（替换内容块）、`remove stale paragraph`（移除过时段落）。未被操作指定的章节会逐字节原样复制**，不会改写措辞、改变空白或规范化列表样式。
 
-对于长期存在的“剧本”式模型来说，这是正确的选择 - 您希望逐步发展的文档，而无需 LLM 重写不需要更改的部分。
+对于长期维护的“操作手册”式模型，这是合适的选择：你希望逐步更新文档，而不希望 LLM 重写那些无需改动的部分。
 
-`refresh_mental_model`决策逻辑：
+`refresh_mental_model` 的决策逻辑如下：
 
-1. 解析`trigger.mode`。如果`delta`，检查现有的`content`是否非空——从未刷新的页面带有空的正文。 （由旧版本创建的页面带有 `"Generating content..."` 占位符；这也被视为空。）
-2. 检查`source_query`自`last_refreshed_source_query`以来是否发生了变化。
-3. 如果两项检查都通过，则运行增量路径。否则，回到完全合成。
+1. 解析 `trigger.mode`。如果是 `delta`，则检查现有 `content` 是否非空；从未刷新过的页面正文为空。（较早版本创建的页面可能含有 `"Generating content..."` 占位文本，这也会被视为空内容。）
+2. 检查 `source_query` 自 `last_refreshed_source_query` 以来是否发生变化。
+3. 如果两项检查都通过，则执行增量路径；否则回退到完整综合。
 
-回退是自动且无声的 - 您不能意外地对还没有基线的模型进行增量编辑，也不能对源查询刚刚更改的模型进行增量编辑（因为先前的内容可能不再相关）。
+回退会自动、静默地发生：没有基线的模型不会被意外地增量编辑；如果模型的源查询刚刚变化，也不会进行增量编辑，因为先前内容可能已不再相关。
 
-### Delta刷新只关注新事实 {#delta-refresh-only-looks-at-new-facts}
+### Delta 刷新只处理新事实 {#delta-refresh-only-looks-at-new-facts}
 
-当增量路径运行时，记忆召回调用的范围是暂时的：刷新将`created_after=last_refreshed_at`添加到了坐标调用中，因此代理循环仅检索到达*自上次刷新以来*的记忆。然后，LLM 通过添加/替换操作将这些新事实混合到现有的结构化内容中。模型中已经表示的任何内容都不需要重新读取，模型中已经表示的任何内容都不需要从旧事实中重写。刷新路径中的内联注释说得直白一点：*“所以代理循环只检索真正的新信息。”*
+执行增量路径时，Recall 调用会限定时间范围：刷新会在 Reflect 调用中添加 `created_after=last_refreshed_at`，因此智能体循环只会检索*上次刷新之后*新增的记忆。随后，LLM 通过添加或替换操作，将这些新事实融入现有的结构化内容。模型中已经呈现的内容无需重新读取，也不会根据旧事实重写。刷新路径中的内联注释直截了当地说明了这一点：*“这样智能体循环只会检索真正的新信息。”*
 
-### 字节相同保证 {#the-byte-identical-guarantee}
+### 逐字节不变的保证 {#the-byte-identical-guarantee}
 
-在增量模式下，只有操作所针对的部分才会被重写。其他所有内容都是从之前的 `structured_content` AST 逐字复制的。这比听起来更重要：如果您的心智模型包含团队已经审查过的清单或代码块，增量模式保证LLM不会悄悄地重写它。
+在 Delta 模式下，只有操作指定的章节会被重写。其余内容都会从先前的 `structured_content` AST 中原样复制。这个保证比听起来更重要：如果心智模型包含团队审核过的检查清单或代码块，Delta 模式可以确保 LLM 不会悄悄改写它们。
 
 ### 空内容保护 {#empty-content-protection}
 
-独立于模式，刷新有一个“永远不会用空内容覆盖”保护：
+无论使用哪种模式，刷新都有一项“绝不以空内容覆盖”的保护：
 
-> 如果 LLM 调用失败或返回空，则现有内容为 **保留** — 刷新永远不会用空内容覆盖填充的文档。
+> 如果 LLM 调用失败或返回空内容，现有内容会被**保留**；刷新绝不会用空内容覆盖已有内容的文档。
 
-如果什么都没有回来——没有匹配的记忆，LLM失败，标签不匹配——现有的内容保留。刷新失败记录在审计跟踪（`reflect_response.refresh_skipped = "empty_candidate"`）中，但智能体读取的文档仍然是最后一个已知的良好版本。
+如果 Reflect 没有返回任何内容——例如没有匹配的记忆、LLM 调用失败或标签不匹配——现有内容会保持不变。刷新失败会记录在审计轨迹中（`reflect_response.refresh_skipped = "empty_candidate"`），而智能体读取的文档仍是最后一个已知正常版本。
 
 ---
 
-## 整合自动刷新 {#automatic-refresh-on-consolidation}
+## 整合后自动刷新 {#automatic-refresh-on-consolidation}
 
-`trigger`配置的另一半是`refresh_after_consolidation`。将其设置为 `true`，模型将作为 Hindsight 集成周期的一部分自动刷新。
+`trigger` 配置的另一部分是 `refresh_after_consolidation`。将其设为 `true` 后，模型会在 Hindsight 的整合周期中自动刷新。
 
-钩子函数的文档字符串阐明了策略：
+钩子函数的文档字符串说明了这项策略：
 
 ```python
 async def _trigger_mental_model_refreshes(
@@ -147,27 +147,27 @@ async def _trigger_mental_model_refreshes(
     perf: ConsolidationPerfLog | None = None,
 ) -> int:
     """
-    使用refresh_after_consolidation=true触发心智模型刷新。
+    Trigger refreshes for mental models with refresh_after_consolidation=true.
     
-    SECURITY：仅对与标签重叠的心智模型触发刷新
-    整合记忆标签，防止跨安全边界不必要的刷新。
+    SECURITY: Only triggers refresh for mental models whose tags overlap with the
+    consolidated memory tags, preventing unnecessary refreshes across security boundaries.
     """
 ```
 
-因此，集成不会在每次运行后刷新每个模型 - 它只会刷新标签与集成刚刚触及的记忆标签重叠的模型。 `project:alice`心智模型仅在合并器处理标记为`project:alice`的记忆时刷新。这既是性能优化（避免无意义的工作）也是安全属性（不要跨租户边界泄漏刷新信号）。
+因此，整合不会在每次运行后刷新所有模型；它只会刷新标签与本次整合处理的记忆标签重叠的模型。例如，`project:alice` 心智模型只有在整合器处理了带有 `project:alice` 标签的记忆后才会刷新。这既能提高性能（避免无用工作），也是一项安全属性（防止刷新信号跨租户边界泄露）。
 
-刷新本身通过`memory_engine.submit_async_refresh_mental_model()`异步运行。集成周期从不等待刷新完成。
+刷新本身通过 `memory_engine.submit_async_refresh_mental_model()` 异步运行。整合周期不会等待刷新完成。
 
 ---
 
-## 标签匹配脚枪 {#the-tag-matching-foot-gun}
+## 容易踩坑的标签匹配 {#the-tag-matching-foot-gun}
 
-心智模型上的标签有两件事，你必须同时考虑：
+心智模型上的标签有两种作用，需要同时考虑：
 
-1. 它们控制生成内容时刷新路径读取哪些记忆
-2. 他们控制哪些 反思/记忆召回 调用可以看到模型
+1. 它们控制刷新路径生成内容时会读取哪些记忆。
+2. 它们控制哪些 Reflect / Recall 调用可以看到这个模型。
 
-#1 的默认策略是 **`all_strict`** — 这意味着在刷新期间，模型只能看到带有 **全部** 标签的记忆。解析逻辑：
+对于第 1 种作用，默认策略是 `all_strict`：也就是说，刷新时模型只能看到带有其全部标签的记忆。标签解析逻辑如下：
 
 ```python
 def _resolve_refresh_tag_filtering(model_tags, trigger_data):
@@ -183,109 +183,109 @@ def _resolve_refresh_tag_filtering(model_tags, trigger_data):
     )
 ```
 
-参考文档阐明了含义：
+参考文档解释了这意味着什么：
 
-> 心智模型 标签：`["user:alice"]`
+> 心智模型标签：`["user:alice"]`
 >
-> 刷新时，显示：
-> - ✅ *“Alice 更喜欢异步通信”* — 有 `"user:alice"`
-> - ✅ *“团队使用 Slack 发布公告”* — 有 `"user:alice"` （加上其他标签）
-> - ❌ *“公司政策：周五不开会”* — 未标记，排除
-> - ❌ *“鲍勃不喜欢长时间的会议”* — 无 `"user:alice"` 标签
+> 刷新时读取：
+> - ✅ *“Alice 更喜欢异步沟通”*——带有 `"user:alice"` 标签
+> - ✅ *“团队使用 Slack 发布公告”*——带有 `"user:alice"` 标签（以及其他标签）
+> - ❌ *“公司政策：周五不安排会议”*——没有标签，因此被排除
+> - ❌ *“Bob 不喜欢长时间会议”*——没有 `"user:alice"` 标签
 
-以及以下警告：
+接下来的警告指出：
 
-> 为心智模型**缩小了刷新可以读取的源记忆池**添加标签。如果还没有记忆带有这些标签，则刷新将返回空内容（例如 `"找不到相关信息……"`），即使同一查询上的直接 `reflect` 有效。
+> 为心智模型添加标签会**缩小刷新可读取的来源记忆范围**。如果目前没有记忆带有这些标签，刷新就会返回空内容（例如 `"找不到任何信息……"`），即使使用相同查询直接调用 `reflect` 能够正常工作。
 
-最常见的咬伤方式：你用记忆库中没有的东西来标记心智模型。刷新什么也不返回。空内容防护启动，现有（可能为空）文档保持为空，您花了一个小时想知道为什么模型永远不会生成。
+最常见的踩坑方式是：给心智模型加上一个记忆库中没有任何记忆使用的标签。刷新不会返回内容，空内容保护会生效，现有（很可能为空的）文档继续保持为空，于是你花了一个小时疑惑模型为什么一直没有生成内容。
 
-修复方法是：
-- 在第一次刷新之前将标签回填到源记忆中，或者
-- 通过 `trigger.tags_match` 覆盖默认值（例如 `"any"` 允许 OR 匹配，`"any_strict"` 允许 OR 匹配，但仍排除未标记的）。
+有两种修复方式：
 
-**具体图案：** 当您使用 `project:<name>` 标签构建每个项目的记忆库时，请确保您的记忆存储管道已附加项目标签 *之前* 您种子依赖于它的心智模型。首先是种子，其次是标记保留，中间的每次刷新都会针对空源池运行 - 然后空内容防护会悄悄地保持占位符文本处于活动状态，而您想知道为什么没有生成任何内容。
+- 在首次刷新前，先为来源记忆补上该标签；或者
+- 通过 `trigger.tags_match` 覆盖默认值（例如用 `"any"` 允许 OR 匹配，用 `"any_strict"` 允许 OR 匹配，同时仍排除无标签记忆）。
+
+具体做法：如果你使用 `project:<name>` 标签构建按项目划分的记忆库，请确保在创建依赖该项目标签的心智模型之前，存入流程已经为记忆添加了项目标签。如果先创建模型、之后才为存入的记忆加标签，那么中间的每次刷新都会面对空的来源范围；空内容保护会悄悄保留占位文本，你则会疑惑为什么一直没有生成内容。
 
 ---
 
-## 综合提示 {#the-synthesis-prompt}
+## 综合生成提示 {#the-synthesis-prompt}
 
-当刷新运行时，它会使用`context`参数调用`reflect_async`，该参数告诉LLM具体如何编写心智模型：
+刷新时会调用 `reflect_async`，并传入 `context` 参数，明确告诉 LLM 如何撰写心智模型：
 
 ```python
 refresh_context = (
-    f'你正在撰写一份文档，名为 "{mm_name}". '
-    f"只包含直接回答主题查询的内容。 "
-    f"丢弃偏离主题的观察，检索可能返回 "
-    f"与主题松散相关却不应属于文档的内容。\n\n"
+    f'You are writing a document called "{mm_name}". '
+    f"ONLY include content that directly answers the topic query. "
+    f"Discard observations that are tangential or off-topic — retrieval may return "
+    f"loosely related content that does not belong in this document.\n\n"
     f"Quality guidelines:\n"
-    f"- 保留观察中的具体示例、前后对照和示例语句 "
-    f"它们比抽象规则更有指导价值。\n"
-    f"- 如果观察有说明性示例，如 ✅/❌ 对照、 "
-    f"改写或示例短语，将其纳入回答。\n"
-    f"- 围绕主题组织文档，而非围绕来源。"
+    f"- Preserve concrete examples, before/after pairs, and sample sentences "
+    f"from the observations. These teach more than abstract rules.\n"
+    f"- If observations contain illustrative examples (e.g. ✅/❌ pairs, "
+    f"rewrites, sample phrases), include them in your answer.\n"
+    f"- Structure the document around the topic, not around the sources."
 )
 ```
 
-该提示中有两个值得标记的设计选择：
+这段提示中有两个值得关注的设计选择：
 
-1. **“丢弃不切题的观察。”** 与范围狭窄的心智模型相比，幽智能体将呈现出更广泛的记忆。提示指示LLM进行过滤，而不仅仅是汇总。
+1. **“舍弃偏题的观测。”** Reflect 智能体呈现的记忆范围可能比心智模型的主题更广。提示要求 LLM 进行筛选，而不只是总结。
+2. **“围绕主题组织文档，而不是围绕来源。”** 否则，模型输出可能读起来像“记忆 A 说 X，记忆 B 说 Y”，而不是一份连贯的文档。这一句提示的作用远超它的长度。
 
-2. **“围绕主题构建文档，而不是围绕来源。”** 如果没有这个，模型输出往往会读起来像`"记忆 A 表示 X，记忆 B 表示 Y。"`，而不是一个连贯的文档。这一行迅速的转向比其长度所暗示的更重要。
-
-在增量模式下，附加系统提示符 (`STRUCTURED_DELTA_SYSTEM_PROMPT`) 驱动类型化操作LLM 调用，决定添加、编辑或删除内容。该模型返回一个 `DeltaOperationList`，然后将其应用于现有的 AST — 这为您提供了未更改部分的字节相同保证。
+在 Delta 模式下，还会使用额外的系统提示 `STRUCTURED_DELTA_SYSTEM_PROMPT`，驱动 LLM 调用并决定要添加、编辑或移除哪些内容。模型会返回一个 `DeltaOperationList`，随后该列表会应用到现有 AST 上；这就是未更改章节能保持逐字节不变的原因。
 
 ---
 
-## 详细级别：按需付费 {#detail-levels-pay-for-what-you-need}
+## 详细程度：按需获取 {#detail-levels-pay-for-what-you-need}
 
-列表和获取端点支持三个级别的`detail`参数：
+列表和获取端点支持 `detail` 参数的三个级别：
 
-|等级|包括|用例|
+| 级别 | 包含内容 | 使用场景 |
 |---|---|---|
-|`metadata`|`id`、`bank_id`、`name`、`tags`、`last_refreshed_at`、`created_at`|“这个记忆库里有哪些模型？”|
-|`content`|`metadata` + `source_query`、`content`、`max_tokens`、`trigger`|智能体启动 — 将实际文本加载到提示中|
-|`full`|`content` + `reflect_response` 出处|深度检查或审核|
+| `metadata` | `id`、`bank_id`、`name`、`tags`、`last_refreshed_at`、`created_at` | “这个记忆库里有哪些模型？” |
+| `content` | `metadata` 加上 `source_query`、`content`、`max_tokens`、`trigger` | 智能体启动时，将实际文本载入提示词 |
+| `full` | `content` 加上 `reflect_response` 来源信息 | 深入检查或审计 |
 
-文档强调了在以下情况下使用哪个：
+文档明确建议根据场景选择级别：
 
-> 使用`detail=content`进行智能体定向流程。它包含智能体所需的一切，无需重量级的`reflect_response`来源链，对于许多模型的记忆库来说，它可以超过200KB。
+> 在智能体初始化流程中使用 `detail=content`。它包含智能体所需的一切，同时省去庞大的 `reflect_response` 来源链；对于包含许多模型的记忆库，这些来源链可能超过 200KB。
 
-如果您在启动路径中调用 `list_mental_models` 来渲染缓存块，请请求 `content` 并跳过每个模型 200KB 的出处负载。如果您正在调试模型生成奇怪输出的原因，请询问 `full` 并检查实际返回的内容。
-
----
-
-## 清除与刷新 {#clear-vs-refresh}
-
-两个看起来相似的操作：
-
-- **`refresh_mental_model`** — 使用当前记忆重新生成`content`。尊重 `mode`（增量或完整）。
-- **`clear_mental_model`** — 将 `content` 设置为空，以便下次刷新没有可进行增量编辑的基线，这迫使它回退到完全合成。
-
-该文档解释了为什么这很重要：
-
-> 对于长期存在的增量模式心智模型，请考虑安排定期清除+刷新（例如每 48 小时）以保持内容准确，同时仍受益于其间的增量增量更新。
-
-该模式是：依靠增量模式刷新来实现集成触发的廉价、频繁、低流失的更新；定期 `clear` + `refresh` 从头开始​​重建文档并重置在许多小编辑中积累的任何偏差。
+如果你在启动流程中调用 `list_mental_models` 来生成缓存块，请请求 `content`，跳过每个模型可能有 200KB 的来源信息载荷。如果你要调试模型为何生成奇怪的输出，请请求 `full`，检查 Reflect 实际返回了什么。
 
 ---
 
-## 一个工作示例 {#a-worked-example}
+## 清空与刷新 {#clear-vs-refresh}
 
-这是使用Python客户端的完整循环。构建一个“用户首选项”模型，每当合并器处理新记忆时该模型都会刷新：
+有两种看起来相似的操作：
+
+- **`refresh_mental_model`**——使用当前记忆重新生成 `content`，并遵循 `mode`（Delta 或 full）。
+- **`clear_mental_model`**——将 `content` 设为空，使下次刷新没有可供增量编辑的基线，从而强制回退到完整综合。
+
+文档说明了这一区别为何重要：
+
+> 对于长期使用的 Delta 模式心智模型，可以考虑定期安排“清空 + 刷新”（例如每 48 小时一次），以保持内容准确，同时继续从两次完整重建之间的增量更新中受益。
+
+做法是：依靠 Delta 模式刷新来处理整合触发的、成本较低且频繁的低变化量更新；然后定期执行 `clear` + `refresh`，从头重建文档，消除许多小幅编辑逐渐积累的偏差。
+
+---
+
+## 完整示例 {#a-worked-example}
+
+下面使用 Python 客户端展示一个完整流程：创建名为“用户偏好”的模型，并在整合器处理新记忆时刷新该模型：
 
 ```python
 from hindsight_client import Hindsight
 
 client = Hindsight(base_url="https://api.hindsight.vectorize.io", api_key="hsk_...")
 
-#创建模型
+# Create the model
 mm = client.create_mental_model(
     bank_id="my-app",
-    name="用户偏好",
+    name="User Preferences",
     source_query=(
-        "用户在编码风格、工具、沟通方面更喜欢什么？"
-        "然后评论？仅捕获跨领域表达的持久偏好"
-        "会话，而不是一次性请求。"
+        "What does the user prefer in coding style, tooling, communication, "
+        "and review? Capture only durable preferences expressed across "
+        "sessions, not one-off requests."
     ),
     max_tokens=600,
     trigger={
@@ -295,82 +295,81 @@ mm = client.create_mental_model(
 )
 print(f"created {mm['id']}")
 
-#手动触发第一次刷新（创建是异步的，但是第一次刷新
-否则
-#将等待整合）。
+# Trigger the first refresh manually (creation is async, but the first refresh
+# would otherwise wait for consolidation).
 client.refresh_mental_model(bank_id="my-app", mental_model_id=mm["id"])
 
-#​​ 稍后 — 在智能体启动时，将模型加载到系统提示符中。
+# Later — on agent boot, load the model into the system prompt.
 model = client.get_mental_model(bank_id="my-app", mental_model_id=mm["id"])
 prompt_block = f"<user_preferences>\n{model['content']}\n</user_preferences>"
 ```
 
-经过几次会话后，下次针对 `my-app` 运行集成时，模型将通过 `refresh_after_consolidation` 挂钩自动刷新。因为`mode: "delta"`，只重写文档中需要改变的部分；其余部分逐字节保存。
+经过几次会话后，下一次针对 `my-app` 运行整合时，模型会通过 `refresh_after_consolidation` 钩子自动刷新。由于 `mode: "delta"`，只有需要更改的文档部分会被重写；其余内容逐字节保留。
 
-每周一次左右，运行`clear_mental_model`从头开始重建：
+大约每周执行一次 `clear_mental_model`，从头重建：
 
 ```python
 client.clear_mental_model(bank_id="my-app", mental_model_id=mm["id"])
 client.refresh_mental_model(bank_id="my-app", mental_model_id=mm["id"])
 ```
 
-这种模式——大部分时间是增量，偶尔清除和重建——是文档明确推荐的长期模型的模式。
+文档明确建议长期使用的模型采用这种模式：大多数时候进行增量更新，偶尔清空并重建。
 
 ---
 
-## REST 和客户端界面 {#the-rest-and-client-surface}
+## REST 与客户端接口 {#the-rest-and-client-surface}
 
-|方法|端点|Python 客户端|
+| 方法 | 端点 | Python 客户端 |
 |---|---|---|
-|`POST`|`/v1/default/banks/{bank_id}/mental-models`|`create_mental_model()`|
-|`GET`|`/v1/default/banks/{bank_id}/mental-models`|`list_mental_models()`|
-|`GET`|`/v1/default/banks/{bank_id}/mental-models/{id}`|`get_mental_model()`|
-|`PATCH`|`/v1/default/banks/{bank_id}/mental-models/{id}`|`update_mental_model()`|
-|`DELETE`|`/v1/default/banks/{bank_id}/mental-models/{id}`|`delete_mental_model()`|
-|`POST`|`/v1/default/banks/{bank_id}/mental-models/{id}/refresh`|`refresh_mental_model()`|
-|`POST`|`/v1/default/banks/{bank_id}/mental-models/{id}/clear`|`clear_mental_model()`|
-|`GET`|`/v1/default/banks/{bank_id}/mental-models/{id}/history`|`get_mental_model_history()`|
+| `POST` | `/v1/default/banks/{bank_id}/mental-models` | `create_mental_model()` |
+| `GET` | `/v1/default/banks/{bank_id}/mental-models` | `list_mental_models()` |
+| `GET` | `/v1/default/banks/{bank_id}/mental-models/{id}` | `get_mental_model()` |
+| `PATCH` | `/v1/default/banks/{bank_id}/mental-models/{id}` | `update_mental_model()` |
+| `DELETE` | `/v1/default/banks/{bank_id}/mental-models/{id}` | `delete_mental_model()` |
+| `POST` | `/v1/default/banks/{bank_id}/mental-models/{id}/refresh` | `refresh_mental_model()` |
+| `POST` | `/v1/default/banks/{bank_id}/mental-models/{id}/clear` | `clear_mental_model()` |
+| `GET` | `/v1/default/banks/{bank_id}/mental-models/{id}/history` | `get_mental_model_history()` |
 
-所有客户端方法都有异步（`a*`-前缀）变体。 MCP服务器公开与工具相同的操作（`create_mental_model`、`refresh_mental_model`等），因此Claude / Cursor / Codex智能体通过MCP与Hindsight对话可以直接创建和刷新模型。
-
----
-
-## 发货时间 {#what-shipped-when}
-
-心智模型在各个版本中不断发展。主要里程碑：
-
-- **v0.4.0** (2026-01-28) — 心智模型发货。 [发布帖子](/blog/learning-capabilities)。
-- **v0.5.0** (2026-04-07) — 记忆库模板中心。 心智模型可以在可移植模板清单中定义，并在导入时通过`id`进行匹配。
-- **v0.5.2** (2026-04-15) — 触发器上的记忆召回控制API：按模型调整`fact_types`、`tags_match`、`include_chunks`、`recall_max_tokens`。
-- **v0.5.3** (2026-04-17) — **Delta模式** 已发货。刷新会发出结构化操作，而不是从头开始重新生成。
-- **v0.7.0** (2026-05-27) — `clear_mental_model` 端点，加上历史记录上限以防止 JSONB 溢出和完全刷新，正确重新设置挂起的增量基线。
+所有客户端方法都有异步变体，名称以 `a*` 为前缀。MCP 服务器也通过工具暴露相同操作（`create_mental_model`、`refresh_mental_model` 等），因此使用 MCP 与 Hindsight 对话的 Claude、Cursor 或 Codex 智能体可以直接创建和刷新模型。
 
 ---
 
-## 注意事项 {#what-to-watch-for}
+## 各版本的发布内容 {#what-shipped-when}
 
-实践中出现的五个问题：
+心智模型在多个版本中不断演进。主要里程碑包括：
 
-1. **`all_strict`标签默认。** 如果您的模型有标签，刷新路径只会看到带有 *全部* 的记忆。如果还没有任何内容带有这些标签，则刷新将返回空。
-2. **话题转移回到满点。** 更改`source_query` 会使增量基线无效；下一次刷新将从头开始重新合成。
-3. **Delta 随时间漂移。** 许多小的增量刷新可能会积累小的不准确性。定期 `clear` + `refresh` 重建干净的基线。
-4. **​​在热路径中使用`detail=content`。** `full` 细节级别可以为每个模型返回 200KB 以上——对于检查来说很好，如果你在每次智能体启动时调用它，那就是毁灭性的。
-5. **记忆库范围的ID。** 一个心智模型是`(id, bank_id)`——两个记忆库中相同的`id`是两个不同的记录。在设计 ID 约定时要为此做好计划。
-
----
-
-## 整个想法 {#the-whole-idea}
-
-心智模型是你的智能体如何反复询问Hindsight*学习*的事情。原始事实反映了所说的内容。 观察捕捉Hindsight在他们身上注意到的事情。 心智模型捕捉了Hindsight已经理解的内容——与前两层不同，它们是稳定的、命名的，并且随着新证据的出现而逐步完善。
-
-性能优势——即时检索，无需每回合综合——是副作用。真正的胜利是，你的智能体不再在每次会话中重新推导出对稳定主题的理解，而是开始从一直在完善的表征Hindsight开始工作。
+- **v0.4.0**（2026-01-28）——发布心智模型。[发布公告](/blog/learning-capabilities)。
+- **v0.5.0**（2026-04-07）——推出 Bank Template Hub。心智模型可以定义在可移植的模板清单中，导入时按 `id` 匹配。
+- **v0.5.2**（2026-04-15）——触发器 API 增加 Recall 控制项：可以为每个模型调整 `fact_types`、`tags_match`、`include_chunks`、`recall_max_tokens`。
+- **v0.5.3**（2026-04-17）——推出 **Delta 模式**。刷新会输出结构化操作，而不是从头重新生成。
+- **v0.7.0**（2026-05-27）——新增 `clear_mental_model` 端点；同时限制历史记录上限以避免 JSONB 溢出，并确保完整刷新会正确重设待处理的增量基线。
 
 ---
 
-**进一步阅读：**
+## 需要留意的问题 {#what-to-watch-for}
 
-- [心智模型API参考](https://hindsight.vectorize.io/developer/api/mental-models) — 官方文档，包含完整的架构和端点参考
-- [使用实体标签自动标记记忆](/blog/2026/06/02/entity-labels-automatic-memory-tagging) — 受控词汇标记，通常决定您的心智模型可以看到什么
-- [Hindsight 0.5.3 的新增功能](/blog/2026/04/17/version-0-5-3) — 增量模式刷新启动
-- [Hindsight 0.7.0 的新增功能](/blog/2026/05/27/version-0-7-0) — 明确终点，历史硬化
-- [什么是智能体记忆？](https://vectorize.io/what-is-agent-memory/) — 基本概念
+实践中常见的五个陷阱：
+
+1. **`all_strict` 标签默认值。** 如果模型有标签，刷新路径只会读取带有*全部*这些标签的记忆。如果目前没有记忆带有这些标签，刷新就会返回空内容。
+2. **主题变化会回退到完整刷新。** 修改 `source_query` 会使增量基线失效；下次刷新会从头重新综合内容。
+3. **Delta 随时间产生偏差。** 多次小幅增量刷新可能累积细微的不准确之处。定期执行 `clear` + `refresh` 可以重建干净的基线。
+4. **高频路径使用 `detail=content`。** `full` 级别每个模型可能返回 200KB 以上的数据，适合检查；如果每次智能体启动都调用，则会造成严重负担。
+5. **ID 按记忆库划分范围。** 心智模型的主键是 `(id, bank_id)`；两个记忆库中相同的 `id` 对应两条不同记录。设计 ID 约定时应考虑这一点。
+
+---
+
+## 核心理念 {#the-whole-idea}
+
+心智模型让 Hindsight 能够*学习*智能体反复询问的内容。原始事实记录说过的话；观测捕捉 Hindsight 从这些事实中发现的内容；心智模型则捕捉 Hindsight 已经理解的内容。与前两个层级不同，心智模型是稳定的、有名称的，并会随着新证据到来而逐步完善。
+
+性能提升——即时检索，无需每轮重新综合——只是附带收益。真正的价值在于：智能体不必每次会话都重新推导对稳定主题的理解，而是可以直接使用 Hindsight 一直在完善的表征。
+
+---
+
+**延伸阅读：**
+
+- [心智模型 API 参考](https://hindsight.vectorize.io/developer/api/mental-models)——官方文档，包含完整的模式和端点参考
+- [使用实体标签自动为记忆添加标签](/blog/2026/06/02/entity-labels-automatic-memory-tagging)——受控词汇标注通常决定心智模型可以看到哪些内容
+- [Hindsight 0.5.3 新增内容](/blog/2026/04/17/version-0-5-3)——Delta 模式刷新发布
+- [Hindsight 0.7.0 新增内容](/blog/2026/05/27/version-0-7-0)——清空端点与历史记录加固
+- [什么是智能体记忆？](https://vectorize.io/what-is-agent-memory/)——基础概念

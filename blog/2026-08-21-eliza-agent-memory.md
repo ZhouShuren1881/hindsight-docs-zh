@@ -1,99 +1,98 @@
 ---
-title: "为您的 elizaOS 智能体提供长期记忆"
+title: "为 elizaOS 智能体添加长期记忆"
 authors: [benfrank241]
 slug: "2026/08/21/eliza-agent-memory"
 date: 2026-08-21T12:00
 tags: [hindsight, eliza, elizaos, agent-memory, autonomous-agents, multi-tenant]
-description: "elizaOS 智能体全天候运行并与每个人交谈。 Hindsight 插件为他们提供了持久的、每个用户的长期记忆：每次模型调用之前的记忆召回，每轮之后的记忆存储，默认情况下的故障安全。"
+description: "elizaOS 智能体全天候运行，与各种用户交流。Hindsight 插件为它们提供持久的、按用户隔离的长期记忆：每次模型调用前召回记忆，每轮对话后存入记忆，默认采用故障安全设计。"
 image: /img/blog/eliza-agent-memory.webp
 hide_table_of_contents: true
 ---
 
-![Hindsight：在每次模型调用之前调用记忆的提供者和在每次调用后保留对话的评估器，每个用户有一个记忆库
-elizaOS 的](/img/blog/eliza-agent-memory.webp)
+![Hindsight 在 elizaOS 中的工作方式：提供方在每次模型调用前召回记忆，评估器在每轮对话后存入对话内容，每位用户使用各自的记忆库](/img/blog/eliza-agent-memory.webp)
 
-[elizaOS](https://github.com/elizaOS/eliza) 智能体专为全天候运行而打造。你定义一个角色，连接一些插件，智能体就会存在于 Discord 服务器、Telegram 群组或 X 上，永远回答与它交谈的人。这暴露了编码助理群体很少遇到的一个问题：一个始终在线的智能体与*大家*交谈，并且没有长期记忆，它每次都会以陌生人的身份遇到他们每个人。
+[elizaOS](https://github.com/elizaOS/eliza) 智能体旨在全天候运行。你可以定义角色、接入几个插件，让智能体常驻 Discord 服务器、Telegram 群组或 X，持续回答所有人的问题。这也带来了编码助理领域很少以同等规模遇到的问题：始终在线的智能体会与*所有人*交流；如果没有长期记忆，它每次都会把对方当作陌生人。
 
-今天，[`@vectorize-io/hindsight-eliza`](https://www.npmjs.com/package/@vectorize-io/hindsight-eliza)插件提供了由[Hindsight](https://hindsight.vectorize.io)支持的elizaOS智能体持久记忆，并且它利用elizaOS已经公开的两个接缝来实现：提供者和评估者。
+如今，[`@vectorize-io/hindsight-eliza`](https://www.npmjs.com/package/@vectorize-io/hindsight-eliza) 插件为 elizaOS 智能体提供由 [Hindsight](https://hindsight.vectorize.io) 支持的持久记忆，并利用 elizaOS 已有的两个接入点：提供方和评估器。
 
 <!-- truncate -->
 
 ## 概览 {#tldr}
 
-- **`@vectorize-io/hindsight-eliza`** 为任何 elizaOS 智能体添加长期记忆。将其添加到角色的 `plugins` 列表中即可完成。
-- 它注册了两个组件：**提供商**（`HINDSIGHT_MEMORY`）在每次模型调用之前将相关记忆召回到提示中，以及**评估器**（`HINDSIGHT_RETAIN`）在每次调用后保留对话。
-- 两者都是**默认启用**，位于 elizaOS 自己的记忆之上，以及**故障安全**：记忆服务的问题永远不会阻止智能体的回复。
-- 记忆默认为**每个用户一个记忆库**（由消息的`entityId`键入），因此公共智能体可以使每个人的记忆保持隔离，无需任何额外的接线。
-- 记忆存储是**默认情况下即发即忘**，因此持久性不会增加回合的延迟。
+- **`@vectorize-io/hindsight-eliza`** 为任何 elizaOS 智能体添加长期记忆。将它加入角色的 `plugins` 列表即可。
+- 插件会注册两个组件：**提供方**（`HINDSIGHT_MEMORY`）在每次模型调用前将相关记忆召回到提示中；**评估器**（`HINDSIGHT_RETAIN`）在每轮对话后存入对话内容。
+- 两者默认都**已启用**，会叠加在 elizaOS 自带的记忆之上，并且采用**故障安全设计**：记忆服务短暂故障也不会阻止智能体回复。
+- 默认情况下，**每位用户使用一个记忆库**（以消息的 `entityId` 为键），因此公共智能体会自动隔离每个人的记忆，无需额外配置。
+- Retain（存入）默认采用**异步即发即忘**方式，因此持久化不会增加每轮对话的延迟。
 
-## 为什么记忆对于永远在线的智能体来说是成败的关键 {#why-memory-is-make-or-break-for-an-always-on-agent}
+## 为何持久记忆对全天候运行的智能体至关重要 {#why-memory-is-make-or-break-for-an-always-on-agent}
 
-编码智能体忘记了你的约定，你重新解释它们；很烦人，但你是唯一的用户。 elizaOS 智能体是一种不同的形状。它是自主的、寿命长的，而且通常是与人群交谈。如果没有持久的、有范围的记忆，有两件事就会崩溃：
+编码智能体忘记你的约定，你再解释一遍；这很烦人，但用户只有你一个。elizaOS 智能体则不同：它自主运行、生命周期长，而且通常要和许多人交流。缺少持久且按范围隔离的记忆，就会出现两个问题：
 
-- **它会在重新启动后忘记。** 部署新版本，或者整个流程循环一整夜，智能体了解到的关于其社区的所有信息都会消失。一个不记得昨天的社会智能体不是一个人格，它是一条有良好提示的金鱼。
-- ​​**它使用户模糊在一起，或者在他们之间泄漏。** 公共智能体的全部意义在于它可以与很多人交谈。如果他们的记忆集中在一堆，智能体要么会让他们感到困惑，要么更糟糕的是，在与另一个人交谈时回忆起一个人的背景。这不是一个特征，而是一个事件。
+- **重启后就会忘记。** 部署新版本，或进程在夜间重启，智能体了解到的社区信息就会全部消失。记不住昨天的社交智能体谈不上有个性，就像一条只会照着优质提示行事的金鱼。
+- **它会混淆用户，甚至泄露用户之间的信息。** 公共智能体的意义就在于能和许多人交流。如果所有人的记忆都混在同一堆里，智能体就可能混淆用户；更糟的是，它可能在与某人交谈时想起另一个人的背景。这不是功能，而是事故。
 
-所以有用的原语不仅仅是“记忆”，它是*持久记忆，针对每个用户。*，这正是插件默认的。
+因此，真正有用的不只是“记忆”，而是*按用户隔离的持久记忆*。这正是插件的默认行为。
 
-## 插入方式：两条接缝，默认均为两条接缝 {#how-it-plugs-in-two-seams-both-by-default}
+## 接入方式：两个接入点，默认都启用 {#how-it-plugs-in-two-seams-both-by-default}
 
-elizaOS 从 **提供商** 开始编写每一轮，然后用 **评估者** 对其进行评估，并且插件挂钩其中的一个：
+elizaOS 通过 **提供方** 组装每一轮对话，并在之后运行 **评估器**；这个插件分别接入其中一个：
 
-|组件|elizaOS 接缝|当它运行时|它的作用|
+| 组件 | elizaOS 接入点 | 运行时机 | 作用 |
 | --- | --- | --- | --- |
-|`HINDSIGHT_MEMORY`|提供者|提示合成期间，模型调用之前|使用传入消息调用 Hindsight `recall` 并将相关记忆注入上下文中|
-|`HINDSIGHT_RETAIN`|评估器|智能体处理转弯后|调用 Hindsight `retain` 来保存消息，以及可选地智能体自己的回复|
+| `HINDSIGHT_MEMORY` | 提供方 | 组合提示时，在模型调用之前 | 使用收到的消息调用 Hindsight `recall`，并将相关记忆注入上下文 |
+| `HINDSIGHT_RETAIN` | 评估器 | 智能体处理完本轮对话后 | 调用 Hindsight `retain` 存入消息，也可选择存入智能体自己的回复 |
 
-两个设计选择很重要。首先，双方**故障安全**：如果记忆召回错误，则提供者不返回任何内容，并且按照基本提示继续进行； 记忆存储被包装起来，因此写入失败会被吞掉而不是抛出。记忆中断会将智能体降级为正常的、无记忆的状态，而不是将其摧毁。其次，插件 **上面的层** elizaOS 现有的短期记忆而不是替换它，因此您正在添加持久的记忆召回，而不是交换框架的上下文处理。
+有两项设计选择值得关注。首先，两边都采用**故障安全设计**：如果记忆召回出错，提供方就返回空结果，本轮仍使用基础提示继续处理；存入操作也经过封装，写入失败会被吞掉而不会抛出异常。记忆服务不可用时，智能体会退化为原本不使用记忆的状态，而不会因此停机。其次，插件会**叠加在** elizaOS 现有的短期记忆之上，而不是取代它，因此新增的是持久记忆召回，不会替换框架原有的上下文处理方式。
 
 ## 记忆库是边界 {#the-bank-is-the-boundary}
 
-在Hindsight中，记忆存在于**记忆库**中，而记忆库是硬记忆召回边界：智能体只能记忆库中读取的内容。该插件将记忆库默认为消息的`entityId`，这意味着**每个用户都会自动获得自己独立的记忆存储。**对于公共智能体来说，该默认值是正确的，并且它是通过存储而不是提示来强制执行的。
+在 Hindsight 中，记忆存放在**记忆库**里；记忆库构成严格的召回边界：智能体只能召回其所读取的记忆库中的内容。插件默认使用消息的 `entityId` 作为记忆库，这意味着**系统会自动为每位用户建立相互隔离的记忆存储**。对于公共智能体，这个默认值恰当，而且隔离由存储层实施，而不是依赖提示词。
 
-当您需要不同的形状时，`bank`采用固定字符串或消息函数：
+需要采用其他划分方式时，`bank` 可以接受固定字符串，也可以接受一个根据消息计算结果的函数：
 
 ```ts
 createHindsightPlugin({
   client,
-  bank: (message) => message.entityId, //默认：每个用户一个记忆库
+  bank: (message) => message.entityId, // 默认值：每位用户一个记忆库
   // bank: "community-shared",          // 或所有人共用一个记忆库
-  // bank: (m) => m.roomId,             // 或每个房间/频道一个记忆库
+  // bank: (m) => m.roomId,              // 或每个房间/频道一个记忆库
 });
 ```
 
-一个字符串给整个智能体一个单一的共享记忆。功能可让您根据用户、房间或频道的范围来确定范围，只要与社区的组织方式相匹配即可。决策是单一领域的，是整个隐私设计的。
+提供一个字符串，就会让整个智能体使用同一个共享记忆库。提供一个函数，则可以按用户、房间或频道划分范围，具体取决于社区的组织方式。只需设置一个字段，就能确定整套隐私设计。
 
-## 调整记忆召回和记忆存储 {#tuning-recall-and-retain}
+## 调整召回与存入行为 {#tuning-recall-and-retain}
 
-双方都接受选项，默认值是合理的，因此调整是可选的：
+两部分都接受配置选项，而且默认值已经足够合理，因此不一定需要调整：
 
 ```ts
 createHindsightPlugin({
   client,
   recall: {
-    budget: "high",        //“低”| “中”| “高”：延迟与深度
-    includeEntities: true, //折叠实体 观察
-    maxTokens: 1000,       //限制注入到提示中的内容
+    budget: "high",        // "low" | "mid" | "high"：在延迟和检索深度之间取舍
+    includeEntities: true, // 纳入实体观测
+    maxTokens: 1000,       // 限制注入提示的 token 数
   },
   retain: {
-    async: true,           //即发即忘；永远不会增加转弯延迟
+    async: true,           // 异步即发即忘，不会增加每轮对话的延迟
     tags: ["source:eliza"],
-    includeAgentMessages: false, //默认仅存储用户回合
+    includeAgentMessages: false, // 默认只存入用户的对话内容
   },
 });
 ```
 
-其中一些值得为自主智能体而呼吁。默认情况下，`retain.async`是`true`，因此持久性发生在关键路径之外，并且永远不会减慢回复速度。默认情况下，`includeAgentMessages`是`false`，因此智能体存储用户所说的话，而不是自己的喋喋不休，这使记忆基于真实信号而不是模型自己的输出。当您希望智能体也记住自己的承诺时，请打开它。
+对于自主智能体，有两项配置值得特别说明。`retain.async` 默认值为 `true`，因此持久化会在关键路径之外进行，不会拖慢回复。`includeAgentMessages` 默认值为 `false`，因此智能体只存入用户说的话，不存自己的闲聊；这样记忆依据的是实际信号，而不是模型自身的输出。如果你也希望智能体记住自己的承诺，可以启用此选项。
 
-## 两个值得复制的设置 {#two-setups-worth-copying}
+## 两种值得借鉴的配置 {#two-setups-worth-copying}
 
-**一个真正了解其成员的社区智能体。** 保留默认的每用户记忆库。一周多以来，智能体了解到一个人是 Rust 开发人员，询问特定的错误，另一个人运行事件通道，另一个人总是想要简短的答案。它们之间没有任何泄漏，并且在您重新部署时也不会重置。智能体不再是无状态机器人，而是开始成为常规机器人。
+**真正了解社区成员的智能体。** 保留默认的按用户划分记忆库。一周下来，智能体可能了解到：一位成员是 Rust 开发者，正在询问某个具体 bug；另一位负责活动频道；还有一位总是希望得到简短回答。这些信息不会在用户之间泄露，也不会因重新部署而重置。智能体不再是无状态机器人，而会逐渐成为社区里的熟面孔。
 
-**共享大脑，打造专注的智能体。** 将 `bank` 指向单个固定字符串，智能体就会记住 *集体*：一个通道中的支持智能体会构建重复出现的问题的共享图片，每个用户都会从与上一个用户交谈中学到的知识中受益。当记忆是关于主题而不是人时，请使用此选项。
+**为专注型智能体设置共享记忆。** 将 `bank` 指向一个固定字符串，让智能体共享记忆：某个频道中的客服智能体可以逐渐建立对常见问题的共同认识，每位用户都能受益于它与此前用户交流时学到的内容。当记忆针对的是主题而非个人时，可以采用这种方式。
 
 ## 设置 {#setup}
 
-如果您已经在 `@elizaos/core` `^1.7.2` 上运行 elizaOS 智能体，则只需两步即可连接：
+如果你已经在 `@elizaos/core` `^1.7.2` 上运行 elizaOS 智能体，接入只需两步：
 
 ```bash
 npm install @vectorize-io/hindsight-eliza @vectorize-io/hindsight-client
@@ -106,19 +105,19 @@ import { Hindsight } from "@vectorize-io/hindsight-client";
 export const character = {
   name: "Ada",
   plugins: [
-    //...你的其他插件
+    // ...你的其他插件
     createHindsightPlugin({ client: new Hindsight({ apiKey: process.env.HINDSIGHT_API_KEY }) }),
   ],
 };
 ```
 
-这就是整个事情：记忆召回提供者和记忆存储评估者都在智能体运行的那一刻。 记忆可以存在于 [Hindsight Cloud](https://ui.hindsight.vectorize.io) 或您自己托管的服务器中，并且由于 Hindsight 已获得 MIT 许可，并且可以在一个 Docker 命令中自行托管，因此一整套 elizaOS 智能体可以完全在您自己的硬件上以持久记忆运行。有关完整演练和验证流程，请遵循 [elizaOS 记忆 guide](https://hindsight.vectorize.io/guides/2026/07/17/guide-eliza-memory-with-hindsight)。
+就是这样：智能体启动时，召回提供方和存入评估器都会启用。记忆可以存放在 [Hindsight Cloud](https://ui.hindsight.vectorize.io) 或你自行托管的服务器上。Hindsight 采用 MIT 许可证，而且只需一条 Docker 命令即可自托管，因此你可以完全在自己的硬件上运行一整套带持久记忆的 elizaOS 智能体。完整操作演示和验证流程请参阅 [elizaOS 记忆指南](https://hindsight.vectorize.io/guides/2026/07/17/guide-eliza-memory-with-hindsight)。
 
-为您始终在线的智能体提供记忆，使其在重新启动后仍能保留，并使每个用户保持独立。 [Hindsight Cloud](https://ui.hindsight.vectorize.io)开始免费。
+为始终在线的智能体配备持久记忆，让它重启后仍能记住所学内容，并确保每位用户彼此隔离。现在就免费试用 [Hindsight Cloud](https://ui.hindsight.vectorize.io)。
 
 ---
 
 **了解更多：**
-- [elizaOS 集成文档](https://hindsight.vectorize.io/sdks/integrations/eliza) — 提供者、评估者和每个选项
-- [指南：使用 Hindsight 为 elizaOS 添加记忆](https://hindsight.vectorize.io/guides/2026/07/17/guide-eliza-memory-with-hindsight) — 逐步设置和验证
-- [一个记忆库还是多个？构建智能体记忆](https://hindsight.vectorize.io/blog/2026/07/16/bank-strategy-agent-memory) — 如何确定每个用户、每个房间或共享的记忆范围
+- [elizaOS 集成文档](https://hindsight.vectorize.io/sdks/integrations/eliza) — 介绍提供方、评估器及所有配置选项
+- [指南：使用 Hindsight 为 elizaOS 添加记忆](https://hindsight.vectorize.io/guides/2026/07/17/guide-eliza-memory-with-hindsight) — 分步设置与验证
+- [一个记忆库还是多个？如何规划智能体记忆](https://hindsight.vectorize.io/blog/2026/07/16/bank-strategy-agent-memory) — 如何按用户、房间或共享范围组织记忆

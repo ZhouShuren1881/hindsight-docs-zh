@@ -1,45 +1,45 @@
 ---
 sidebar_position: 35
-title: "OMO (oh-my-openagent) 与 Hindsight 的持久记忆 |集成指南"
-description: "使用 Hindsight 将持久记忆添加到 oh-my-openagent (OMO)。在每个提示和记忆存储对话之前，五个生命周期会自动挂钩记忆召回上下文 - 无需更改工作流程。"
+title: "OMO (oh-my-openagent) 与 Hindsight 的持久记忆 | 集成指南"
+description: "使用 Hindsight 为 oh-my-openagent (OMO) 添加持久记忆。五个生命周期钩子会在每次提示前自动召回上下文，并在每轮对话后存入对话内容，无需更改工作流程。"
 ---
 
-# OMO（哦我的开放代理） {#omo-oh-my-openagent}
+# OMO (oh-my-openagent) {#omo-oh-my-openagent}
 
 [查看更新日志 →](/changelog/integrations/omo)
 
-持久记忆[oh-my-openagent](https://github.com/code-yeongyu/oh-my-openagent) (OMO) 使用 [Hindsight](https://vectorize.io/hindsight)。五个生命周期会在每个提示之前自动挂钩记忆召回相关上下文，并在每个回合之后自动挂钩记忆存储对话 - 无需更改 OMO 工作流程。
+借助 [Hindsight](https://vectorize.io/hindsight)，为 [oh-my-openagent](https://github.com/code-yeongyu/oh-my-openagent)（OMO）提供持久记忆。五个生命周期钩子会在每次提示前自动召回相关上下文，并在每轮对话后存入对话内容，无需更改 OMO 工作流程。
 
 ## 快速入门 {#quick-start}
 
 :::tip 推荐：Hindsight Cloud
-[免费注册](https://ui.hindsight.vectorize.io) 对于Hindsight Cloud API 密钥 — 无自托管，无需管理本地守护进程。
+[免费注册](https://ui.hindsight.vectorize.io)，获取 Hindsight Cloud API 密钥；无需自行托管，也无需管理本地守护进程。
 :::
 
-来自 `hindsight-integrations/omo/`目录：
+在 `hindsight-integrations/omo/` 目录中运行：
 
 ```bash
-# Hooks (global)
+# 钩子（全局）
 mkdir -p ~/.omo/hooks
 cp hooks/hooks.json ~/.omo/hooks/hindsight-hooks.json
 
-# Scripts + settings (global)
+# 脚本和设置（全局）
 mkdir -p ~/.omo/plugins/hindsight/scripts
 cp -r scripts/ ~/.omo/plugins/hindsight/scripts/
 cp settings.json ~/.omo/plugins/hindsight/settings.json
 
-#规则（每个项目 - 从项目根运行）
+# 规则（每个项目单独配置；从项目根目录运行）
 mkdir -p .omo/rules
 cp rules/hindsight-memory.md .omo/rules/hindsight-memory.md
 ```
 
-然后设置你的API 密钥：
+然后设置 API 密钥：
 
 ```bash
 export HINDSIGHT_API_TOKEN=hsk_your_key_here
 ```
 
-将环境变量添加到 中的 OMO 允许列表 `~/.config/opencode/oh-my-openagent.jsonc`：
+在 OMO 的 `~/.config/opencode/oh-my-openagent.jsonc` 允许列表中添加环境变量：
 
 ```jsonc
 {
@@ -51,49 +51,49 @@ export HINDSIGHT_API_TOKEN=hsk_your_key_here
 }
 ```
 
-开始新的 OMO 会话 — 记忆已上线。
+启动新的 OMO 会话后，记忆即可使用。
 
 ## 功能 {#features}
 
-- **自动记忆召回** — 每个用户提示、查询Hindsight获取相关记忆并将其注入为 `additionalContext`（对转录本不可见，对 OMO 可见）
-- **自动记忆存储** — 每次 OMO 响应和子智能体停止后，将对话记录存储到Hindsight未来记忆召回
-- **捕获子智能体内容** — `SubagentStop` 钩子捕获来自 OMO 委托子智能体的学习（Claude Code，Codex,OpenCode)
-- **动态记忆库 ID** — 支持基于工作目录的每个项目记忆隔离
-- **会话级更新或插入** — 使用会话 ID 作为文档 ID，因此重新运行相同的会话会更新而不是重复存储的内容
-- **优先使用云端** — 默认为Hindsight无需管理本地守护进程的云
-- **无依赖** — 纯净Python标准库，没有pip需要安装
+- **自动召回** — 每次收到用户提示时，都会向 Hindsight 查询相关记忆，并将其注入为 `additionalContext`（对转录记录不可见，对 OMO 可见）
+- **自动存入** — 每次 OMO 响应结束以及子智能体停止后，都会将对话转录记录存入 Hindsight，供以后召回
+- **捕获子智能体内容** — `SubagentStop` 钩子会捕获 OMO 委派的子智能体（Claude Code、Codex、OpenCode）的经验
+- **动态记忆库 ID** — 支持根据工作目录为每个项目隔离记忆
+- **按会话更新或插入** — 使用会话 ID 作为文档 ID，因此再次运行同一会话会更新已存内容，而不是创建重复内容
+- **优先使用云端** — 默认使用 Hindsight Cloud，无需管理本地守护进程
+- **零依赖** — 仅使用 Python 标准库，无需通过 pip 安装
 
 ## 架构 {#architecture}
 
-该插件使用五个 OMO 挂钩事件：
+该插件使用五种 OMO 钩子事件：
 
-|挂钩|活动|目的|
+| 钩子 | 事件 | 用途 |
 |------|-------|---------|
-|`session_start.py`|`SessionStart`|热身 — 验证 Hindsight 可达|
-|`recall.py`|`UserPromptSubmit`|**自动记忆召回** — 查询记忆，注入为 `additionalContext`|
-|`retain.py`|`Stop`|**自动记忆存储** — 提取文字记录，发布到Hindsight（异步）|
-|`retain.py`|`SubagentStop`|**存储子智能体记忆** — 捕获委托的子智能体学习|
-|`session_end.py`|`SessionEnd`|强制短期记忆存储|
+| `session_start.py` | `SessionStart` | 预热：确认 Hindsight 可以访问 |
+| `recall.py` | `UserPromptSubmit` | **自动召回** — 查询记忆，并注入为 `additionalContext` |
+| `retain.py` | `Stop` | **自动存入** — 提取转录记录并异步 POST 到 Hindsight |
+| `retain.py` | `SubagentStop` | **存入子智能体内容** — 捕获受委派子智能体的经验 |
+| `session_end.py` | `SessionEnd` | 为较短的会话强制执行最后一次存入 |
 
-开`UserPromptSubmit`，钩子读取提示，查询Hindsight获取最相关的记忆，并输出 `hookSpecificOutput.additionalContext`块。 OMO 在将其发送到模型之前将其添加到对话中：
+收到 `UserPromptSubmit` 事件时，钩子会读取提示，向 Hindsight 查询最相关的记忆，并输出 `hookSpecificOutput.additionalContext` 内容块。OMO 会在将对话发送给模型之前，把这段内容添加到对话中：
 
 ```
 <hindsight_memories>
-以往对话中的相关记忆...
-当前时间 - 2026-06-08 14:30
+Relevant memories from past conversations...
+Current time - 2026-06-08 14:30
 
-- 项目使用 FastAPI 与 asyncpg，而非 SQLAlchemy [world] (2026-06-07)
-- 首选测试框架：pytest 与 pytest-asyncio [experience] (2026-06-07)
+- Project uses FastAPI with asyncpg — not SQLAlchemy [world] (2026-06-07)
+- Preferred testing framework: pytest with pytest-asyncio [experience] (2026-06-07)
 </hindsight_memories>
 ```
 
-开`Stop` 和 `SubagentStop`，钩子读取会话记录，剥离之前注入的记忆标签（以防止反馈循环），并将对话发布到Hindsight异步。
+收到 `Stop` 和 `SubagentStop` 事件时，钩子会读取会话转录记录，移除先前注入的记忆标签（以防止反馈循环），然后异步 POST 对话内容到 Hindsight。
 
 ## 连接方式 {#connection-modes}
 
-### 1。 Hindsight Cloud（推荐） {#1-hindsight-cloud-recommended}
+### 1. Hindsight Cloud（推荐） {#1-hindsight-cloud-recommended}
 
-API 密钥之外无设置：
+除 API 密钥外无需额外设置：
 
 ```json
 {
@@ -102,15 +102,15 @@ API 密钥之外无设置：
 }
 ```
 
-### 2。自托管 {#2-self-hosted}
+### 2. 自托管 {#2-self-hosted}
 
-指向你自己的Hindsight实例：
+将地址指向你自己的 Hindsight 实例：
 
 ```bash
 export HINDSIGHT_API_URL=http://localhost:8888
 ```
 
-或在`~/.hindsight/omo.json`：
+也可以在 `~/.hindsight/omo.json` 中设置：
 
 ```json
 {
@@ -118,79 +118,79 @@ export HINDSIGHT_API_URL=http://localhost:8888
 }
 ```
 
-本地实例不需要API令牌。
+本地实例无需 API 令牌。
 
 ## 配置 {#configuration}
 
-设置按顺序从三个来源加载（稍后获胜）：
+设置按以下顺序从三个来源加载，后加载的来源优先：
 
-1. 插件`settings.json`（云端URL预设）
-2. 用户配置（`~/.hindsight/omo.json`)
-3. `HINDSIGHT_*`环境变量
+1. 插件的 `settings.json`（已预设云端 URL）
+2. 用户配置（`~/.hindsight/omo.json`）
+3. `HINDSIGHT_*` 环境变量
 
 ---
 
 ### 连接 {#connection}
 
-|设置|环境变量|默认|说明|
+| 设置 | 环境变量 | 默认值 | 说明 |
 |---------|---------|---------|-------------|
-|`hindsightApiUrl`|`HINDSIGHT_API_URL`|`https://api.hindsight.vectorize.io`|API 端点。|
-|`hindsightApiToken`|`HINDSIGHT_API_TOKEN`|—|API 用于身份验证的密钥。 Hindsight Cloud所需。|
+| `hindsightApiUrl` | `HINDSIGHT_API_URL` | `https://api.hindsight.vectorize.io` | API 端点。 |
+| `hindsightApiToken` | `HINDSIGHT_API_TOKEN` | — | 用于身份验证的 API 密钥。Hindsight Cloud 必须设置此项。 |
 
 ---
 
 ### 记忆库 {#memory-bank}
 
-|设置|环境变量|默认|说明|
+| 设置 | 环境变量 | 默认值 | 说明 |
 |---------|---------|---------|-------------|
-|`bankId`|`HINDSIGHT_BANK_ID`|`"omo"`|用于读取和写入的记忆库。所有会话共享此记忆库，除非 `dynamicBankId` 已启用。|
-|`bankMission`|`HINDSIGHT_BANK_MISSION`|OMO Orchestrator 提示|描述智能体的目的。创建或更新记忆库时发送。|
-|`retainMission`|—|提取提示|Hindsight事实提取说明。|
-|`dynamicBankId`|`HINDSIGHT_DYNAMIC_BANK_ID`|`false`|当`true`，从导出唯一的记忆库ID `dynamicBankGranularity` 字段。|
-|`dynamicBankGranularity`|—|`["agent", "project"]`|组合动态记忆库 ID 的字段。 `"project"` = 工作目录，`"agent"` = 智能体名称。|
-|`bankIdPrefix`|—|`""`|所有记忆库 ID 前面的前缀。|
+| `bankId` | `HINDSIGHT_BANK_ID` | `"omo"` | 用于读取和写入的记忆库。除非启用 `dynamicBankId`，否则所有会话共用此记忆库。 |
+| `bankMission` | `HINDSIGHT_BANK_MISSION` | OMO 编排器提示 | 描述智能体的用途。创建或更新记忆库时会发送此内容。 |
+| `retainMission` | — | 提取提示 | 为 Hindsight 的事实提取提供说明。 |
+| `dynamicBankId` | `HINDSIGHT_DYNAMIC_BANK_ID` | `false` | 设为 `true` 时，根据 `dynamicBankGranularity` 字段生成唯一的记忆库 ID。 |
+| `dynamicBankGranularity` | — | `["agent", "project"]` | 用于组合生成动态记忆库 ID 的字段。`"project"` 表示工作目录，`"agent"` 表示智能体名称。 |
+| `bankIdPrefix` | — | `""` | 添加到所有记忆库 ID 前面的前缀。 |
 
 ---
 
-### 自动记忆召回 {#auto-recall}
+### 自动召回 {#auto-recall}
 
-|设置|环境变量|默认|说明|
+| 设置 | 环境变量 | 默认值 | 说明 |
 |---------|---------|---------|-------------|
-|`autoRecall`|`HINDSIGHT_AUTO_RECALL`|`true`|自动记忆召回总开关。|
-|`recallBudget`|`HINDSIGHT_RECALL_BUDGET`|`"mid"`|搜索深度：`"low"`（快），`"mid"`（平衡），`"high"`（彻底）。|
-|`recallMaxTokens`|`HINDSIGHT_RECALL_MAX_TOKENS`|`1024`|召回的记忆块中的最大 token 数。|
-|`recallTypes`|—|`["world", "experience"]`|要检索的记忆类型。|
-|`recallContextTurns`|`HINDSIGHT_RECALL_CONTEXT_TURNS`|`1`|在构建记忆召回查询时，先要包含。 `1` = 仅最新提示。|
-|`recallMaxQueryChars`|`HINDSIGHT_RECALL_MAX_QUERY_CHARS`|`800`|发送到Hindsight 的查询中的最大字符数。|
-|`recallRoles`|—|`["user", "assistant"]`|构建多轮查询时要包含的角色。|
-|`recallPromptPreamble`|—|内置|文本放置在注入的上下文块中调用的记忆上方。|
+| `autoRecall` | `HINDSIGHT_AUTO_RECALL` | `true` | 自动召回的总开关。 |
+| `recallBudget` | `HINDSIGHT_RECALL_BUDGET` | `"mid"` | 检索深度：`"low"`（快速）、`"mid"`（均衡）、`"high"`（全面）。 |
+| `recallMaxTokens` | `HINDSIGHT_RECALL_MAX_TOKENS` | `1024` | 召回记忆块的最大 token 数。 |
+| `recallTypes` | — | `["world", "experience"]` | 要检索的记忆类型。 |
+| `recallContextTurns` | `HINDSIGHT_RECALL_CONTEXT_TURNS` | `1` | 构建召回查询时纳入的先前对话轮数。`1` 表示仅使用最新提示。 |
+| `recallMaxQueryChars` | `HINDSIGHT_RECALL_MAX_QUERY_CHARS` | `800` | 发送给 Hindsight 的查询最多包含的字符数。 |
+| `recallRoles` | — | `["user", "assistant"]` | 构建多轮查询时纳入的角色。 |
+| `recallPromptPreamble` | — | 内置 | 放在注入上下文块中已召回记忆上方的文本。 |
 
 ---
 
-### 自动记忆存储 {#auto-retain}
+### 自动存入 {#auto-retain}
 
-|设置|环境变量|默认|说明|
+| 设置 | 环境变量 | 默认值 | 说明 |
 |---------|---------|---------|-------------|
-|`autoRetain`|`HINDSIGHT_AUTO_RETAIN`|`true`|自动记忆存储的主开关。|
-|`retainMode`|`HINDSIGHT_RETAIN_MODE`|`"full-session"`|`"full-session"` 发送每个会话的完整成绩单。 `"chunked"` 每 N 轮发送一次滑动窗口。|
-|`retainEveryNTurns`|—|`10`|记忆存储每 N 回合触发一次。 `1` = 每回合。较高的值会减少API呼叫。|
-|`retainOverlapTurns`|—|`2`|包含前一个块的额外回合（仅限块模式）。|
-|`retainRoles`|—|`["user", "assistant"]`|要包含在保留转录本中的角色。|
-|`retainTags`|—|`["{session_id}"]`|附加到存储文档的标签。 `{session_id}` 在运行时被替换。|
-|`retainMetadata`|—|`{}`|附加到存储文档的任意键值元数据。|
-|`retainContext`|—|`"omo"`|标识源集成的标签。|
+| `autoRetain` | `HINDSIGHT_AUTO_RETAIN` | `true` | 自动存入的总开关。 |
+| `retainMode` | `HINDSIGHT_RETAIN_MODE` | `"full-session"` | `"full-session"` 会发送每个会话的完整转录记录。`"chunked"` 会每隔 N 轮发送一个滑动窗口。 |
+| `retainEveryNTurns` | — | `10` | 每经过 N 轮触发一次存入。`1` 表示每轮都触发。数值越大，API 调用越少。 |
+| `retainOverlapTurns` | — | `2` | 纳入前一个分块的额外对话轮数（仅适用于分块模式）。 |
+| `retainRoles` | — | `["user", "assistant"]` | 转录记录中要纳入的角色。 |
+| `retainTags` | — | `["{session_id}"]` | 附加到存储文档的标签。`{session_id}` 会在运行时替换。 |
+| `retainMetadata` | — | `{}` | 附加到存储文档的任意键值元数据。 |
+| `retainContext` | — | `"omo"` | 用于标识来源集成的标签。 |
 
 ---
 
 ### 调试 {#debug}
 
-|设置|环境变量|默认|说明|
+| 设置 | 环境变量 | 默认值 | 说明 |
 |---------|---------|---------|-------------|
-|`debug`|`HINDSIGHT_DEBUG`|`false`|启用 stderr 的详细日志记录。所有日志行都以 为前缀 `[Hindsight]`。|
+| `debug` | `HINDSIGHT_DEBUG` | `false` | 启用向 stderr 输出详细日志。所有日志行都以 `[Hindsight]` 为前缀。 |
 
-## 每个项目记忆 {#per-project-memory}
+## 每个项目使用独立记忆 {#per-project-memory}
 
-要为每个项目提供自己独立的记忆库，请启用动态记忆库 ID：
+若要为每个项目使用独立的记忆库，请启用动态记忆库 ID：
 
 ```json
 {
@@ -199,11 +199,11 @@ export HINDSIGHT_API_URL=http://localhost:8888
 }
 ```
 
-使用此配置，在 中运行 OMO `~/projects/api` 和 `~/projects/frontend` 分别存储和调用记忆。 记忆库 ID 源自工作目录路径（例如 `omo::api`，`omo::frontend`）。
+使用此配置时，在 `~/projects/api` 和 `~/projects/frontend` 中运行 OMO，会分别存取记忆。记忆库 ID 根据工作目录路径生成（例如 `omo::api`、`omo::frontend`）。
 
-## 多记忆库 记忆召回 {#multi-bank-recall}
+## 多记忆库召回 {#multi-bank-recall}
 
-查询附加记忆库和主记忆库：
+在主记忆库之外，同时查询其他记忆库：
 
 ```json
 {
@@ -213,16 +213,16 @@ export HINDSIGHT_API_URL=http://localhost:8888
 
 ## 故障排查 {#troubleshooting}
 
-**未召回记忆**：记忆召回仅在保留某些内容后才返回结果。先完成一个 OMO 会话，然后开始一个新的 OMO 会话以查看回忆。
+**没有召回任何记忆**：只有在存入过内容后，Recall 才会返回结果。先完成一个 OMO 会话，再启动新会话以查看记忆。
 
-**记忆未被存储**：`retainEveryNTurns` 默认为 `10` — 记忆存储每 10 回合才触发一次。测试时，添加 `"retainEveryNTurns": 1`至`~/.hindsight/omo.json`。
+**没有存储记忆**：`retainEveryNTurns` 的默认值为 `10`，因此每 10 轮才触发一次存入。测试时，可在 `~/.hindsight/omo.json` 中添加 `"retainEveryNTurns": 1`。
 
-**云端模式静默跳过**：如果`hindsightApiUrl` 指向Hindsight有云但无`hindsightApiToken`已设置，钩子默默地跳过。设置`HINDSIGHT_API_TOKEN` 或添加到`~/.hindsight/omo.json`。
+**云端模式静默跳过**：如果 `hindsightApiUrl` 指向 Hindsight Cloud，但未设置 `hindsightApiToken`，钩子会静默跳过。请设置 `HINDSIGHT_API_TOKEN`，或将令牌添加到 `~/.hindsight/omo.json`。
 
-**调试模式**：添加`"debug": true`至`~/.hindsight/omo.json` 看看什么Hindsight每回合都在做：
+**调试模式**：在 `~/.hindsight/omo.json` 中添加 `"debug": true`，即可查看 Hindsight 在每轮对话中的操作：
 
 ```
-[Hindsight] 正在从记忆库 'omo' 召回，查询长度：42
+[Hindsight] Recalling from bank 'omo', query length: 42
 [Hindsight] Injecting 3 memories
 [Hindsight] Retaining to bank 'omo', doc 'sess-abc123', 2 messages, 847 chars
 ```

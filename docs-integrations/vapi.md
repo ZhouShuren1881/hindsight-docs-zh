@@ -1,26 +1,26 @@
 ---
 sidebar_position: 21
-title: "Vapi 持久记忆Hindsight |整合"
-description: "通过Hindsight webhooks 将持久的长期记忆添加到Vapi 语音AI 呼叫。在通话开始时自动调用呼叫者上下文，并在通话结束时保留通话记录。"
+title: "借助 Hindsight 为 Vapi 添加持久记忆 | 集成"
+description: "通过 Hindsight Webhook 为 Vapi 语音 AI 通话添加持久的长期记忆。在通话开始时自动召回呼叫者的上下文，并在通话结束时存入完整转录文本。"
 ---
 
 # Vapi {#vapi}
 
-持久的长期记忆[Vapi](https://vapi.ai) 语音AI通过 拨打电话 [Hindsight](https://vectorize.io/hindsight)。单个 Webhook 处理程序在调用开始时调用相关记忆（注入为 `assistantOverrides`）并在通话结束时保留完整的文字记录。
+借助 [Hindsight](https://vectorize.io/hindsight)，为 [Vapi](https://vapi.ai) 语音 AI 通话提供持久的长期记忆。一个 Webhook 处理程序会在通话开始时召回相关记忆（通过 `assistantOverrides` 注入），并在通话结束时存入完整转录文本。
 
 [查看更新日志 →](/changelog/integrations/vapi)
 
 ## 快速入门 {#quick-start}
 
 :::tip Hindsight Cloud（推荐）
-[免费注册](https://ui.hindsight.vectorize.io) — 得到一个API即时密钥，无需运行基础设施。
+[免费注册](https://ui.hindsight.vectorize.io) — 立即获取 API key，无需运行任何基础设施。
 :::
 
 ```bash
 pip install hindsight-vapi
 ```
 
-将其连接到任何 HTTP 服务器。 Hindsight Cloud 的 FastAPI 示例：
+将它接入任意 HTTP 服务器。以下是使用 Hindsight Cloud 的 FastAPI 示例：
 
 ```python
 from fastapi import FastAPI, Request
@@ -40,44 +40,44 @@ async def vapi_webhook(request: Request):
     return response or {}
 ```
 
-点Vapi的**服务器 URL（Server URL）** 在您的 webhook 端点并且记忆处于活动状态。
+将 Vapi 的 **Server URL** 指向你的 Webhook 端点，即可启用记忆功能。
 
-**自托管替代方案：**[在本地安装 Hindsight](/developer/installation)并使用`hindsight_api_url="http://localhost:8888"`（省略`api_key`）。
+**自托管方式：**[在本地安装 Hindsight](/developer/installation)，并设置 `hindsight_api_url="http://localhost:8888"`（省略 `api_key`）。
 
 ## 工作原理 {#how-it-works}
 
-不同于Pipecat积分（每回合`FrameProcessor`),Vapi不暴露每回合钩子，因此注入了记忆 通话开始时 **每次通话仅一次**：
+与 Pipecat 集成（按轮次使用 `FrameProcessor`）不同，Vapi 不提供按轮次触发的钩子，因此记忆只会在每次通话开始时注入一次：
 
 ```
 来电
   └─ Vapi 触发 "assistant-request" webhook
-       └─ 召回记忆（query = 来电者电话号码）
-            └─ 通过 assistantOverrides 返回，附带 <hindsight_memories> 系统消息
-                 └─ Vapi 在通话开始前合并到助手配置中
+       └─ 召回记忆（query = 呼叫者的电话号码）
+            └─ 将结果作为 assistantOverrides 返回，并附带 <hindsight_memories> 系统消息
+                 └─ Vapi 在通话开始前将其合并到助手配置中
 
 通话结束
   └─ Vapi 触发 "end-of-call-report" webhook
-       └─ 存储完整转录文本（异步提交后无需等待，webhook 立即响应）
+       └─ 存入完整转录文本（异步提交后不等待结果 — webhook 立即响应）
 ```
 
-记忆会在通话中累积。当同一呼叫者第二次或第三次通话时，Hindsight会自动显示相关历史记录——之前的决定、帐户详细信息、规定的偏好。
+记忆会在多次通话之间不断累积。同一呼叫者第二次或第三次来电时，Hindsight 会自动呈现相关历史信息，例如先前的决定、账户详情和明确表达的偏好。
 
-## Vapi 服务器 URL 设置 {#vapi-server-url-setup}
+## 设置 Vapi Server URL {#vapi-server-url-setup}
 
-在Vapi仪表板中：
+在 Vapi 控制台中：
 
-1. 前往**设置 → 服务器 URL（Settings → Server URL）**
-2. 将其指向您的 webhook 端点（例如，`https://your-domain.com/webhook`)
-3. 启用`assistant-request` 和 `end-of-call-report` 事件类型
+1. 前往 **Settings → Server URL**。
+2. 将它指向你的 Webhook 端点（例如 `https://your-domain.com/webhook`）。
+3. 启用 `assistant-request` 和 `end-of-call-report` 事件类型。
 
-参见[Vapi 服务器事件文档](https://docs.vapi.ai/server-url)了解详情。
+详情请参阅 [Vapi 的服务器事件文档](https://docs.vapi.ai/server-url)。
 
 ## 外拨电话 {#outbound-calls}
 
-没有`assistant-request` 用于出站呼叫的 Webhook。使用`build_assistant_overrides()` 在呼叫创建时：
+外拨电话不会触发 `assistant-request` webhook。请在创建通话时使用 `build_assistant_overrides()`：
 
 ```python
-overrides = await memory.build_assistant_overrides("Vectorize 的 Ben")
+overrides = await memory.build_assistant_overrides("Ben from Vectorize")
 vapi.calls.create(
     assistant_id="...",
     assistant_overrides=overrides,
@@ -89,14 +89,14 @@ vapi.calls.create(
 
 ```python
 HindsightVapiWebhook(
-    bank_id="user-123",              #必填：记忆库使用
-    hindsight_api_url="...",         #Hindsight API 网址
-    api_key="hsk_...",               #API密钥（Hindsight Cloud）
+    bank_id="user-123",              # 必填：要使用的记忆库
+    hindsight_api_url="...",         # Hindsight API URL
+    api_key="hsk_...",               # API key（Hindsight Cloud）
     recall_budget="mid",             # "low", "mid", or "high"
-    recall_max_tokens=4096,          #记忆结果的最大 token 数数
-    enable_recall=True,              #在通话开始时注入记忆
-    enable_retain=True,              #在通话结束时存储文字记录
-    memory_prefix="以往对话中的相关记忆:\n",
+    recall_max_tokens=4096,          # 召回结果的最大 token 数
+    enable_recall=True,              # 在通话开始时注入记忆
+    enable_retain=True,              # 在通话结束时存储转录文本
+    memory_prefix="Relevant memories from past conversations:\n",
 )
 ```
 
@@ -111,27 +111,27 @@ configure(
     recall_budget="mid",
 )
 
-#现在创建 Webhook，无需重复连接详细信息
+# 此后创建 Webhook 时无需重复填写连接信息
 memory = HindsightVapiWebhook(bank_id="user-123")
 ```
 
-## 限定记忆库作用域 {#bank-scoping}
+## 记忆库范围 {#bank-scoping}
 
-的典型模式 `bank_id`：
+`bank_id` 的常见设置方式：
 
-- **每位用户一个记忆库** — 按电话号码划分的范围 (`user-+15551234567`) 或您自己的帐户 ID
-- **共享记忆库** — 为所有调用者提供一个记忆库（对于小团队或共享记忆有用）
-- **每位助手一个记忆库** — 如果您有多个Vapi不同性格或范围的助手
+- **每位用户使用一个记忆库** — 按电话号码（`user-+15551234567`）或你自己的账户 ID 划分范围。
+- **共享记忆库** — 所有呼叫者共用一个记忆库（适合小型团队或共享记忆的场景）。
+- **每个助手使用一个记忆库** — 适用于拥有多个 Vapi 助手，且各自性格或范围不同的情况。
 
 ## 前置条件 {#prerequisites}
 
-正在运行的Hindsight实例：
+需要有一个正在运行的 Hindsight 实例：
 
 **自托管：**
 ```bash
 pip install hindsight-all
 export HINDSIGHT_API_LLM_API_KEY=your-api-key
-hindsight-api  # starts on http://localhost:8888
+hindsight-api  # 启动服务，监听 http://localhost:8888
 ```
 
 **Hindsight Cloud：**[注册](https://ui.hindsight.vectorize.io) — 无需自托管。

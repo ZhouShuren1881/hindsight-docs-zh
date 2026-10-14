@@ -1,5 +1,5 @@
 {
-  "title": "心智模型（API）",
+  "title": "心智模型 API",
   "speed": 2200,
   "elements": [
     {
@@ -86,7 +86,7 @@
         },
         {
           "type": "subtitle",
-          "text": "基于来源查询执行 Reflect"
+          "text": "根据来源查询执行 Reflect"
         }
       ],
       "minCardHeight": 103,
@@ -118,7 +118,7 @@
         },
         {
           "type": "subtitle",
-          "text": "世界 · 经历"
+          "text": "世界事实 · 经历事实"
         }
       ],
       "minCardHeight": 103,
@@ -333,7 +333,7 @@
               {
                 "tag": "来源查询",
                 "tone": "gray",
-                "text": "“团队成员有哪些？他们分别负责什么？”"
+                "text": "“团队里有哪些人？他们分别负责什么？”"
               },
               {
                 "tag": "触发器",
@@ -343,7 +343,7 @@
               }
             ]
           },
-          "say": "你创建心智模型：指定名称、需要回答的问题以及刷新时机。"
+          "say": "创建心智模型时，你需要指定名称、要回答的问题以及刷新时机。"
         },
         {
           "show": {
@@ -353,11 +353,11 @@
               },
               {
                 "text": "内容：尚未生成",
-                "meta": "异步"
+                "meta": "async"
               }
             ]
           },
-          "say": "API 会立即保存模型，但此时其内容尚不存在。"
+          "say": "API 会立即保存模型，但此时尚无模型内容。"
         },
         {
           "edges": [
@@ -381,7 +381,7 @@
               {
                 "tag": "来源查询",
                 "tone": "gray",
-                "text": "“团队成员有哪些？他们分别负责什么？”"
+                "text": "“团队里有哪些人？他们分别负责什么？”"
               },
               {
                 "tag": "触发器",
@@ -407,7 +407,7 @@
           "show": {
             "refresh": [
               {
-                "text": "基于来源查询执行 Reflect"
+                "text": "根据来源查询执行 Reflect"
               },
               {
                 "text": "1. search_observations",
@@ -417,18 +417,18 @@
             ],
             "obs": [
               {
-                "text": "Alice：Google 研究团队",
-                "meta": "3 个来源",
+                "text": "Alice：Google 研究团队成员",
+                "meta": "3 条来源",
                 "mark": "✓"
               },
               {
                 "text": "Bob 负责 ML 项目",
-                "meta": "2 个来源",
+                "meta": "2 条来源",
                 "mark": "✓"
               }
             ]
           },
-          "say": "刷新会针对源查询执行 Reflect。它会先读取观测……",
+          "say": "刷新会针对来源查询执行 Reflect，并先读取观测……",
           "ms": 2800
         },
         {
@@ -439,7 +439,7 @@
           "show": {
             "refresh": [
               {
-                "text": "基于来源查询执行 Reflect"
+                "text": "根据来源查询执行 Reflect"
               },
               {
                 "text": "1. search_observations",
@@ -447,7 +447,7 @@
                 "mark": "✓"
               },
               {
-                "text": "2. recall",
+                "text": "2. Recall",
                 "mono": true,
                 "mark": "✓"
               }
@@ -469,7 +469,7 @@
               }
             ]
           },
-          "say": "……再读取原始事实以核对细节。"
+          "say": "……再读取原始事实，以核对细节。"
         },
         {
           "edges": {
@@ -479,7 +479,7 @@
           "show": {
             "refresh": [
               {
-                "text": "基于来源查询执行 Reflect"
+                "text": "根据来源查询执行 Reflect"
               },
               {
                 "text": "1. search_observations",
@@ -487,7 +487,7 @@
                 "mark": "✓"
               },
               {
-                "text": "2. recall",
+                "text": "2. Recall",
                 "mono": true,
                 "mark": "✓"
               },
@@ -508,7 +508,7 @@
                 "text": "• Alice：Google 研究团队"
               },
               {
-                "text": "• Bob：负责 ML 项目"
+                "text": "• Bob：领导 ML 项目"
               }
             ]
           },
@@ -552,7 +552,7 @@
               }
             ]
           },
-          "say": "之后，智能体存入一条新事实。整合流程会将其纳入处理。",
+          "say": "之后，智能体存入一条新事实，整合流程会将其纳入处理。",
           "ms": 2800
         },
         {
@@ -560,16 +560,16 @@
           "show": {
             "obs": [
               {
-                "text": "Alice：Google 研究团队",
-                "meta": "3 个来源"
+                "text": "Alice：Google 研究团队成员",
+                "meta": "3 条来源"
               },
               {
                 "text": "Bob 负责 ML 项目",
-                "meta": "2 个来源"
+                "meta": "2 条来源"
               },
               {
                 "text": "Carol 参与 ML 项目",
-                "meta": "1 个来源",
+                "meta": "1 条来源",
                 "mark": "new"
               }
             ]
@@ -617,7 +617,7 @@
               }
             ]
           },
-          "say": "delta 模式只读取新增记忆，并通过少量编辑来更新内容，而不是重写全文。",
+          "say": "delta 模式只读取新增记忆，并通过少量编辑更新内容，而不是重写全文。",
           "ms": 2800
         },
         {
@@ -638,7 +638,7 @@
                 "mark": "="
               },
               {
-                "text": "• Bob：负责 ML 项目",
+                "text": "• Bob：领导 ML 项目",
                 "mark": "="
               },
               {
@@ -647,7 +647,7 @@
               }
             ]
           },
-          "say": "编辑未触及的行都会按字节原样复制。这里只新增了 Carol 对应的行。",
+          "say": "未被编辑触及的行都会按字节原样复制。这里只新增 Carol 对应的一行。",
           "ms": 3000
         }
       ]
@@ -700,7 +700,7 @@
                 "text": "• Alice：Google 研究团队"
               },
               {
-                "text": "• Bob：负责 ML 项目"
+                "text": "• Bob：领导 ML 项目"
               },
               {
                 "text": "• Carol：加入 ML 项目"

@@ -1,38 +1,38 @@
 ---
-title: "指南：用Hindsight添加LiteLLM记忆"
+title: "指南：用 Hindsight 为 LiteLLM 添加记忆"
 authors: [benfrank241]
 date: 2026-07-17
 tags: [how-to, litellm, agents, memory]
-description: "使用后视-litellm包将LiteLLM记忆与Hindsight一起添加，因此每次完成都会在LLM通话之前回忆相关记忆并存储之后的对话。"
+description: "使用 hindsight-litellm 包为 LiteLLM 添加记忆：每次 completion 调用前都会召回相关记忆，并在调用后存储对话。"
 image: /img/guides/guide-litellm-memory-with-hindsight.svg
 hide_table_of_contents: true
 ---
 
-![指南：使用 Hindsight 为 LiteLLM 添加记忆](/img/guides/guide-litellm-memory-with-hindsight.svg)
+![指南：用 Hindsight 为 LiteLLM 添加记忆](/img/guides/guide-litellm-memory-with-hindsight.svg)
 
-如果希望**使用 Hindsight 为 LiteLLM 添加记忆**，最直接的方式是 `hindsight-litellm` 包。它包装 LiteLLM 补全调用，在每次调用前将相关记忆注入提示词，之后存储对话，让任意 LLM 应用跨会话拥有长期记忆，而非每次从空白开始。
+如果要为 LiteLLM 添加 Hindsight 记忆，最直接的做法是使用 `hindsight-litellm` 包。它会在 LiteLLM 的 completion 调用前注入相关记忆，并在调用后存储对话。这样，任何 LLM 应用都能跨会话使用长期记忆，不必让每次新调用都从空白状态开始。
 
-这非常适合LiteLLM因为LiteLLM已经将 100 多个提供商标准化为一个 `completion()`接口。 `hindsight-litellm` 封装在同一接缝处添加了记忆层：它可以与OpenAI,Anthropic、Groq、Azure、AWS Bedrock、Google顶点AI，以及任何其他LiteLLM支持的提供商，只需几行设置。 记忆的范围是每个记忆库的，因此不同的智能体或用户保持隔离。
+LiteLLM 已经把 100 多个服务提供方统一封装在一个 `completion()` 接口之后，因此这种方式很适合 LiteLLM。`hindsight-litellm` 包在同一个接入点增加记忆层：只需几行配置，就能与 OpenAI、Anthropic、Groq、Azure、AWS Bedrock、Google Vertex AI 以及 LiteLLM 支持的其他服务提供方配合使用。记忆按记忆库隔离，因此不同智能体或用户之间不会互相影响。
 
-本指南将逐步安装该软件包，并将其指向您的Hindsight后端，设置您的记忆库和记忆模式，以及快速验证流程，以便您可以确认记忆实际上正在被使用。保留工作时， [文档首页](/) 和 [快速入门指南](/developer/api/quickstart) 就在附近。
+本指南会介绍如何安装软件包、将其指向 Hindsight 后端、设置记忆库和记忆模式，并通过一个简单的验证流程确认记忆确实在使用。操作时可将[文档首页](/)和[快速入门指南](/developer/api/quickstart)放在手边。
 
 <!-- truncate -->
 
 > **快速解答**
 >
-> 1. `pip install hindsight-litellm`。
-> 2. `hindsight_litellm.configure(hindsight_api_url="http://localhost:8888")`（添加`api_key=...` 用于云身份验证）。
-> 3. `hindsight_litellm.set_defaults(bank_id="my-agent", use_reflect=True)`。
-> 4. `hindsight_litellm.enable()`，然后拨打`hindsight_litellm.completion(...)` 和往常一样。
-> 5.验证稍后的调用是否能回忆起先前调用存储的内容。
+> 1. 运行 `pip install hindsight-litellm`。
+> 2. 调用 `hindsight_litellm.configure(hindsight_api_url="http://localhost:8888")`（用于 Cloud 身份认证时，添加 `api_key=...`）。
+> 3. 调用 `hindsight_litellm.set_defaults(bank_id="my-agent", use_reflect=True)`。
+> 4. 调用 `hindsight_litellm.enable()`，然后像往常一样调用 `hindsight_litellm.completion(...)`。
+> 5. 验证后续调用能否召回先前调用存储的内容。
 
-## 先决条件 {#prerequisites}
+## 前提条件 {#prerequisites}
 
-开始之前，请确保您拥有：
+开始之前，请确保你具备以下条件：
 
-- Python>= 3.10 且 `litellm` >= 1.83.0
-- 可达Hindsight后端，[Hindsight Cloud](https://hindsight.vectorize.io) 或自托管服务器
-- LiteLLM 支持的至少一个LLM 提供商的凭证
+- Python >= 3.10 和 `litellm` >= 1.83.0
+- 可访问的 Hindsight 后端：可以使用 [Hindsight Cloud](https://hindsight.vectorize.io)，也可以使用自托管服务器
+- 至少一个 LiteLLM 支持的 LLM 服务提供方的凭据
 
 ## 第 1 步：安装软件包 {#step-1-install-the-package}
 
@@ -40,59 +40,59 @@ hide_table_of_contents: true
 pip install hindsight-litellm
 ```
 
-包装好LiteLLM的`completion()` 因此，每次通话之前都会调用记忆，之后会存储对话。它不会改变您与家人交谈的方式LLM提供商。
+这个软件包封装了 LiteLLM 的 `completion()`：每次调用前都会召回记忆，并在调用后存储对话。它不会改变你与 LLM 服务提供方交互的方式。
 
-## 第2步：配置并指向Hindsight {#step-2-configure-and-point-at-hindsight}
+## 第 2 步：配置并连接到 Hindsight {#step-2-configure-and-point-at-hindsight}
 
-使用`configure()` 用于在会话期间不更改的静态设置，包括HindsightAPIURL 和（可选）API键：
+使用 `configure()` 设置会话期间不会变化的静态配置，包括 Hindsight API URL 和（可选的）API 密钥：
 
 ```python
 import hindsight_litellm
 
 hindsight_litellm.configure(
-    hindsight_api_url="http://localhost:8888",  #Hindsight API 服务器 URL
-    api_key="your-api-key",                     #可选 — 用于 Hindsight 身份验证
-    verbose=True,                               #可选 — 详细日志记录和调试信息
+    hindsight_api_url="http://localhost:8888",  # Hindsight API 服务器 URL
+    api_key="your-api-key",                     # 可选 — 用于 Hindsight 身份认证
+    verbose=True,                               # 可选 — 输出详细日志和调试信息
 )
 ```
 
-对于[Hindsight Cloud](https://hindsight.vectorize.io)，设置云APIURL 并将您的密钥传递为 `api_key`。对于自托管服务器，点 `hindsight_api_url` 根据您的情况（例如 `http://localhost:8888`）。
+使用 [Hindsight Cloud](https://hindsight.vectorize.io) 时，请设置 Cloud API URL，并将密钥作为 `api_key` 传入。使用自托管服务器时，请将 `hindsight_api_url` 指向你的服务器实例（例如 `http://localhost:8888`）。
 
-## 第三步：设置记忆库和记忆模式 {#step-3-set-your-bank-and-memory-mode}
+## 第 3 步：设置记忆库和记忆模式 {#step-3-set-your-bank-and-memory-mode}
 
-使用`set_defaults()` 用于每次调用默认值。 `bank_id` 是必需的 - 它选择记忆库，这就是记忆如何保持每个智能体或用户的隔离：
+使用 `set_defaults()` 设置每次调用的默认值。必须提供 `bank_id`，因为它用于选择记忆库，从而隔离不同智能体或用户的记忆：
 
 ```python
 hindsight_litellm.set_defaults(
-    bank_id="my-agent",   #必填 — 记忆 记忆库 ID
-    use_reflect=True,     #遗憾 = 综合上下文；假=原始记忆再现
+    bank_id="my-agent",   # 必填 — 记忆库 ID
+    use_reflect=True,     # reflect = 综合生成的上下文；False = 原始记忆召回
 )
 ```
 
-选择记忆模式：
+选择一种记忆模式：
 
-- **召回模式** (`use_reflect=False`，默认值）：检索原始记忆事实并将其作为编号列表注入。当您需要精确的个人记忆时，这是最好的选择。
-- **反思模式** (`use_reflect=True`)：将记忆合成一个连贯的上下文段落。最适合自然的、会话式的记忆环境。
+- **Recall 模式**（`use_reflect=False`，默认）：检索原始记忆事实，并以编号列表的形式注入。适合需要精确获取单条记忆的场景。
+- **Reflect 模式**（`use_reflect=True`）：将记忆综合生成一段连贯的上下文。适合需要自然、对话式记忆上下文的场景。
 
-您还可以使用默认值调整检索，例如`budget` (`"low"`，`"mid"`，`"high"`), `max_memories`，`max_memory_tokens`，和`fact_types`。参见[LiteLLM 集成文档](/sdks/integrations/litellm)查看完整列表。
+你也可以通过 `budget`（`"low"`、`"mid"`、`"high"`）、`max_memories`、`max_memory_tokens` 和 `fact_types` 等默认值调整检索。完整列表请参阅 [LiteLLM 集成文档](/sdks/integrations/litellm)。
 
-## 第4步：启用并调用完成 {#step-4-enable-and-call-completion}
+## 第 4 步：启用集成并调用 completion {#step-4-enable-and-call-completion}
 
-启用集成，然后调用`completion()` 与您完全相同LiteLLM：
+启用集成后，像使用 LiteLLM 一样调用 `completion()`：
 
 ```python
 hindsight_litellm.enable()
 
 response = hindsight_litellm.completion(
     model="gpt-4o-mini",
-    messages=[{"role": "user", "content": "我们讨论了AI什么？"}],
-    hindsight_query="我对AI讨论了解多少？",
+    messages=[{"role": "user", "content": "What did we discuss about AI?"}],
+    hindsight_query="What do I know about AI discussions?",
 )
 ```
 
-当`inject_memories=True`（默认），可以通过`hindsight_query` 指定要在记忆中搜索的内容。如果省略它，则使用最后一条用户消息作为查询。
+当 `inject_memories=True`（默认值）时，可以传入 `hindsight_query`，指定要在记忆中搜索的内容。如果省略该参数，系统会使用最后一条用户消息作为查询。
 
-因为LiteLLM标准化提供者，相同的调用在任何地方都有效 - 只需更改 `model`：
+LiteLLM 会统一处理服务提供方，因此同一个调用可以用于不同服务，只需更改 `model`：
 
 ```python
 messages = [{"role": "user", "content": "Hello!"}]
@@ -102,80 +102,80 @@ hindsight_litellm.completion(model="claude-sonnet-4-20250514", messages=messages
 hindsight_litellm.completion(model="groq/llama-3.1-70b-versatile", messages=messages, hindsight_query="greeting")
 ```
 
-## 整合如何使用记忆 {#how-the-integration-uses-memory}
+## 集成如何使用记忆 {#how-the-integration-uses-memory}
 
-当你打电话时`completion()`，以下情况会自动发生：
+调用 `completion()` 时，系统会自动执行以下操作：
 
-- **记忆检索（之前）：**Hindsight根据对话（或您的 `hindsight_query`）。
-- **提示词注入（之前）：** 记忆被注入到提示中——默认情况下注入到系统消息中。
-- **LLM 调用：** 丰富的提示发送至LLM通过LiteLLM。
-- **对话存储（之后）：** 对话存储至Hindsight用于未来的记忆召回 — 默认情况下异步以提高性能。
+- **记忆检索（调用前）：**Hindsight 会根据对话（或 `hindsight_query`）查询相关记忆。
+- **提示注入（调用前）：**记忆会注入提示中，默认注入系统消息。
+- **LLM 调用：**增强后的提示通过 LiteLLM 发送给 LLM。
+- **对话存储（调用后）：**对话会存入 Hindsight，供以后召回；默认采用异步方式，以提升性能。
 
-您也可以直接调用记忆API，无需经过`completion()`：`recall()` 原始记忆，`reflect()` 用于合成上下文，以及 `retain()` 存储内容。每个都有一个异步变体（`arecall()`，`areflect()`，`aretain()`）。对于较低级别的行为，请阅读 [Hindsight 记忆召回 API](/developer/api/recall) 和 [Hindsight 记忆存储 API](/developer/api/retain)。
+你也可以绕过 `completion()`，直接调用记忆 API：使用 `recall()` 获取原始记忆，使用 `reflect()` 综合生成上下文，使用 `retain()` 存入内容。每个 API 都有对应的异步版本（`arecall()`、`areflect()`、`aretain()`）。如需了解更底层的行为，请参阅 [Hindsight Recall API](/developer/api/recall) 和 [Hindsight Retain API](/developer/api/retain)。
 
-## 每记忆库 记忆 {#per-bank-memory}
+## 按记忆库隔离记忆 {#per-bank-memory}
 
-记忆的范围是`bank_id` 你设置在`set_defaults()`。这使得一个智能体或用户的记忆与另一个智能体或用户的记忆隔离。您可以使用 在一次调用中覆盖记忆库 `hindsight_bank_id` kwarg，这对于每个用户都有自己的记忆库的多用户应用程序来说很方便。
+记忆的范围由你在 `set_defaults()` 中设置的 `bank_id` 决定。这样，一个智能体或用户的记忆就会与其他智能体或用户的记忆隔离。你也可以通过单次调用的 `hindsight_bank_id` 关键字参数覆盖记忆库；这对每位用户各自使用一个记忆库的多用户应用很有帮助。
 
-要塑造记忆库随着时间的推移学习和记住的内容，请使用 `set_bank_mission()`赋予它使命——Hindsight用它来构建记忆库的心智模型。
+若要调整记忆库随时间学习和记住的内容，可使用 `set_bank_mission()` 为其设置任务说明。Hindsight 会据此为该记忆库构建心智模型。
 
-## 验证记忆是否有效 {#verify-that-memory-is-working}
+## 验证记忆是否正常工作 {#verify-that-memory-is-working}
 
-一个好的测试序列是：
+可以按以下步骤进行测试：
 
-1. 呼叫`hindsight_litellm.completion(...)` 并在消息中分享事实或偏好
-2. 让对话存储完成
-3. 呼叫`completion()` 再次对之前的事实提出疑问
-4. 确认答案反映了您存储的内容
+1. 调用 `hindsight_litellm.completion(...)`，并在消息中分享一条事实或偏好。
+2. 等待对话存储完成。
+3. 再次调用 `completion()`，询问与先前事实有关的问题。
+4. 确认回答反映了先前存储的内容。
 
 例如：
 
-- 第一次通话提到“我正在 Python 从事机器学习项目”
-- 稍后的电话询问“我正在从事什么项目？”
+- 第一次调用中提到 “I'm working on a machine learning project in Python”。
+- 后续调用询问 “What projects am I working on?”。
 
-如果稍后的响应回想起机器学习项目，则设置正在运行。与 `verbose=True`，也可以拨打`get_last_injection_debug()` 准确检查注入的内容 - 模式、是否注入记忆、结果的数量以及记忆上下文本身。
+如果后续回答能召回机器学习项目，说明配置已经生效。设置 `verbose=True` 后，还可以调用 `get_last_injection_debug()`，准确检查注入的内容，包括所用模式、是否注入了记忆、结果数量以及记忆上下文。
 
 ## 常见错误 {#common-mistakes}
 
-### 忘记打电话`enable()` {#forgetting-to-call-enable}
+### 忘记调用 `enable()` {#forgetting-to-call-enable}
 
-`configure()` 和 `set_defaults()` 仅准备集成。你必须打电话给`enable()`之前`completion()`将注入并存储记忆。
+`configure()` 和 `set_defaults()` 只会准备集成。必须先调用 `enable()`，之后 `completion()` 才会注入和存储记忆。
 
-### 未设置 `bank_id` {#not-setting-a-bankid}
+### 未设置 `bank_id` {#not-setting-a-bank_id}
 
-`set_defaults()` 必须设置 `bank_id`。否则无法确定从哪个记忆库召回或存储记忆。
+必须在 `set_defaults()` 中设置 `bank_id`。否则就没有记忆库可供召回或存储记忆。
 
-### 存储完成前测试记忆召回 {#testing-recall-before-storage-finishes}
+### 在存储完成前测试召回 {#testing-recall-before-storage-finishes}
 
-默认情况下，对话存储是异步的。如果您立即检查，之前的对话可能尚未存储。设置`sync_storage=True` `configure()` 当您需要存储来立即阻止和显示错误时。
+对话默认采用异步存储。如果立即检查，先前的对话可能尚未存储。若需要等待存储完成并立即显示错误，可在 `configure()` 中设置 `sync_storage=True`。
 
-### 预期错误的记忆形状 {#expecting-the-wrong-memory-shape}
+### 对记忆内容形式的预期有误 {#expecting-the-wrong-memory-shape}
 
-记忆召回模式将原始事实作为列表注入； 跳跃模式注入一个合成的段落。选择与您希望 LLM 使用记忆的方式相匹配的模式。
+Recall 模式会以列表形式注入原始事实；Reflect 模式会注入综合生成的段落。请选择符合你希望 LLM 使用记忆方式的模式。
 
-## 常见问题解答 {#faq}
+## 常见问题 {#faq}
 
-### 我需要Hindsight Cloud吗？ {#do-i-need-hindsight-cloud}
+### 我需要使用 Hindsight Cloud 吗？ {#do-i-need-hindsight-cloud}
 
-没有。自托管Hindsight服务器也能工作 — 点 `hindsight_api_url` 以您为例。
+不需要。自托管的 Hindsight 服务器也可以使用，只需将 `hindsight_api_url` 指向你的服务器实例。
 
-### 这会改变我使用LiteLLM的方式吗？ {#does-this-change-how-i-use-litellm}
+### 这会改变我使用 LiteLLM 的方式吗？ {#does-this-change-how-i-use-litellm}
 
-没有。你打电话给`hindsight_litellm.completion()` 与相同 `model` 和 `messages`您已经使用过。记忆层是在调用周围添加的。
+不会。你仍然像以前一样，使用相同的 `model` 和 `messages` 调用 `hindsight_litellm.completion()`。记忆层会围绕这次调用添加。
 
-### 支持哪些提供商？ {#which-providers-are-supported}
+### 支持哪些服务提供方？ {#which-providers-are-supported}
 
-任何提供商LiteLLM支持 —OpenAI,Anthropic、Groq、Azure、AWS Bedrock、Google顶点AI，等等。您只需更改 `model` 字符串。
+LiteLLM 支持的服务提供方都可以使用，包括 OpenAI、Anthropic、Groq、Azure、AWS Bedrock、Google Vertex AI 等。你只需更改 `model` 字符串。
 
-### 我可以在没有LiteLLM回调路径的情况下使用它吗？ {#can-i-use-it-without-the-litellm-callback-path}
+### 不走 LiteLLM 回调路径也能使用吗？ {#can-i-use-it-without-the-litellm-callback-path}
 
-是的。有原生客户端包装器，`wrap_openai()` 和 `wrap_anthropic()`，将相同的记忆行为直接添加到那些SDK客户。
+可以。原生客户端包装器 `wrap_openai()` 和 `wrap_anthropic()` 可将相同的记忆行为直接添加到相应的 SDK 客户端。
 
 ## 后续步骤 {#next-steps}
 
-- 从开始 [Hindsight Cloud](https://hindsight.vectorize.io) 如果您想要托管后端
-- 阅读[完整 Hindsight 文档](/)
-- 跟随[快速入门指南](/developer/api/quickstart)
-- 回顾[Hindsight 记忆召回 API](/developer/api/recall)
-- 回顾[Hindsight 记忆存储 API](/developer/api/retain)
-- 阅读[LiteLLM 集成文档](/sdks/integrations/litellm)
+- 如果想使用托管后端，可从 [Hindsight Cloud](https://hindsight.vectorize.io) 开始。
+- 阅读[完整 Hindsight 文档](/)。
+- 查看[快速入门指南](/developer/api/quickstart)。
+- 查看 [Hindsight Recall API](/developer/api/recall)。
+- 查看 [Hindsight Retain API](/developer/api/retain)。
+- 阅读 [LiteLLM 集成文档](/sdks/integrations/litellm)。

@@ -4,43 +4,41 @@ sidebar_position: 12
 
 # Pydantic AI + Hindsight 记忆 {#pydantic-ai--hindsight-memory}
 
-
 :::info 完整应用
-这是一个完整的、可运行的应用程序，演示了Hindsight集成。
-[**在 GitHub 查看源码 →**](https://github.com/vectorize-io/hindsight-cookbook/tree/main/applications/pydantic-ai-memory)
+这是一个完整、可运行的应用示例，展示了如何集成 Hindsight。
+[**在 GitHub 上查看源码 →**](https://github.com/vectorize-io/hindsight-cookbook/tree/main/applications/pydantic-ai-memory)
 :::
 
+为你的 Pydantic AI 智能体提供持久的长期记忆。多次与助手聊天，看看它如何记住你在之前会话中告诉它的内容。
 
-给予你的Pydantic AI智能体持久的长期记忆。与助手多次聊天，看着它记住你在之前的会话中告诉它的内容。
+## 本示例展示的内容 {#what-this-demonstrates}
 
-## 这说明了什么 {#what-this-demonstrates}
+- **记忆工具** — 通过 `create_hindsight_tools()` 使用 Retain（存入）、Recall（召回）和 Reflect（反思）
+- **自动注入上下文** — 通过 `memory_instructions()` 在每次运行时注入相关记忆
+- **跨会话持久记忆** — 智能体在多次脚本运行之间保留记忆
+- **交互式聊天循环**，并复用消息历史记录
 
-- **记忆工具** — 记忆存储、记忆召回和幻觉，来自 `create_hindsight_tools()`
-- **自动注入上下文** — 每次运行时的相关记忆通过`memory_instructions()`
-- **跨会话持久记忆** — 智能体在脚本运行之间记住
-- **交互式聊天循环** 消息历史复用
-
-## 建筑 {#architecture}
+## 架构 {#architecture}
 
 ```
-Session 1:
-    You: "我是一名Python开发人员，从事 FastAPI 项目"
+会话 1：
+    你："I'm a Python developer working on a FastAPI project"
     │
-    ├─ memory_instructions() ──► recalls prior context (empty on first run)
-    ├─ Agent decides to call hindsight_retain ──► stores the fact
-    └─ Agent responds with acknowledgement
+    ├─ memory_instructions() ──► 召回先前的上下文（首次运行时为空）
+    ├─ 智能体决定调用 hindsight_retain ──► 存入事实
+    └─ 智能体确认收到信息
 
-Session 2:
-    You: "你对我了解多少？"
+会话 2：
+    你："What do you know about me?"
     │
-    ├─ memory_instructions() ──► injects "用户是Python开发者..."
-    ├─ Agent calls hindsight_recall ──► finds stored facts
-    └─ Agent responds with everything it remembers
+    ├─ memory_instructions() ──► 注入 "User is a Python developer..."
+    ├─ 智能体调用 hindsight_recall ──► 找到已存储的事实
+    └─ 智能体将记住的全部信息作为回答
 ```
 
-## 先决条件 {#prerequisites}
+## 前置条件 {#prerequisites}
 
-1. **Hindsight 正在运行**
+1. **运行中的 Hindsight**
 
    ```bash
    export OPENAI_API_KEY=your-key
@@ -52,7 +50,7 @@ Session 2:
      ghcr.io/vectorize-io/hindsight:latest
    ```
 
-2. **OpenAI API 密钥**（对于Pydantic AI的LLM)
+2. **OpenAI API 密钥**（供 Pydantic AI 的 LLM 使用）
 
    ```bash
    export OPENAI_API_KEY=your-key
@@ -65,9 +63,9 @@ Session 2:
    pip install -r requirements.txt
    ```
 
-## 快速入门 {#quick-start}
+## 快速开始 {#quick-start}
 
-### 互动聊天 {#interactive-chat}
+### 交互式聊天 {#interactive-chat}
 
 ```bash
 python personal_assistant.py
@@ -89,7 +87,7 @@ love hiking on weekends.
 You: quit
 ```
 
-再次运行它——智能体仍然记得：
+再次运行，智能体仍然记得之前的内容：
 
 ```
 You: What are my hobbies?
@@ -99,7 +97,7 @@ Assistant: Based on my memories, you enjoy hiking on weekends!
 ### 单次查询 {#single-query}
 
 ```bash
-python personal_assistant.py "关于我的喜好，你还记得什么？"
+python personal_assistant.py "What do you remember about my preferences?"
 ```
 
 ### 重置记忆 {#reset-memory}
@@ -108,9 +106,9 @@ python personal_assistant.py "关于我的喜好，你还记得什么？"
 python personal_assistant.py --reset
 ```
 
-## 它是如何工作的 {#how-it-works}
+## 工作原理 {#how-it-works}
 
-### 1。创建Hindsight客户端 {#1-create-a-hindsight-client}
+### 1. 创建 Hindsight 客户端 {#1-create-a-hindsight-client}
 
 ```python
 from hindsight_client import Hindsight
@@ -118,20 +116,20 @@ from hindsight_client import Hindsight
 client = Hindsight(base_url="http://localhost:8888")
 ```
 
-### 2。创建记忆工具 {#2-create-memory-tools}
+### 2. 创建记忆工具 {#2-create-memory-tools}
 
-`create_hindsight_tools()`返回  智能体可以调用的Pydantic AI`Tool`实例：
+`create_hindsight_tools()` 会返回 Pydantic AI `Tool` 实例，供智能体调用：
 
 ```python
 from hindsight_pydantic_ai import create_hindsight_tools
 
 tools = create_hindsight_tools(client=client, bank_id="personal-assistant")
-# Returns: [hindsight_retain, hindsight_recall, hindsight_reflect]
+# 返回：[hindsight_retain, hindsight_recall, hindsight_reflect]
 ```
 
-### 3。添加记忆说明 {#3-add-memory-instructions}
+### 3. 添加记忆指令 {#3-add-memory-instructions}
 
-`memory_instructions()` 返回一个异步可调用对象，它会自动调用相关记忆，并在每次运行时将它们注入到系统提示符中：
+`memory_instructions()` 会返回一个异步可调用对象：它会自动召回相关记忆，并在每次运行时将这些记忆注入系统提示中：
 
 ```python
 from hindsight_pydantic_ai import memory_instructions
@@ -139,38 +137,38 @@ from hindsight_pydantic_ai import memory_instructions
 instructions_fn = memory_instructions(
     client=client,
     bank_id="personal-assistant",
-    query="关于用户的重要上下文",
+    query="important context about the user",
     max_results=5,
 )
 ```
 
-### 4。连接智能体 {#4-wire-up-the-agent}
+### 4. 配置智能体 {#4-wire-up-the-agent}
 
 ```python
 from pydantic_ai import Agent
 
 agent = Agent(
     "openai:gpt-4o-mini",
-    system_prompt="你是一个有长期记忆力的得力助手...",
+    system_prompt="You are a helpful assistant with long-term memory...",
     tools=tools,
     instructions=[instructions_fn],
 )
 
-result = await agent.run("你对我了解多少？")
+result = await agent.run("What do you know about me?")
 ```
 
 ## 核心文件 {#core-files}
 
-|文件|说明|
+| 文件 | 说明 |
 |------|-------------|
-|`personal_assistant.py`|具有交互式聊天和单一查询模式的完整工作示例|
-|`requirements.txt`|Python 依赖关系|
+| `personal_assistant.py` | 完整的可运行示例，包含交互式聊天和单次查询模式 |
+| `requirements.txt` | Python 依赖项 |
 
-## 定制 {#customization}
+## 自定义 {#customization}
 
-### 仅使用工具（无自动注射） {#use-only-tools-no-auto-injection}
+### 仅使用工具（不自动注入） {#use-only-tools-no-auto-injection}
 
-让智能体决定何时搜索记忆，而不是总是注入上下文：
+由智能体自行决定何时搜索记忆，而不是始终注入上下文：
 
 ```python
 agent = Agent(
@@ -179,9 +177,9 @@ agent = Agent(
 )
 ```
 
-### 仅使用说明（无工具） {#use-only-instructions-no-tools}
+### 仅使用指令（不使用工具） {#use-only-instructions-no-tools}
 
-自动注入记忆，无需给智能体明确的retain/recall/reflect工具：
+自动注入记忆，但不向智能体提供显式的 Retain、Recall、Reflect 工具：
 
 ```python
 agent = Agent(
@@ -198,13 +196,13 @@ tools = create_hindsight_tools(
     bank_id="my-bank",
     include_retain=True,
     include_recall=True,
-    include_reflect=False,  #省略遗憾
+    include_reflect=False,  # 不包含 reflect
 )
 ```
 
-### 使用不同的模型 {#use-a-different-model}
+### 使用其他模型 {#use-a-different-model}
 
-任何[Pydantic AI 模型](https://ai.pydantic.dev/models/) 工作原理：
+任何 [Pydantic AI 模型](https://ai.pydantic.dev/models/) 都可以使用：
 
 ```python
 agent = Agent(
@@ -215,22 +213,24 @@ agent = Agent(
 
 ## 常见问题 {#common-issues}
 
-**"Connection refused"**
-- 确保Hindsight正在运行`localhost:8888`
+**“Connection refused”**
+- 确认 Hindsight 正在 `localhost:8888` 上运行。
 
-**"OPENAI_API_KEY not set"**
+**“OPENAI_API_KEY not set”**
 ```bash
 export OPENAI_API_KEY=your-key
 ```
 
-**"No module named 'hindsight_pydantic_ai'"**
+**“No module named 'hindsight_pydantic_ai'”**
 ```bash
 pip install -r requirements.txt
 ```
 
 ---
 
-**使用以下技术构建：**
-- [Pydantic AI](https://ai.pydantic.dev) - 类型安全AI智能体框架
-- [hindsight-pydantic-ai](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/pydantic-ai) -Hindsight记忆工具Pydantic AI
-- [Hindsight](https://github.com/vectorize-io/hindsight) - 长期记忆AI智能体
+**使用以下组件构建：**
+- [Pydantic AI](https://ai.pydantic.dev) - 类型安全的 AI 智能体框架
+- [hindsight-pydantic-ai](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/pydantic-ai) - 面向 Pydantic AI 的 Hindsight 记忆工具
+- [Hindsight](https://github.com/vectorize-io/hindsight) - 面向 AI 智能体的长期记忆
+
+---

@@ -103,7 +103,7 @@ PY
 
 要让用户上下文延续，有两种实际选择。
 
-#### 方案 A，`["provider", "user"]` {#option-a-provider-user}
+#### 方案 A，`["provider", "user"]` {#option-a-}
 
 
 
@@ -118,7 +118,7 @@ PY
 
 大多数部署建议先选择这个方案。
 
-#### 方案 B，`["user"]` {#option-b-user}
+#### 方案 B，`["user"]` {#option-b-}
 
 
 
@@ -150,7 +150,7 @@ cfg = plugin.setdefault('config', {})
 cfg['dynamicBankId'] = True
 cfg['dynamicBankGranularity'] = ['provider', 'user']
 path.write_text(json.dumps(config, indent=2) + '\n')
-print(f'已更新 {path}')
+print(f'Updated {path}')
 PY
 ```
 
@@ -168,15 +168,15 @@ cfg = plugin.setdefault('config', {})
 cfg['dynamicBankId'] = True
 cfg['dynamicBankGranularity'] = ['user']
 path.write_text(json.dumps(config, indent=2) + '\n')
-print(f'已更新 {path}')
+print(f'Updated {path}')
 PY
 ```
 
 关键是保持 `dynamicBankId` 启用。如果关闭它并设置单个静态 `bankId`，就不再是跨渠道按用户共享，而是趋向所有人共用记忆库。
 
-### 4. 添加适合共享用户记忆的存储规则 {#4-add-a-retention-rule-that-suits-shared-user-memory}
+### 4. 添加适用于共享用户记忆的提取任务说明 {#4-add-a-retention-rule-that-suits-shared-user-memory}
 
-用户记忆跨多个渠道后，记忆库更有价值，也可能更嘈杂。最稳妥的办法是设置聚焦的 `retainMission`。
+用户记忆跨多个渠道后，记忆库更有价值，也可能更嘈杂。最稳妥的办法是设置明确聚焦的 `retainMission`（提取任务说明）。
 
 以下是良好起点：
 
@@ -187,16 +187,16 @@ path = pathlib.Path.home() / '.openclaw' / 'openclaw.json'
 config = json.loads(path.read_text())
 cfg = config['plugins']['entries']['hindsight-openclaw']['config']
 cfg['retainMission'] = (
-    '提取用户偏好、持续项目、反复出现的承诺、'
-    '重要上下文，以及有助于未来对话的持久事实。'
-    '跳过一次性闲聊和临时任务噪声。'
+    'Extract user preferences, ongoing projects, recurring commitments, '
+    'important context, and durable facts that should help across future '
+    'conversations. Skip one-off chatter and temporary task noise.'
 )
 path.write_text(json.dumps(config, indent=2) + '\n')
-print(f'已更新 {path}')
+print(f'Updated {path}')
 PY
 ```
 
-按用户划分的记忆库会从多段对话积累上下文。不设存储目标时，记忆引擎会存入超出大多数助手需要的原始对话细节。明确目标后，记忆库就能成为关于用户及其持续工作的可重用档案。
+按用户划分的记忆库会从多段对话积累上下文。不设置提取任务说明时，记忆引擎会存入超出大多数助手需要的原始对话细节。明确提取目标后，记忆库就能成为关于用户及其持续工作的可重用档案。
 
 如需了解其他智能体的共享记忆行为，可以对照[使用 Hindsight 为 Codex 添加记忆](/blog/2026/04/08/adding-memory-to-codex-with-hindsight)和[团队共享记忆文章](/blog/2026/07/10/shared-memory-across-ai-tools)。
 
@@ -222,7 +222,7 @@ openclaw gateway status
 
 简单测试如下：
 
-1. 在一个渠道中，让用户告诉智能体持久信息，例如：“我喜欢简洁回复，计划下个月发布产品。”
+1. 在一个渠道中，让用户告诉智能体一条持久事实，例如：“I prefer concise replies and I am planning a product launch next month.”
 2. 等待该轮结束，让记忆完成存储。
 3. 在**同一提供商**的另一个渠道，让同一用户提出依赖这些事实的问题。
 4. 检查智能体是否无需再次告知就能召回偏好和项目上下文。
@@ -300,7 +300,7 @@ tail -f /tmp/openclaw/openclaw-*.log | grep Hindsight
 
 ## 常见问题 {#faq}
 
-### 应该使用 `["provider", "user"]` 还是 `["user"]`？ {#should-i-use-provider-user-or-user}
+### 应该使用 `["provider", "user"]` 还是 `["user"]`？ {#should-i-use-}
 
 
 

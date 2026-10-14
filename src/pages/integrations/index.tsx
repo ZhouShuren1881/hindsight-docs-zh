@@ -74,8 +74,8 @@ function IntegrationCard({
         {integration.type === 'community' && (
           <img
             src={`https://github.com/${integration.by}.png?size=40`}
-            alt={`由社区作者 @${integration.by}`}
-            title={`由社区作者 @${integration.by}`}
+            alt={`@${integration.by} 提供的社区集成`}
+            title={`@${integration.by} 提供的社区集成`}
             className={styles.compactAuthor}
             loading="lazy"
           />
@@ -167,13 +167,13 @@ export default function IntegrationsHub(): React.ReactElement {
   const communityCount = integrations.filter((i) => i.type === 'community').length;
 
   return (
-    <Layout title="集成中心" description="浏览 Hindsight 智能体记忆的官方集成与社区集成">
+    <Layout title="集成中心" description="浏览适用于 Hindsight 智能体记忆的官方集成和社区集成">
 
       {/* Full-width hero with its own background */}
       <div className={clsx('hs-hero-band', styles.heroSection)}>
         <h1 className={styles.heroTitle}>集成中心</h1>
         <p className={styles.heroSubtitle}>
-          将 Hindsight 接入你的技术栈，浏览官方集成和社区构建的连接器。
+          将 Hindsight 接入你的技术栈，探索官方集成与社区开发的连接器。
         </p>
 
         <div className={styles.hubSearchWrapper}>
@@ -187,7 +187,7 @@ export default function IntegrationsHub(): React.ReactElement {
             autoComplete="off"
           />
           {search && (
-            <button className={styles.hubSearchClear} onClick={() => setSearch('')} aria-label="清除搜索">
+            <button className={styles.hubSearchClear} onClick={() => setSearch('')} aria-label="清空搜索">
               ×
             </button>
           )}
@@ -223,7 +223,7 @@ export default function IntegrationsHub(): React.ReactElement {
 
         {showFeatured && featured.length > 0 && (
           <section className={styles.featuredSection}>
-            <h2 className={styles.featuredTitle}>精选</h2>
+            <h2 className={styles.featuredTitle}>精选集成</h2>
             <div className={styles.featuredGrid}>
               {featured.map((integration) => (
                 <IntegrationCard
@@ -244,7 +244,7 @@ export default function IntegrationsHub(): React.ReactElement {
               <span className={styles.groupCount}>{harnesses.length}</span>
             </h3>
             <p className={styles.harnessNote}>
-              这些智能体都由同一个{' '}
+              这些编程智能体都通过同一个{' '}
               <Link to="/sdks/integrations/coding-agents">Coding Agents</Link> 插件安装。
             </p>
             <div className={styles.harnessGrid}>
@@ -302,9 +302,9 @@ export default function IntegrationsHub(): React.ReactElement {
 
         <div className={styles.submitBanner}>
           <div className={styles.submitBannerContent}>
-            <h2 className={styles.submitBannerTitle}>用 Hindsight 构建了什么？</h2>
+            <h2 className={styles.submitBannerTitle}>你用 Hindsight 做出了什么？</h2>
             <p className={styles.submitBannerText}>
-              与社区分享你的集成。提交包含集成链接的 issue，我们会将其加入集成列表。
+              把你的集成分享给社区。创建一个 issue 并附上链接，我们会将它加入集成列表。
             </p>
             <Link
               href={SUBMIT_INTEGRATION_URL}

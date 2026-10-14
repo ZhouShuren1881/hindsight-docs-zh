@@ -14,9 +14,9 @@ sidebar_position: 12
 使用 Hindsight 记忆工具和自动钩子，构建可跨会话记忆的 Claude 智能体。
 
 ## 功能 {#features}
-- 进程内 MCP 服务器，提供存储、召回和反思工具
+- 进程内 MCP 服务器，提供 Retain（存入）、Recall（召回）和 Reflect（反思）工具
 - 每次提示前自动注入上下文的记忆钩子
-- 自动存储结果，供后续会话使用
+- 自动存入智能体的结果，供后续会话使用
 - 多次运行中不断积累知识
 
 ## 前置条件 {#prerequisites}
@@ -62,7 +62,7 @@ import getpass
 
 # Anthropic API 密钥（Claude Agent SDK 使用）
 if not os.getenv("ANTHROPIC_API_KEY"):
-    os.environ["ANTHROPIC_API_KEY"] = getpass.getpass("请输入 Anthropic API 密钥：")
+    os.environ["ANTHROPIC_API_KEY"] = getpass.getpass("Enter your Anthropic API key: ")
 
 # Hindsight 连接，默认使用本地自托管实例
 # 使用 Cloud 时，设置 HINDSIGHT_API_URL 和 HINDSIGHT_API_KEY
@@ -70,9 +70,9 @@ HINDSIGHT_API_URL = os.getenv("HINDSIGHT_API_URL", "http://localhost:8888")
 HINDSIGHT_API_KEY = os.getenv("HINDSIGHT_API_KEY", None)  # Cloud 可选连接密钥
 BANK_ID = "claude-agent-demo"
 
-print(f"Hindsight API：{HINDSIGHT_API_URL}")
-print(f"使用 API 密钥：{'是' if HINDSIGHT_API_KEY else '否（自托管）'}")
-print(f"记忆库 ID：{BANK_ID}")
+print(f"Hindsight API: {HINDSIGHT_API_URL}")
+print(f"Using API key: {'yes' if HINDSIGHT_API_KEY else 'no (self-hosted)'}")
+print(f"Bank ID: {BANK_ID}")
 ```
 
 ## 3. 创建记忆库 {#3-create-a-memory-bank}
@@ -87,17 +87,17 @@ hindsight = Hindsight(base_url=HINDSIGHT_API_URL, api_key=HINDSIGHT_API_KEY)
 try:
     hindsight.create_bank(
         bank_id=BANK_ID,
-        name="Claude 智能体演示",
-        mission="为软件开发助手记住用户偏好、决策和项目上下文。",
+        name="Claude Agent Demo",
+        mission="Remember user preferences, decisions, and project context for a software development assistant.",
     )
-    print(f"已创建记忆库 '{BANK_ID}'。")
+    print(f"Bank '{BANK_ID}' created.")
 except Exception:
-    print(f"记忆库 '{BANK_ID}' 已存在，继续。")
+    print(f"Bank '{BANK_ID}' already exists, continuing.")
 ```
 
 ## 4. 设置记忆工具 {#4-set-up-memory-tools}
 
-创建进程内 MCP 服务器，提供存储、召回和反思：
+创建进程内 MCP 服务器，提供 Retain（存入）、Recall（召回）和 Reflect（反思）工具：
 
 
 ```python
@@ -110,7 +110,7 @@ server = create_hindsight_server(
     tags=["source:claude-agent-sdk-demo"],
 )
 
-print("已创建 Hindsight MCP 服务器，工具为 hindsight_retain、hindsight_recall、hindsight_reflect")
+print("Hindsight MCP server created with tools: hindsight_retain, hindsight_recall, hindsight_reflect")
 ```
 
 ## 5. 显式使用记忆工具运行智能体 {#5-run-agent-with-explicit-memory-tools}
@@ -123,7 +123,7 @@ import asyncio
 from claude_agent_sdk import query, ClaudeAgentOptions
 
 async def run_agent(prompt: str, system: str = None):
-    """使用 Hindsight 记忆工具运行 Claude 智能体。"""
+    """Run a Claude agent with Hindsight memory tools."""
     options = ClaudeAgentOptions(
         mcp_servers={"hindsight": server},
         allowed_tools=["mcp__hindsight__*"],
@@ -143,14 +143,14 @@ async def run_agent(prompt: str, system: str = None):
 # 存储一些偏好
 result = asyncio.get_event_loop().run_until_complete(
     run_agent(
-        "使用存储工具记住以下信息：\n"
-        "- 我偏好带类型提示和 async/await 的 Python\n"
-        "- 团队使用 pytest 和 pytest-asyncio 测试\n"
-        "- 遵循 Conventional Commits（feat:、fix:、chore:）\n"
-        "- API 框架为 FastAPI，使用 Pydantic v2 模型"
+        "Store the following into memory using the retain tool:\n"
+        "- I prefer Python with type hints and async/await patterns\n"
+        "- My team uses pytest for testing with pytest-asyncio\n"
+        "- We follow conventional commits (feat:, fix:, chore:)\n"
+        "- Our API framework is FastAPI with Pydantic v2 models"
     )
 )
-print("智能体结果：", result)
+print("Agent result:", result)
 ```
 
 ## 6. 新会话召回记忆 {#6-recall-memories-in-a-new-session}
@@ -162,15 +162,15 @@ print("智能体结果：", result)
 # 新会话，没有此前上下文
 result = asyncio.get_event_loop().run_until_complete(
     run_agent(
-        "团队使用什么测试框架？"
-        "回答前先搜索记忆。",
-        system="你是有帮助的编程助手。回答用户相关问题前，始终检查记忆。",
+        "What testing framework does my team use? "
+        "Search your memory first before answering.",
+        system="You are a helpful coding assistant. Always check memory before answering questions about the user.",
     )
 )
-print("智能体结果：", result)
+print("Agent result:", result)
 ```
 
-## 7. 通过反思深入综合 {#7-reflect-for-deeper-synthesis}
+## 7. 通过 Reflect（反思）深入综合 {#7-reflect-for-deeper-synthesis}
 
 需要分析全部存储记忆时使用 reflect：
 
@@ -178,10 +178,10 @@ print("智能体结果：", result)
 ```python
 result = asyncio.get_event_loop().run_until_complete(
     run_agent(
-        "使用反思工具综合你了解的开发技术栈和偏好。",
+        "Use the reflect tool to synthesize everything you know about my development stack and preferences.",
     )
 )
-print("智能体结果：", result)
+print("Agent result:", result)
 ```
 
 ## 8. 添加自动记忆钩子 {#8-add-automatic-memory-hooks}
@@ -198,12 +198,12 @@ hooks = create_memory_hooks(
     api_key=HINDSIGHT_API_KEY,
     hook_config=MemoryHookConfig(
         auto_recall=True,       # 每次提示前注入相关记忆
-        auto_retain=True,       # 每次会话后保存结果
+        auto_retain=True,       # 每次会话后存入结果
         recall_max_results=5,   # 限制注入数量
     ),
 )
 
-print("已创建钩子：UserPromptSubmit 自动召回，Stop 自动存储")
+print("Memory hooks created: auto-recall on UserPromptSubmit, auto-retain on Stop")
 ```
 
 ## 9. 使用钩子运行智能体 {#9-run-agent-with-hooks}
@@ -213,7 +213,7 @@ print("已创建钩子：UserPromptSubmit 自动召回，Stop 自动存储")
 
 ```python
 async def run_with_hooks(prompt: str):
-    """同时使用工具和钩子运行 Claude 智能体。"""
+    """Run a Claude agent with both tools and hooks."""
     result_text = None
     async for msg in query(
         prompt=prompt,
@@ -223,7 +223,7 @@ async def run_with_hooks(prompt: str):
             hooks=hooks,
             model="claude-sonnet-4-6",
             permission_mode="bypassPermissions",
-            system_prompt="你是有帮助的编程助手。",
+            system_prompt="You are a helpful coding assistant.",
         ),
     ):
         if hasattr(msg, "result"):
@@ -233,28 +233,28 @@ async def run_with_hooks(prompt: str):
 
 # 自动获取历史记忆，无需主动调用工具
 result = asyncio.get_event_loop().run_until_complete(
-    run_with_hooks("按团队偏好，为 FastAPI 端点编写 pytest 示例。")
+    run_with_hooks("Write a sample pytest test for a FastAPI endpoint, using my team's preferred patterns.")
 )
-print("智能体结果：", result)
+print("Agent result:", result)
 ```
 
-智能体在工作前通过自动召回获得团队测试偏好，结果也自动存储，供后续会话使用。
+智能体在工作前通过自动召回获得团队测试偏好，结果也会自动存入记忆，供后续会话使用。
 
 ## 10. 再次运行，观察知识积累 {#10-run-again-to-see-knowledge-compound}
 
-每次会话增加知识，再用相关提示运行：
+每次会话都会向知识库添加内容。再用相关提示运行智能体：
 
 
 ```python
 result = asyncio.get_event_loop().run_until_complete(
-    run_with_hooks("刚创建的测试文件应该使用什么提交信息格式？")
+    run_with_hooks("What commit message format should I use for this test file I just created?")
 )
-print("智能体结果：", result)
+print("Agent result:", result)
 ```
 
 智能体召回早前在完全不同会话中存储的 Conventional Commits 偏好。
 
-## 11. 自动存储工具输出（可选） {#11-auto-retain-tool-outputs-optional}
+## 11. 自动存入工具输出（可选） {#11-auto-retain-tool-outputs-optional}
 
 也可自动存储 Bash 等指定工具的输出：
 
@@ -272,7 +272,7 @@ hooks_with_bash = create_memory_hooks(
     ),
 )
 
-print("已创建钩子，并启用 Bash 输出存储")
+print("Hooks created with Bash output retention enabled")
 ```
 
 ## 清理 {#cleanup}
@@ -282,5 +282,5 @@ print("已创建钩子，并启用 Bash 输出存储")
 
 ```python
 hindsight.delete_bank(bank_id=BANK_ID)
-print(f"已删除记忆库 '{BANK_ID}'。")
+print(f"Deleted bank '{BANK_ID}'.")
 ```

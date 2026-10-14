@@ -1,21 +1,21 @@
 ---
-title: "使用实体标签自动标记Hindsight中的记忆"
+title: "使用实体标签在 Hindsight 中自动标记记忆"
 authors: [benfrank241]
 slug: "2026/06/02/entity-labels-automatic-memory-tagging"
 date: 2026-06-02T12:00
 tags: [hindsight, memory, entities, tagging, tutorial, agents]
-description: "Hindsight 的实体标签自动将自由文本记忆转化为结构化、可过滤的分类。受控词汇表、四种标签类型和一种标签：将标签转变为可过滤标签的真正开关。"
+description: "Hindsight 的实体标签可以将自由文本记忆自动转换为结构化、可筛选的分类。通过受控词表、四种标签类型，以及一个让标签也成为可筛选标签的开关，轻松管理记忆。"
 image: /img/blog/entity-labels-tagging.webp
 hide_table_of_contents: true
 ---
 
-![Hindsight中自动记忆标记的实体标签](/img/blog/entity-labels-tagging.webp)
+![Hindsight 中用于自动标记记忆的实体标签](/img/blog/entity-labels-tagging.webp)
 
-Hindsight 的自由格式实体提取非常适合呈现 *in* 数据 - 模型自行找到的名称、地点、概念。当您确实想稍后过滤该数据时，它就不那么好了。
+Hindsight 的自由格式实体提取很适合发现数据中*已有*的内容，例如模型自行识别出的名称、地点和概念。但如果之后要筛选这些数据，它就没那么好用了。
 
-您编写一个支持智能体来获取票证。三个客户都打电话来询问Acme Corp。第一场保留了`Acme Corp`，第二场`Acme`，第三场`Acme Corporation`。它们是同一家公司，但实体字符串不匹配，因此下游查询“everything Acme”会随机返回三个记忆之一。
+假设你编写了一个用于摄取支持工单的智能体。有三位客户都来电咨询 Acme Corp。第一次会话存入了 `Acme Corp`，第二次是 `Acme`，第三次是 `Acme Corporation`。它们指的是同一家公司，但实体字符串不一致，因此下游查询“everything Acme”时，只会随机返回三条记忆中的一条。
 
-实体标签解决了这个问题。您在记忆库级别定义 **控制词汇** — 一组固定的维度，例如 `priority`、`sentiment` 或 `product_area` 以及允许的值。在记忆存储时，LLM被迫从该词汇中进行选择。结果是每个记忆都具有一致的、可查询的分类，无需更改智能体代码。
+实体标签可以解决这个问题。你可以在记忆库级别定义一个**受控词表**：一组固定维度，例如 `priority`、`sentiment` 或 `product_area`，以及每个维度允许的值。存入记忆时，LLM 必须从该词表中选择。这样每条记忆都会带有一致、可查询的分类，而且无需更改智能体代码。
 
 <!-- truncate -->
 
@@ -23,7 +23,7 @@ Hindsight 的自由格式实体提取非常适合呈现 *in* 数据 - 模型自�
 
 ## 什么是实体标签 {#what-an-entity-label-is}
 
-标签组是记忆库上的一个分类维度。它有一个`key`（维度名称）、一个`type`（值的形状），以及（对于枚举样式组）允许的`values`列表。
+标签组是记忆库中的一个分类维度。它包含 `key`（维度名称）、`type`（值的形式），以及（枚举类型的标签组）允许的 `values` 列表。
 
 最小可能的配置：
 
@@ -32,7 +32,7 @@ Hindsight 的自由格式实体提取非常适合呈现 *in* 数据 - 模型自�
   "entity_labels": [
     {
       "key": "priority",
-      "description": "支持请求的紧急程度",
+      "description": "Urgency of the support request",
       "type": "value",
       "values": [
         { "value": "low" },
@@ -45,22 +45,22 @@ Hindsight 的自由格式实体提取非常适合呈现 *in* 数据 - 模型自�
 }
 ```
 
-当这个记忆库保留像*“客户结帐已损坏，无法处理订单”*这样的票证时，LLM选择四个允许值之一，并且Hindsight存储与`canonical_name = "priority:urgent"`相关的记忆实体。现在，两个都被归类为紧急的记忆在知识图中共享一个实体——它们自然地聚集在一起，检索可以将它们找到在一起，并且您可以在整个记忆库中查询所有紧急的内容。
+当此记忆库存入类似*“客户的结账功能坏了，无法处理订单”*的工单时，LLM 会从四个允许值中选出一个，Hindsight 随后会存储一个关联到 `canonical_name = "priority:urgent"` 的记忆实体。这样，两条都被分类为紧急的记忆便会在知识图谱中共享同一个实体：它们会自然聚集，检索时也能一起找到，你还可以在整个记忆库中查询所有紧急事项。
 
 ---
 
 ## 四种标签类型 {#the-four-label-types}
 
-每个标签组都有四个`type`值之一。选择与尺寸形状相匹配的一个。
+每个标签组的 `type` 都是四种值之一。选择与该维度的值形式相匹配的类型。
 
 ### `value` — 单个枚举 {#value--single-enum}
 
-默认。 LLM 恰好选择允许的值之一，或者在没有任何适用的情况下跳过它（如果`optional: true`，这是默认值）。
+这是默认类型。LLM 必须恰好选择一个允许值；如果没有适用值，则可以跳过该标签组（默认情况下 `optional: true`）。
 
 ```json
 {
   "key": "sentiment",
-  "description": "工单中客户的情绪基调",
+  "description": "Customer's emotional tone in the ticket",
   "type": "value",
   "values": [
     { "value": "frustrated" },
@@ -70,16 +70,16 @@ Hindsight 的自由格式实体提取非常适合呈现 *in* 数据 - 模型自�
 }
 ```
 
-存储为：`sentiment:frustrated`、`sentiment:neutral`或`sentiment:appreciative`。
+存储结果为：`sentiment:frustrated`、`sentiment:neutral` 或 `sentiment:appreciative`。
 
 ### `multi-values` — 多选枚举 {#multi-values--multi-select-enum}
 
-同样的想法，但是当多个应用时，LLM可以选择*几个*值。
+原理相同，但当多个值都适用时，LLM 可以选择*多个*值。
 
 ```json
 {
   "key": "product_area",
-  "description": "票据涉及哪些产品领域",
+  "description": "Which product areas the ticket touches",
   "type": "multi-values",
   "values": [
     { "value": "billing" },
@@ -91,71 +91,71 @@ Hindsight 的自由格式实体提取非常适合呈现 *in* 数据 - 模型自�
 }
 ```
 
-一张票可以产生多个实体（`product_area:billing`，`product_area:dashboard`）并链接共享任何这些区域的记忆。
+一张工单可以生成多个实体（`product_area:billing`、`product_area:dashboard`），并将共享其中任一产品领域的记忆关联起来。
 
 ### `text` — 已知密钥下的自由形式 {#text--free-form-under-a-known-key}
 
-每次都有相同的键前缀，但值本身是开放词汇。适合需要一致前缀（`topic:`、`customer_name:`）而不枚举每个可能值的维度。
+每次都会使用相同的键前缀，但值本身不受词表限制。适用于需要统一前缀（如 `topic:`、`customer_name:`），却无法枚举所有可能值的维度。
 
 ```json
 {
   "key": "customer_name",
-  "description": "工单中提到的客户或公司",
+  "description": "Customer or company mentioned in the ticket",
   "type": "text",
   "values": []
 }
 ```
 
-存储为`customer_name:Acme Corp`、`customer_name:Globex`等。图聚类不如枚举可靠，因为模型可能会在会话之间以不同的方式表述相同的值 - 这是开放词汇的权衡。
+存储结果示例：`customer_name:Acme Corp`、`customer_name:Globex` 等。由于模型可能在不同会话中以不同方式表达同一个值，图谱聚类不如枚举类型可靠；这是使用开放词表所要接受的取舍。
 
 ### `map` — 结构化实体 (v0.6.1+) {#map--structured-entity-v061}
 
-当单个实体具有多个命名字段时使用此字段 - 具有名称和角色的人员、具有级别和帐户 ID 的客户。每个字段本身都是类型化的，因​​此您可以混合使用`text`、枚举和嵌套`map`。
+当一个实体包含多个命名字段时使用此类型，例如包含姓名和角色的人员，或包含级别和帐户 ID 的客户。每个字段本身也有类型，因此可以混用 `text`、枚举类型和嵌套的 `map`。
 
 ```json
 {
   "key": "customer",
-  "description": "工单中提到的顾客",
+  "description": "Customer mentioned in the ticket",
   "type": "map",
   "fields": {
-    "name":       { "type": "text", "description": "客户或公司名称" },
+    "name":       { "type": "text", "description": "Customer or company name" },
     "tier":       { "type": "value", "values": [
                       { "value": "free" }, { "value": "pro" }, { "value": "enterprise" }
                     ]},
-    "account_id": { "type": "text", "description": "帐户或组织 ID" }
+    "account_id": { "type": "text", "description": "Account or organization ID" }
   }
 }
 ```
 
-每个提取的字段都存储为平面`key:field:value`实体 - `customer:name:Acme Corp`、`customer:tier:enterprise`、`customer:account_id:org_8f4a`。平面编码意味着地图字段以与单值标签相同的方式参与知识图谱和检索，并且底层没有模式更改。
+提取出的每个字段都会存储为扁平的 `key:field:value` 实体，例如 `customer:name:Acme Corp`、`customer:tier:enterprise`、`customer:account_id:org_8f4a`。这种扁平编码使 map 字段能够像单值标签一样参与知识图谱和检索，底层无需更改数据库模式。
 
 ---
 
 ## 提取的工作原理 {#how-extraction-works}
 
-管道很小，很容易推理。
+整个处理流程很精简，也容易理解。
 
-**1。您的记忆库配置编译成 Pydantic 模型。** 当您使用 `entity_labels` 块调用 `update_bank_config` 时，Hindsight 将其解析为 `EntityLabelsConfig` 并使用 `build_labels_model()` 生成一个动态 Pydantic 类，每个标签组有一个类型化字段。枚举组变成`Literal[...]`。多值组变成`list[Literal[...]]`。地图组变成`list[NestedModel]`。
+**1. 记忆库配置会编译成 Pydantic 模型。** 使用 `entity_labels` 块调用 `update_bank_config` 时，Hindsight 会将其解析为 `EntityLabelsConfig`，再通过 `build_labels_model()` 生成一个动态 Pydantic 类，为每个标签组创建一个类型化字段。枚举组会变成 `Literal[...]`，多值组会变成 `list[Literal[...]]`，map 组则会变成 `list[NestedModel]`。
 
-**2。记忆存储LLM调用使用JSON模式执行。** 该动态 Pydantic 模型附加到提取调用的结构化输出模式。提供者强制执行它——模型实际上不能返回枚举组词汇之外的值。与模式一起提供的提示部分如下所示：
+**2. 存入记忆时，LLM 调用会强制遵循 JSON Schema。** 该动态 Pydantic 模型会附加到提取调用的结构化输出模式中，并由模型供应商强制执行：对于枚举组，模型实际上无法返回词表之外的值。随模式一并发送的提示部分如下：
 
 ```text
 ══════════════════════════════════════════════════════════════════════════
-实体标签 - 分类属性
+ENTITY LABELS - CLASSIFICATION ATTRIBUTES
 ══════════════════════════════════════════════════════════════════════════
 
-使用下面的结构化“标签”字段对每个事实进行分类。继续
-提取“实体”字段中的常规命名实体。
+Classify each fact using the structured 'labels' field below. Continue
+extracting regular named entities in the 'entities' field.
 
-对于每个事实，填写“标签”对象。每个字段都是一个标签组：
+For each fact, fill the 'labels' object. Each field is a label group:
 
-- 优先级（单值或空）：支持请求的紧急程度
+- priority (single value or null): Urgency of the support request
     • "low"
     • "medium"
     • "high"
     • "urgent"
 
--product_area（多值（列表））：票据涉及哪些产品区域
+- product_area (multi-value (list)): Which product areas the ticket touches
     • "billing"
     • "auth"
     • "dashboard"
@@ -165,15 +165,15 @@ Hindsight 的自由格式实体提取非常适合呈现 *in* 数据 - 模型自�
 Only assign labels when clearly applicable. Leave null/empty if the fact does not match.
 ```
 
-**3。后处理验证并写入实体。** LLM 响应作为每个事实的结构化 `labels` 字典返回。 Hindsight 根据预构建的 `labels_lookup` 集（根据配置的枚举构建）检查每个值，删除词汇表之外的任何内容，递归到映射类型，并为每个匹配的值写入一个实体。结果落在 `unit_entities` 连接表中，该表已经支持自由格式实体检索 - 无需特殊标签存储。
+**3. 后处理会验证并写入实体。** LLM 会为每条事实返回一个结构化的 `labels` 字典。Hindsight 根据预先构建的 `labels_lookup` 集合（由配置中的枚举构成）检查每个值，丢弃词表之外的值，递归处理 map 类型，并为每个匹配值写入一个实体。结果写入已有的 `unit_entities` 关联表；该表本来就支持自由格式实体检索，因此无需专门的标签存储。
 
-与自由形式实体形状相同。相同的检索路径。只是可预测的字符串。
+实体形式与自由格式实体相同，检索路径也相同，只是字符串变得可预测。
 
 ---
 
 ## `tag: true` 回报 {#the-tag-true-payoff}
 
-标签默认成为实体。将 `"tag": true` 添加到标签组，匹配的 `key:value` 也会写入记忆的 `tags` 字段 — 这样您就可以按标签过滤记忆召回，就像按任何用户提供的标签过滤一样。
+标签默认会成为实体。在标签组中添加 `"tag": true` 后，匹配的 `key:value` 还会写入记忆的 `tags` 字段。这样就可以像使用用户提供的标签一样，按标签筛选召回结果。
 
 ```json
 {
@@ -186,26 +186,26 @@ Only assign labels when clearly applicable. Leave null/empty if the fact does no
 }
 ```
 
-记忆存储一张票，记忆会自动与`tags = ["priority:urgent", ...]`一起出现。然后：
+存入工单后，记忆会自动带有 `tags = ["priority:urgent", ...]`。接下来：
 
 ```python
 results = client.recall(
     bank_id="support",
-    query="目前计费方面最紧迫的问题是什么？",
+    query="What's the most pressing issue with billing right now?",
     tags=["priority:urgent"],
     tags_match="all",
 )
 ```
 
-记忆召回的范围是带有该标签的记忆。将 `priority` 与情感标签配对，您可以使用两个标签和一个查询询问 *“本周哪些紧急票据让客户感到沮丧？”*。
+召回结果仅包含带有该标签的记忆。将 `priority` 与情绪标签结合起来，就可以通过两个标签和一个查询来询问*“本周哪些紧急工单让客户感到沮丧？”*。
 
-仅在您实际计划过滤的维度上设置`tag: true`。每个标签也成为记忆可过滤表面的一部分，因此过度标记会使表面变得更加嘈杂，而不会增加太多检索价值。
+只在确实计划用于筛选的维度上设置 `tag: true`。每个标签都会扩展记忆可筛选的范围；标签过多会带来更多噪声，却不会显著提升检索价值。
 
 ---
 
 ## 仅标签模式 {#labels-only-mode}
 
-默认情况下，标签实体被写入*旁边*自由形式实体——LLM自己找到的人物、地点、概念。如果您只需要标签而不需要其他内容（分析级一致性、下游 BI 管道、确定性仪表板），请将 `entities_allow_free_form` 设置为 `false`：
+默认情况下，标签实体会与自由格式实体*一同*写入；后者包括 LLM 自行识别出的人物、地点和概念。如果只需要标签（例如，为了满足分析级别的一致性、下游 BI 流程或确定性仪表板），请将 `entities_allow_free_form` 设为 `false`：
 
 ```json
 {
@@ -214,27 +214,27 @@ results = client.recall(
 }
 ```
 
-记忆库现在只显示受控词汇中的实体。从源头抑制自由形式提取——无需事后过滤。
+此后，记忆库只会提供受控词表中的实体。自由格式实体提取会从源头被关闭，无需事后筛选。
 
 ---
 
 ## 设计词汇 {#designing-a-vocabulary}
 
-在生产中观看了这些内容后，得出了一些经验法则：
+根据这些功能在生产环境中的使用经验，可以总结出几条实用建议：
 
-- **从两到四维开始。** 您可以稍后添加更多，但更多标签意味着每个记忆存储调用更多的 LLM 令牌，并且更多的注意力花在分类而不是提取事实上。从您要过滤的*知道*维度开始。
-- **优先使用枚举 (`value` / `multi-values`) 而不是 `text`。** 枚举保证相同的概念获得相同的字符串，这就是重点。仅当价值空间真正开放时才使用`text`（人名、自由格式主题、产品 SKU）。
-- **对具有子字段的实体使用`map`。** 人员、组织、地址、客户资料 - 任何您需要将结构化数据填充到扁平字符串中的地方。
-- **仅在您要过滤记忆召回的维度上设置`tag: true`。** 过滤就是回报；标签噪音就是成本。
-- **依靠`description`领域。** 它们直接注入到 LLM 提示中，并且形状提取质量比其他任何东西都重要。描述每个标签 *意思是* 的含义及其适用时间。
+- **先从两到四个维度开始。** 之后还可以增加维度，但标签越多，每次存入记忆时消耗的 LLM 令牌就越多，也会让更多注意力用于分类而非事实提取。先选择你*确定*会用于筛选的维度。
+- **优先使用枚举（`value` / `multi-values`），而不是 `text`。** 枚举能确保同一概念始终使用相同的字符串，这正是使用标签的目的。只有当值的范围确实开放时才使用 `text`，例如人名、自由格式主题或产品 SKU。
+- **对包含子字段的实体使用 `map`。** 适用于人员、组织、地址、客户资料等需要表达结构化数据的场景，避免将它们塞进一个扁平字符串。
+- **只在要用于 Recall 筛选的维度上设置 `tag: true`。** 筛选是收益，标签噪声则是代价。
+- **认真填写 `description` 字段。** 这些描述会直接注入 LLM 提示，对提取质量的影响超过其他因素。应说明每个标签*表示什么*，以及*何时适用*。
 
-一个稳定性说明：从[Hindsight v0.7.0](/blog/2026/05/27/version-0-7-0)开始，用户定义的标签实体不受模糊解析的影响。 `priority:urgent` 永远保持 `priority:urgent` — 它不会被合并者合并到外观相似的实体中。这使得标签可以安全地作为分析作业、警报规则和仪表板中的长期标识符。
+关于稳定性需要说明一点：从 [Hindsight v0.7.0](/blog/2026/05/27/version-0-7-0) 起，用户定义的标签实体不参与模糊解析。`priority:urgent` 会一直保持为 `priority:urgent`，不会被整合器合并到相似的实体中。因此，标签可以安全地用作分析作业、告警规则和仪表板中的长期标识符。
 
 ---
 
-## A 支持-票证记忆库，端到端 {#a-support-ticket-bank-end-to-end}
+## 从头到尾构建支持工单记忆库 {#a-support-ticket-bank-end-to-end}
 
-放在一起。以下是支持智能体的完整配置，它按四个维度对工单进行分类：
+下面将这些内容组合起来。以下是一个支持智能体的完整配置，它会从四个维度对工单分类：
 
 ```python
 client.update_bank_config(
@@ -242,7 +242,7 @@ client.update_bank_config(
     entity_labels=[
         {
             "key": "priority",
-            "description": "支持请求的紧急程度",
+            "description": "Urgency of the support request",
             "type": "value",
             "tag": True,
             "values": [
@@ -252,7 +252,7 @@ client.update_bank_config(
         },
         {
             "key": "sentiment",
-            "description": "工单中客户的情绪基调",
+            "description": "Customer's emotional tone in the ticket",
             "type": "value",
             "values": [
                 {"value": "frustrated"}, {"value": "neutral"}, {"value": "appreciative"}
@@ -260,7 +260,7 @@ client.update_bank_config(
         },
         {
             "key": "product_area",
-            "description": "票据涉及哪些产品领域",
+            "description": "Which product areas the ticket touches",
             "type": "multi-values",
             "tag": True,
             "values": [
@@ -270,36 +270,36 @@ client.update_bank_config(
         },
         {
             "key": "customer",
-            "description": "工单中提到的顾客",
+            "description": "Customer mentioned in the ticket",
             "type": "map",
             "fields": {
-                "name":       {"type": "text", "description": "客户或公司名称"},
+                "name":       {"type": "text", "description": "Customer or company name"},
                 "tier":       {"type": "value", "values": [
                     {"value": "free"}, {"value": "pro"}, {"value": "enterprise"}
                 ]},
-                "account_id": {"type": "text", "description": "帐户或组织 ID"},
+                "account_id": {"type": "text", "description": "Account or org ID"},
             },
         },
     ],
 )
 ```
 
-记忆存储一张票：
+存入一张工单：
 
 ```python
 client.retain(
     bank_id="support",
     content=(
-        "Acme Corp（企业，帐户org_8f4a）报告其结账情况"
-        "完全损坏——客户无法处理订单。他们已经"
-        "被封锁了40分钟，非常沮丧。"
-        "计费仪表板显示正确的计划，但 API 拒绝"
-        "每次充电尝试都为 500。"
+        "Acme Corp (enterprise, account org_8f4a) reports their checkout "
+        "is completely broken — customers can't process orders. They've "
+        "been blocked for 40 minutes and are extremely frustrated. "
+        "Billing dashboard shows the right plan, but the API rejects "
+        "every charge attempt with a 500."
     ),
 )
 ```
 
-提取完成后，记忆携带以下实体：
+提取完成后，这条记忆包含以下实体：
 
 ```text
 priority:urgent
@@ -311,38 +311,38 @@ customer:tier:enterprise
 customer:account_id:org_8f4a
 ```
 
-…以及这些标签（因为`priority`和`product_area`有`tag: true`）：
+……以及以下标签（因为 `priority` 和 `product_area` 都设置了 `tag: true`）：
 
 ```text
 ["priority:urgent", "product_area:billing", "product_area:api"]
 ```
 
-现在记忆召回标签：
+现在按标签召回记忆：
 
 ```python
 results = client.recall(
     bank_id="support",
-    query="目前哪些紧急问题阻碍了客户？",
+    query="What urgent issues are blocking customers right now?",
     tags=["priority:urgent"],
 )
 ```
 
-查询是语义*和*标签过滤的。您可以获得模型认为相关的所有记忆，仅限于标记为紧急的记忆。添加第二个标签 - `tags=["priority:urgent", "product_area:billing"]` - 过滤器会进一步收紧。
+查询同时使用语义检索*和*标签筛选。结果包含模型认为相关且带有“紧急”标签的所有记忆。再添加一个标签（`tags=["priority:urgent", "product_area:billing"]`），筛选范围就会进一步缩小。
 
 ---
 
 ## 整个想法 {#the-whole-idea}
 
-自由形式实体提取告诉您LLM注意到了什么。实体标签每次都使用相同的词汇告诉您您的*关心*。添加`tag: true`，词汇表就可以兼作每个记忆的可过滤索引。添加`map`，您可以对丰富的结构化实体进行建模，而无需单独的模式。添加`entities_allow_free_form: false`，您就拥有了一个分析干净的记忆库，没有词汇外的噪音。
+自由格式实体提取会告诉你 LLM 注意到了什么；实体标签则会用统一的词表记录你*关心*的内容。添加 `tag: true` 后，词表还能兼作每条记忆的可筛选索引。使用 `map` 可以建模丰富的结构化实体，无需另设模式。将 `entities_allow_free_form` 设为 `false`，就能建立一个适用于分析、没有词表外噪声的记忆库。
 
-对记忆库配置进行了两次更改，没有智能体代码，对每个记忆进行持久分类。这就是整个球场。
+只需修改记忆库配置，无需更改智能体代码，就能为每条记忆持久保存分类。这就是全部要点。
 
 ---
 
 **进一步阅读：**
 
-- [`entity_labels`参考](https://hindsight.vectorize.io/developer/api/memory-banks#entity-labels) — 完整模式文档
-- [地图类型实体标签 (v0.6.1)](/blog/2026/05/08/version-0-6-1) — 结构化主体发货时
-- [稳定的用户定义标签实体（v0.7.0）](/blog/2026/05/27/version-0-7-0) — 为什么标签能够在整合中生存下来
-- [星座图视图](/blog/2026/04/16/constellation-view) — 查看可视化的标签实体
+- [`entity_labels` 参考](https://hindsight.vectorize.io/developer/api/memory-banks#entity-labels) — 完整的模式文档
+- [Map 类型实体标签（v0.6.1）](/blog/2026/05/08/version-0-6-1) — 结构化实体功能的发布说明
+- [稳定的用户定义标签实体（v0.7.0）](/blog/2026/05/27/version-0-7-0) — 了解标签为何能在整合过程中保持稳定
+- [星座图视图](/blog/2026/04/16/constellation-view) — 查看标签实体的可视化效果
 - [什么是智能体记忆？](https://vectorize.io/what-is-agent-memory/) — 基本概念

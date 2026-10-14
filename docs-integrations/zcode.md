@@ -1,34 +1,34 @@
 ---
 sidebar_position: 40
-title: "ZCode 持久记忆Hindsight |集成指南"
-description: "通过Hindsight为ZCode（Z.ai的GLM桌面编码智能体）添加持久的长期记忆。 Python 在每个提示和记忆存储对话之前自动挂钩记忆召回上下文 - 没有 MCP，没有工作流程更改。"
+title: "使用 Hindsight 为 ZCode 提供持久记忆 | 集成指南"
+description: "通过 Hindsight 为 ZCode（Z.ai 的 GLM 桌面编程智能体）添加持久的长期记忆。Python 钩子会在每次提示前自动召回相关上下文，并在每轮结束后存入对话记忆；无需 MCP，也无需更改工作流。"
 ---
 
 # ZCode {#zcode}
 
-持久记忆[ZCode](https://zcode.z.ai) — Z.ai 的 GLM 桌面编码智能体 — 使用 [Hindsight](https://vectorize.io/hindsight)。ZCode嵌入Claude Code智能体运行时，所以Python在每个提示之前自动挂钩脚本记忆召回相关上下文，并在每个回合之后自动记忆存储对话。否MCP服务器，无需更改您的ZCode工作流程。
+[ZCode](https://zcode.z.ai) 是 Z.ai 的 GLM 桌面编程智能体；本指南介绍如何使用 [Hindsight](https://vectorize.io/hindsight) 为它提供持久记忆。ZCode 内置 Claude Code 智能体运行时，因此 Python 钩子脚本会在每次提示前自动召回相关上下文，并在每轮结束后存入对话。无需 MCP 服务器，也无需更改 ZCode 工作流。
 
 [查看更新日志 →](/changelog/integrations/zcode)
 
 ## 快速入门 {#quick-start}
 
 :::tip 推荐：Hindsight Cloud
-[免费注册](https://ui.hindsight.vectorize.io) 对于Hindsight Cloud API 密钥 — 无自托管，无需管理本地守护进程。
+[免费注册](https://ui.hindsight.vectorize.io)，获取 Hindsight Cloud API 密钥；无需自行托管，也无需管理本地守护进程。
 :::
 
 ```bash
-#安装 CLI
+# 安装 CLI
 pip install hindsight-zcode
 
-#安装钩子（默认为Hindsight Cloud）
+# 安装钩子（默认使用 Hindsight Cloud）
 hindsight-zcode install --api-url https://api.hindsight.vectorize.io --api-token your-api-key
 
-#重新启动ZCode — 记忆已上线
+# 重启 ZCode — 记忆即可使用
 ```
 
-安装程序将挂钩脚本复制到`~/.zcode/hooks/hindsight/`，将它们注册到`~/.zcode/cli/config.json`（与任何现有的钩子合并），并创建`~/.hindsight/zcode.json`适合您的个人配置。它永远不会触及你的Claude Code配置位于`~/.claude/settings.json`。
+安装程序会将钩子脚本复制到 `~/.zcode/hooks/hindsight/`，将钩子注册到 `~/.zcode/cli/config.json`（并入任何现有钩子），并创建个人配置文件 `~/.hindsight/zcode.json`。它绝不会改动位于 `~/.claude/settings.json` 的 Claude Code 配置。
 
-**自托管替代方案** — 连接到本地 `hindsight-embed` 守护进程，省略标志：
+**自托管方案** — 省略参数即可连接本地 `hindsight-embed` 守护进程：
 
 ```bash
 hindsight-zcode install
@@ -40,17 +40,17 @@ hindsight-zcode install
 hindsight-zcode uninstall
 ```
 
-### 替代方案：作为 ZCode 插件安装 {#alternative-install-as-a-zcode-plugin}
+### 另一种方式：作为 ZCode 插件安装 {#alternative-install-as-a-zcode-plugin}
 
-ZCode可以安装Hindsight直接来自插件市场 — 否 `pip` 步骤。相同的钩子脚本作为仅钩子提供Claude Code插件 (`hindsight-zcode`）在Hindsight市场：
+ZCode 可以直接从插件市场安装 Hindsight，无需执行 `pip` 步骤。相同的钩子脚本也作为仅包含钩子的 Claude Code 插件（`hindsight-zcode`）发布在 Hindsight 插件市场中：
 
 ```
-#在ZCode中：添加Hindsight市场，然后安装插件
+# 在 ZCode 中：添加 Hindsight 插件市场，然后安装插件
 zcode plugins add-marketplace vectorize-io/hindsight
 zcode plugins install hindsight-zcode
 ```
 
-这样安装后，ZCode自动注册钩子（无需编辑配置文件）。提供您的Hindsight通过环境变量的凭证 (`HINDSIGHT_API_URL`，`HINDSIGHT_API_TOKEN`) 或通过创建 `~/.hindsight/zcode.json`：
+通过这种方式安装时，ZCode 会自动注册钩子（无需编辑配置文件）。请通过环境变量（`HINDSIGHT_API_URL`、`HINDSIGHT_API_TOKEN`）提供 Hindsight 凭证，或创建 `~/.hindsight/zcode.json`：
 
 ```json
 {
@@ -61,42 +61,42 @@ zcode plugins install hindsight-zcode
 
 ## 功能 {#features}
 
-- **自动记忆召回** — 在每个提示之前，查询Hindsight相关记忆并将其作为附加上下文注入（模型可见，而不是转录本）
-- **自动记忆存储** — 每次响应后，将轮次存储到Hindsight未来记忆召回
-- **无需 MCP** — 简单Python钩子脚本调用Hindsight的REST API；没有什么可以并行的ZCode
-- **跨工具共享记忆** — 相同Hindsight记忆库共享Claude Code，Cursor等Hindsight集成，让记忆在工具之间跟随您
-- **动态记忆库 ID** — 支持基于工作目录的每个项目记忆隔离
-- **无运行时依赖** — 钩子脚本是纯粹的Python标准库； `pip install` 仅提供一次性安装程序
+- **自动召回** — 每次提示前向 Hindsight 查询相关记忆，并将其作为额外上下文注入（模型可以看到，但不会出现在转录记录中）
+- **自动存入** — 每次响应后，将本轮内容存入 Hindsight，供之后召回
+- **无需 MCP** — 只需调用 Hindsight REST API 的纯 Python 钩子脚本；无需在 ZCode 旁运行其他服务
+- **跨工具共享记忆** — Claude Code、Cursor 和其他 Hindsight 集成都可共享同一个 Hindsight 记忆库，让记忆随你在不同工具间切换
+- **动态记忆库 ID** — 支持根据工作目录隔离每个项目的记忆
+- **零运行时依赖** — 钩子脚本仅使用 Python 标准库；`pip install` 只用于安装一次性安装程序
 
 ## 架构 {#architecture}
 
-ZCode嵌入Claude编写智能体运行时并读取标准Claude来自其自己的配置命名空间的代码钩子架构，`~/.zcode/cli/config.json`（与`hooks.enabled: true`）。该插件连接了三个钩子事件：
+ZCode 内置 Claude Code 智能体运行时，并从自己的配置命名空间 `~/.zcode/cli/config.json` 读取标准 Claude Code 钩子格式（需设置 `hooks.enabled: true`）。该插件会连接三个钩子事件：
 
-|挂钩|活动|目的|
+| 钩子 | 事件 | 用途 |
 |------|-------|---------|
-|`session_start.py`|`SessionStart`|热身 — 验证 Hindsight 可达|
-|`recall.py`|`UserPromptSubmit`|**自动记忆召回** — 查询记忆，注入为 `additionalContext`|
-|`retain.py`|`Stop`|**自动记忆存储** — 组装回合，POST 至Hindsight|
+| `session_start.py` | `SessionStart` | 预热 — 验证 Hindsight 是否可访问 |
+| `recall.py` | `UserPromptSubmit` | **自动召回** — 查询记忆，并注入为 `additionalContext` |
+| `retain.py` | `Stop` | **自动存入** — 组装本轮内容并 POST 到 Hindsight |
 
-开`UserPromptSubmit`，钩子读取提示，查询Hindsight用于最相关的记忆，并发出一个上下文块ZCode在将回合发送给模型之前注入：
+在 `UserPromptSubmit` 事件发生时，钩子会读取提示，向 Hindsight 查询最相关的记忆，并输出一个上下文块。ZCode 会在将本轮内容发送给模型前注入该上下文块：
 
 ```
 <hindsight_memories>
-以往对话中的相关记忆...
-当前时间 - 2026-03-27 09:14
+Relevant memories from past conversations...
+Current time - 2026-03-27 09:14
 
-- 项目使用 FastAPI 与 asyncpg，而非 SQLAlchemy [world] (2026-03-26)
-- 首选测试框架：pytest 与 pytest-asyncio [experience] (2026-03-26)
+- Project uses FastAPI with asyncpg — not SQLAlchemy [world] (2026-03-26)
+- Preferred testing framework: pytest with pytest-asyncio [experience] (2026-03-26)
 </hindsight_memories>
 ```
 
-开`Stop`，钩子与用户提示配对（在处捕获） `UserPromptSubmit`) 与智能体的响应并发布转向Hindsight。ZCode不提供 `SessionEnd` 挂钩事件，因此保留骑行 `Stop` — 每回合完成后都会被存储。
+在 `Stop` 事件发生时，钩子会将用户提示（在 `UserPromptSubmit` 时捕获）与智能体的响应配对，然后通过 POST 将本轮内容发送到 Hindsight。ZCode 不提供 `SessionEnd` 钩子事件，因此会在 `Stop` 时存入记忆 — 每轮完成后都会存储。
 
 ## 连接方式 {#connection-modes}
 
 ### 1. 外部 API（推荐） {#1-external-api-recommended}
 
-连接到正在运行的Hindsight服务器（云或自托管）通过 `~/.hindsight/zcode.json`：
+通过 `~/.hindsight/zcode.json` 连接正在运行的 Hindsight 服务器（云端或自托管）：
 
 ```json
 {
@@ -107,65 +107,65 @@ ZCode嵌入Claude编写智能体运行时并读取标准Claude来自其自己的
 
 ### 2. 本地守护进程 {#2-local-daemon}
 
-运行`hindsight-embed`本地。 `session_start.py` 钩子在 上检测到它 `apiPort`（默认`9077`）。该守护进程不是由插件自动启动的——单独启动它：
+在本地运行 `hindsight-embed`。`session_start.py` 钩子会在 `apiPort` 端口检测它（默认值为 `9077`）。插件不会自动启动守护进程 — 请单独启动：
 
 ```bash
 uvx hindsight-embed
 ```
 
-然后离开`hindsightApiUrl` 配置中为空，插件连接到 `http://localhost:9077`。
+然后让配置中的 `hindsightApiUrl` 保持为空，插件便会连接到 `http://localhost:9077`。
 
 ## 配置 {#configuration}
 
-默认配置在中发布 `~/.zcode/hooks/hindsight/settings.json`。对于更新后仍保留的个人覆盖，请创建 `~/.hindsight/zcode.json`。大多数设置也可以通过环境变量覆盖。
+默认配置随插件提供，位于 `~/.zcode/hooks/hindsight/settings.json`。如需在更新后仍保留个人覆盖配置，请创建 `~/.hindsight/zcode.json`。大多数设置也可以通过环境变量覆盖。
 
-**加载顺序**（后来的作品获胜）：
+**加载顺序**（后面的配置优先）：
 
 1. 内置默认值
-2. 插件`settings.json`（位于 `~/.zcode/hooks/hindsight/settings.json`)
-3. 用户配置（`~/.hindsight/zcode.json`)
+2. 插件的 `settings.json`（位于 `~/.zcode/hooks/hindsight/settings.json`）
+3. 用户配置（`~/.hindsight/zcode.json`）
 4. 环境变量
 
 ---
 
 ### 连接 {#connection}
 
-|设置|环境变量|默认|说明|
+| 设置 | 环境变量 | 默认值 | 说明 |
 |---------|---------|---------|-------------|
-|`hindsightApiUrl`|`HINDSIGHT_API_URL`|`""`|Hindsight API 服务器的 URL。空=本地守护进程。|
-|`hindsightApiToken`|`HINDSIGHT_API_TOKEN`|`null`|API 用于身份验证的令牌。 Hindsight Cloud所需。  用于身份验证的|
-|`apiPort`|`HINDSIGHT_API_PORT`|`9077`|本地端口 `hindsight-embed`守护进程。|
+| `hindsightApiUrl` | `HINDSIGHT_API_URL` | `""` | Hindsight API 服务器的 URL。空字符串表示使用本地守护进程。|
+| `hindsightApiToken` | `HINDSIGHT_API_TOKEN` | `null` | 用于身份验证的 API 令牌。Hindsight Cloud 必须提供。|
+| `apiPort` | `HINDSIGHT_API_PORT` | `9077` | 本地 `hindsight-embed` 守护进程使用的端口。|
 
 ---
 
 ### 记忆库 {#memory-bank}
 
-|设置|环境变量|默认|说明|
+| 设置 | 环境变量 | 默认值 | 说明 |
 |---------|---------|---------|-------------|
-|`bankId`|`HINDSIGHT_BANK_ID`|`"zcode"`|用于读取和写入的记忆库。所有会话共享此记忆库，除非 `dynamicBankId` 已启用。|
-|`bankMission`|`HINDSIGHT_BANK_MISSION`|编码助手提示|描述智能体的用途。创建或更新记忆库时发送。|
-|`dynamicBankId`|`HINDSIGHT_DYNAMIC_BANK_ID`|`false`|当`true`，从导出唯一的记忆库ID `dynamicBankGranularity` 字段 — 对于每个项目的隔离很有用。|
-|`agentName`|`HINDSIGHT_AGENT_NAME`|`"zcode"`|用于动态记忆库 ID 推导的智能体名称。|
+| `bankId` | `HINDSIGHT_BANK_ID` | `"zcode"` | 用于读取和写入的记忆库。除非启用 `dynamicBankId`，否则所有会话共用此记忆库。|
+| `bankMission` | `HINDSIGHT_BANK_MISSION` | 编程助手任务说明 | 描述智能体的用途。创建或更新记忆库时会发送此值。|
+| `dynamicBankId` | `HINDSIGHT_DYNAMIC_BANK_ID` | `false` | 为 `true` 时，根据 `dynamicBankGranularity` 字段生成唯一的记忆库 ID — 可用于按项目隔离。|
+| `agentName` | `HINDSIGHT_AGENT_NAME` | `"zcode"` | 用于推导动态记忆库 ID 的智能体名称。|
 
 ---
 
-### 自动记忆召回 {#auto-recall}
+### 自动召回 {#auto-recall}
 
-|设置|环境变量|默认|说明|
+| 设置 | 环境变量 | 默认值 | 说明 |
 |---------|---------|---------|-------------|
-|`autoRecall`|`HINDSIGHT_AUTO_RECALL`|`true`|​​ 自动记忆召回总开关。|
-|`recallBudget`|`HINDSIGHT_RECALL_BUDGET`|`"mid"`|搜索深度：`"low"`（快），`"mid"`（平衡），`"high"`（彻底）。|
-|`recallMaxTokens`|`HINDSIGHT_RECALL_MAX_TOKENS`|`1024`|注入记忆块的token 预算。|
+| `autoRecall` | `HINDSIGHT_AUTO_RECALL` | `true` | 自动召回的总开关。|
+| `recallBudget` | `HINDSIGHT_RECALL_BUDGET` | `"mid"` | 搜索深度：`"low"`（快速）、`"mid"`（均衡）、`"high"`（全面）。|
+| `recallMaxTokens` | `HINDSIGHT_RECALL_MAX_TOKENS` | `1024` | 注入的记忆块可使用的 token 预算。|
 
 ---
 
-### 自动记忆存储 {#auto-retain}
+### 自动存入 {#auto-retain}
 
-|设置|环境变量|默认|说明|
+| 设置 | 环境变量 | 默认值 | 说明 |
 |---------|---------|---------|-------------|
-|`autoRetain`|`HINDSIGHT_AUTO_RETAIN`|`true`|自动记忆存储的主开关。|
-|`retainEveryNTurns`|`HINDSIGHT_RETAIN_EVERY_N_TURNS`|`1`|记忆存储每N轮一次。默认`1` 存储每次开启`Stop`。|
+| `autoRetain` | `HINDSIGHT_AUTO_RETAIN` | `true` | 自动存入的总开关。|
+| `retainEveryNTurns` | `HINDSIGHT_RETAIN_EVERY_N_TURNS` | `1` | 每 N 轮存入一次。默认值 `1` 表示每次 `Stop` 时都存入本轮内容。|
 
-## 与ZCode内置记忆的关系 {#relationship-to-zcodes-built-in-memory}
+## 与 ZCode 内置记忆的关系 {#relationship-to-zcodes-built-in-memory}
 
-ZCode提供自己的本地、每个项目记忆 (`~/.zcode/cli/memories/`）。Hindsight是互补的：它将记忆存储在中 **跨工具共享的云端（或自托管）记忆库** — 相同的记忆库能力Claude Code，Cursor等Hindsight集成 - 因此您的环境在智能体和机器之间跟随您，而不是停留在本地ZCode项目。
+ZCode 自带本地的项目级记忆（`~/.zcode/cli/memories/`）。Hindsight 与之互补：它会将记忆存储在可供多个工具共享的云端（或自托管）记忆库中 — Claude Code、Cursor 和其他 Hindsight 集成都使用同一个记忆库 — 因此你的上下文可以在不同智能体和机器之间随你迁移，而不会只留在某个 ZCode 项目本地。

@@ -1,148 +1,148 @@
 ---
-title: "指南：用Hindsight添加Windsurf记忆"
+title: "指南：使用 Hindsight 为 Windsurf 添加记忆"
 authors: [benfrank241]
 date: 2026-07-17
 tags: [how-to, windsurf, coding-agents, memory]
-description: "使用事后风帆CLI添加Windsurf记忆与Hindsight，它将HindsightMCP服务器连接到Windsurf加上永远在线的recall/retain规则，以便Cascade跨任务记住。"
+description: "使用 hindsight-windsurf CLI 将 Hindsight MCP 服务器接入 Windsurf，并添加始终启用的召回/存入规则，让 Cascade 能跨任务记住信息。"
 image: /img/guides/guide-windsurf-memory-with-hindsight.svg
 hide_table_of_contents: true
 ---
 
 ![指南：使用 Hindsight 为 Windsurf 添加记忆](/img/guides/guide-windsurf-memory-with-hindsight.svg)
 
-如果希望**使用 Hindsight 为 Windsurf 添加记忆**，运行 `hindsight-windsurf` CLI。一个 `init` 命令连接 Cascade 智能体与 MCP 服务器，添加始终启用的规则，指导任务前召回、工作期间保存持久事实，让上下文跨任务延续。
+如果你想让 **Windsurf 拥有 Hindsight 记忆**，最简单的配置方式是使用 `hindsight-windsurf` CLI。运行一次 `init` 命令，就能将 Windsurf 的 Cascade 智能体连接到 Hindsight MCP 服务器，并添加一条始终启用的规则，要求智能体在开始任务前召回相关记忆，并在工作过程中存入值得长期保留的事实。这样，Windsurf 就能跨任务保留长期记忆，不必在每次新对话中重新发现相同的项目背景。
 
-这非常适合Windsurf因为Windsurf运行MCP服务器并将工作区规则应用于每个 Cascade 请求。集成使用两者：它注册HindsightMCP端点，因此 Cascade 得到 `recall` / `retain` / `reflect`工具，里面写了一个小`trigger: always_on` 规则告诉智能体首先进行记忆召回并存储它所学到的内容。 记忆召回在查询时针对您的实际消息运行，因此从您的座位上它是自动的。
+这套方案很适合 Windsurf，因为 Windsurf 可以运行 MCP 服务器，并将工作区规则应用到每个 Cascade 请求中。该集成同时利用了这两项能力：它会注册 Hindsight MCP 端点，让 Cascade 可以使用 Recall（召回）、Retain（存入）和 Reflect（反思）工具（`recall` / `retain` / `reflect`）；还会写入一条简短的 `trigger: always_on` 规则，要求智能体先召回记忆，再存入它学到的信息。Recall 会在查询时根据你实际发送的消息运行，因此对你来说是自动完成的。
 
-本指南逐步介绍如何安装CLI，将其连接到Windsurf，了解如何MCP加规则方法有效，并且有一个快速验证流程，因此您可以确认记忆实际上正在被使用。保留[文档首页](/) 和 工作时， [快速入门指南](/developer/api/quickstart) 就在附近。
+本指南将介绍如何安装 CLI、将其接入 Windsurf、了解 MCP 与规则结合的工作方式，以及如何快速验证记忆是否确实在使用。操作时可以同时打开[文档首页](/)和[快速入门指南](/developer/api/quickstart)。
 
 <!-- truncate -->
 
 > **快速解答**
 >
-> 1. `pip install hindsight-windsurf`。
-> ​​2。 `cd` 进入您的项目。
-> 3.运行项目目录中的 `hindsight-windsurf init --api-token YOUR_HINDSIGHT_API_KEY --bank-id my-memory`。
-> 4.重新加载Windsurf（或刷新MCPCascade 中的服务器）因此 `hindsight` 工具加载。
-> 5.验证后面的任务是否记住前面的任务存储的内容。
+> 1. 运行 `pip install hindsight-windsurf`。
+> 2. 进入你的项目目录。
+> 3. 运行 `hindsight-windsurf init --api-token YOUR_HINDSIGHT_API_KEY --bank-id my-memory`。
+> 4. 重新加载 Windsurf（或在 Cascade 中刷新 MCP 服务器），以加载 `hindsight` 工具。
+> 5. 验证后续任务是否记得先前任务存入的信息。
 
-## 先决条件 {#prerequisites}
+## 前提条件 {#prerequisites}
 
-开始之前，请确保您拥有：
+开始前，请确认你已准备好：
 
-- Windsurf (Codeium) 安装并使用 Cascade 智能体
-- 可达Hindsight后端，[Hindsight Cloud](https://hindsight.vectorize.io) 或自托管服务器
-- Python与 `pip`，这样你就可以安装`hindsight-windsurf`CLI
+- 已安装并正常运行 Windsurf (Codeium)，且可以使用 Cascade 智能体
+- 可连接的 Hindsight 后端：[Hindsight Cloud](https://hindsight.vectorize.io) 或自托管服务器
+- 已安装 Python 和 `pip`，以便安装 `hindsight-windsurf` CLI
 
-## 第一步：安装CLI {#step-1-install-the-cli}
+## 第一步：安装 CLI {#step-1-install-the-cli}
 
-安装CLI与pip的集成。
+使用 pip 安装集成 CLI。
 
 ```bash
 pip install hindsight-windsurf
 ```
 
-`hindsight-windsurf` 不运行代替Windsurf。它是一个一次性设置工具：`init` 连接HindsightMCP服务器和规则Windsurf的配置，然后Cascade自己使用这些工具。
+`hindsight-windsurf` 不会取代 Windsurf。它只是一次性配置工具：`init` 会把 Hindsight MCP 服务器和规则接入 Windsurf 配置，之后 Cascade 会自行使用这些工具。
 
-## 第 2 步：将Hindsight 连接到Windsurf {#step-2-wire-hindsight-into-windsurf}
+## 第二步：将 Hindsight 接入 Windsurf {#step-2-wire-hindsight-into-windsurf}
 
-从您的项目目录中，运行 `init` 与你的Hindsight密钥和记忆库 ID。
+在项目目录中，运行 `init` 并提供 Hindsight 密钥和记忆库 ID。
 
 ```bash
 cd your-project
 hindsight-windsurf init --api-token YOUR_HINDSIGHT_API_KEY --bank-id my-memory
 ```
 
-`init` 添加 `hindsight`MCP服务器到 `~/.codeium/windsurf/mcp_config.json` (Windsurf单曲全球MCP配置）并写入recall/retain规则`./.windsurf/rules/hindsight.md`。重新加载  Cascade 中的Windsurf（或刷新MCP服务器），以及 `hindsight` 服务器工具可用。
+`init` 会将 `hindsight` MCP 服务器添加到 `~/.codeium/windsurf/mcp_config.json`（Windsurf 唯一的全局 MCP 配置文件），并将召回/存入规则写入 `./.windsurf/rules/hindsight.md`。重新加载 Windsurf（或在 Cascade 中刷新 MCP 服务器）后，就可以使用 `hindsight` 服务器提供的工具。
 
-对于自托管Hindsight服务器，用指向它 `--api-url`代替云令牌（开放本地服务器不需要令牌）：
+如果使用自托管的 Hindsight 服务器，可通过 `--api-url` 指定服务器，而不是使用 Cloud 令牌（开放的本地服务器不需要令牌）：
 
 ```bash
 hindsight-windsurf init --api-url http://localhost:8888 --bank-id my-memory
 ```
 
-如果你的`mcp_config.json`并不简单JSON，`init` 不会重写它 - 它会打印条目以供您自己粘贴。你也可以运行`hindsight-windsurf init --print-only` 随时获取MCP片段和规则文本，无需编写任何内容。
+如果你的 `mcp_config.json` 不是普通 JSON 文件，`init` 不会重写它，而是打印出需要你手动粘贴的配置项。你也可以随时运行 `hindsight-windsurf init --print-only`，只获取 MCP 片段和规则文本，不写入任何文件。
 
-## 整合如何使用记忆 {#how-the-integration-uses-memory}
+## 集成如何使用记忆 {#how-the-integration-uses-memory}
 
-Windsurf 支持此集成使用的两种东西，并将两者连接起来：
+Windsurf 支持这套集成所用的两项功能，并且会同时配置它们：
 
-- **MCP 服务器：**`init` 注册HindsightMCP下的端点 `mcpServers` `~/.codeium/windsurf/mcp_config.json`。Windsurf通过连接到远程服务器 `serverUrl` 具有可选标头的字段，因此Hindsight端点直接连接 - 无需桥接 - 提供级联 `recall` / `retain` / `reflect`工具。
-- **始终启用的规则：**`init` 用 编写规则 `trigger: always_on` 至 `./.windsurf/rules/hindsight.md`。Windsurf在工作区中的每个级联请求中都包含该规则，因此智能体被告知首先记忆相关记忆，并在过程中记忆存储持久的事实。
+- **MCP 服务器：**`init` 会在 `~/.codeium/windsurf/mcp_config.json` 的 `mcpServers` 下注册 Hindsight MCP 端点。Windsurf 通过 `serverUrl` 字段连接远程服务器，并可选地使用请求标头，因此 Cascade 可以直接连接 Hindsight 端点，无需桥接，并使用 `recall` / `retain` / `reflect` 工具。
+- **始终启用的规则：**`init` 会将带有 `trigger: always_on` frontmatter 的规则写入 `./.windsurf/rules/hindsight.md`。Windsurf 会在工作区的每个 Cascade 请求中加入这条规则，因此智能体会先召回相关记忆，并在工作过程中存入值得长期保留的事实。
 
-记忆召回在查询时针对您的实际消息运行，因此它是精确的，没有延迟。权衡是，它依赖于遵循“记忆召回优先”指令的智能体，而不是强制执行它的编辑器。
+Recall 会在查询时根据你实际发送的消息运行，因此结果准确且没有延迟。相应的取舍是：这依赖智能体遵守“先召回”的指令，而不是由编辑器强制执行。
 
-对于较低级别的行为，请阅读 [Hindsight 记忆召回 API](/developer/api/recall) 和 [Hindsight 记忆存储 API](/developer/api/retain)。
+如需了解更底层的行为，请阅读 [Hindsight 的 Recall API](/developer/api/recall) 和 [Hindsight 的 Retain API](/developer/api/retain)。
 
-## 检查并删除设置 {#checking-and-removing-the-setup}
+## 检查和移除配置 {#checking-and-removing-the-setup}
 
-CLI 具有三个命令，因此您可以检查或反转接线：
+CLI 提供三个命令，可用于检查或撤销这项配置：
 
-|命令|说明|
+| 命令 | 说明 |
 | --- | --- |
-|`hindsight-windsurf init`|添加 MCP 服务器 + recall/retain 规则|
-|`hindsight-windsurf status`|显示服务器+规则是否配置|
-|`hindsight-windsurf uninstall`|删除服务器+规则|
+| `hindsight-windsurf init` | 添加 MCP 服务器和召回/存入规则 |
+| `hindsight-windsurf status` | 显示服务器和规则是否已配置 |
+| `hindsight-windsurf uninstall` | 移除服务器和规则 |
 
-奔跑`hindsight-windsurf status` 之后 `init` 确认MCP服务器和规则已安装。 在项目中运行
+运行 `init` 后，再运行 `hindsight-windsurf status`，即可确认 MCP 服务器和规则都已安装。
 
-## 验证记忆是否有效 {#verify-that-memory-is-working}
+## 验证记忆是否正常工作 {#verify-that-memory-is-working}
 
-一个好的测试序列是：
+可以按以下步骤进行测试：
 
-1. 运行`hindsight-windsurf init` 在项目中并重新加载Windsurf
-2. 在 Cascade 中，执行任务并让智能体记录决定或约定
-3. 开始新任务或对话
-4. 询问之前的决定
+1. 在项目中运行 `hindsight-windsurf init`，然后重新加载 Windsurf
+2. 在 Cascade 中执行一项任务，让智能体记录一项决定或约定
+3. 开始一项新任务或新对话
+4. 询问先前的决定
 
 例如：
 
-- 一个任务重构了 auth 模块并记录了重试逻辑发生变化的原因
-- 稍后的任务询问当前的身份验证约定是什么
+- 某项任务重构了 auth 模块，并记录了更改重试逻辑的原因
+- 后续任务询问当前的身份验证约定
 
-如果 Cascade 回忆起之前的决定，则该设置正在运行。
+如果 Cascade 能召回先前的决定，就说明配置已生效。
 
 ## 常见错误 {#common-mistakes}
 
-### 忘记重新加载Windsurf {#forgetting-to-reload-windsurf}
+### 忘记重新加载 Windsurf {#forgetting-to-reload-windsurf}
 
-`hindsight` 工具仅在重新加载后出现Windsurf或刷新MCP服务器。如果工具丢失，请先重新加载。
+只有重新加载 Windsurf 或在 Cascade 中刷新 MCP 服务器后，才会出现 `hindsight` 工具。如果找不到这些工具，请先重新加载。
 
-### 手动编辑非JSON mcp_config.json {#editing-a-non-json-mcpconfigjson-by-hand}
+### 手动编辑非 JSON 格式的 mcp_config.json {#editing-a-non-json-mcp_configjson-by-hand}
 
-如果你的`mcp_config.json`并不简单JSON，`init` 不会重写它 - 它会打印要粘贴的条目。您自己添加该条目，而不是期望文件发生更改。
+如果你的 `mcp_config.json` 不是普通 JSON 文件，`init` 不会重写它，而是打印出需要粘贴的配置项。请自行添加该配置项，不要等待文件自动更改。
 
-### 期待编辑器强制执行记忆召回 {#expecting-the-editor-to-force-recall}
+### 以为编辑器会强制执行记忆召回 {#expecting-the-editor-to-force-recall}
 
-记忆召回和记忆存储通过智能体调用的MCP工具运行，并遵循始终在线的规则。编辑器不会强制执行它，因此如果智能体跳过记忆召回，请先提示它记忆召回相关的记忆。
+召回和存入操作通过智能体调用的 MCP 工具执行，并由始终启用的规则引导。编辑器不会强制执行这些操作，因此如果智能体跳过了记忆召回，请提示它先召回相关记忆。
 
-### 忘记云上的API令牌 {#forgetting-the-api-token-on-cloud}
+### 忘记为 Cloud 提供 API 令牌 {#forgetting-the-api-token-on-cloud}
 
-Hindsight Cloud需要钥匙。通过`--api-token`（或设置`HINDSIGHT_API_TOKEN`）。自托管开放本地服务器不需要令牌。
+Hindsight Cloud 需要密钥。请传入 `--api-token`，或设置 `HINDSIGHT_API_TOKEN`。自托管的开放本地服务器不需要令牌。
 
-## 常见问题解答 {#faq}
+## 常见问题 {#faq}
 
-### 我需要Hindsight Cloud吗？ {#do-i-need-hindsight-cloud}
+### 我需要使用 Hindsight Cloud 吗？ {#do-i-need-hindsight-cloud}
 
-没有。自托管Hindsight服务器也能工作 — 点 `init` 与 `--api-url`（开放本地服务器不需要令牌）。
+不需要。自托管的 Hindsight 服务器也可以使用，只需通过 `--api-url` 将 `init` 指向该服务器（开放的本地服务器不需要令牌）。
 
-### 这会改变我使用Windsurf的方式吗？ {#does-this-change-how-i-use-windsurf}
+### 这会改变我使用 Windsurf 的方式吗？ {#does-this-change-how-i-use-windsurf}
 
-没有。 默认情况下 `init` 是一次性设置命令。之后你就可以正常使用Cascade了，它会调用Hindsight独立的工具，遵循始终在线的规则。
+不会。`init` 是一次性配置命令。之后你可以照常使用 Cascade，它会在始终启用的规则引导下自行调用 Hindsight 工具。
 
-### 记忆的范围是怎样的？ {#how-is-memory-scoped}
+### 记忆的作用范围是什么？ {#how-is-memory-scoped}
 
-通过你传递到的记忆库id`init` 与 `--bank-id`（记忆库默认为`windsurf`）。跨工具使用相同的记忆库来共享项目的记忆。
+作用范围由你在 `init` 中通过 `--bank-id` 指定的记忆库 ID 决定（默认记忆库为 `windsurf`）。在不同工具中使用同一个记忆库，即可共享项目记忆。
 
-### 这与其他编码-智能体集成相似吗？ {#is-this-similar-to-other-coding-agent-integrations}
+### 这与其他编码智能体集成类似吗？ {#is-this-similar-to-other-coding-agent-integrations}
 
-精神上是的。Windsurf使用MCP服务器加上永远在线的规则而不是包装器命令，但记忆召回之前/记忆存储之后模式是相同的。参见集成文档中的 [完整配置选项](/sdks/integrations/local-mcp)。
+理念相似。Windsurf 使用 MCP 服务器和始终启用的规则，而不是包装器命令，但“先召回、后存入”的模式相同。请参阅集成文档中的[完整配置选项](https://hindsight.vectorize.io/docs/integrations/windsurf)。
 
 ## 后续步骤 {#next-steps}
 
-- 从开始 [Hindsight Cloud](https://hindsight.vectorize.io)如果您想要托管后端
-- 阅读[完整 Hindsight 文档](/)
-- 跟随[快速入门指南](/developer/api/quickstart)
-- 回顾[Hindsight 记忆召回 API](/developer/api/recall)
-- 回顾[Hindsight 记忆存储 API](/developer/api/retain)
-- 阅读[Windsurf 集成文档](/sdks/integrations/local-mcp)
+- 如果需要托管后端，请从 [Hindsight Cloud](https://hindsight.vectorize.io) 开始
+- 阅读 [Hindsight 完整文档](/)
+- 按照[快速入门指南](/developer/api/quickstart)操作
+- 查看 [Hindsight 的 Recall API](/developer/api/recall)
+- 查看 [Hindsight 的 Retain API](/developer/api/retain)
+- 阅读 [Windsurf 集成文档](https://hindsight.vectorize.io/docs/integrations/windsurf)

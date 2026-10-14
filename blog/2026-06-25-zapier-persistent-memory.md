@@ -1,115 +1,115 @@
 ---
-title: "Zapier 持久记忆：动作和触发器"
+title: "Zapier 持久记忆：操作与触发器"
 authors: [benfrank241]
 slug: "2026/06/25/zapier-persistent-memory"
 date: 2026-06-25T13:00
 tags: [hindsight, zapier, integration, memory, agents, workflows, no-code, tutorial]
-description: "Zapier的Hindsight应用程序为任何Zap添加持久记忆：记忆存储、记忆召回和梦想动作，以及从记忆事件启动Zap的触发器。"
+description: "Zapier 的 Hindsight 应用可为任何 Zap 添加持久记忆：Retain、Recall 和 Reflect 操作，以及由记忆事件启动 Zap 的触发器。"
 image: /img/blog/zapier-persistent-memory.webp
 hide_table_of_contents: true
 ---
 
-![Zapier 持久记忆Hindsight](/img/blog/zapier-persistent-memory.webp)
+![Zapier 中的 Hindsight 持久记忆](/img/blog/zapier-persistent-memory.webp)
 
-[Zapier](https://zapier.com) 连接大多数团队已经运行的数千个应用程序（按 Zapier 计算超过 8,000 个）：Slack、Gmail、HubSpot、Notion、Sheets、Airtable、OpenAI。您将它们连接到 Zaps 中，一个应用程序中的触发器会引发其他应用程序中的操作。 Zap 所携带的就是记忆。每次运行都从零开始，因此今天早上对支持票证进行分类的工作流程并不知道它昨天运行过，并且 Zap 中间的 LLM 步骤只知道您在该提示中填充的内容。
+[Zapier](https://zapier.com) 将大多数团队已在使用的数千种应用连接起来（据 Zapier 统计，数量超过 8,000 种），包括 Slack、Gmail、HubSpot、Notion、Sheets、Airtable 和 OpenAI。你可以把它们串联成 Zap：一个应用中的触发器会启动其他应用中的操作。但 Zap 不会携带记忆。每次运行都会从零开始，因此，今天早上处理过支持工单的工作流不知道自己昨天也运行过；Zap 中间的 LLM 步骤也只了解你塞进那一条提示的内容。
 
-Zapier 的Hindsight 应用程序缩小了这一差距，并且它是双向的。 Hindsight 显示为 **三个动作**，您的 Zaps 可以调用（记忆存储、记忆感知、反思）和 **三个触发器**，当您的 [智能体记忆](https://vectorize.io/what-is-agent-memory) 中发生某事时启动 Zap。 记忆既成为自动化使用的工具，又成为引发自动化的事件源。
+Zapier 的 Hindsight 应用弥补了这一缺口，而且能双向运作。Hindsight 为 Zap 提供 **三个可调用的操作**：Retain（存入）、Recall（召回）和 Reflect（反思）；还提供 **三个触发器**，可在[智能体记忆](https://vectorize.io/what-is-agent-memory)中发生事件时启动 Zap。这样一来，记忆既是自动化流程可以使用的工具，也是能够触发流程的事件来源。
 
 <!-- truncate -->
 
 ## 概览 {#tldr}
 
-- HindsightZapier应用程序使任何Zap可以跨[Hindsight Cloud](https://ui.hindsight.vectorize.io)或自托管实例访问持久记忆。
-- **三个动作：** 记忆存储（存储内容）、记忆召回（搜索记忆库）、回忆（LLM合成的、基于记忆的答案）。
-- **三个触发器**（即时，通过 REST Hooks）：记忆存储已完成，整合已完成，记忆防御已触发。这些让记忆事件*开始* Zap。他们使用 Hindsight 的 webhook API，可在自托管实例和 Hindsight Cloud 企业计划上使用；默认情况下，它在云上未启用。这三个行动适用于任何计划。
-- 记忆库字段是一个动态下拉菜单；输入一个新的记忆库 ID，它会在第一次使用时创建。
-- API-密钥身份验证（`hsk_...`作为承载令牌）；将密钥留空以指向打开的自托管实例。
+- Hindsight 的 Zapier 应用可让任何 Zap 使用持久记忆，支持连接 [Hindsight Cloud](https://ui.hindsight.vectorize.io) 或自托管实例。
+- **三个操作：** Retain（存入内容）、Recall（搜索记忆库）、Reflect（生成以记忆为依据的 LLM 综合答案）。
+- **三个触发器**（通过 REST Hooks 即时触发）：Retain Completed（存入完成）、Consolidation Completed（整合完成）和 Memory Defense Triggered（记忆防护触发）。它们可让记忆事件*启动* Zap。触发器使用 Hindsight 的 Webhook API；该 API 可用于自托管实例和 Hindsight Cloud 企业计划，且在 Cloud 上默认未启用。这三个操作适用于任何计划。
+- **Bank** 字段是动态下拉列表；输入新的记忆库 ID 后，会在首次使用时创建该记忆库。
+- 使用 API 密钥进行身份验证（将 `hsk_...` 作为 Bearer 令牌）；如果要连接未启用身份验证的自托管实例，可以将密钥留空。
 
 ---
 
-## 为什么Zapier Zap 需要持久的记忆 {#why-zapier-zaps-need-persistent-memory}
+## 为什么 Zapier 的 Zap 需要持久记忆 {#why-zapier-zaps-need-persistent-memory}
 
-Zap 在设计上是无状态的。触发器触发，数据流经几个操作步骤，运行结束，并且任何内容都不会保留到下一次运行。这正是您想要的“新 Stripe 费用 → 在表格中添加一行”。对于人们越来越多地在 Zapier 中构建的工作流程来说，这是一个真正的限制：
+Zap 的设计本身就是无状态的：触发器触发，数据经过几个操作步骤，运行结束后，任何内容都不会留到下一次运行。这正适合“收到新的 Stripe 付款 → 在 Sheets 中添加一行”这样的流程。但对于人们越来越多地在 Zapier 中构建的工作流来说，无状态会带来明显限制：
 
-- **面向客户的 Zap** 应该在整个运行过程中始终如一地对待同一个人，而不是每次都重新介绍自己。
-- **AI 步骤**（Zap 中间的 OpenAI 或 Anthropic 操作）与相关的先前上下文相比，使用单个手写提示要好得多。
-- **运营管道**，其中每次运行都可以被之前的每次运行通知。
+- **面向客户的 Zap**：应该在多次运行中始终如一地对待同一个人，而不是每次都重新自我介绍。
+- **AI 步骤**：Zap 中间的 OpenAI 或 Anthropic 操作如果能获取相关的历史上下文，效果会远胜于只收到一条手写提示。
+- **运营流水线**：每次运行都可以参考之前的所有运行。
 
-如果没有记忆，Zap 中的LLM 步骤只知道您在该提示中塞入的内容。通过记忆，它可以对与当前输入相关的内容进行记忆，并在之前的每次运行中建立起来。这就是重复的 Zap 和复合的工作流程之间的区别。
+没有记忆时，Zap 中的 LLM 步骤只知道你塞进那一条提示的内容。有了记忆，它就能检索与当前输入相关的信息，并在过去每次运行的基础上不断积累。这就是 Zap 只会重复执行和工作流能够逐步积累经验之间的区别。
 
-## HindsightZapier应用程序添加了什么 {#what-the-hindsight-zapier-app-adds}
+## Hindsight 的 Zapier 应用能提供什么 {#what-the-hindsight-zapier-app-adds}
 
-该应用程序作为单个**Hindsight**应用程序安装在Zapier中，您可以像其他任何应用程序一样将操作和触发器放入Zap中。
+在 Zapier 中安装后，该应用会以一个 **Hindsight** 应用的形式出现。你可以像使用其他应用一样，将它的操作和触发器添加到 Zap 中。
 
-### 行动 {#actions}
+### 操作 {#actions}
 
-**记忆存储** 将内容存储到记忆库（`POST /memories`）中。在 Zap 产生值得记住的东西的任何地方放置一个记忆存储步骤：封闭的票证摘要、通话记录、表单提交。你给它自由文本； Hindsight的记忆存储管道异步提取结构化事实，对记忆库进行重复数据删除，并更新记忆库的心智模型，而不会阻塞Zap。
+**Retain（存入）** 会将内容存入记忆库（`POST /memories`）。在 Zap 产生值得记住的内容时加入 Retain 步骤，例如已结案工单的摘要、通话记录或表单提交内容。你向它提供自由文本；Hindsight 的存入流程会异步提取结构化事实、与记忆库中的内容去重，并更新记忆库的心智模型，不会阻塞 Zap。
 
-**记忆召回** 使用自然语言查询 (`POST /memories/recall`) 搜索记忆库。将记忆召回步骤放在任何受益于上下文的操作之前，通常就在 LLM 步骤之前，并向其提供触发数据或用户的当前消息。它返回最相关的记忆。
+**Recall（召回）** 使用自然语言查询搜索记忆库（`POST /memories/recall`）。在任何能从上下文中受益的操作之前加入 Recall 步骤，通常放在 LLM 步骤之前，并向它提供触发器数据或用户当前的消息。它会返回最相关的记忆。
 
-**反思** 更进一步 (`POST /reflect`)：它返回一个 LLM 合成的、基于记忆的答案，而不是原始记忆。当您想要直接答案（“我们对这个帐户了解多少？”）而不是要传递给下游的片段列表时，请使用它。
+**Reflect（反思）** 更进一步（`POST /reflect`）：它返回以记忆为依据、由 LLM 综合生成的答案，而不是原始记忆。当你需要一个直接答案（例如“我们对这个账户了解什么？”），而不是一组要传给下游步骤的片段时，就可以使用它。
 
-|行动|端点|使用它|
+| 操作 | 端点 | 用途 |
 |---|---|---|
-|记忆存储|`POST /memories`|存储值得记住的内容|
-|记忆召回|`POST /memories/recall`|在LLM步骤之前获取相关记忆|
-|反思|`POST /reflect`|获得综合的、有根据的答案|
+| Retain | `POST /memories` | 存入值得记住的内容 |
+| Recall | `POST /memories/recall` | 在 LLM 步骤前获取相关记忆 |
+| Reflect | `POST /reflect` | 获取经过综合、以记忆为依据的答案 |
 
 ### 触发器 {#triggers}
 
-这就是Zapier应用程序与“调用它作为工具”集成的区别：Hindsight可以*开始*Zap。每个触发器都使用 Zapier 的即时 REST Hooks 订阅 Hindsight 的 webhook API (`POST /webhooks`)，并在您关闭 Zap (`DELETE /webhooks/{id}`) 时彻底拆除。
+与只能作为工具调用的集成不同，Zapier 应用还有一个特点：Hindsight 可以*启动* Zap。每个触发器都会通过 Zapier 的即时 REST Hooks 订阅 Hindsight 的 Webhook API（`POST /webhooks`）；关闭 Zap 时，会妥善删除相应订阅（`DELETE /webhooks/{id}`）。
 
-前面的一个可用性说明：触发器依赖的 webhook API 是一个 **Hindsight Cloud上的企业功能** 并且默认情况下未启用；它在自托管实例上开箱即用。上述三项行动无需特别计划。
+先说明一项可用性限制：这些触发器依赖的 Webhook API 在 Hindsight Cloud 上属于 **企业功能**，默认未启用；自托管实例则开箱即用。上文的三个操作不需要特殊计划。
 
-|触发器|活动|触发时|
+| 触发器 | 事件 | 触发时机 |
 |---|---|---|
-|记忆存储已完成|`retain.completed`|记忆存储完成处理，事实存在于记忆库中|
-|整合完成|`consolidation.completed`|Hindsight 巩固记忆库的记忆|
-|记忆防御触发|`memory_defense.triggered`|记忆防御检查标记了某些东西|
+| Retain Completed（存入完成） | `retain.completed` | Retain 处理完毕，事实已写入记忆库 |
+| Consolidation Completed（整合完成） | `consolidation.completed` | Hindsight 完成对某个记忆库中记忆的整合 |
+| Memory Defense Triggered（记忆防护触发） | `memory_defense.triggered` | 记忆防护检查发现并标记了某项内容 |
 
-因此，您可以以相反的方式构建Zap：当记忆存储完成时，将新事实发布到Slack；整合完成后，启动下游报告；当记忆防御触发时，开一张票。 记忆不再只是一个目的地，而是成为事件的源头。
+这样，你也可以反向构建 Zap：Retain 完成后，将新事实发布到 Slack；整合完成后，启动下游报告；记忆防护触发后，创建一张工单。记忆不再只是数据流向的目的地，也成为事件来源。
 
-每个操作和触发器都有一个**记忆库**字段呈现为动态下拉列表（从您现有的记忆库填充）。您还可以输入新的记忆库 ID； 记忆库是在第一次使用时创建的。
+每个操作和触发器都有一个 **Bank** 字段，以动态下拉列表呈现，其中列出已有记忆库。你也可以输入新的记忆库 ID；该记忆库会在首次使用时创建。
 
 ## 身份验证 {#authentication}
 
-应用程序使用API密钥身份验证：
+该应用使用 API 密钥进行身份验证：
 
-- **API 钥匙**：您的Hindsight密钥（以`hsk_`开头），作为`Authorization: Bearer <key>`发送。 Hindsight Cloud所需。对于无需身份验证运行的自托管实例，请将其留空。
-- **API 网址**：默认为Hindsight Cloud（`https://api.hindsight.vectorize.io`）；将其指向您自己的实例（例如 `http://localhost:8888`）以进行自托管。
+- **API Key**：你的 Hindsight 密钥（以 `hsk_` 开头），会作为 `Authorization: Bearer <key>` 发送。Hindsight Cloud 必须提供密钥。如果自托管实例未启用身份验证，请将此项留空。
+- **API URL**：默认指向 Hindsight Cloud（`https://api.hindsight.vectorize.io`）；自托管时可改为你自己的实例地址（例如 `http://localhost:8888`）。
 
-触发器自托管工作，其中 Webhook API 开箱即用。 （在 Hindsight Cloud上，Webhook 是一项企业功能，默认情况下不启用。）它们依赖于您的实例向 Zapier 的 Webhook URL 发出 *出站* POST，该 URL 适用于任何具有出站互联网的盒子；只有完全气隙的实例不能。每个触发器都会使用新生成的 HMAC 密钥注册其 Webhook，并在每次交付时验证 `X-Hindsight-Signature: sha256=<hmac>` 标头，拒绝签名不匹配的任何有效负载。
+自托管实例可以使用触发器，因为其 Webhook API 开箱即用。（在 Hindsight Cloud 上，Webhook 属于企业功能，默认未启用。）触发器要求你的实例向 Zapier 的 Webhook URL 发起*出站* POST 请求。任何能够访问互联网的实例都可以这样做；完全隔离、无法连接外部网络的实例除外。每个触发器注册 Webhook 时都会生成一个新的 HMAC 密钥，并在每次投递时验证 `X-Hindsight-Signature: sha256=<hmac>` 标头；如果签名不匹配，就会拒绝该载荷。
 
-## 需要构建的一些 Zap {#a-few-zaps-to-build}
+## 可以构建的几种 Zap {#a-few-zaps-to-build}
 
-- **学习支持。** 在已关闭的 Zendesk 或 Intercom 票证上触发 → 记忆存储解决方案。在该客户的下一张票上，记忆召回在 LLM 起草回复之前。
-- **销售环境随时可用。** 在 Gong 或 Fireflies 通话后，记忆存储文字记录。在下次会议之前，反思获得有关该帐户的综合摘要。
-- **记忆驱动的通知**（基于触发器，因此需要 webhook API：自托管或云企业）。使用记忆存储已完成触发器将新学到的事实发布到 Slack 通道中，以便团队了解系统正在学习什么。
-- **扎根形式的反应。** Typeform 提交会触发记忆召回，LLM 步骤起草个性化回复，然后电子邮件操作发送它。
+- **能够积累经验的客户支持。** Zendesk 或 Intercom 工单结案时触发 → 用 Retain 存入解决方案。该客户下次提交工单时，先用 Recall 获取记忆，再让 LLM 起草回复。
+- **随时可用的销售上下文。** Gong 或 Fireflies 通话结束后，用 Retain 存入通话记录。下次会议前，用 Reflect 生成该客户账户的综合简报。
+- **由记忆驱动的通知**（基于触发器，因此需要 Webhook API：自托管实例或 Cloud 企业计划）。使用 Retain Completed 触发器，将新学到的事实发布到 Slack 频道，让团队了解系统学到了什么。
+- **有记忆依据的表单回复。** Typeform 收到提交后触发 Recall，LLM 步骤起草个性化回复，最后由邮件操作发送。
 
 ## 设置 {#setup}
 
-1. [hindsight.vectorize.io](https://ui.hindsight.vectorize.io)报名；免费套餐足以开始。
-2. 从仪表板上获取API钥匙(`hsk_...`)。
-3. 在 Zapier 中，向 Zap 添加 Hindsight 操作或触发器，并将您的帐户与 API 密钥（以及 API URL，如果是自托管）连接。
-4. 从下拉列表中选择一个记忆库（或输入新的 ID），您就可以在 Zap 中存储和调用记忆。
+1. 在 [hindsight.vectorize.io](https://ui.hindsight.vectorize.io) 注册；免费套餐足以开始使用。
+2. 从控制台获取 API 密钥（`hsk_...`）。
+3. 在 Zapier 中向 Zap 添加 Hindsight 操作或触发器，并使用 API 密钥连接账户（自托管时还需提供 API URL）。
+4. 从下拉列表中选择一个记忆库（或输入新的 ID），然后就可以在 Zap 中存入和召回记忆了。
 
-## 常见问题解答 {#frequently-asked-questions}
+## 常见问题 {#frequently-asked-questions}
 
-**Zapier是否有跨运行的内置记忆？**
-没有。每次 Zap 运行都是无状态的。跨运行的持久记忆来自记忆层，如连接到 Zap 的Hindsight。
+**Zapier 是否内置了跨运行的记忆？**
+没有。每次 Zap 运行都是无状态的。要让记忆跨运行保留，需要将 Hindsight 这样的记忆层接入 Zap。
 
 **记忆事件可以启动 Zap 吗？**
-是的，通过应用程序的触发器（记忆存储完成、集成完成、记忆防御触发），这些触发器通过 REST Hooks 立即触发。它们依赖于 Hindsight 的 webhook API，该网络钩子可自托管并依赖于 Hindsight Cloud 的企业计划；默认情况下，它在云上未启用。这三个行动适用于任何计划。
+可以。应用提供的触发器（Retain Completed、Consolidation Completed、Memory Defense Triggered）会通过 REST Hooks 即时触发。这些触发器依赖 Hindsight 的 Webhook API，该 API 可用于自托管实例和 Hindsight Cloud 企业计划，在 Cloud 上默认未启用。这三个操作则适用于任何计划。
 
-**它可以与自托管的Hindsight一起使用吗？**
-是的。将 API URL 设置为您的实例；如果它在没有身份验证的情况下运行，请将 API 键留空。只要您的实例可以向 Zapier 发出出站请求，触发器就可以工作。
+**它支持自托管的 Hindsight 吗？**
+支持。将 API URL 设置为你的实例地址；如果实例未启用身份验证，就将 API 密钥留空。只要实例能够向 Zapier 发起出站请求，触发器就可以工作。
 
-**​​记忆召回和回忆有什么区别？**
-记忆召回返回与查询最相关的记忆； 预计会返回一个基于这些记忆的 LLM 综合答案。当你想要直接得到答案时，用记忆来反馈下游步骤。
+**Recall 和 Reflect 有什么区别？**
+Recall 会返回与查询最相关的记忆；Reflect 会返回由 LLM 综合生成、并以这些记忆为依据的答案。要把相关记忆传给下游步骤时使用 Recall；需要直接得到答案时使用 Reflect。
 
 ## 延伸阅读 {#further-reading}
 
-- [什么是智能体记忆？](https://vectorize.io/what-is-agent-memory)：记忆召回、保留和记忆库背后的基本概念。
-- [最佳AI智能体记忆系统](https://vectorize.io/articles/best-ai-agent-memory-systems)：主要智能体记忆框架的比较。
-- [每个 n8n 工作流程都缺少记忆层](/blog/2026/05/07/n8n-persistent-memory)：n8n 的工作流引擎的想法相同。
+- [什么是智能体记忆？](https://vectorize.io/what-is-agent-memory)：了解召回、存入和记忆库的基础概念。
+- [最佳 AI 智能体记忆系统](https://vectorize.io/articles/best-ai-agent-memory-systems)：比较主要的智能体记忆框架。
+- [每个 n8n 工作流都缺少的记忆层](/blog/2026/05/07/n8n-persistent-memory)：将同一思路用于 n8n 工作流引擎。

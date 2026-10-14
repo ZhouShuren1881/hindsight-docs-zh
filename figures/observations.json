@@ -6,8 +6,14 @@
       "id": "facts",
       "type": "cylinder",
       "content": [
-        {"type": "title", "text": "事实"},
-        {"type": "subtitle", "text": "来自存入操作"}
+        {
+          "type": "title",
+          "text": "事实"
+        },
+        {
+          "type": "subtitle",
+          "text": "来自存入操作"
+        }
       ],
       "minCardHeight": 73,
       "width": 200
@@ -16,8 +22,14 @@
       "id": "find",
       "type": "rectangle",
       "content": [
-        {"type": "title", "text": "查找相关观测"},
-        {"type": "subtitle", "text": "同一标签范围内的观测"}
+        {
+          "type": "title",
+          "text": "查找相关项"
+        },
+        {
+          "type": "subtitle",
+          "text": "同一标签范围内的观测"
+        }
       ],
       "minCardHeight": 43,
       "width": 210
@@ -26,8 +38,14 @@
       "id": "llm",
       "type": "rectangle",
       "content": [
-        {"type": "title", "text": "LLM 决策"},
-        {"type": "subtitle", "text": "创建 · 更新 · 删除"}
+        {
+          "type": "title",
+          "text": "LLM 决策"
+        },
+        {
+          "type": "subtitle",
+          "text": "创建 · 更新 · 删除"
+        }
       ],
       "minCardHeight": 43,
       "width": 210
@@ -36,8 +54,14 @@
       "id": "dedup",
       "type": "rectangle",
       "content": [
-        {"type": "title", "text": "近似重复项检查"},
-        {"type": "subtitle", "text": "合并或保留"}
+        {
+          "type": "title",
+          "text": "近似重复项检查"
+        },
+        {
+          "type": "subtitle",
+          "text": "合并或保留"
+        }
       ],
       "minCardHeight": 43,
       "width": 210
@@ -45,16 +69,32 @@
     {
       "id": "g1",
       "type": "group",
-      "label": {"title": "Hindsight 工作进程 · 整合"},
-      "children": ["find", "llm", "dedup"],
-      "layout": {"direction": "column", "gap": 36, "align": "stretch"}
+      "label": {
+        "title": "Hindsight 工作进程 · 整合"
+      },
+      "children": [
+        "find",
+        "llm",
+        "dedup"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 36,
+        "align": "stretch"
+      }
     },
     {
       "id": "obs",
       "type": "cylinder",
       "content": [
-        {"type": "title", "text": "观测"},
-        {"type": "subtitle", "text": "每个方面一条认知判断"}
+        {
+          "type": "title",
+          "text": "观测"
+        },
+        {
+          "type": "subtitle",
+          "text": "每个方面一条认知判断"
+        }
       ],
       "minCardHeight": 133,
       "width": 230
@@ -63,8 +103,14 @@
       "id": "history",
       "type": "cylinder",
       "content": [
-        {"type": "title", "text": "观测历史"},
-        {"type": "subtitle", "text": "先前版本"}
+        {
+          "type": "title",
+          "text": "观测历史"
+        },
+        {
+          "type": "subtitle",
+          "text": "先前版本"
+        }
       ],
       "minCardHeight": 103,
       "width": 230
@@ -72,61 +118,110 @@
     {
       "id": "g2",
       "type": "group",
-      "label": {"title": "记忆库"},
-      "children": ["obs", "history"],
-      "layout": {"direction": "column", "gap": 36, "align": "stretch"}
+      "label": {
+        "title": "记忆库"
+      },
+      "children": [
+        "obs",
+        "history"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 36,
+        "align": "stretch"
+      }
     },
     {
       "id": "g0",
       "type": "group",
-      "children": ["facts", "g1", "g2"],
-      "layout": {"direction": "row", "gap": 40, "align": "center"}
+      "children": [
+        "facts",
+        "g1",
+        "g2"
+      ],
+      "layout": {
+        "direction": "row",
+        "gap": 40,
+        "align": "center"
+      }
     },
     {
       "id": "in",
       "type": "arrow",
       "route": "curved",
-      "start": {"id": "facts"},
-      "end": {"id": "find"},
-      "label": {"text": "新事实"}
+      "start": {
+        "id": "facts"
+      },
+      "end": {
+        "id": "find"
+      },
+      "label": {
+        "text": "新事实"
+      }
     },
     {
       "id": "search",
       "type": "arrow",
       "route": "curved",
-      "start": {"id": "find"},
-      "end": {"id": "obs"},
-      "label": {"text": "召回"}
+      "start": {
+        "id": "find"
+      },
+      "end": {
+        "id": "obs"
+      },
+      "label": {
+        "text": "Recall"
+      }
     },
     {
       "id": "find->llm",
       "type": "arrow",
       "route": "curved",
-      "start": {"id": "find"},
-      "end": {"id": "llm"}
+      "start": {
+        "id": "find"
+      },
+      "end": {
+        "id": "llm"
+      }
     },
     {
       "id": "llm->dedup",
       "type": "arrow",
       "route": "curved",
-      "start": {"id": "llm"},
-      "end": {"id": "dedup"}
+      "start": {
+        "id": "llm"
+      },
+      "end": {
+        "id": "dedup"
+      }
     },
     {
       "id": "write",
       "type": "arrow",
       "route": "curved",
-      "start": {"id": "dedup"},
-      "end": {"id": "obs"},
-      "label": {"text": "写入"}
+      "start": {
+        "id": "dedup"
+      },
+      "end": {
+        "id": "obs"
+      },
+      "label": {
+        "text": "写入"
+      }
     },
     {
       "id": "snapshot",
       "type": "arrow",
       "route": "curved",
-      "start": {"id": "dedup"},
-      "end": {"id": "history"},
-      "label": {"text": "旧文本"}
+      "start": {
+        "id": "dedup"
+      },
+      "end": {
+        "id": "history"
+      },
+      "label": {
+        "text": "旧文本"
+      }
     }
   ],
   "scenes": [
@@ -136,47 +231,127 @@
       "beats": [
         {
           "show": {
-            "facts": [{"tag": "新事实", "tone": "green", "text": "用户称赞 React 的组件模型", "meta": "第 2 周"}],
-            "obs": [{"text": "用户偏好用 React 进行前端开发", "meta": "1 条来源", "mark": "stale"}]
+            "facts": [
+              {
+                "tag": "新事实",
+                "tone": "green",
+                "text": "用户称赞 React 的组件模型",
+                "meta": "第 2 周"
+              }
+            ],
+            "obs": [
+              {
+                "text": "用户更喜欢用 React 进行前端开发",
+                "meta": "1 条来源",
+                "mark": "stale"
+              }
+            ]
           },
-          "say": "一条新事实进入记忆库。在它完成整合之前，观测检索会标记为待更新，因此 Reflect（反思）会对照原始事实进行核验。",
+          "say": "一条新事实进入记忆库。在它完成整合之前，观测检索会标记为待更新，因此 Reflect 会对照原始事实进行核验。",
           "ms": 3200
         },
         {
-          "edges": {"edge": "in", "data": "“称赞 React 的组件模型”"},
-          "show": {"find": [{"text": "为此事实搜索观测"}]},
-          "say": "存入操作后，整合会在后台运行。对于每条新事实，系统只在同一标签范围内召回相关观测。"
+          "edges": {
+            "edge": "in",
+            "data": "“赞赏 React 的组件模型”"
+          },
+          "show": {
+            "find": [
+              {
+                "text": "为这条事实搜索观测"
+              }
+            ]
+          },
+          "say": "每次存入后，整合都会在后台运行。对于每条新事实，系统只会在同一标签范围内召回相关观测。"
         },
-        {"edges": {"edge": "search", "data": "召回"}},
         {
-          "edges": {"edge": "search", "back": true, "data": "1 条相关观测"},
-          "show": {"find": [{"text": "1 条相关观测", "meta": "React 偏好", "mark": "✓"}]}
+          "edges": {
+            "edge": "search",
+            "data": "recall"
+          }
+        },
+        {
+          "edges": {
+            "edge": "search",
+            "back": true,
+            "data": "1 related"
+          },
+          "show": {
+            "find": [
+              {
+                "text": "1 条相关观测",
+                "meta": "对 React 的偏好",
+                "mark": "✓"
+              }
+            ]
+          }
         },
         {
           "edges": "find->llm",
-          "show": {"llm": [{"tag": "更新", "tone": "blue", "text": "同一方面，更多证据"}]},
-          "say": "一次 LLM 调用会同时查看新事实和相关观测，并逐个方面决定是创建、更新还是删除。",
+          "show": {
+            "llm": [
+              {
+                "tag": "更新",
+                "tone": "blue",
+                "text": "同一方面，更多证据"
+              }
+            ]
+          },
+          "say": "一次 LLM 调用会同时查看新事实和相关观测，并逐个方面决定创建、更新还是删除。",
           "ms": 2800
         },
         {
           "edges": "llm->dedup",
-          "show": {"dedup": [{"text": "没有近似相同的观测", "mark": "keep"}]},
-          "say": "写入之前，每条新观测或修订后的观测都会与最相近的观测进行比较。只有近似相同的观测才会进入合并或保留检查。"
+          "show": {
+            "dedup": [
+              {
+                "text": "没有近似相同的观测",
+                "mark": "keep"
+              }
+            ]
+          },
+          "say": "写入之前，每条新观测或改写后的观测都会与最相近的观测进行比较。只有近似相同的观测才会进入合并或保留检查。"
         },
         {
           "edges": [
-            {"edge": "write", "data": "改写 + 1 条来源"},
-            {"edge": "snapshot", "data": "v1"}
+            {
+              "edge": "write",
+              "data": "rewrite + 1 source"
+            },
+            {
+              "edge": "snapshot",
+              "data": "v1"
+            }
           ],
           "show": {
-            "obs": [{"text": "用户热衷于 React，尤其喜欢它的组件模型", "meta": "2 条来源", "mark": "updated"}],
-            "history": [{"tag": "v1", "tone": "gray", "text": "用户偏好用 React 进行前端开发"}]
+            "obs": [
+              {
+                "text": "用户热衷于 React，尤其喜欢它的组件模型",
+                "meta": "2 条来源",
+                "mark": "updated"
+              }
+            ],
+            "history": [
+              {
+                "tag": "v1",
+                "tone": "gray",
+                "text": "用户更喜欢用 React 进行前端开发"
+              }
+            ]
           },
           "say": "观测会改写并附上这条事实作为证据，因此支持事实数增加。先前的措辞会保留在历史记录中。",
           "ms": 3200
         },
         {
-          "show": {"obs": [{"text": "用户热衷于 React，尤其喜欢它的组件模型", "meta": "2 条来源", "mark": "fresh"}]},
+          "show": {
+            "obs": [
+              {
+                "text": "用户热衷于 React，尤其喜欢它的组件模型",
+                "meta": "2 条来源",
+                "mark": "fresh"
+              }
+            ]
+          },
           "say": "同一次写入还会将该事实标记为已整合，因此观测也恢复为最新状态。",
           "ms": 2000
         }
@@ -188,43 +363,130 @@
       "beats": [
         {
           "show": {
-            "facts": [{"tag": "新事实", "tone": "green", "text": "用户已转用 Vue，以后不会再用 React", "meta": "第 3 周"}],
-            "obs": [{"text": "用户热衷于 React，尤其喜欢它的组件模型", "meta": "2 条来源", "mark": "stale"}],
-            "history": [{"tag": "v1", "tone": "gray", "text": "用户偏好用 React 进行前端开发"}]
+            "facts": [
+              {
+                "tag": "新事实",
+                "tone": "green",
+                "text": "用户已改用 Vue，以后不会再用 React",
+                "meta": "第 3 周"
+              }
+            ],
+            "obs": [
+              {
+                "text": "用户热衷于 React，尤其喜欢它的组件模型",
+                "meta": "2 条来源",
+                "mark": "stale"
+              }
+            ],
+            "history": [
+              {
+                "tag": "v1",
+                "tone": "gray",
+                "text": "用户更喜欢用 React 进行前端开发"
+              }
+            ]
           },
           "say": "现在出现了一条与记忆库现有认知相矛盾的事实。",
           "ms": 2400
         },
-        {"edges": {"edge": "in", "data": "“已转用 Vue”"}},
-        {"edges": {"edge": "search", "data": "召回"}},
         {
-          "edges": {"edge": "search", "back": true, "data": "1 条相关观测"},
-          "show": {"find": [{"text": "1 条相关观测", "meta": "对 React 的热衷", "mark": "✓"}]}
+          "edges": {
+            "edge": "in",
+            "data": "“改用 Vue”"
+          }
+        },
+        {
+          "edges": {
+            "edge": "search",
+            "data": "recall"
+          }
+        },
+        {
+          "edges": {
+            "edge": "search",
+            "back": true,
+            "data": "1 related"
+          },
+          "show": {
+            "find": [
+              {
+                "text": "1 条相关观测",
+                "meta": "对 React 的热衷",
+                "mark": "✓"
+              }
+            ]
+          }
         },
         {
           "edges": "find->llm",
-          "show": {"llm": [{"tag": "更新", "tone": "orange", "text": "状态变化：保留完整经过"}]},
+          "show": {
+            "llm": [
+              {
+                "tag": "更新",
+                "tone": "orange",
+                "text": "状态变化：保留完整经过"
+              }
+            ]
+          },
           "say": "状态变化并非删除观测的理由。LLM 会更新这条认知判断，记录发生的变化；若有日期，也会一并记下。",
           "ms": 3000
         },
-        {"edges": "llm->dedup", "show": {"dedup": [{"text": "没有近似相同的观测", "mark": "keep"}]}},
+        {
+          "edges": "llm->dedup",
+          "show": {
+            "dedup": [
+              {
+                "text": "没有近似相同的观测",
+                "mark": "keep"
+              }
+            ]
+          }
+        },
         {
           "edges": [
-            {"edge": "write", "data": "改写 + 1 条来源"},
-            {"edge": "snapshot", "data": "v2"}
+            {
+              "edge": "write",
+              "data": "rewrite + 1 source"
+            },
+            {
+              "edge": "snapshot",
+              "data": "v2"
+            }
           ],
           "show": {
-            "obs": [{"text": "用户以前热衷于 React，喜欢它的组件模型；现在已转用 Vue", "meta": "3 条来源", "mark": "updated"}],
+            "obs": [
+              {
+                "text": "用户以前热衷于 React，喜欢它的组件模型；现在已改用 Vue",
+                "meta": "3 条来源",
+                "mark": "updated"
+              }
+            ],
             "history": [
-              {"tag": "v1", "tone": "gray", "text": "用户偏好用 React 进行前端开发"},
-              {"tag": "v2", "tone": "gray", "text": "用户热衷于 React，尤其喜欢它的组件模型"}
+              {
+                "tag": "v1",
+                "tone": "gray",
+                "text": "用户更喜欢用 React 进行前端开发"
+              },
+              {
+                "tag": "v2",
+                "tone": "gray",
+                "text": "用户热衷于 React，尤其喜欢它的组件模型"
+              }
             ]
           },
-          "say": "现在这条观测记录了完整变化过程，而不只是“偏好 Vue”。它以全部三条事实为依据，两个旧版本也都保留在历史记录中。",
+          "say": "现在这条观测记录了完整变化过程，而不只是“更喜欢 Vue”。它以全部三条事实为依据，两个旧版本也都保留在历史记录中。",
           "ms": 3600
         },
         {
-          "show": {"obs": [{"text": "用户以前热衷于 React，喜欢它的组件模型；现在已转用 Vue", "meta": "3 条来源", "mark": "fresh"}]},
+          "show": {
+            "obs": [
+              {
+                "text": "用户以前热衷于 React，喜欢它的组件模型；现在已改用 Vue",
+                "meta": "3 条来源",
+                "mark": "fresh"
+              }
+            ]
+          },
           "ms": 2000
         }
       ]
@@ -235,40 +497,109 @@
       "beats": [
         {
           "show": {
-            "facts": [{"tag": "新事实", "tone": "green", "text": "用户在 Fly.io 上部署应用", "meta": "第 3 周"}],
-            "obs": [{"text": "用户以前热衷于 React，喜欢它的组件模型；现在已转用 Vue", "meta": "3 条来源", "mark": "stale"}],
+            "facts": [
+              {
+                "tag": "新事实",
+                "tone": "green",
+                "text": "用户在 Fly.io 上部署应用",
+                "meta": "第 3 周"
+              }
+            ],
+            "obs": [
+              {
+                "text": "用户以前热衷于 React，喜欢它的组件模型；现在已改用 Vue",
+                "meta": "3 条来源",
+                "mark": "stale"
+              }
+            ],
             "history": [
-              {"tag": "v1", "tone": "gray", "text": "用户偏好用 React 进行前端开发"},
-              {"tag": "v2", "tone": "gray", "text": "用户热衷于 React，尤其喜欢它的组件模型"}
+              {
+                "tag": "v1",
+                "tone": "gray",
+                "text": "用户更喜欢用 React 进行前端开发"
+              },
+              {
+                "tag": "v2",
+                "tone": "gray",
+                "text": "用户热衷于 React，尤其喜欢它的组件模型"
+              }
             ]
           },
-          "say": "这条事实涉及记忆库目前还没有相关认知判断的内容。",
+          "say": "这是一条涉及记忆库尚无相关认知判断内容的事实。",
           "ms": 2400
         },
-        {"edges": {"edge": "in", "data": "“在 Fly.io 上部署”"}},
-        {"edges": {"edge": "search", "data": "召回"}},
         {
-          "edges": {"edge": "search", "back": true, "data": "没有相关观测"},
-          "show": {"find": [{"text": "没有相关观测", "mark": "—"}]}
+          "edges": {
+            "edge": "in",
+            "data": "“在 Fly.io 上部署”"
+          }
+        },
+        {
+          "edges": {
+            "edge": "search",
+            "data": "recall"
+          }
+        },
+        {
+          "edges": {
+            "edge": "search",
+            "back": true,
+            "data": "没有相关项"
+          },
+          "show": {
+            "find": [
+              {
+                "text": "没有相关观测",
+                "mark": "—"
+              }
+            ]
+          }
         },
         {
           "edges": "find->llm",
-          "show": {"llm": [{"tag": "创建", "tone": "green", "text": "新的方面，无需更新"}]},
+          "show": {
+            "llm": [
+              {
+                "tag": "创建",
+                "tone": "green",
+                "text": "新的方面，无需更新"
+              }
+            ]
+          },
           "say": "没有观测涵盖这个方面，因此 LLM 会创建一条新观测，而不是勉强修改无关观测。",
           "ms": 2800
         },
         {
           "edges": "llm->dedup",
-          "show": {"dedup": [{"text": "最接近：React/Vue 认知判断", "meta": "并非近似相同", "mark": "keep"}]},
+          "show": {
+            "dedup": [
+              {
+                "text": "最接近：React/Vue 认知判断",
+                "meta": "并非近似相同",
+                "mark": "keep"
+              }
+            ]
+          },
           "say": "近似重复项检查会保留这条观测：不同方面分别保存在不同观测中。",
           "ms": 2800
         },
         {
-          "edges": {"edge": "write", "data": "新观测"},
+          "edges": {
+            "edge": "write",
+            "data": "新观测"
+          },
           "show": {
             "obs": [
-              {"text": "用户以前热衷于 React，喜欢它的组件模型；现在已转用 Vue", "meta": "3 条来源", "mark": "fresh"},
-              {"text": "用户在 Fly.io 上部署应用", "meta": "1 条来源", "mark": "new"}
+              {
+                "text": "用户以前热衷于 React，喜欢它的组件模型；现在已改用 Vue",
+                "meta": "3 条来源",
+                "mark": "fresh"
+              },
+              {
+                "text": "用户在 Fly.io 上部署应用",
+                "meta": "1 条来源",
+                "mark": "new"
+              }
             ]
           },
           "say": "这条新观测起初只有一个来源。随着更多事实重复这一点，它会获得更多证据。",

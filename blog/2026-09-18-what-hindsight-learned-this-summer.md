@@ -1,112 +1,112 @@
 ---
-title: "这个夏天，Hindsight 学会了什么"
+title: "这个夏天，Hindsight 学到了什么"
 authors: [benfrank241]
 slug: "2026/09/18/what-hindsight-learned-this-summer"
 date: 2026-09-18T14:00
 tags: [hindsight, agent-memory, release, knowledge-pages, coding-agents, roundup]
-description: "八周内六个版本，从 0.8.5 到 0.10.0。按可构建的能力梳理 Hindsight 这个夏天最重要的进展。"
+description: "八周内发布六个版本，从 0.8.5 到 0.10.0。按这些版本带来的构建能力，梳理 Hindsight 这个夏天最重要的进展。"
 image: /img/blog/what-hindsight-learned-this-summer.webp
 hide_table_of_contents: true
 ---
 
-![Hindsight 夏季进展：从 0.8.5 到 0.10.0 的六个版本](/img/blog/what-hindsight-learned-this-summer.webp)
+![Hindsight 这个夏天学到的事：从 0.8.5 到 0.10.0 的六个版本](/img/blog/what-hindsight-learned-this-summer.webp)
 
-七月下旬至九月中旬，Hindsight 发布 0.8.5、0.8.6、0.9.0、0.9.1、0.9.2 和 0.10.0 六个版本。每版都有发布说明，逐篇阅读很方便，未读全则难掌握全貌。
+从七月下旬到九月中旬，Hindsight 发布了六个版本：0.8.5、0.8.6、0.9.0、0.9.1、0.9.2 和 0.10.0。每个版本都有自己的发布说明。如果你每篇都读了，这当然很好；如果没有读完，要掌握全貌就没那么容易了。
 
-这里换个视角，按夏季初还没有、现在能实现的能力梳理，而非按版本列变更。
+所以这里换个视角：不按版本梳理改动，而是看看 Hindsight 现在能做什么，以及这些能力在夏季初还不能做什么。
 
 <!-- truncate -->
 
 ## 要点 {#tldr}
 
-- **记忆编写自己的文档。** 知识页面将记忆库变成持续更新的 wiki，支持 MCP 和跨实例迁移。
-- **所有编程智能体共享记忆。** 一次安装接入 18 种智能体，每仓库共享一个记忆库。
-- **记忆能看见。** 图片和文件成为原生存储内容，事实可引用来源截图。
-- **记忆可检查。** 查看准确提示词、试运行心智模型刷新，并浏览一个实体的全部知识。
-- **记忆理解时间。** 直接为召回指定时间窗口，反思也知道当前日期。
-- **运行成本更低。** 批量折扣、提示缓存、按操作配置推理强度，以及更低开销的请求路径。
+- **记忆会为自己编写文档。** 知识页把记忆库变成一套持续更新的 wiki，可通过 MCP 访问，也能在不同实例间迁移。
+- **所有编程智能体共用一份记忆。** 一次安装即可把 18 种编程智能体接入同一套按仓库共享的记忆库。
+- **记忆能看图。** 图片和文件是一等的存入内容，每条事实都可以引用其来源截图。
+- **记忆情况一目了然。** 预览确切的提示词、试运行心智模型刷新，并浏览记忆库掌握的某个实体的全部信息。
+- **记忆理解时间。** 可直接为 Recall（召回）传入时间窗口；Reflect（反思）现在也知道今天是哪一天。
+- **运行记忆的成本更低。** 批处理折扣、提示缓存、按操作设置推理强度，以及成本更低的请求路径。
 
-## 记忆编写自己的文档 {#memory-that-writes-its-own-documentation}
+## 记忆会为自己编写文档 {#memory-that-writes-its-own-documentation}
 
-这个夏天最大的想法是 [0.9.0](https://hindsight.vectorize.io/blog/2026/08/07/version-0-9-0) 推出的**知识页面**。
+这个夏天最重要的新想法出现在 [0.9.0](https://hindsight.vectorize.io/blog/2026/08/07/version-0-9-0)：**知识页**。
 
-知识页面是记忆库为自身编写并持续更新的文档，回答“我们的错误处理约定是什么？”等单个问题，并随新知识改写。页面像 wiki 一样组成文件夹树，`hindsight fs mount` 将其映射为磁盘真实 Markdown，`ls`、`grep`、编辑器和智能体文件工具都可直接使用。
+知识页是记忆库为自身编写的持续更新文档，用来回答“我们的错误处理约定是什么？”之类的问题；随着记忆库不断学习，页面也会重写。页面像 wiki 一样放在目录树中；运行 `hindsight fs mount`，就能把这棵目录树映射到磁盘，成为实际的 Markdown 文件。这样一来，`ls`、`grep`、编辑器和智能体的文件工具都能直接使用这些文件。
 
-它超越 wiki 的关键是：页面是投影，不是原始存储。删除也不会丢失知识，因为可从已提取、去重和协调的记忆重建。页面反映*当前*成立的知识，而非保留所有历史矛盾陈述。
+知识页之所以不只是 wiki，关键在于它是投影视图，而不是存储本身。即使删除页面，也不会丢失信息，因为页面可以根据已经提取、去重并协调处理过的记忆重新生成。页面反映的是*当前*成立的内容，而不是每个人曾经说过的所有矛盾说法。
 
-两个版本后，[0.9.2](https://hindsight.vectorize.io/blog/2026/08/24/version-0-9-2) 将知识库变成原生 MCP 能力，七个工具支持浏览、搜索和维护页面，智能体可通过原本存储和召回的连接管理自身 wiki。[0.10.0](https://hindsight.vectorize.io/blog/2026/09/14/version-0-10-0) 又让整个综合层可迁移，整库导出携带知识页面与心智模型，无需另一端重建。
+又过了两个版本，[0.9.2](https://hindsight.vectorize.io/blog/2026/08/24/version-0-9-2) 将知识库变成原生 MCP 接口：新增七个工具，用于浏览、搜索和维护页面。智能体可以通过已有的连接维护自己的 wiki，并继续使用同一连接存入和召回记忆。[0.10.0](https://hindsight.vectorize.io/blog/2026/09/14/version-0-10-0) 则让整个综合生成层都可以迁移：整库导出现在会携带知识页和心智模型，无需在另一端从头重建。
 
-## 所有编程智能体共享记忆 {#one-memory-for-every-coding-agent}
+## 所有编程智能体共用一份记忆 {#one-memory-for-every-coding-agent}
 
-编程智能体插件现可用一条命令接入 **18 种智能体**：
+编程智能体插件现在只需一条命令，就能把记忆接入 **18 种编程智能体**：
 
 ```bash
 npx @vectorize-io/hindsight-coding-agents install all
 ```
 
-Claude Code、Codex CLI、Cursor CLI、GitHub Copilot CLI、opencode、Qwen Code、Cline CLI、Devin CLI 等默认**每仓库共享一个记忆库**。早晨向一个工具解释的内容，下午另一个仍能使用，因为记忆属于项目。
+Claude Code、Codex CLI、Cursor CLI、GitHub Copilot CLI、opencode、Qwen Code、Cline CLI、Devin CLI 等智能体，默认会**按仓库共用一个记忆库**。早上告诉一个智能体的内容，下午换用另一个智能体时仍然可用，因为记忆属于项目，而不是某个工具。
 
-真正修复的大部分信息可从代码推导，但最后一步常依赖代码外的决定，例如舍入规则或重试策略。它们存在于 git 历史和对话中，插件在智能体开始工作时提供这些内容，同时维护架构与约定知识页面。
+这里的基本出发点值得再说一遍：实际修复中的大部分内容都能从代码推导出来，但最后一步往往取决于代码中没有写明的决定，例如舍入规则或重试策略。这些信息存在于 git 历史和过去的对话中。插件会在智能体开始工作时把它们提供给智能体，同时也会提供它持续维护的架构与约定知识页。
 
-[九月初新增四种智能体](https://hindsight.vectorize.io/blog/2026/09/02/coding-agents-050-four-new-harnesses)，[编程智能体的知识页面](https://hindsight.vectorize.io/blog/2026/08/13/knowledge-pages-coding-agents)则深入介绍整理层。
+[九月初又有四种智能体加入](https://hindsight.vectorize.io/blog/2026/09/02/coding-agents-050-four-new-harnesses)；[面向编程智能体的知识页](https://hindsight.vectorize.io/blog/2026/08/13/knowledge-pages-coding-agents)则深入介绍了人工维护的知识层。
 
-## 记忆能看见 {#memory-that-can-see}
+## 记忆能看图 {#memory-that-can-see}
 
-0.10.0 之前，支持对话中的截图对记忆不可见，图片里的请求 ID 对智能体等于不存在。
+在 0.10.0 之前，支持工单对话中的截图对记忆来说是不可见的。智能体无法获知图片上打印的请求 ID。
 
-现在 `content` 可为有序文本、图片和文件块。图片按实际位置读取，两段之间的图表仍在两段之间理解。来源按事实关联，召回可返回准确的来源截图，而非分块全部图片。
+现在，`content` 可以是由文本、图片和文件块组成的有序列表。图片会按其所在位置读取，因此夹在两段文字之间的图表也会作为这两段文字之间的内容来读取。来源追溯信息落实到每条事实：Recall 可以在返回某条事实时一并给出提取这条事实所依据的确切截图，而不只是该文本分块中的所有图片。
 
-归属不确定时，提取器被询问事实需要哪张图，无法解析的回答丢弃，不会改成最近图片。没有引用优于错误引用。[完整说明见此](https://hindsight.vectorize.io/blog/2026/09/16/screenshot-agent-memory)。
+有一点值得了解：如果无法确定图片归属，系统会怎么处理。提取器会被要求指出每条事实需要哪张图片；如果回答无法确定图片，就会丢弃这条回答，而不是把它归到最近的一张图片上。没有引用，胜过引用错误。[完整介绍在这里](https://hindsight.vectorize.io/blog/2026/09/16/screenshot-agent-memory)。
 
-## 记忆可检查 {#memory-you-can-inspect}
+## 记忆情况一目了然 {#memory-you-can-inspect}
 
-这个夏天反复出现的主题是：减少对记忆实际行为的猜测。
+这个夏天反复出现的一个主题是：减少对记忆实际运行方式的猜测。
 
-- **消耗 token 前查看提示词。** 0.10.0 预览端点准确返回存储、整合或反思消息，按对应设置拆块，不调用 LLM、不写入。例如可发现存储使命在用户消息而非系统提示词。[详情](https://hindsight.vectorize.io/blog/2026/09/17/prompt-preview)。
-- **不修改心智模型也能调试。** 0.9.0 刷新试运行计算下一版本但不持久化，保留读取和决策跟踪。0.9.2 为每次刷新新增类型化结果，内容未变时会明确报告，不声称已写入。
-- **按顺序查看实体全部内容。** [0.8.6](https://hindsight.vectorize.io/blog/2026/07/29/version-0-8-6) 新增实体时间线，选择人、公司或项目，从首次提及起查看全部知识。底层使用 API 筛选，自有工具可获得相同视图。
+- **花 token 之前，先查看提示词。** 0.10.0 的预览端点会返回 Retain（存入）、观测整合或 Reflect（反思）将发送的确切消息，并按消息块拆分；每块都会标明对应的设置。它不会调用 LLM，也不会写入数据。例如，你可以借此发现，存入任务说明放在用户消息中，而不是系统提示词中。[这里有更多介绍](https://hindsight.vectorize.io/blog/2026/09/17/prompt-preview)。
+- **无需改动心智模型，就能调试它。** 0.9.0 新增了刷新试运行：计算下一个版本但不持久化，并保留读取内容和决策过程的追踪记录。0.9.2 又为每次刷新增加了带类型的结果；如果刷新生成的内容与原来相同，结果会明确说明这一点，而不会误报为已写入。
+- **按时间顺序查看某个实体的全部信息。** [0.8.6](https://hindsight.vectorize.io/blog/2026/07/29/version-0-8-6) 新增实体时间线：选择一个人、公司或项目，就能从首次提及开始，查看记忆库中与其相关的全部信息。它由 API 筛选器提供支持，因此你自己的工具也能获得相同视图。
 
 ## 记忆理解时间 {#memory-that-understands-time}
 
-两项改动让时间成为明确输入，而不只是从文字推断。
+有两项改动让时间成为显式输入，而不再只是从文字中推断。
 
-[0.9.1](https://hindsight.vectorize.io/blog/2026/08/14/version-0-9-1) 向 reflect 提供当前日期时间，使“上周”和“最近”有真实时钟基准。
+[0.9.1](https://hindsight.vectorize.io/blog/2026/08/14/version-0-9-1) 为 Reflect 提供了当前日期和时间，因此“上周”和“最近”会根据实际时钟确定，而不再含糊不清。
 
-0.9.2 可直接提供有起止边界的 `temporal_window`。过去只能在查询中措辞并希望解析器理解，现在日期选择器或已解析“上季度”的智能体可直接指定范围。也会跳过被替代的日期提取，文档级查询最多可节省约 1.3 秒。
+0.9.2 允许直接为 Recall 传入具有明确起止时间的 `temporal_window`。此前，若要限定时间，只能把时间写进查询，并希望日期解析器能正确理解。现在，日期选择器或已经根据真实日历确定“上季度”范围的智能体，都可以直接传入这个范围。设置该参数还会跳过它所取代的日期提取步骤；对于文档级查询，最多可节省约 1.3 秒。
 
-## 运行成本更低 {#memory-that-costs-less-to-run}
+## 运行记忆的成本更低 {#memory-that-costs-less-to-run}
 
-这是最不起眼，却可能最有价值的工作。
+这是这个夏天最不起眼、或许也最有价值的一系列改进。
 
-| 改动 | 版本 | 节省内容 |
+| 改动 | 版本 | 节省之处 |
 |---|---|---|
-| Anthropic Message Batches | 0.8.5 | 符合条件的存储与整合任务享 50% token 折扣 |
-| Anthropic 提示缓存 | 0.8.5 | 重复提示前缀不再每次全额计费 |
-| 按操作配置推理强度 | 0.8.6 | 只在提取等有帮助的操作中支付推理成本 |
-| 存储内存预算 | 0.9.2 | 过去 45 MB 文档在提取前就分配 385 MB，现在不同文档大小的占用保持平稳 |
-| 纯 ASGI 请求路径 | 0.10.0 | 两个 CPU 的健康检查吞吐从每秒 2,476 提升至 7,917 |
-| 无需生成 ID 的 token 计数 | 0.10.0 | 一次召回的计数阶段从 34.2 ms 降至 5.0 ms |
+| Anthropic Message Batches | 0.8.5 | 符合条件的存入和整合工作负载可享受 50% 的 token 折扣 |
+| Anthropic 提示缓存 | 0.8.5 | 重复的提示前缀不再每次调用都按全价计费 |
+| 按操作设置推理强度 | 0.8.6 | 在提取等需要推理的操作上付费，在不需要的操作上省去这部分成本 |
+| Retain 内存预算 | 0.9.2 | 过去，一个 45 MB 的文档在产生任何事实之前就会分配 385 MB；现在，内存分配不再随文档大小增长 |
+| 纯 ASGI 请求路径 | 0.10.0 | 在两个 CPU 上，健康检查吞吐量从每秒 2,476 个请求提升到 7,917 个 |
+| 不先生成 ID 的 token 计数 | 0.10.0 | 一次 Recall 中的计数阶段从 34.2 ms 降到 5.0 ms |
 
-这些不改变记住什么，而改变记忆成本，使用越多越重要。[存储内存预算文章](https://hindsight.vectorize.io/blog/2026/08/27/retain-memory-budget)深入解释内存上限。
+这些改动不会改变智能体记住什么，只会改变记住信息的成本；运行得越多，这一点就越重要。[Retain 内存预算文章](https://hindsight.vectorize.io/blog/2026/08/27/retain-memory-budget)详细介绍了内存上限。
 
-## 后续方向 {#where-to-go-from-here}
+## 接下来可以看什么 {#where-to-go-from-here}
 
-以上均包含在 v0.10.0，Cloud 与自托管均可使用。各版本说明有完整细节，升级前应阅读 0.10.0 的若干不兼容变更。
+以上能力都包含在 v0.10.0 中，无论使用 Hindsight Cloud 还是自托管部署都可以获得。各篇发布说明都提供了完整细节；升级前尤其值得阅读 0.10.0 中的几项不兼容变更。
 
-- [0.10.0](https://hindsight.vectorize.io/blog/2026/09/14/version-0-10-0)：附件、提示词预览、更快请求路径。
-- [0.9.2](https://hindsight.vectorize.io/blog/2026/08/24/version-0-9-2)：MCP 知识库、时间窗口、存储内存预算。
-- [0.9.1](https://hindsight.vectorize.io/blog/2026/08/14/version-0-9-1)：反思当前时间、可迁移的文档传输。
-- [0.9.0](https://hindsight.vectorize.io/blog/2026/08/07/version-0-9-0)：知识页面、重新设计的控制平面。
-- [0.8.6](https://hindsight.vectorize.io/blog/2026/07/29/version-0-8-6)：实体时间线、按操作控制模型。
-- [0.8.5](https://hindsight.vectorize.io/blog/2026/07/21/version-0-8-5)：批量 API、提示缓存、稳健模型输出。
+- [0.10.0](https://hindsight.vectorize.io/blog/2026/09/14/version-0-10-0)：附件、提示词预览、更快的请求路径
+- [0.9.2](https://hindsight.vectorize.io/blog/2026/08/24/version-0-9-2)：通过 MCP 使用知识库、时间窗口、Retain 内存预算
+- [0.9.1](https://hindsight.vectorize.io/blog/2026/08/14/version-0-9-1)：Reflect 获得当前时间、可迁移的数据
+- [0.9.0](https://hindsight.vectorize.io/blog/2026/08/07/version-0-9-0)：知识页、重新设计的控制台
+- [0.8.6](https://hindsight.vectorize.io/blog/2026/07/29/version-0-8-6)：实体时间线、按操作控制模型
+- [0.8.5](https://hindsight.vectorize.io/blog/2026/07/21/version-0-8-5)：批处理 API、提示缓存、有韧性的模型输出
 
 ## 常见问题 {#faq}
 
-**必须逐个版本升级吗？**
-不必。发布说明标出不兼容变化，0.10.0 尤其应先阅读，包括移除记忆库 profile 端点和 Docker 不再包含 `curl`。
+**我必须逐个版本升级吗？**
+不必。发布说明会标出不兼容变更。0.10.0 有几项值得先读，包括移除了记忆库 profile 端点，以及 Docker 镜像中不再包含 `curl`。
 
-**Hindsight Cloud 已支持吗？**
-支持。Cloud 运行 0.10.0，全部内容都可使用；知识库自 [Cloud 6—8 月汇总](https://hindsight.vectorize.io/blog/2026/09/01/hindsight-cloud-june-august-updates)时就已提供。自托管 v0.10.0 也全部可用。
+**Hindsight Cloud 上也有这些功能吗？**
+有。Cloud 运行的是 0.10.0，因此这里列出的功能都已在 Cloud 上提供；知识库功能从[Cloud 六月至八月更新汇总](https://hindsight.vectorize.io/blog/2026/09/01/hindsight-cloud-june-august-updates)发布以来就已可用。如果你自托管 v0.10.0，今天也可以使用这里列出的全部功能。
 
-**编程智能体插件属于核心版本吗？**
-它以 `@vectorize-io/hindsight-coding-agents` 独立发布，支持 Cloud、自有服务器或本地守护进程。
+**编程智能体插件属于核心版本的一部分吗？**
+它以 `@vectorize-io/hindsight-coding-agents` 的形式单独发布，可配合 Hindsight Cloud、自行运行的服务器或本地守护进程使用。

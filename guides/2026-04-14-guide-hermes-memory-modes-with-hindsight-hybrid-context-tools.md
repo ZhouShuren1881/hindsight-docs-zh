@@ -114,7 +114,7 @@ cfg = json.loads(path.read_text())
 cfg["memory_mode"] = "hybrid"
 cfg["prefetch_method"] = "recall"
 path.write_text(json.dumps(cfg, indent=2) + "\n")
-print(f"已将 {path} 更新为 hybrid 模式")
+print(f"Updated {path} to hybrid mode")
 PY
 ```
 
@@ -139,7 +139,7 @@ cfg = json.loads(path.read_text())
 cfg["memory_mode"] = "context"
 cfg.setdefault("prefetch_method", "recall")
 path.write_text(json.dumps(cfg, indent=2) + "\n")
-print(f"已将 {path} 更新为 context 模式")
+print(f"Updated {path} to context mode")
 PY
 ```
 
@@ -163,7 +163,7 @@ path = base / "hindsight" / "config.json"
 cfg = json.loads(path.read_text())
 cfg["memory_mode"] = "tools"
 path.write_text(json.dumps(cfg, indent=2) + "\n")
-print(f"已将 {path} 更新为 tools 模式")
+print(f"Updated {path} to tools mode")
 PY
 ```
 
@@ -189,7 +189,7 @@ path = base / "hindsight" / "config.json"
 cfg = json.loads(path.read_text())
 cfg["prefetch_method"] = "reflect"
 path.write_text(json.dumps(cfg, indent=2) + "\n")
-print(f"已将 {path} 更新为 reflect 预取")
+print(f"Updated {path} to reflect prefetch")
 PY
 ```
 
@@ -238,13 +238,13 @@ hermes memory status
 告诉 Hermes 一条可记住的信息：
 
 ```text
-记住，设计评审在周四下午 3 点，我们优先处理移动端新用户引导流程。
+Remember that the design review is Thursday at 3 PM and we are prioritizing the mobile onboarding flow.
 ```
 
 然后在下一轮提问：
 
 ```text
-你还记得哪些关于设计评审的信息？
+What do you remember about the design review?
 ```
 
 预期行为：
@@ -284,7 +284,7 @@ hermes memory status
 
 确认修改的是 `~/.hermes/hindsight/config.json` 下正确的文件，然后重启 Hermes 以加载新配置。
 
-### 问题：用户刚提供新事实，记忆却显得过时或不完整 {#problem-memory-appears-stale-or-incomplete-right-after-a-user-shares-a-new-fact}
+### 问题：用户刚提供新事实后，记忆内容待更新或不完整 {#problem-memory-appears-stale-or-incomplete-right-after-a-user-shares-a-new-fact}
 
 请记住异步流程：回复结束后才存储记忆，新记忆在下一轮可用。测试下一轮行为，不要在同一轮测试。
 

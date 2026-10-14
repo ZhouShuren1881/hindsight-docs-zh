@@ -1,5 +1,5 @@
 {
-  "title": "编码智能体",
+  "title": "编程智能体",
   "speed": 2200,
   "elements": [
     {
@@ -76,7 +76,7 @@
       "content": [
         {
           "type": "title",
-          "text": "加深"
+          "text": "deepen"
         },
         {
           "type": "subtitle",
@@ -94,7 +94,7 @@
         },
         {
           "type": "subtitle",
-          "text": "自动注入"
+          "text": "autoInject"
         }
       ]
     },
@@ -170,7 +170,7 @@
       "content": [
         {
           "type": "title",
-          "text": "观察"
+          "text": "观测"
         },
         {
           "type": "subtitle",
@@ -201,7 +201,7 @@
       "content": [
         {
           "type": "title",
-          "text": "知识页面"
+          "text": "知识页"
         }
       ],
       "width": 220
@@ -210,7 +210,7 @@
       "id": "bank",
       "type": "group",
       "label": {
-        "title": "记忆库·coding-agents::payments-api"
+        "title": "记忆库·coding-agent::payments-api"
       },
       "children": [
         "docs",
@@ -552,12 +552,12 @@
               {
                 "tag": "bank",
                 "tone": "gray",
-                "text": "coding-agents::payments-api",
+                "text": "coding-agent::payments-api",
                 "mono": true
               },
               {
                 "text": "还没有 git 文档",
-                "mark": "cold"
+                "mark": "冷"
               }
             ]
           },
@@ -587,16 +587,16 @@
               {
                 "tag": "bank",
                 "tone": "gray",
-                "text": "coding-agents::payments-api",
+                "text": "coding-agent::payments-api",
                 "mono": true
               },
               {
                 "text": "还没有 git 文档",
-                "mark": "cold"
+                "mark": "冷"
               },
               {
                 "text": "冷 → 代码库调查",
-                "meta": "headless agent"
+                "meta": "无头智能体"
               }
             ],
             "deepen": [
@@ -617,50 +617,50 @@
         {
           "edges": {
             "edge": "seed-pages",
-            "data": "5 pages"
+            "data": "5 个知识页"
           },
           "show": {
             "pages": [
               {
                 "text": "组件图",
-                "meta": "empty"
+                "meta": "空"
               },
               {
                 "text": "核心概念",
-                "meta": "empty"
+                "meta": "空"
               },
               {
                 "text": "约定与模式",
-                "meta": "empty"
+                "meta": "空"
               },
               {
                 "text": "关键决策和理由",
-                "meta": "empty"
+                "meta": "空"
               },
               {
                 "text": "举措和改进",
-                "meta": "empty"
+                "meta": "空"
               }
             ]
           },
-          "say": "首项工作是配置记忆库并创建仓库知识页面，每页回答一个关于项目的问题。页面最初为空。"
+          "say": "首项工作是配置记忆库并创建仓库知识页，每页回答一个关于项目的问题。页面最初为空。"
         },
         {
           "edges": [
             {
               "edge": "read-sessions",
-              "data": "14 sessions"
+              "data": "14 个会话"
             },
             {
               "edge": "read-git",
-              "data": "last 300 commits"
+              "data": "最近 300 次提交"
             }
           ],
           "show": {
             "sessions": [
               {
                 "text": "本仓库中的 14 个早期会话",
-                "meta": "one document each"
+                "meta": "每段对话各一份文档"
               }
             ],
             "git": [
@@ -738,11 +738,11 @@
             "obs": [
               {
                 "text": "金额只在发票总额处舍入一次，取最近偶数",
-                "meta": "2 sources"
+                "meta": "2 个来源"
               }
             ]
           },
-          "say": "整合将事实合并为观察。每个仓库共享一套观察，无论事实由哪个智能体写入。"
+          "say": "整合会将事实合并为观测。每个仓库共享一套观测，无论事实由哪个智能体写入。"
         },
         {
           "edges": "to-refresh",
@@ -763,7 +763,7 @@
               },
               {
                 "text": "关键决策和理由",
-                "meta": "“Rounding: half-even, total only”",
+                "meta": "“舍入：取最近偶数，仅舍入总额”",
                 "mark": "↻"
               },
               {
@@ -790,7 +790,7 @@
               {
                 "tag": "prompt",
                 "tone": "gray",
-                "text": "“发票总额减少了一美分。修正四舍五入。”"
+                "text": "“发票总额差了一美分。请修正舍入规则。”"
               }
             ]
           },
@@ -799,7 +799,7 @@
         {
           "edges": {
             "edge": "inject",
-            "data": "reflect · budget low"
+            "data": "反思 · 预算 low"
           },
           "show": {
             "prompt": [
@@ -807,18 +807,18 @@
                 "tag": "autoInject",
                 "tone": "gray",
                 "text": "反思",
-                "meta": "default",
+                "meta": "默认值",
                 "mark": "✓"
               },
               {
                 "text": "pages · recall · none",
-                "meta": "cheaper options"
+                "meta": "成本更低的选项"
               }
             ],
             "obs": [
               {
                 "text": "金额只在发票总额处舍入一次，取最近偶数",
-                "meta": "2 sources",
+                "meta": "2 个来源",
                 "mark": "✓"
               }
             ],
@@ -832,21 +832,21 @@
               }
             ]
           },
-          "say": "默认对记忆库执行一次有限预算的反思。\"pages\" 模式改为搜索知识页面，\"recall\" 模式改为召回记忆，两者均只检索。",
+          "say": "默认对记忆库执行一次有限预算的反思。\"pages\" 模式改为搜索知识页，\"recall\" 模式改为召回记忆，两者均只检索。",
           "ms": 3400
         },
         {
           "edges": {
             "edge": "on-prompt",
             "back": true,
-            "data": "injected context"
+            "data": "已注入上下文"
           },
           "show": {
             "agent": [
               {
                 "tag": "prompt",
                 "tone": "gray",
-                "text": "“发票总额减少了一美分。修正四舍五入。”"
+                "text": "“发票总额差了一美分。请修正舍入规则。”"
               },
               {
                 "tag": "injected",
@@ -879,12 +879,12 @@
               {
                 "tag": "prompt",
                 "tone": "gray",
-                "text": "“发票总额减少了一美分。修正四舍五入。”"
+                "text": "“发票总额差了一美分。请修正舍入规则。”"
               },
               {
                 "tag": "tool",
                 "tone": "gray",
-                "text": "hindsight_search_knowledge_pages(“四舍五入”)",
+                "text": "hindsight_search_knowledge_pages(\"rounding\")",
                 "mono": true
               }
             ],
@@ -921,18 +921,18 @@
         {
           "edges": {
             "edge": "search",
-            "data": "full text + semantic"
+            "data": "全文 + 语义"
           },
           "show": {
             "pages": [
               {
                 "text": "关键决策和理由",
-                "meta": "§ Money rounding",
+                "meta": "§ 金额舍入",
                 "mark": "✓"
               },
               {
                 "text": "约定与模式",
-                "meta": "§ Money",
+                "meta": "§ 金额",
                 "mark": "✓"
               }
             ]
@@ -944,19 +944,19 @@
           "edges": {
             "edge": "on-tool",
             "back": true,
-            "data": "2 pages"
+            "data": "2 个页面"
           },
           "show": {
             "agent": [
               {
                 "tag": "prompt",
                 "tone": "gray",
-                "text": "“发票总额减少了一美分。修正四舍五入。”"
+                "text": "“发票总额差了一美分。请修正舍入规则。”"
               },
               {
                 "tag": "tool",
                 "tone": "gray",
-                "text": "hindsight_search_knowledge_pages(“四舍五入”)",
+                "text": "hindsight_search_knowledge_pages(\"rounding\")",
                 "mono": true
               },
               {
@@ -985,17 +985,17 @@
               {
                 "tag": "prompt",
                 "tone": "gray",
-                "text": "“发票总额减少了一美分。修正四舍五入。”"
+                "text": "“发票总额差了一美分。请修正舍入规则。”"
               },
               {
                 "tag": "reply",
                 "tone": "gray",
-                "text": "将舍入移动到InvoiceTotal.finalize()；行项目保持准确。"
+                "text": "将舍入移至 InvoiceTotal.finalize()；行项目保持准确。"
               }
             ],
             "stop": [
               {
-                "text": "2 个新回合"
+                "text": "新增 2 轮"
               },
               {
                 "text": "移除已注入的记忆",
@@ -1018,7 +1018,7 @@
                 "tone": "gray",
                 "text": "本次会话",
                 "meta": "source:chat · harness:claude-code",
-                "mark": "+2 turns"
+                "mark": "+2 轮"
               },
               {
                 "tag": "gitlog:payments-api",
@@ -1028,7 +1028,7 @@
               }
             ]
           },
-          "say": "这些轮次追加到会话文档中，首条回复会创建该文档，并标注写入的智能体。这也是控制平面中智能体图标的来源。",
+          "say": "这些轮次追加到会话文档中，首条回复会创建该文档，并标注写入的智能体。这也是控制台中的智能体图标的来源。",
           "ms": 3400
         },
         {
@@ -1048,9 +1048,9 @@
               {
                 "tag": "experience",
                 "tone": "purple",
-                "text": "我将四舍五入移至InvoiceTotal.finalize()",
+                "text": "我将四舍五入移至 InvoiceTotal.finalize()",
                 "meta": "knowledge:decision",
-                "mark": "new"
+                "mark": "新增"
               }
             ]
           },
@@ -1066,12 +1066,12 @@
             "obs": [
               {
                 "text": "金额仅在 InvoiceTotal.finalize() 舍入一次，取最近偶数",
-                "meta": "3 sources",
-                "mark": "updated"
+                "meta": "3 个来源",
+                "mark": "已更新"
               }
             ]
           },
-          "say": "……整合为仓库的信念……"
+          "say": "……整合为仓库的认知判断……"
         },
         {
           "edges": "to-refresh",
@@ -1092,7 +1092,7 @@
               },
               {
                 "text": "关键决策和理由",
-                "meta": "+ rounding lives in finalize()",
+                "meta": "+ 舍入移至 finalize()",
                 "mark": "↻"
               },
               {

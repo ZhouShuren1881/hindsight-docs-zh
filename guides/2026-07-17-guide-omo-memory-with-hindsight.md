@@ -1,79 +1,79 @@
 ---
-title: "指南：使用Hindsight添加OMO（oh-my-openagent）记忆"
+title: "指南：使用 Hindsight 为 OMO（oh-my-openagent）添加记忆"
 authors: [benfrank241]
 date: 2026-07-17
 tags: [how-to, omo, agents, memory]
-description: "使用Hindsight添加OMO（oh-my-openagent）记忆，使用五个生命周期挂钩，在每个提示之前记忆召回上下文，在每个回合之后记忆存储对话。"
+description: "使用五个生命周期钩子为 OMO（oh-my-openagent）接入 Hindsight 记忆：每次提示前召回上下文，并在每轮结束后存入对话。"
 image: /img/guides/guide-omo-memory-with-hindsight.svg
 hide_table_of_contents: true
 ---
 
 ![指南：使用 Hindsight 为 OMO（oh-my-openagent）添加记忆](/img/guides/guide-omo-memory-with-hindsight.svg)
 
-如果你愿意**使用 Hindsight 为 OMO (oh-my-openagent) 添加记忆**，最干净的设置是五钩插件。它安装到 OMO 的挂钩系统中，在每次提示之前调用相关记忆，并在每次提示后保留对话记录。这使得 OMO 能够在各个会话中保持长期记忆，而不是从头开始每个新会话。
+如果你想让 **OMO（oh-my-openagent）使用 Hindsight 记忆**，最简洁的设置方式是安装包含五个钩子的插件。它会接入 OMO 的钩子系统，在每次提示前召回相关记忆，并在每轮结束后存入对话记录。这样，OMO 就能在多个会话之间保留长期记忆，而不必每次开启新会话都从头开始。
 
-这非常适合 OMO，因为 OMO 公开了生命周期钩子事件 — `SessionStart`，`UserPromptSubmit`，`Stop`，`SubagentStop`，和`SessionEnd`。该插件使用所有五个：它查询Hindsight在每个用户提示上并将结果注入为 `additionalContext`，然后在停止时读取会话记录并将其发布到Hindsight。因为 OMO 委托给了子智能体，所以 `SubagentStop` 钩子还捕获那些被委托的子智能体学到的东西。
+OMO 很适合这种方式，因为它会触发生命周期钩子事件：`SessionStart`、`UserPromptSubmit`、`Stop`、`SubagentStop` 和 `SessionEnd`。该插件会使用这五个事件：每当用户提交提示时，它都会查询 Hindsight，并将结果作为 `additionalContext` 注入；随后在停止时读取会话记录，并将其 POST 到 Hindsight。由于 OMO 会把工作委派给子智能体，`SubagentStop` 钩子也会捕获这些子智能体通过委派任务获得的信息。
 
-本指南将引导您安装挂钩，让 OMO 指向您的Hindsight后端，了解每个项目的记忆库隔离，以及快速验证流程，以便您可以确认记忆实际上正在使用。保留[文档首页](/) 和 [快速入门指南](/developer/api/quickstart) 就在附近。
+本指南将介绍如何安装钩子、将 OMO 指向你的 Hindsight 后端、了解按项目隔离记忆库的方式，以及如何快速验证记忆确实在使用。操作时可同时查看[文档首页](/)和[快速入门指南](/developer/api/quickstart)。
 
 <!-- truncate -->
 
 > **快速解答**
 >
-> 1.来自 `hindsight-integrations/omo/`，复制`hooks/hooks.json`，`scripts/`目录，以及`settings.json` 进入`~/.omo/`，然后复制`rules/hindsight-memory.md` 进入您的项目 `.omo/rules/`。
-> 2.设置`HINDSIGHT_API_TOKEN`（云）或`HINDSIGHT_API_URL`（自托管）。
-> 3.添加`HINDSIGHT_API_URL`，`HINDSIGHT_API_TOKEN`，和`HINDSIGHT_BANK_ID`至`mcp_env_allowlist` `~/.config/opencode/oh-my-openagent.jsonc`。
-> 4.记忆库默认为`omo`；启用`dynamicBankId` 用于每个项目的隔离。
-> 5.验证后面的会话是否记住前面的会话存储的内容。
+> 1. 在 `hindsight-integrations/omo/` 目录中，将 `hooks/hooks.json`、`scripts/` 目录和 `settings.json` 复制到 `~/.omo/`，并将 `rules/hindsight-memory.md` 复制到项目的 `.omo/rules/` 目录。
+> 2. 设置 `HINDSIGHT_API_TOKEN`（Cloud）或 `HINDSIGHT_API_URL`（自托管）。
+> 3. 将 `HINDSIGHT_API_URL`、`HINDSIGHT_API_TOKEN` 和 `HINDSIGHT_BANK_ID` 添加到 `~/.config/opencode/oh-my-openagent.jsonc` 中的 `mcp_env_allowlist`。
+> 4. 记忆库默认使用 `omo`；启用 `dynamicBankId` 可按项目隔离。
+> 5. 验证后续会话能否记住先前会话存入的内容。
 
-## 先决条件 {#prerequisites}
+## 前提条件 {#prerequisites}
 
-开始之前，请确保您拥有：
+开始前，请确保你已具备以下条件：
 
-- 奥莫 ([oh-my-openagent](https://github.com/code-yeongyu/oh-my-openagent))已安装并运行
-- 可达Hindsight后端，[Hindsight Cloud](https://hindsight.vectorize.io) 或自托管服务器
-- Python3个可用（挂钩是纯的Python标准库，无 需要 `pip install`）
+- 已安装并能正常使用 OMO（[oh-my-openagent](https://github.com/code-yeongyu/oh-my-openagent)）
+- 可访问的 Hindsight 后端，可以是 [Hindsight Cloud](https://hindsight.vectorize.io) 或自托管服务器
+- 已安装 Python 3（这些钩子仅使用 Python 标准库，无需运行 `pip install`）
 
-## 第1步：安装挂钩 {#step-1-install-the-hooks}
+## 第 1 步：安装钩子 {#step-1-install-the-hooks}
 
-来自`hindsight-integrations/omo/`目录，全局安装钩子、脚本和设置：
+在 `hindsight-integrations/omo/` 目录中，全局安装钩子、脚本和设置文件：
 
 ```bash
-# Hooks (global)
+# 钩子（全局）
 mkdir -p ~/.omo/hooks
 cp hooks/hooks.json ~/.omo/hooks/hindsight-hooks.json
 
-# Scripts + settings (global)
+# 脚本和设置（全局）
 mkdir -p ~/.omo/plugins/hindsight/scripts
 cp -r scripts/ ~/.omo/plugins/hindsight/scripts/
 cp settings.json ~/.omo/plugins/hindsight/settings.json
 ```
 
-然后从项目根目录安装每个项目的记忆规则：
+然后，从项目根目录安装该项目专用的记忆规则：
 
 ```bash
-#规则（每个项目 - 从项目根运行）
+# 规则（每个项目一份；在项目根目录运行）
 mkdir -p .omo/rules
 cp rules/hindsight-memory.md .omo/rules/hindsight-memory.md
 ```
 
-该插件具有零依赖性 - 它是纯粹的Python stdlib，因此无需安装任何软件包。
+该插件没有依赖项，只使用 Python 标准库，因此无需安装任何软件包。
 
-## 第2步：将插件指向Hindsight {#step-2-point-the-plugin-at-hindsight}
+## 第 2 步：将插件指向 Hindsight {#step-2-point-the-plugin-at-hindsight}
 
-对于Hindsight Cloud，设置API键：
+使用 Hindsight Cloud 时，设置 API 密钥：
 
 ```bash
 export HINDSIGHT_API_TOKEN=hsk_your_key_here
 ```
 
-对于自托管 Hindsight 服务器，覆盖 API URL：
+使用自托管 Hindsight 服务器时，覆盖 API URL：
 
 ```bash
 export HINDSIGHT_API_URL=http://localhost:8888
 ```
 
-否  本地实例需要API令牌。您还可以在 中永久设置这些 `~/.hindsight/omo.json`：
+本地实例无需 API 令牌。你也可以在 `~/.hindsight/omo.json` 中持久设置这些值：
 
 ```json
 {
@@ -82,9 +82,9 @@ export HINDSIGHT_API_URL=http://localhost:8888
 }
 ```
 
-## 第 3 步：允许 OMO 配置中的环境变量 {#step-3-allow-the-env-vars-in-omos-config}
+## 第 3 步：在 OMO 配置中允许传递环境变量 {#step-3-allow-the-env-vars-in-omos-config}
 
-OMO 控制哪些环境变量到达其钩子。添加Hindsight变量添加到 中的允许列表 `~/.config/opencode/oh-my-openagent.jsonc`：
+OMO 会限制哪些环境变量可以传递给它的钩子。将 Hindsight 相关变量添加到 `~/.config/opencode/oh-my-openagent.jsonc` 中的允许列表：
 
 ```jsonc
 {
@@ -96,31 +96,31 @@ OMO 控制哪些环境变量到达其钩子。添加Hindsight变量添加到 中
 }
 ```
 
-开始新的 OMO 会话 — 记忆已上线。
+启动新的 OMO 会话，记忆功能就会启用。
 
 ## 插件如何使用记忆 {#how-the-plugin-uses-memory}
 
-插件连接到五个 OMO 挂钩事件：
+该插件接入 OMO 的五种钩子事件：
 
-|挂钩|活动|目的|
+| 钩子 | 事件 | 用途 |
 |------|-------|---------|
-|`session_start.py`|`SessionStart`|热身 — 验证 Hindsight 可达|
-|`recall.py`|`UserPromptSubmit`|自动记忆召回 — 查询记忆，注入为 `additionalContext`|
-|`retain.py`|`Stop`|自动记忆存储 — 提取记录，POST 到Hindsight（异步）|
-|`retain.py`|`SubagentStop`|子智能体记忆存储 — 捕获委托的子智能体学习|
-|`session_end.py`|`SessionEnd`|强制短期会话的最终记忆存储|
+| `session_start.py` | `SessionStart` | 预热：确认 Hindsight 可以访问 |
+| `recall.py` | `UserPromptSubmit` | 自动召回：查询记忆，并将结果注入为 `additionalContext` |
+| `retain.py` | `Stop` | 自动存入：提取会话记录，并将其异步 POST 到 Hindsight |
+| `retain.py` | `SubagentStop` | 存入子智能体记忆：捕获受委派的子智能体获得的信息 |
+| `session_end.py` | `SessionEnd` | 为较短会话强制执行最终存入 |
 
-开`UserPromptSubmit`，钩子读取提示，查询Hindsight用于最相关的记忆，并输出 `hookSpecificOutput.additionalContext` 阻止 OMO 在将对话发送到模型之前添加到对话中。注入的块对转录本不可见，但对 OMO 可见。
+在 `UserPromptSubmit` 事件中，钩子会读取提示，向 Hindsight 查询最相关的记忆，并输出一个 `hookSpecificOutput.additionalContext` 块。OMO 会在将对话发送给模型之前，把这个块添加到对话中。注入的内容不会显示在会话记录中，但 OMO 可以读取。
 
-开`Stop` 和 `SubagentStop`，钩子读取会话记录，剥离之前注入的记忆标签（以防止反馈循环），并将对话发布到Hindsight异步。它使用会话 ID 作为文档 ID，因此重新运行同一会话会更新存储的内容，而不是复制它。
+在 `Stop` 和 `SubagentStop` 事件中，钩子会读取会话记录，移除之前注入的记忆标签（以防止反馈循环），并异步将对话 POST 到 Hindsight。它使用会话 ID 作为文档 ID，因此再次运行同一会话时会更新已存储的内容，而不会创建重复内容。
 
-所有钩子优雅降级：如果Hindsight不可达，OMO保持正常工作，无需记忆。
+所有钩子都能平稳降级：如果无法访问 Hindsight，OMO 仍会正常工作，只是不使用记忆。
 
-对于较低级别的行为，请阅读[Hindsight 记忆召回 API](/developer/api/recall) 和 [Hindsight 记忆存储 API](/developer/api/retain)。
+如需了解更底层的行为，请阅读 [Hindsight 的 Recall API](/developer/api/recall) 和 [Hindsight 的 Retain API](/developer/api/retain)。
 
-## 每个项目记忆库 {#per-project-memory-banks}
+## 按项目划分记忆库 {#per-project-memory-banks}
 
-默认情况下所有会话共享 `omo`记忆库。要为每个项目提供独立的记忆，请在 中启用动态记忆库 ID `~/.hindsight/omo.json`：
+默认情况下，所有会话共用 `omo` 记忆库。若要为每个项目使用各自隔离的记忆，请在 `~/.hindsight/omo.json` 中启用动态记忆库 ID：
 
 ```json
 {
@@ -129,65 +129,65 @@ OMO 控制哪些环境变量到达其钩子。添加Hindsight变量添加到 中
 }
 ```
 
-使用此配置，在 中运行 OMO `~/projects/api` 和 `~/projects/frontend` 分别存储和调用记忆。 记忆库 ID 源自工作目录路径（例如 `omo::api`，`omo::frontend`）。
+启用此配置后，在 `~/projects/api` 和 `~/projects/frontend` 中运行 OMO 时，会分别存入和召回记忆。记忆库 ID 根据工作目录路径生成（例如 `omo::api`、`omo::frontend`）。
 
-您还可以使用 查询主要记忆库旁边的其他记忆库 `recallAdditionalBanks`，例如共享团队知识记忆库。
+你也可以通过 `recallAdditionalBanks`，在主记忆库之外同时查询其他记忆库，例如共享的团队知识库。
 
-## 验证记忆是否有效 {#verify-that-memory-is-working}
+## 验证记忆是否正常工作 {#verify-that-memory-is-working}
 
-一个好的测试序列是：
+可以按以下顺序测试：
 
-1. 开始 OMO 会话
-2. 告诉 OMO 值得记住的决定或惯例
-3. 让会话结束，以便保留记录
-4. 在相同的上下文中开始新的 OMO 会话
-5. 询问之前的决定
+1. 启动一个 OMO 会话。
+2. 告诉 OMO 一项值得记住的决定或约定。
+3. 结束会话，让会话记录存入记忆库。
+4. 在相同的上下文中启动新的 OMO 会话。
+5. 询问先前那项决定。
 
-如果回忆起的上下文显示了先前的决定，则该设置正在起作用。
+如果召回的上下文包含先前的决定，说明设置正常。
 
-因为`retainEveryNTurns` 默认为 `10`，记忆存储每10回合才触发一次。测试时，添加 `"retainEveryNTurns": 1`至`~/.hindsight/omo.json` 所以记忆存储每回合都会触发。添加`"debug": true` 看看什么Hindsight每回合都会执行 — 所有日志行都以 为前缀 `[Hindsight]`。
+`retainEveryNTurns` 的默认值是 `10`，因此只有每 10 轮才会触发一次存入。测试时，可在 `~/.hindsight/omo.json` 中添加 `"retainEveryNTurns": 1`，让每轮都触发存入。添加 `"debug": true` 可查看 Hindsight 在每轮执行的操作；所有日志行都以 `[Hindsight]` 开头。
 
 ## 常见错误 {#common-mistakes}
 
-### 忘记环境白名单 {#forgetting-the-env-allowlist}
+### 忘记配置环境变量允许列表 {#forgetting-the-env-allowlist}
 
-如果`HINDSIGHT_API_URL`，`HINDSIGHT_API_TOKEN`，和`HINDSIGHT_BANK_ID` 不在 `mcp_env_allowlist`，OMO 永远不会将它们传递给钩子，而记忆则默默地不做任何事情。
+如果 `HINDSIGHT_API_URL`、`HINDSIGHT_API_TOKEN` 和 `HINDSIGHT_BANK_ID` 未列入 `mcp_env_allowlist`，OMO 就不会将它们传递给钩子，记忆功能也不会启用，而且不会给出提示。
 
-### 无令牌云模式 {#cloud-mode-with-no-token}
+### Cloud 模式下未设置令牌 {#cloud-mode-with-no-token}
 
-如果`hindsightApiUrl` 指向Hindsight Cloud但没有`hindsightApiToken` 已设置，钩子无声地跳过。设置`HINDSIGHT_API_TOKEN`或将其添加到`~/.hindsight/omo.json`。
+如果 `hindsightApiUrl` 指向 Hindsight Cloud，但未设置 `hindsightApiToken`，钩子会静默跳过。请设置 `HINDSIGHT_API_TOKEN`，或将令牌添加到 `~/.hindsight/omo.json`。
 
-### 记忆存储启动前的测试 {#testing-before-retain-fires}
+### 在存入触发前进行测试 {#testing-before-retain-fires}
 
-`retainEveryNTurns` 默认为 `10`，所以短暂的会话可能不会存储任何内容。设置测试时 `"retainEveryNTurns": 1`。
+`retainEveryNTurns` 的默认值是 `10`，因此较短的会话可能不会存入任何内容。测试时将其设为 `"retainEveryNTurns": 1`。
 
-### 期待第一堂课的回忆 {#expecting-memories-on-the-first-session}
+### 期待在第一个会话中召回记忆 {#expecting-memories-on-the-first-session}
 
-记忆召回仅在保留某些内容后才会返回结果。先完成一个 OMO 会话，然后开始一个新的 OMO 会话以查看回忆。
+只有存入内容后，Recall 才会返回结果。先完成一个 OMO 会话，再启动新会话以查看召回的记忆。
 
-## 常见问题解答 {#faq}
+## 常见问题 {#faq}
 
-### 我需要Hindsight Cloud吗？ {#do-i-need-hindsight-cloud}
+### 我必须使用 Hindsight Cloud 吗？ {#do-i-need-hindsight-cloud}
 
-没有。自托管Hindsight服务器也可以工作 — 设置 `HINDSIGHT_API_URL` 并保留本地实例的令牌未设置。
+不必。自托管的 Hindsight 服务器也可以使用：设置 `HINDSIGHT_API_URL`，并在本地实例中不设置令牌。
 
 ### 这会改变我使用 OMO 的方式吗？ {#does-this-change-how-i-use-omo}
 
-没有。这些挂钩会围绕您正常的 OMO 工作流程自动运行。如果 Hindsight 无法到达，OMO 会继续工作，无需记忆。
+不会。这些钩子会在正常的 OMO 工作流程中自动运行。如果无法访问 Hindsight，OMO 仍会继续工作，只是不使用记忆。
 
-### 记忆的范围是怎样的？ {#how-is-memory-scoped}
+### 记忆的范围如何确定？ {#how-is-memory-scoped}
 
-默认情况下所有会话共享 `omo`记忆库。启用`dynamicBankId` 与 `dynamicBankGranularity: ["agent", "project"]` 用于每个项目的隔离，生成类似的记忆库 `omo::myproject`。
+默认情况下，所有会话共用 `omo` 记忆库。启用 `dynamicBankId`，并将 `dynamicBankGranularity` 设为 `["agent", "project"]`，即可按项目隔离，生成类似 `omo::myproject` 的记忆库 ID。
 
-### 它是否捕获亚智能体工作？ {#does-it-capture-sub-agent-work}
+### 它会捕获子智能体的工作吗？ {#does-it-capture-sub-agent-work}
 
-是的。 OMO 代表子智能体 (Claude Code，Codex,OpenCode），以及 `SubagentStop` 钩子捕获来自那些被委托的子智能体的学习。
+会。OMO 会将工作委派给子智能体（Claude Code、Codex、OpenCode），而 `SubagentStop` 钩子会捕获这些受委派的子智能体获得的信息。
 
 ## 后续步骤 {#next-steps}
 
-- 从开始 [Hindsight Cloud](https://hindsight.vectorize.io) 如果您想要托管后端
-- 阅读[完整 Hindsight 文档](/)
-- 跟随[快速入门指南](/developer/api/quickstart)
-- 回顾[Hindsight 记忆召回 API](/developer/api/recall)
-- 回顾[Hindsight 记忆存储 API](/developer/api/retain)
-- 阅读[OMO 集成文档](/sdks/integrations/omo)
+- 如果你需要托管后端，可从 [Hindsight Cloud](https://hindsight.vectorize.io) 开始
+- 阅读 [Hindsight 完整文档](/)
+- 按照[快速入门指南](/developer/api/quickstart)操作
+- 查看 [Hindsight 的 Recall API](/developer/api/recall)
+- 查看 [Hindsight 的 Retain API](/developer/api/retain)
+- 阅读 [OMO 集成文档](/sdks/integrations/omo)

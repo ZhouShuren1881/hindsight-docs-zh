@@ -1,35 +1,31 @@
 ---
 sidebar_position: 20
-title: "OpenCode 持久记忆Hindsight |一体化"
-description: "用Hindsight将长期记忆添加到OpenCode。自动捕获对话并回忆编码会话中的相关上下文。"
+title: "使用 Hindsight 为 OpenCode 添加持久记忆 | 集成"
+description: "使用 Hindsight 为 OpenCode 添加长期记忆。自动捕获对话，并在不同编码会话中召回相关上下文。"
 ---
 
 # OpenCode {#opencode}
 
-:::warning 已被 编码智能体 插件取代
-**opencode 插件** 被 取代 [编码智能体插件](/sdks/integrations/coding-agents) — 一个
-包涵盖Claude Code、Codex、opencode、Kilo、Cursor、Copilot、Grok、Antigravity、Devin 和 Cline 以及其他 CLI 智能体，并且每个存储库都共享它们的记忆库
-。
+:::warning 已被 Coding Agents 插件取代
+**opencode 插件**已被 [Coding Agents 插件](/sdks/integrations/coding-agents)取代。该插件用一个包支持 Claude Code、Codex、opencode、Kilo、Cursor、Copilot、Grok、Antigravity、Devin、Cline 等 CLI 智能体，并让它们共享每个代码仓库的同一个记忆库，而不是每个智能体各用一个记忆库。
 
-此页面和已发布的包仍然有效；它们不再被开发。切换：
+本页面和已发布的软件包仍可使用，但已停止开发。迁移方法：
 
 ```bash
 cd /path/to/your/repo
 npx @vectorize-io/hindsight-coding-agents install opencode
 ```
 
-记忆不会自动移动——记忆库的范围不同，并且该智能体的历史记录无法导入（它保存在内部数据库中）。参见
-[从各智能体专用插件迁移](/sdks/integrations/coding-agents#migrating-from-the-per-agent-plugins)。
+记忆不会自动迁移：新旧记忆库的作用范围不同，而且无法导入此智能体的历史记录（这些记录保存在内部数据库中）。请参阅[从各智能体专用插件迁移](/sdks/integrations/coding-agents#migrating-from-the-per-agent-plugins)。
 :::
 
-
-持久长期记忆插件[OpenCode](https://opencode.ai) 使用 [Hindsight](https://vectorize.io/hindsight)。自动捕获对话，回忆会话开始时的相关上下文，并提供retain/recall/reflect智能体可以直接调用的工具。
+这是一个供 [OpenCode](https://opencode.ai) 使用的持久长期记忆插件，底层采用 [Hindsight](https://vectorize.io/hindsight)。它会自动捕获对话，在会话开始时召回相关上下文，并提供智能体可直接调用的 Retain（存入）、Recall（召回）和 Reflect（反思）工具。
 
 [查看更新日志 →](/changelog/integrations/opencode)
 
 ## 快速入门 {#quick-start}
 
-添加到您的`opencode.json`（项目）或`~/.config/opencode/opencode.json`（全局）：
+将以下配置添加到项目的 `opencode.json` 或全局配置文件 `~/.config/opencode/opencode.json` 中：
 
 ```json
 {
@@ -38,18 +34,18 @@ npx @vectorize-io/hindsight-coding-agents install opencode
 }
 ```
 
-OpenCode自动安装插件 `"plugin"` 启动时的数组 — 否 需要 `npm install`。
+OpenCode 启动时会自动安装 `"plugin"` 数组中的插件，无需运行 `npm install`。
 
-将插件指向您的Hindsight服务器并启动OpenCode：
+将插件指向 Hindsight 服务器，然后启动 OpenCode：
 
 ```bash
 export HINDSIGHT_API_URL="http://localhost:8888"
 opencode
 ```
 
-### 使用Hindsight Cloud {#using-hindsight-cloud}
+### 使用 Hindsight Cloud {#using-hindsight-cloud}
 
-获取API 密钥位于 [ui.hindsight.vectorize.io/connect](https://ui.hindsight.vectorize.io/connect)：
+在 [ui.hindsight.vectorize.io/connect](https://ui.hindsight.vectorize.io/connect) 获取 API 密钥：
 
 ```bash
 export HINDSIGHT_API_URL="https://api.hindsight.vectorize.io"
@@ -57,7 +53,7 @@ export HINDSIGHT_API_TOKEN="your-api-key"
 opencode
 ```
 
-或者通过中的插件选项配置内联 `opencode.json`：
+也可以通过 `opencode.json` 中的插件选项直接配置：
 
 ```json
 {
@@ -75,29 +71,29 @@ opencode
 
 ### 自定义工具 {#custom-tools}
 
-该插件注册了智能体可以显式调用的三个工具：
+插件会注册三个可由智能体显式调用的工具：
 
-|工具|说明|
+| 工具 | 说明 |
 |---|---|
-|`hindsight_retain`|将信息存储在长期记忆中|
-|`hindsight_recall`|搜索长期记忆中的相关信息|
-|`hindsight_reflect`|根据长期记忆生成综合答案|
+| `hindsight_retain` | 将信息存入长期记忆 |
+| `hindsight_recall` | 在长期记忆中搜索相关信息 |
+| `hindsight_reflect` | 根据长期记忆综合生成答案 |
 
-### 自动记忆存储 {#auto-retain}
+### 自动存入 {#auto-retain}
 
-当会话空闲时 (`session.idle`事件），插件会自动保留对话记录Hindsight。可通过 配置 `retainEveryNTurns`控制频率。
+会话进入空闲状态（触发 `session.idle` 事件）时，插件会自动将对话记录存入 Hindsight。可以通过 `retainEveryNTurns` 配置存入频率。
 
-### 会话记忆召回 {#session-recall}
+### 会话召回 {#session-recall}
 
-当新会话开始时，插件会调用相关项目上下文并将其注入系统提示符中，从而使智能体能够访问先前会话的记忆。
+新会话开始时，插件会召回相关的项目上下文，并将其注入系统提示词，让智能体能够访问此前会话中的记忆。
 
-### 压紧钩 {#compaction-hook}
+### 上下文压缩钩子 {#compaction-hook}
 
-当OpenCode压缩上下文窗口时，插件：
-1. 保留压缩前的当前对话
-2. 调用相关记忆并将其注入到压缩上下文中
+OpenCode 压缩上下文窗口时，插件会：
+1. 在压缩前存入当前对话
+2. 召回相关记忆，并将其注入压缩上下文
 
-这可以确保记忆在上下文窗口修剪中幸存下来。
+这样可以确保上下文窗口裁剪后，记忆仍然保留。
 
 ## 配置 {#configuration}
 
@@ -125,7 +121,7 @@ opencode
 
 ### 配置文件 {#config-file}
 
-创建`~/.hindsight/opencode.json` 适用于所有项目的持久配置：
+创建 `~/.hindsight/opencode.json`，即可为所有项目设置持久配置：
 
 ```json
 {
@@ -137,29 +133,29 @@ opencode
 
 ### 环境变量 {#environment-variables}
 
-|变量|说明|默认|
+| 变量 | 说明 | 默认值 |
 |---|---|---|
-|`HINDSIGHT_API_URL`|Hindsight API 基本 URL|*（必填）*|
-|`HINDSIGHT_API_TOKEN`|API 用于身份验证的密钥||
-|`HINDSIGHT_BANK_ID`|静态记忆 记忆库 ID|`opencode`|
-|`HINDSIGHT_AGENT_NAME`|动态记忆库 ID 的智能体名称|`opencode`|
-|`HINDSIGHT_AUTO_RECALL`|会话开始时自动记忆召回|`true`|
-|`HINDSIGHT_AUTO_RETAIN`|会话空闲时自动记忆存储|`true`|
-|`HINDSIGHT_RETAIN_MODE`|`full-session`或`last-turn`|`full-session`|
-|`HINDSIGHT_RECALL_BUDGET`|记忆召回预算：`low`，`mid`，`high`|`mid`|
-|`HINDSIGHT_RECALL_MAX_TOKENS`|记忆结果的最大 token 数数|`1024`|
-|`HINDSIGHT_RECALL_TAGS`|用逗号分隔的标签来过滤记忆召回结果||
-|`HINDSIGHT_RECALL_TAGS_MATCH`|标签匹配模式：`any`，`all`，`any_strict`，`all_strict`|`any`|
-|`HINDSIGHT_DYNAMIC_BANK_ID`|启用动态记忆库ID派生|`false`|
-|`HINDSIGHT_BANK_MISSION`|记忆库mission/context为恍||
+| `HINDSIGHT_API_URL` | Hindsight API 基础 URL | *（必填）* |
+| `HINDSIGHT_API_TOKEN` | 用于身份验证的 API 密钥 | |
+| `HINDSIGHT_BANK_ID` | 静态记忆库 ID | `opencode` |
+| `HINDSIGHT_AGENT_NAME` | 用于生成动态记忆库 ID 的智能体名称 | `opencode` |
+| `HINDSIGHT_AUTO_RECALL` | 会话开始时是否自动召回 | `true` |
+| `HINDSIGHT_AUTO_RETAIN` | 会话空闲时是否自动存入 | `true` |
+| `HINDSIGHT_RETAIN_MODE` | `full-session` 或 `last-turn` | `full-session` |
+| `HINDSIGHT_RECALL_BUDGET` | Recall 预算：`low`、`mid`、`high` | `mid` |
+| `HINDSIGHT_RECALL_MAX_TOKENS` | Recall 结果的最大 token 数 | `1024` |
+| `HINDSIGHT_RECALL_TAGS` | 以逗号分隔的标签，用于筛选 Recall 结果 | |
+| `HINDSIGHT_RECALL_TAGS_MATCH` | 标签匹配模式：`any`、`all`、`any_strict`、`all_strict` | `any` |
+| `HINDSIGHT_DYNAMIC_BANK_ID` | 是否启用动态记忆库 ID 派生 | `false` |
+| `HINDSIGHT_BANK_MISSION` | Reflect 使用的记忆库任务说明/上下文 | |
 
-配置优先级（稍后获胜）：默认 < `~/.hindsight/opencode.json` < 插件选项 < 环境变量。
+配置优先级（后者覆盖前者）：默认值 < `~/.hindsight/opencode.json` < 插件选项 < 环境变量。
 
-### 日志记录和调试 {#logging--debugging}
+### 日志与调试 {#logging--debugging}
 
-插件登录通过OpenCode自己的日志流（`service=hindsight`)，通过 可见 `opencode --print-logs` 或在OpenCode日志文件。错误（失败retain/recall，无法到达API，身份验证问题）以及已解决的问题APIURL + 记忆库已记录 **默认** — 因此，如果记忆没有保存，原因显而易见，无需任何选择。
+插件通过 OpenCode 自带的日志流（`service=hindsight`）记录日志，可通过 `opencode --print-logs` 或 OpenCode 日志文件查看。默认情况下，插件会记录错误（存入或召回失败、无法连接 API、身份验证问题），以及解析出的 API URL 和记忆库，因此记忆未能保存时，无需额外启用选项即可看到原因。
 
-详细跟踪由 控制 `debug`选项，即**仅需配置**（套装`"debug": true` `opencode.json`插件选项或`~/.hindsight/opencode.json`）。故意没有`HINDSIGHT_DEBUG` 环境变量：环境变量设置不可靠OpenCode的插件运行时（特别是在Windows，坚持不懈的地方OpenCode服务器可能永远不会看到它们）。
+详细跟踪由 `debug` 选项控制，该选项只能通过配置设置（在 `opencode.json` 的插件选项或 `~/.hindsight/opencode.json` 中设置 `"debug": true`）。这里有意不提供 `HINDSIGHT_DEBUG` 环境变量：在 OpenCode 的插件运行时中，环境变量可能无法可靠设置。尤其在 Windows 上，常驻运行的 OpenCode 服务器可能始终无法读取这些变量。
 
 ```json
 {
@@ -167,17 +163,17 @@ opencode
 }
 ```
 
-## 动态记忆库ID {#dynamic-bank-ids}
+## 动态记忆库 ID {#dynamic-bank-ids}
 
-对于多项目隔离，启用动态记忆库ID派生：
+如需隔离不同项目的记忆，请启用动态记忆库 ID 派生：
 
 ```bash
 export HINDSIGHT_DYNAMIC_BANK_ID=true
 ```
 
-记忆库ID由粒度字段组成（默认：`agent::project`）。支持的字段：`agent`，`project`，`channel`，`user`。
+记忆库 ID 由粒度字段组合而成（默认值：`agent::project`）。支持的字段：`agent`、`project`、`channel`、`user`。
 
-对于多用户场景（例如，为多个用户提供服务的共享智能体）：
+对于多用户场景（例如，共享智能体为多个用户提供服务）：
 
 ```bash
 export HINDSIGHT_CHANNEL_ID="slack-general"
@@ -186,9 +182,9 @@ export HINDSIGHT_USER_ID="user123"
 
 ## 工作原理 {#how-it-works}
 
-1. **插件加载**当OpenCode开始 — 创建一个 `HindsightClient`，导出记忆库ID，注册工具+钩子
-2. **会话开始时** — `session.created` 事件触发器，插件标记记忆召回注入会话
-3. **系统转换** — 在第一个LLM调用，召回记忆注入系统提示
-4. **智能体工作** — 可以打电话 `hindsight_recall` 和 `hindsight_retain` 在会议期间明确
-5. **会话空闲时** — `session.idle`事件触发对话的自动记忆存储
-6. **上下文压缩** — 如果上下文窗口填满，则通过压缩保留记忆
+1. **插件加载** — OpenCode 启动时，插件会创建 `HindsightClient`、派生记忆库 ID，并注册工具和钩子
+2. **会话开始** — 触发 `session.created` 事件，插件将该会话标记为待注入召回结果
+3. **系统转换** — 首次调用 LLM 时，召回的记忆会注入系统提示词
+4. **智能体工作** — 会话期间，智能体可以显式调用 `hindsight_recall` 和 `hindsight_retain`
+5. **会话空闲** — 触发 `session.idle` 事件，自动存入对话
+6. **上下文压缩** — 上下文窗口满时，压缩过程会保留记忆

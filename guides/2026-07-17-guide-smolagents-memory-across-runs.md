@@ -1,55 +1,55 @@
 ---
-title: "指南：为 SmolAgents 提供在运行过程中持续存在的记忆"
+title: "指南：让 SmolAgents 的记忆跨运行持久保存"
 authors: [benfrank241]
 date: 2026-07-17
 tags: [how-to, smolagents, memory]
-description: "为 SmolAgents 提供与 Hindsight 的交叉运行记忆，因此执行代码的智能体会积累有效和失败的内容，而不是在每次运行时都冷启动。"
+description: "借助 Hindsight 为 SmolAgents 提供跨运行记忆，让执行代码的智能体能够积累有效和失败的经验，而不必在每次运行时从头开始。"
 image: /img/guides/guide-smolagents-memory-across-runs.svg
 hide_table_of_contents: true
 ---
 
-![指南：为 SmolAgents 提供跨运行持久记忆](/img/guides/guide-smolagents-memory-across-runs.svg)
+![指南：让 SmolAgents 的记忆跨运行持久保存](/img/guides/guide-smolagents-memory-across-runs.svg)
 
-SmolAgents 以离散运行的方式运行。每个`agent.run(...)` 旋转、推理、执行代码并返回——然后它学到的一切都消失了。本指南解决的独特问题是 **跨运行持久保存的记忆**：为代码执行智能体提供持久存储，以便它积累特定于任务的事实，记住哪些方法有效，并避免它已经遇到的失败 - 而不是在每次新运行时重新发现所有这些。
+SmolAgents 的运行彼此独立。每次调用 `agent.run(...)` 都会启动智能体、进行推理、执行代码并返回，之后它学到的一切便会消失。本指南要解决的具体问题是**让记忆跨运行持久保存**：为代码执行智能体提供持久存储，使其能够积累任务相关事实、记住哪些方法有效，并避开已经遇到过的失败，而不必在每次新运行时重新发现这些内容。
 
-Hindsight完全符合这一点，因为 SmolAgents 集成将记忆公开为本机工具子类。智能体可以调用`hindsight_retain` 存储在运行过程中学到的内容，新的运行可以通过回忆之前运行发现的所有内容来开始。每次运行都指向相同的稳定记忆库 ID 并继续记忆。这不是设置重复 - 完整的设置指南已经存在，并且该指南重点关注其之上的交叉运行累积模式。
+Hindsight 很适合解决这个问题，因为 SmolAgents 集成会将记忆封装为原生 `Tool` 子类。智能体可以调用 `hindsight_retain`，存下自己在一次运行中学到的内容；新的运行则可以先召回此前运行发现的信息。让每次运行都指向同一个稳定的记忆库 ID，记忆就能延续下去。本指南不再重复设置流程，因为完整的设置指南已经存在；这里重点介绍在此基础上如何积累跨运行记忆。
 
-本指南涵盖了为什么每次运行的智能体开始冷，运行中实际上值得保留的内容，如何在新的运行开始时记忆召回先前的运行，以及如何连接插入工具子类以便循环自行关闭。
+本指南将介绍为什么每次运行的智能体都会从零开始、一次运行中有哪些内容值得存入记忆、如何在新运行开始时召回过去运行的记忆，以及如何接入现成的 `Tool` 子类来形成完整循环。
 
 <!-- truncate -->
 
 > **快速解答**
 >
-> 1. `pip install hindsight-smolagents` 并将其连接到Hindsight（请参阅设置指南）。
-> 2.使用**稳定记忆库 ID** 同样  每次跑步都agent/user/project。
-> 3.添加`create_hindsight_tools(bank_id=...)`因此智能体可以记忆存储和记忆召回。
-> 4.通过使用 注入之前的运行来开始每次运行 `memory_instructions()`。
-> 5.验证稍后的运行是否使用先前运行存储的事实进行回答。
+> 1. 运行 `pip install hindsight-smolagents` 并将其连接到 Hindsight（参见设置指南）。
+> 2. 为同一个智能体、用户或项目的每次运行使用**稳定的记忆库 ID**。
+> 3. 添加 `create_hindsight_tools(bank_id=...)`，让智能体可以存入和召回记忆。
+> 4. 每次运行开始时，通过 `memory_instructions()` 注入过去运行的记忆。
+> 5. 验证后续运行能否根据较早运行存入的事实作答。
 
-## 为什么每次运行的智能体开始冷 {#why-per-run-agents-start-cold}
+## 为什么每次运行的智能体都会从零开始 {#why-per-run-agents-start-cold}
 
-SmolAgents智能体有记忆*以内*一次运行——它的推理步骤、工具观察和中间代码状态存在于智能体循环中。但该状态仅限于运行。下一个`agent.run(...)` 从一块空白的石板开始。
+SmolAgents 智能体在一次运行**内部**拥有记忆：推理步骤、工具观测和中间代码状态都保存在智能体循环中。但这些状态只在本次运行内有效。下一次调用 `agent.run(...)` 时，智能体会从空白状态开始。
 
-​​对于昂贵的代码执行智能体。在运行一次时，它可能会发现一个库需要特定的版本引脚，API返回分页结果，或者一种特定的方法抛出而另一种方法有效。在第二轮中，这些都不存在。智能体重新探索、重新失败并重新得出相同的事实——在它已经拥有的知识上燃烧token和挂钟时间。
+对于执行代码的智能体来说，这会带来不小的成本。第一次运行时，它可能发现某个库需要固定到特定版本、某个 API 会分页返回结果，或者某种方法会抛出异常而另一种方法可行。到了第二次运行，这些发现全都不复存在。智能体只能重新探索、再次失败，并重新推导同样的事实，把 token 和实际耗时花在它已经掌握的知识上。
 
-交叉运行记忆打破了这个循环。持久存储不会在运行边界中抹去智能体学到的知识，而是将有用的残留物向前推进：事实、工作方法和值得避免的死胡同。
+跨运行记忆可以打破这个循环。持久存储会让智能体学到的内容跨越运行边界继续保留，并将有用的经验传递下去：事实、行之有效的方法，以及值得避开的死路。
 
-## 跑步中记忆存储的内容 {#what-to-retain-from-a-run}
+## 一次运行中有哪些内容值得存入记忆 {#what-to-retain-from-a-run}
 
-并不是跑步中的所有事情都值得保留。文字记录有噪音；价值在于持久的教训。 的好候选人 `hindsight_retain`：
+一次运行中的内容并非都值得保留。运行记录往往很嘈杂，真正有价值的是能长期复用的经验。适合交给 `hindsight_retain` 的内容包括：
 
-- **任务特定事实** 智能体必须发现——模式形状、所需版本引脚、端点怪癖、凭证位置（本身绝不是秘密）。
-- **成功的方法** — “用 解析 CSV `pandas.read_csv(..., sep=';')` 在默认分隔符失败的地方成功了。”
-- **失败的方法** —“调用不分页的端点会在 100 行处截断”，因此下一次运行不会重复它。
-- ​​ **决策与约定** 智能体或用户在运行过程中确定的位置。
+- **任务相关事实**：智能体必须自行发现的信息，例如模式结构、所需的版本固定值、端点的特殊行为，以及凭据的位置（绝不要保存凭据本身）。
+- **成功的方法**：例如，“使用 `pandas.read_csv(..., sep=';')` 解析 CSV 成功了，而默认分隔符解析失败。”
+- **失败的方法**：例如，“调用端点时不分页会在 100 行处截断”，这样下一次运行就不会重蹈覆辙。
+- **运行期间由智能体或用户确定的决策和约定**。
 
-让智能体来电`hindsight_retain` 当它到达这些时刻之一时，或者记忆存储在跑步结束时的蒸馏摘要。重点是存储*课程*，不是原始的逐步跟踪。Hindsight提取并巩固摄取的事实，因此简短、具体的陈述记忆存储最好。对于较低级别的行为，请参阅 [Hindsight 记忆存储 API](/developer/api/retain)。
+可以让智能体在遇到这些情况时调用 `hindsight_retain`，也可以在运行结束时存入提炼后的总结。重点是保存**经验**，而不是原始的逐步过程记录。Hindsight 会在摄取时提取并整合事实，因此简短、具体的陈述最适合存入记忆。有关底层行为，请参阅 [Hindsight 的 Retain API](/developer/api/retain)。
 
-## 新一轮开始时的先前运行记忆 {#recall-prior-runs-at-the-start-of-a-new-one}
+## 在新运行开始时召回过去运行的记忆 {#recall-prior-runs-at-the-start-of-a-new-one}
 
-新的运行应该开始时已经知道之前的运行学到了什么。有两种方法可以引入这种背景，并且它们是相辅相成的：
+新的运行应该一开始就能利用过去运行学到的内容。可以通过两种互补的方式提供这些上下文：
 
-- **通过 `memory_instructions()` 提前加载。** 运行开始前，预先记忆最相关的记忆，并将其注入系统提示符中。智能体从上下文中的先前课程开始，因此它从第一步开始就围绕这些课程进行计划：
+- **用 `memory_instructions()` 预先加载。** 在运行开始前，预先召回最相关的记忆并将其注入系统提示。智能体从一开始就能在上下文中获得过去的经验，并据此规划：
 
   ```python
   from hindsight_smolagents import create_hindsight_tools, memory_instructions
@@ -59,33 +59,33 @@ SmolAgents智能体有记忆*以内*一次运行——它的推理步骤、工�
 
   memories = memory_instructions(
       bank_id=BANK,
-      query="该项目的先前方法、失败和任务事实",
+      query="prior approaches, failures, and task facts for this project",
   )
 
   agent = CodeAgent(
       tools=create_hindsight_tools(bank_id=BANK),
       model=HfApiModel(),
-      system_prompt=f"你是一位编码智能体。\n\n{memories}",
+      system_prompt=f"You are a coding agent.\n\n{memories}",
   )
   ```
 
-- **通过 `hindsight_recall` 按需查询。** 因为记忆召回也是一种工具，所以当智能体遇到前置上下文未涵盖的问题时，它可以在运行中搜索记忆。这保持了早期上下文的紧密性，同时仍然允许智能体访问整个存储。
+- **通过 `hindsight_recall` 按需召回。** 由于记忆召回也是一种工具，当智能体遇到预先注入的上下文未涵盖的问题时，可以在运行期间搜索记忆。这样既能控制早期上下文的规模，也能让智能体访问完整的存储内容。
 
-使用**每次运行使用相同 `bank_id`** 是这项工作得以实现的原因——记忆库是将运行联系在一起的线索。对于较低级别的行为，请参阅 [Hindsight 记忆召回 API](/developer/api/recall)。
+每次运行都使用**相同的 `bank_id`**，才能实现这一点：记忆库将不同运行串联起来。有关底层行为，请参阅 [Hindsight 的 Recall API](/developer/api/recall)。
 
 ## 将 SmolAgents 连接到 Hindsight {#connect-smolagents-to-hindsight}
 
-安装并连接一次 - 设置指南中对此进行了完整介绍，因此本指南不再重复：
+只需安装并连接一次即可。设置指南已完整介绍这些步骤，因此本指南不再重复：
 
 ```bash
 pip install hindsight-smolagents
 ```
 
-指向Hindsight Cloud或本地服务器，然后继续。参见**[指南：使用 Hindsight 为 SmolAgents 添加持久记忆](https://hindsight.vectorize.io/guides/2026/05/04/guide-smolagents-memory-with-hindsight)** 完整的安装和连接演练，包括 `configure()` 和自托管。
+将它指向 Hindsight Cloud 或本地服务器，然后即可继续。完整的安装和连接流程（包括 `configure()` 和自托管方式），请参阅**[指南：使用 Hindsight 为 SmolAgents 添加持久记忆](https://hindsight.vectorize.io/guides/2026/05/04/guide-smolagents-memory-with-hindsight)**。
 
-## 您的智能体可以调用的嵌入式记忆工具 {#drop-in-memory-tools-your-agent-can-call}
+## 智能体可以直接调用的记忆工具 {#drop-in-memory-tools-your-agent-can-call}
 
-集成交付了三个原生`Tool` 子类，因此智能体使用记忆的方式与使用任何其他工具的方式相同。使用工厂创建它们：
+该集成提供了三个原生 `Tool` 子类，因此智能体使用记忆的方式与使用其他工具相同。通过工厂函数创建这些工具：
 
 ```python
 from hindsight_smolagents import create_hindsight_tools
@@ -93,13 +93,13 @@ from hindsight_smolagents import create_hindsight_tools
 tools = create_hindsight_tools(bank_id="code-agent-project-x")
 ```
 
-这给出了智能体：
+这会为智能体提供以下工具：
 
-- **`hindsight_retain`** — 将事实、教训或决定存储为长期记忆。
-- **`hindsight_recall`** — 在长期记忆中搜索相关的先前事实。
-- **`hindsight_reflect`** — 从存储的记忆中合成一个合理的答案。
+- **`hindsight_retain`**：将事实、经验或决策存入长期记忆。
+- **`hindsight_recall`**：在长期记忆中搜索相关的过往事实。
+- **`hindsight_reflect`**：根据已存储的记忆综合生成经过推理的答案。
 
-您可以只包含您需要的工具。对于跨运行的累积循环，记忆存储和记忆召回是必需的； 当您想要综合答案而不是原始事实时，反思很有用：
+你可以只加入需要的工具。对于跨运行积累记忆的循环，存入和召回是必需的；如果你需要综合答案而非原始事实，反思也很有用：
 
 ```python
 tools = create_hindsight_tools(
@@ -110,61 +110,61 @@ tools = create_hindsight_tools(
 )
 ```
 
-如果您想单独实例化工具，`HindsightRetainTool` 和 `HindsightRecallTool`采取同样的`bank_id`。 [集成文档](/sdks/integrations/smolagents) 列出每个参数，包括范围界定和记忆召回预算的标签。
+如果你希望单独实例化工具，`HindsightRetainTool` 和 `HindsightRecallTool` 接受相同的 `bank_id`。[集成文档](/sdks/integrations/smolagents)列出了所有参数，包括用于限定范围的标签和记忆召回预算。
 
-## 验证记忆在运行中持续存在 {#verify-memory-persists-across-runs}
+## 验证记忆是否能跨运行持久保存 {#verify-memory-persists-across-runs}
 
-测试很简单：证明运行二知道只有运行一才能学到的东西。
+验证方法很简单：证明第二次运行知道只有第一次运行才可能学到的信息。
 
-1. 在运行一中，让智能体解决任务并调用 `hindsight_retain` 一个具体的课程 - 例如，“导出端点分页为 100 行，因此始终传递 `page`。”
-2. 让跑步结束。记忆存储被存储到记忆库中。
-3. 开始运行第二个**相同 `bank_id`**，以及前载 `memory_instructions()` 或提出一个应该触发的问题 `hindsight_recall`。
-4. 询问智能体有关分页行为的信息，或者观察它是否围绕它进行计划而不重新发现它。
+1. 在第一次运行中，让智能体解决一个任务，并调用 `hindsight_retain` 存入一条具体经验，例如：“导出端点每页返回 100 行，因此始终传入 `page`。”
+2. 等待本次运行结束。存入的内容会保存到记忆库中。
+3. 开始第二次运行，并使用**相同的 `bank_id`**；然后通过 `memory_instructions()` 预先注入记忆，或者提出一个应该触发 `hindsight_recall` 的问题。
+4. 询问智能体有关该分页行为的信息，或观察它能否据此规划而无需重新发现这一点。
 
-如果使用第一轮中的事实来运行两个答案，则交叉运行记忆正在发挥作用。如果冷启动，请检查两次运行是否使用相同的记忆库 ID，以及记忆库调用是否实际完成。
+如果第二次运行根据第一次运行存入的事实作答，说明跨运行记忆正常工作。如果它仍从零开始，请检查两次运行是否使用了相同的记忆库 ID，以及存入调用是否确实完成。
 
 ## 常见错误 {#common-mistakes}
 
-### 每次运行使用不同的记忆库ID {#using-a-different-bank-id-per-run}
+### 每次运行都使用不同的记忆库 ID {#using-a-different-bank-id-per-run}
 
-记忆库是将纽带联系在一起的。如果每次运行都会生成一个新的记忆库 ID，则不会保留任何内容。为智能体、用户或项目固定一个稳定的 ID。
+记忆库负责将不同运行串联起来。如果每次运行都生成新的记忆库 ID，内容就无法持久保存。为智能体、用户或项目固定使用一个稳定的 ID。
 
-### 保留原始转录本 {#retaining-the-raw-transcript}
+### 存入原始运行记录 {#retaining-the-raw-transcript}
 
-存储完整的逐步跟踪将教训埋藏在噪音中。 记忆存储是简短的、具体的事实和决定——这就是记忆召回稍后出现的内容。
+保存完整的逐步过程记录，会让经验淹没在噪声中。应改为存入简短、具体的事实和决策，之后召回时才更容易找到有用内容。
 
-### 添加工具但从不注入上下文 {#adding-tools-but-never-injecting-context}
+### 添加工具，却从不注入上下文 {#adding-tools-but-never-injecting-context}
 
-赋予智能体`hindsight_recall` 让它按需搜索，但它不会自动使用先前的上下文开始每次运行，除非您也注入 `memory_instructions()`。两者结合使用可实现可靠的热启动。
+为智能体提供 `hindsight_recall` 后，它可以按需搜索记忆；但除非同时注入 `memory_instructions()`，否则每次运行开始时都不会自动获得过去的上下文。两者配合使用，才能可靠地温启动。
 
-### 在记忆存储完成之前测试记忆召回 {#testing-recall-before-retain-completes}
+### 在存入完成前测试召回 {#testing-recall-before-retain-completes}
 
-如果您在运行一个的记忆存储完成之前检查运行二，则记忆可能尚未存储。让第一个运行完成，然后再断言第二个运行记住。
+如果第一次运行的存入操作尚未完成，你就检查第二次运行，记忆可能还没有保存。请等第一次运行完成后，再确认第二次运行是否记得相关内容。
 
-## 常见问题解答 {#faq}
+## 常见问题 {#faq}
 
-### 我需要Hindsight Cloud吗？ {#do-i-need-hindsight-cloud}
+### 我需要使用 Hindsight Cloud 吗？ {#do-i-need-hindsight-cloud}
 
-没有。自托管 Hindsight 服务器也可以工作 - 将工具指向您的本地 API URL。有关连接详细信息，请参阅设置指南。
+不需要。自托管的 Hindsight 服务器也可以使用，只需将工具指向本地 API URL。连接详情请参阅设置指南。
 
-### 智能体如何决定何时存储记忆？ {#how-does-an-agent-decide-when-to-retain}
+### 智能体如何决定何时存入记忆？ {#how-does-an-agent-decide-when-to-retain}
 
-智能体呼叫`hindsight_retain` 像任何工具一样，因此您可以提示它在自然时刻存储课程，或者在跑步结束时自己存储摘要。存储教训，而不是原始痕迹。
+智能体像调用其他工具一样调用 `hindsight_retain`。你可以提示它在适当时机存入经验，也可以在运行结束时自行存入提炼后的总结。保存经验，而不是原始过程记录。
 
-### 这会减慢每次跑步的速度吗？ {#does-this-slow-down-every-run}
+### 这会拖慢每次运行吗？ {#does-this-slow-down-every-run}
 
-前置式`memory_instructions()` 在运行前添加一个记忆召回，并保持注入的上下文受 限制 `max_results` 和 `max_tokens`。按需`hindsight_recall`仅在智能体选择调用它时运行。
+使用 `memory_instructions()` 预先加载会在运行前增加一次记忆召回，并通过 `max_results` 和 `max_tokens` 限制注入的上下文。按需调用的 `hindsight_recall` 只会在智能体选择调用时运行。
 
-### 这仅限于CodeAgent吗？ {#is-this-limited-to-codeagent}
+### 这只适用于 CodeAgent 吗？ {#is-this-limited-to-codeagent}
 
-没有。这些工具遵循 SmolAgents 工具模型，因此任何接受工具的智能体都可以使用相同的交叉运行记忆模式。
+不只如此。这些工具遵循 SmolAgents 的工具模型，因此任何接受工具的智能体都能使用相同的跨运行记忆模式。
 
 ## 后续步骤 {#next-steps}
 
-- 从完整开始[SmolAgents 配置指南](https://hindsight.vectorize.io/guides/2026/05/04/guide-smolagents-memory-with-hindsight)
-- 尝试[Hindsight Cloud](https://hindsight.vectorize.io) 用于托管记忆后端
-- 阅读[完整 Hindsight 文档](/)
-- 跟随[快速入门指南](/developer/api/quickstart)
-- 回顾[Hindsight 记忆召回 API](/developer/api/recall)
-- 回顾[Hindsight 记忆存储 API](/developer/api/retain)
-- 阅读[SmolAgents 集成文档](/sdks/integrations/smolagents)
+- 从完整的 [SmolAgents 设置指南](https://hindsight.vectorize.io/guides/2026/05/04/guide-smolagents-memory-with-hindsight)开始
+- 试用托管记忆后端 [Hindsight Cloud](https://hindsight.vectorize.io)
+- 阅读[完整的 Hindsight 文档](/)
+- 查看[快速入门指南](/developer/api/quickstart)
+- 查看 [Hindsight 的 Recall API](/developer/api/recall)
+- 查看 [Hindsight 的 Retain API](/developer/api/retain)
+- 阅读 [SmolAgents 集成文档](/sdks/integrations/smolagents)

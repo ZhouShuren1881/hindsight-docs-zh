@@ -83,7 +83,7 @@ print(path)
 if path.exists():
     print(path.read_text())
 else:
-    print("尚无 Hermes 原生 Hindsight 配置")
+    print("No native Hermes Hindsight config yet")
 PY
 ```
 
@@ -129,7 +129,7 @@ PY
 
 ```bash
 hermes plugins install hindsight
-hermes memory setup           # select "hindsight"
+hermes memory setup           # 选择 "hindsight"
 ```
 
 出现提示时，选择 **Hindsight** 提供商。如果使用 Hindsight Cloud，输入之前使用的 API URL 和 API 密钥。如果使用本地模式，让 Hermes 指向同一个本地后端，或在向导中选择本地模式，以创建预期的原生配置。
@@ -210,7 +210,7 @@ cfg = json.loads(path.read_text())
 cfg["memory_mode"] = "hybrid"
 cfg.setdefault("prefetch_method", "recall")
 path.write_text(json.dumps(cfg, indent=2) + "\n")
-print(f"已更新 {path}")
+print(f"Updated {path}")
 PY
 ```
 
@@ -223,13 +223,13 @@ PY
 启动 Hermes 并存储一条简单事实：
 
 ```text
-记住，我们的发布日期是 5 月 21 日，API 推出依赖计费迁移。
+Remember that our launch date is May 21 and the API rollout depends on the billing migration.
 ```
 
 然后在**下一轮**或新会话中追问：
 
 ```text
-你还记得哪些关于发布计划的信息？
+What do you remember about the launch plan?
 ```
 
 下一轮这个细节很重要。Hindsight 在回复后异步存储记忆，提供商在下一轮前执行预取。如果在同一轮存储和召回，可能把系统的正常行为误判成迁移失败。
@@ -318,7 +318,7 @@ Hermes 文档指出，生命周期钩子需要版本支持 `pre_llm_call` 和 `p
 cat ~/.hermes/logs/hindsight-embed.log
 ```
 
-如果只等了几秒就判定失败，请再等待一段时间后重试。
+如果只等了几秒就判定失败，请再多等一会儿并重试。
 
 ### 问题：刚存储完记忆就召回失败 {#problem-recall-fails-right-after-retain}
 

@@ -12,7 +12,7 @@
         },
         {
           "type": "subtitle",
-          "text": "每个记忆库覆盖"
+          "text": "记忆库级覆盖项"
         }
       ],
       "minCardHeight": 58
@@ -34,7 +34,7 @@
       "content": [
         {
           "type": "title",
-          "text": "指令"
+          "text": "强制指令"
         }
       ],
       "minCardHeight": 28
@@ -54,7 +54,7 @@
       "id": "src",
       "type": "group",
       "label": {
-        "title": "调整记忆库"
+        "title": "已调优的记忆库"
       },
       "children": [
         "s-config",
@@ -89,7 +89,7 @@
         },
         {
           "type": "subtitle",
-          "text": "现成的清单"
+          "text": "现成模板清单"
         }
       ],
       "minCardHeight": 58,
@@ -178,7 +178,7 @@
         },
         {
           "type": "subtitle",
-          "text": "每个记忆库覆盖"
+          "text": "记忆库级覆盖项"
         }
       ],
       "minCardHeight": 73
@@ -200,7 +200,7 @@
       "content": [
         {
           "type": "title",
-          "text": "指令"
+          "text": "强制指令"
         }
       ],
       "minCardHeight": 28
@@ -348,7 +348,7 @@
               {
                 "text": "retain_mission",
                 "mono": true,
-                "meta": "set"
+                "meta": "已设置"
               },
               {
                 "text": "enable_observations",
@@ -358,9 +358,9 @@
             ],
             "s-mm": [
               {
-                "text": "项目背景",
+                "text": "project-context",
                 "mono": true,
-                "meta": "filled"
+                "meta": "已填充"
               }
             ],
             "s-dir": [
@@ -370,11 +370,11 @@
             ],
             "s-mem": [
               {
-                "text": "1,240 个记忆"
+                "text": "1,240 条记忆"
               }
             ]
           },
-          "say": "一个已经调优的记忆库：包含自身配置、心智模型、指令，以及已学到的记忆。",
+          "say": "这是一个已经调优的记忆库：包含它自己的配置、心智模型、强制指令，以及它已经学到的记忆。",
           "ms": 2800
         },
         {
@@ -385,14 +385,14 @@
           "show": {
             "export": [
               {
-                "text": "仅此记忆库覆盖的内容"
+                "text": "仅包含此记忆库的覆盖项"
               },
               {
-                "text": "无服务器默认值，无API密钥"
+                "text": "不含服务器默认值，不含 API 密钥"
               }
             ]
           },
-          "say": "导出读取这套设置，只保留本记忆库的配置，不包含服务器默认值，也绝不包含凭据，让清单可移植。",
+          "say": "导出会读取这套配置，只保留此记忆库设置的配置项；不会包含服务器默认值，也绝不会包含凭据，因此清单可以移植。",
           "ms": 3000
         },
         {
@@ -402,19 +402,19 @@
               {
                 "tag": "version",
                 "tone": "gray",
-                "text": "“1”",
+                "text": "\"1\"",
                 "mono": true
               },
               {
                 "tag": "bank",
                 "tone": "blue",
-                "text": "retain_mission，enable_observations"
+                "text": "retain_mission, enable_observations"
               },
               {
                 "tag": "mental_models",
                 "tone": "orange",
-                "text": "项目背景",
-                "meta": "refresh after consolidation"
+                "text": "project-context",
+                "meta": "整合后刷新"
               },
               {
                 "tag": "directives",
@@ -424,12 +424,12 @@
             ],
             "s-mem": [
               {
-                "text": "1,240 个记忆",
+                "text": "1,240 条记忆",
                 "mark": "stay"
               }
             ]
           },
-          "say": "清单是普通 JSON：包含配置、心智模型定义（不含内容）与指令，始终不包含记忆。",
+          "say": "清单是普通 JSON：包含配置、心智模型定义（不含其内容）和强制指令；其中绝不会包含记忆。",
           "ms": 3200
         }
       ]
@@ -448,19 +448,19 @@
               {
                 "tag": "version",
                 "tone": "gray",
-                "text": "“1”",
+                "text": "\"1\"",
                 "mono": true
               },
               {
                 "tag": "bank",
                 "tone": "blue",
-                "text": "retain_mission，enable_observations"
+                "text": "retain_mission, enable_observations"
               },
               {
                 "tag": "mental_models",
                 "tone": "orange",
-                "text": "项目背景",
-                "meta": "refresh after consolidation"
+                "text": "project-context",
+                "meta": "整合后刷新"
               },
               {
                 "tag": "directives",
@@ -469,7 +469,7 @@
               }
             ]
           },
-          "say": "将清单导入另一个记忆库。若记忆库尚不存在，会创建它。"
+          "say": "将清单导入另一个记忆库。如果该记忆库尚不存在，系统会创建它。"
         },
         {
           "show": {
@@ -479,17 +479,17 @@
                 "mark": "✓"
               },
               {
-                "text": "配置：2 个覆盖"
+                "text": "配置：2 个覆盖项"
               },
               {
                 "text": "心智模型：新增 1 个"
               },
               {
-                "text": "指令：1 个新指令"
+                "text": "强制指令：新增 1 条"
               }
             ]
           },
-          "say": "首先检查清单。试运行在此停止，并显示将发生的更改。",
+          "say": "系统会先检查清单。试运行会在此处停止，并显示将要发生的更改。",
           "ms": 2800
         },
         {
@@ -499,7 +499,7 @@
               {
                 "text": "retain_mission",
                 "mono": true,
-                "meta": "set"
+                "meta": "已设置"
               },
               {
                 "text": "enable_observations",
@@ -509,9 +509,9 @@
             ],
             "d-mm": [
               {
-                "text": "项目背景",
+                "text": "project-context",
                 "mono": true,
-                "meta": "no content yet"
+                "meta": "暂无内容"
               }
             ],
             "d-dir": [
@@ -525,7 +525,7 @@
               }
             ]
           },
-          "say": "配置成为记忆库级覆盖值。心智模型按 ID 匹配，指令按名称匹配；创建新条目，更新已有条目。",
+          "say": "配置将成为记忆库级覆盖项。心智模型按 ID 匹配，强制指令按名称匹配；系统会创建新条目并更新已有条目。",
           "ms": 3400
         },
         {
@@ -536,27 +536,27 @@
           "show": {
             "refresh": [
               {
-                "text": "1 项刷新已排队"
+                "text": "已将 1 项刷新任务加入队列"
               },
               {
-                "text": "还没有什么可读的"
+                "text": "目前还没有可读取的内容"
               }
             ]
           },
-          "say": "心智模型内容在后台生成，响应返回用于跟踪的操作 ID。"
+          "say": "心智模型内容会在后台生成。响应会返回操作 ID，供您跟踪进度。"
         },
         {
           "edges": "gen",
           "show": {
             "d-mm": [
               {
-                "text": "项目背景",
+                "text": "project-context",
                 "mono": true,
-                "meta": "fills as memories arrive"
+                "meta": "随着记忆到来逐步填充"
               }
             ]
           },
-          "say": "新记忆库尚无记忆，因此没有内容可读取。模型在每次整合后刷新，随着记忆库学习而逐渐充实。行为相同，记忆库全新。",
+          "say": "新记忆库尚无记忆，因此目前没有内容可读。心智模型会在每次整合后刷新，随着记忆库不断学习而逐渐填充。行为相同，记忆库是新的。",
           "ms": 3200
         }
       ]
@@ -577,26 +577,26 @@
               },
               {
                 "text": "个人助手",
-                "meta": "+ more"
+                "meta": "+ 更多"
               }
             ]
           },
           "light": [
             "hub"
           ],
-          "say": "也可以跳过导出：模板中心提供现成清单，使用前可先阅读。"
+          "say": "也可以跳过导出步骤：模板中心提供现成的清单，您可以先阅读再使用。"
         },
         {
           "edges": {
             "edge": "from-hub",
-            "data": "Coding Agent"
+            "data": "编程智能体"
           },
           "show": {
             "manifest": [
               {
                 "tag": "version",
                 "tone": "gray",
-                "text": "“1”",
+                "text": "\"1\"",
                 "mono": true
               },
               {
@@ -607,18 +607,18 @@
               {
                 "tag": "mental_models",
                 "tone": "orange",
-                "text": "项目背景、开发人员偏好、评审模式"
+                "text": "project-context, developer-preferences, review-patterns"
               }
             ]
           },
-          "say": "复制一个模板，其 JSON 与导出生成的格式相同。"
+          "say": "复制一个模板即可；其 JSON 格式与导出生成的格式相同。"
         },
         {
           "edges": {
             "edge": "in",
             "data": "import"
           },
-          "say": "以相同方式导入。"
+          "say": "然后以相同方式导入。"
         },
         {
           "edges": "apply",
@@ -627,7 +627,7 @@
               {
                 "text": "retain_mission",
                 "mono": true,
-                "meta": "set"
+                "meta": "已设置"
               },
               {
                 "text": "enable_observations",
@@ -637,23 +637,23 @@
               {
                 "text": "observations_mission",
                 "mono": true,
-                "meta": "set"
+                "meta": "已设置"
               },
               {
                 "text": "disposition_*",
                 "mono": true,
-                "meta": "literalism 5 · skepticism 3"
+                "meta": "字面解读倾向 5 · 怀疑倾向 3"
               }
             ],
             "d-mm": [
               {
-                "text": "3 个模型",
-                "meta": "fill as memories arrive"
+                "text": "3 个心智模型",
+                "meta": "随着记忆到来逐步填充"
               }
             ],
             "d-dir": [
               {
-                "text": "此模板中没有"
+                "text": "此模板中没有强制指令"
               }
             ],
             "d-mem": [
@@ -662,7 +662,7 @@
               }
             ]
           },
-          "say": "新记忆库从已验证的设置开始，无需从零配置。",
+          "say": "新记忆库从经过验证的配置开始，而不必从零开始。",
           "ms": 3000
         }
       ]

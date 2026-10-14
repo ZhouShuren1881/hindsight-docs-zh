@@ -1,58 +1,55 @@
 ---
-title: "在Windows上构建一个记住您的代码库的Hermes编码助手"
+title: "在 Windows 上构建能记住代码库的 Hermes 编程助手"
 authors: [benfrank241]
 slug: "2026/06/01/hermes-hindsight-windows"
 date: 2026-06-01T12:00
 tags: [hermes, windows, coding, memory, agents, tutorial, hindsight]
-description: "Nous Research 刚刚宣布Hermes 智能体原生于 Windows。以下是如何使用 Hindsight 添加持久代码库记忆 — 没有 Docker，没有 WSL，PowerShell 从始至终。"
+description: "Nous Research 刚刚宣布 Hermes Agent 已原生支持 Windows。下面介绍如何使用 Hindsight 为它添加持久的代码库记忆：无需 Docker 或 WSL，全程使用 PowerShell。"
 image: /img/blog/hermes-hindsight-windows.webp
 hide_table_of_contents: true
 ---
 
-![Hermes Windows 上的智能体与 Hindsight](/img/blog/hermes-hindsight-windows.webp)
+![运行在 Windows 上并接入 Hindsight 的 Hermes Agent](/img/blog/hermes-hindsight-windows.webp)
 
-:::info 自这篇文章以来设置已更改
-Hindsight 不再与 Hermes 捆绑在一起。 Nous Research 将所有记忆提供者从
-Hermes 核心树，因此新安装现在运行之前的 `hermes plugins install hindsight`
-`hermes memory setup`。现有设置会自行迁移。参见
-[Hindsight 成为Hermes 插件后有何变化](/blog/2026/10/01/hindsight-hermes-plugin-what-changed)。
+:::info 本文发布后，设置方式已有变化
+Hindsight 不再随 Hermes 一同打包。Nous Research 已将所有记忆提供方移出 Hermes 核心代码树，因此新安装现在需要先运行 `hermes plugins install hindsight`，再运行 `hermes memory setup`。现有安装会自动迁移。详情请参阅[成为 Hermes 插件后，Hindsight 有何变化](/blog/2026/10/01/hindsight-hermes-plugin-what-changed)。
 :::
 
-昨天，Nous Research[宣布Hermes智能体现已在Windows上原生支持](https://x.com/NousResearch/status/2061236625925886252)。以下是如何赋予它持久的代码库记忆。
+昨天，Nous Research [宣布 Hermes Agent 现已原生支持 Windows](https://x.com/NousResearch/status/2061236625925886252)。下面介绍如何为它添加持久的代码库记忆。
 
-如果 Windows 是您的日常驱动程序，那么差距是真实存在的 — WSL 解决方法、仅限 Mac 的二进制文件、假设 `bash` 的嵌入式数据库。 Hermes 刚刚缩小了该间隙的一侧。 Hindsight 关闭记忆侧。
+如果 Windows 是你日常使用的平台，你一定感受过这种缺口：需要借助 WSL 绕行、二进制文件只支持 Mac、嵌入式数据库还假定你使用 `bash`。Hermes 刚刚补上了 Windows 支持这一侧，Hindsight 则补上了记忆这一侧。
 
-​​[Hermes智能体](https://github.com/NousResearch/hermes-agent) 和 Hindsight 在 Windows 上本机运行。没有Docker。没有 WSL。 PowerShell 从头到尾。嵌入式 PostgreSQL 处理存储层，守护进程作为正常的 Windows 进程生成，并且您的代码库记忆在会话之间复合，就像在每个其他平台上一样。
+[Hermes Agent](https://github.com/NousResearch/hermes-agent) 与 Hindsight 可以原生运行在 Windows 上。无需 Docker，也无需 WSL，全程使用 PowerShell。嵌入式 PostgreSQL 负责存储，守护进程作为普通 Windows 进程启动，代码库记忆会像在其他平台上一样，在不同会话间不断积累。
 
-这篇文章是Windows特定于[构建一个记住您的代码库的Hermes编码助手](/blog/2026/05/25/hermes-coding-assistant-codebase-memory)的姊妹篇。相同的工作流程，相同的复合记忆 - 不同的设置步骤。
+本文是[构建能记住代码库的 Hermes 编程助手](/blog/2026/05/25/hermes-coding-assistant-codebase-memory)的 Windows 专题篇。工作流程和不断积累的记忆都相同，区别在于设置步骤。
 
-在 Hindsight 方面，我们几周来一直在验证 Windows 路径：[每日Windows烟雾测试](https://github.com/vectorize-io/hindsight/tree/v0.10.3/.github/workflows/windows-smoke.yml) 每天早上 06:00 UTC 在 `windows-latest` 上运行完整的 API + 嵌入式 Postgres + Python 客户端堆栈。现在 Hermes 也是原生的，这对组合已经准备好了。
+在 Hindsight 方面，我们已经连续数周验证 Windows 运行路径：[每日 Windows 冒烟测试](https://github.com/vectorize-io/hindsight/blob/main/.github/workflows/windows-smoke.yml)每天早上 06:00 UTC 都会在 `windows-latest` 上运行完整的 API、嵌入式 Postgres 和 Python 客户端堆栈。如今 Hermes 也已原生支持 Windows，两者开箱即可配合使用。
 
 <!-- truncate -->
 
 ---
 
-## 你在Windows上得到什么 {#what-you-get-on-windows}
+## 在 Windows 上可以获得什么 {#what-you-get-on-windows}
 
-完整的Hermes + Hindsight 功能集，原生：
+Hermes + Hindsight 的完整功能集都能原生运行：
 
-- **三种部署模式** — 在设置向导中选择云、本地嵌入式或本地外部。没有 Docker，没有 WSL，没有单独的 PostgreSQL 安装。 Local Embedded 附带 `pg0`（嵌入式 Postgres 发行版）；第一次启动会解压二进制文件并运行`initdb`，后续启动速度很快。
-- **自动记忆召回和自动记忆存储** — 每个编码会话都从注入到Hermes上下文中的相关记忆开始，并且每个会话都会保留您在下一个会话中讨论的内容。
-- **仅限本地选项** — 当您选择本地嵌入式时，您的记忆库位于计算机上的 `~/.hindsight/` 中。除非您将笔记本电脑指向 Hindsight Cloud，否则任何内容都不会离开笔记本电脑。
+- **三种部署模式**：在设置向导中选择 Cloud、Local Embedded 或 Local External。无需 Docker、WSL，也无需单独安装 PostgreSQL。Local Embedded 内置 `pg0`（一种嵌入式 Postgres 发行版）；首次启动时会解包二进制文件并运行 `initdb`，之后启动会很快。
+- **自动召回和自动存入**：每次编码会话开始时，相关记忆都会注入 Hermes 的上下文；每次会话也会存入你讨论的内容，供下一次会话使用。
+- **仅在本机运行的选项**：选择 Local Embedded 后，记忆库会保存在你机器的 `~/.hindsight/` 目录中。除非你将其指向 Hindsight Cloud，否则任何内容都不会离开你的笔记本电脑。
 
-唯一的Windows特定问题是字符编码（更多内容见下文）。
+Windows 特有的注意事项只有字符编码（下文详述）。
 
 ---
 
-## 单命令设置 {#one-command-setup}
+## 一条命令完成设置 {#one-command-setup}
 
-没有Windows特定的安装舞蹈。来自 PowerShell：
+Windows 上无需特殊的安装流程。在 PowerShell 中运行：
 
 ```powershell
 hermes memory setup
 ```
 
-从提供商列表中选择**Hindsight**。然后向导会要求您选择一种模式：
+在提供方列表中选择 **hindsight**。随后向导会让你选择运行模式：
 
 ```
 Select mode
@@ -63,61 +60,61 @@ Select mode
   (○) Local External  Connect to an existing Hindsight instance
 ```
 
-每种模式的要求：
+各模式需要提供的信息如下：
 
-- **云** — 来自 [ui.hindsight.vectorize.io/connect](https://ui.hindsight.vectorize.io/connect) 的 `hsk_...` token。默认的 API URL (`https://api.hindsight.vectorize.io`) 是正确的 - 只需接受它即可。
-- **本地嵌入式** — 向导在本地下载并运行 Hindsight（首次安装时约 200MB，包括嵌入的 PostgreSQL 二进制文件）。系统将提示您输入 LLM 提供程序（OpenAI、Anthropic、Gemini、Groq、Ollama 等）、该提供程序的 API 密钥以及可选的模型覆盖。无需安装任何其他内容 - `uvx` 处理获取 `hindsight-embed`，并且守护进程会自动生成。
-- **本地外部** — 将 Hermes 指向您已经运行的 Hindsight 实例（您自己的服务器、队友的服务器、自托管服务器）。提供 API URL，如果实例需要，还提供 API 密钥。
+- **Cloud**：提供从 [ui.hindsight.vectorize.io/connect](https://ui.hindsight.vectorize.io/connect) 获取的 `hsk_...` token。默认 API URL（`https://api.hindsight.vectorize.io`）是正确的，直接接受即可。
+- **Local Embedded**：向导会在本地下载并运行 Hindsight（首次安装约需下载 200MB，其中包括嵌入式 PostgreSQL 二进制文件）。系统会提示你选择 LLM 服务提供方（OpenAI、Anthropic、Gemini、Groq、Ollama 等），输入该提供方的 API 密钥，并可选择指定模型覆盖项。无需另行安装；`uvx` 会负责获取 `hindsight-embed`，守护进程也会自动启动。
+- **Local External**：让 Hermes 连接到已在运行的 Hindsight 实例（可以是你自己的服务器、队友的服务器或自托管主机）。填写 API URL；如果该实例需要 API 密钥，也要一并提供。
 
-确认已接线：
+检查是否已连接成功：
 
 ```powershell
 hermes memory status
 ```
 
-您应该看到`provider: hindsight`和`status: ready`。在本地嵌入式上，首次启动需要 60-90 秒，而 pg0 解压 Postgres 并运行 `initdb`。
+你应该会看到 `provider: hindsight` 和 `status: ready`。Local Embedded 首次启动需要 60–90 秒，因为 `pg0` 要先解包 Postgres 并运行 `initdb`。
 
 ---
 
-## Hermes 在您的Windows 项目中记住了什么 {#what-hermes-remembers-on-your-windows-project}
+## Hermes 会记住 Windows 项目中的哪些内容 {#what-hermes-remembers-on-your-windows-project}
 
-相同的发动机，相同的排气。在典型的编码会话后自动进入记忆的事实类型：
+底层引擎和信息提取方式都相同。典型编码会话结束后自动存入记忆的事实包括：
 
-- `"项目使用 .NET 8，src/ 下所有新代码采用文件范围命名空间"`
-- `"没有 LongPathsEnabled 注册表项时，PowerShell 部署脚本在长路径上失败"`
-- `"3 月 N+1 事件后，从 EF Core 延迟加载切换为显式 Include() 链"`
-- `"约定：异步控制器调用使用 ConfigureAwait(false)，不需要它的 Razor 页面除外"`
+- `"Project targets .NET 8, all new code under src/ uses file-scoped namespaces"`
+- `"PowerShell deployment script fails on long file paths without the LongPathsEnabled registry key"`
+- `"We switched from EF Core lazy loading to explicit Include() chains after the N+1 incident in March"`
+- `"Convention: all async controllers wrap calls in ConfigureAwait(false) — except Razor pages, which don't need it"`
 
-你不要告诉Hermes这些。写入管道从您的对话中提取它——您提出的问题、您描述的错误、您在此过程中做出的决定。
+你无需逐条告诉 Hermes 这些信息。写入流程会从对话中提取它们，包括你提出的问题、描述的故障，以及过程中作出的决定。
 
 ---
 
-## 三个卓有成效的工作流程 {#three-workflows-where-it-pays-off}
+## 三种能派上用场的工作流程 {#three-workflows-where-it-pays-off}
 
 ### 开始新会话 {#starting-a-new-session}
 
-如果没有记忆，复杂的Windows项目的每个会话都从上下文设置开始：.NET版本、SDK、哪些项目依赖于哪个、部署怪癖。在任何实际工作发生之前，你会燃烧 10 分钟。
+没有记忆时，每次处理复杂的 Windows 项目都要先补充上下文：.NET 版本、SDK、项目之间的依赖关系和部署方面的特殊情况。真正开始工作之前，你可能已经花了 10 分钟。
 
-使用Hermes + Hindsight，这些事实已经被注入。你以实际问题开始：
+有了 Hermes + Hindsight，这些信息已经注入上下文。你可以直接提出实际问题：
 
-> “帮我调试 OrderService 中的超时。”
+> “Help me debug this timeout in the OrderService.”
 
-Hermes 已经了解项目的框架、异步处理的约定以及部署配置。第一条消息是真正的工作。
+Hermes 已经了解项目使用的框架、异步处理约定和部署配置。第一条消息就能进入实际工作。
 
-### 调试重复出现的Windows-特定问题 {#debugging-recurring-windows-specific-issues}
+### 调试反复出现的 Windows 特有问题 {#debugging-recurring-windows-specific-issues}
 
-一些错误仅出现在Windows上——路径分隔符、行结尾、文件锁定、防病毒对构建输出的干扰。如果没有记忆，您将独立地重新诊断每一个。
+有些故障只会在 Windows 上出现，例如路径分隔符、换行符、文件锁，以及防病毒软件对构建输出的干扰。没有记忆时，每次都得重新独立诊断。
 
-有了记忆，当你描述一个闻起来很熟悉的新失败时，Hermes会回忆起之前的例子：
+有了记忆，当你描述一个似曾相识的新故障时，Hermes 会召回之前的相关情况：
 
-- `"Windows Defender 构建中扫描 obj/ 会使 MSBuild 间歇失败，已在 2026-03 添加排除项"`
-- `"dotnet publish 文件锁错误通常因 visual-studio.exe 占用旧输出，关闭 VS 即可解除"`
+- `"MSBuild fails intermittently when Windows Defender real-time protection scans the obj/ directory mid-build — added an exclusion in 2026-03"`
+- `"File lock errors on dotnet publish are usually visual-studio.exe still holding the previous output — closing VS clears it"`
 
-这些是您永远不会在调试会话开始时粘贴的事实。在适当的时候回忆起来，它们可以节省最多的时间。
+这些事实你绝不会在调试会话开始时主动贴出来，但在合适的时候召回它们，最能节省时间。
 
-### 让队友加入您的Windows项目 {#onboarding-a-teammate-to-your-windows-project}
+### 帮队友熟悉你的 Windows 项目 {#onboarding-a-teammate-to-your-windows-project}
 
-如果队友加入并且您共享记忆库ID，他们会立即继承您积累的上下文。他们查询 Hermes 来了解它所知道的内容：
+队友加入后，只要你与其共享一个记忆库 ID，对方就能立即获得你积累的上下文。他们可以向 Hermes 查询已知信息：
 
 ```
 What do you know about the build pipeline?
@@ -127,46 +124,47 @@ What do you know about the build pipeline?
 What quirks have come up with the Authentication service on Windows?
 ```
 
-答案来自您过去的会议 - 包括从未纳入自述文件中的Windows特定问题。
+回答来自你过去的会话，其中也包括那些从未写进 README 的 Windows 特有问题。
 
 ---
 
-## 你应该选择哪种模式？ {#which-mode-should-you-pick}
+## 应该选择哪种模式？ {#which-mode-should-you-pick}
 
-快速决策树：
+可以按下面的思路快速选择：
 
-- **独立开发，想要零操作：** 云。一个 API 键，无需考虑守护进程，可从您登录的任何机器访问记忆。
-- **独立开发，代码库敏感或离线大量：** 本地嵌入。 记忆库保留在您的机器上，适用于航班和气隙网络（您仍然需要网络来进行 LLM 呼叫本身）。
-- **具有共享Hindsight服务器的团队：** 本地外部。将每个开发人员的Hermes指向同一个Hindsight实例并共享一个记忆库ID——机构代码库知识在整个团队中积累。
+- **个人开发者，希望省去运维**：选择 Cloud。只需一个 API 密钥，无需操心守护进程；你登录的任何设备都能访问记忆。
+- **个人开发者，代码库需要保密或经常离线**：选择 Local Embedded。记忆库留在自己的机器上，乘飞机或在隔离网络中也能使用（但调用 LLM 本身仍然需要联网）。
+- **团队已有共享的 Hindsight 服务器**：选择 Local External。让每位开发者的 Hermes 连接到同一个 Hindsight 实例，并共享一个记忆库 ID，团队的代码库知识便会不断积累。
 
-Hindsight v0.5.5版本添加了[原生Windows 支持嵌入模式](/blog/2026/04/28/version-0-5-5)，后续的每个版本都在Windows上进行了验证。 [v0.4.21 原生 Windows 帖子](/blog/2026/03/30/version-0-4-21) 具有在没有 Docker 的情况下运行的原始演练。
-
----
-
-## 常见Windows陷阱 {#common-windows-gotchas}
-
-从Windows CI 运行和用户报告中提炼出一些需要注意的事项：
-
-- **UTF-8编码** — Hermes 和 Hindsight 日志状态，带有复选标记和方框图字符 (✓, ─, │)，导致 Windows 的默认 `cp1252` 编解码器崩溃。如果您在首次运行时看到 `UnicodeEncodeError`，请在 PowerShell 配置文件中设置 `PYTHONUTF8=1` 和 `PYTHONIOENCODING=utf-8`。出于相同的原因，Hindsight Windows CI 在每次运行时都会设置两者。
-- **首次启动Postgres初始化时间**（仅限本地嵌入式）— 在冷 Windows 机器上需要 60-90 秒，同时 `pg0` 解压 Postgres 并运行 `initdb`。原木降落在`~/.hindsight/profiles/<profile>.log`。
-- **长文件路径** — 如果您的项目位于树深处，请在注册表中启用 `LongPathsEnabled`。 Hindsight 本身保持在 260 个字符的限制之下，但某些 Python 轮安装则不然。
-- **守护进程上的防病毒** — Windows Defender 有时会在首次解压时标记嵌入的 Postgres 二进制文件。如果遇到启动缓慢或隔离警告，请将 `~/.hindsight/` 添加到排除列表中。
+Hindsight v0.5.5 增加了[嵌入式模式的原生 Windows 支持](/blog/2026/04/28/version-0-5-5)，之后的每个版本也都经过了 Windows 验证。[v0.4.21 原生 Windows 版本介绍](/blog/2026/03/30/version-0-4-21)提供了无需 Docker 的最初操作指南。
 
 ---
 
-## 使用的时间越长，解释的就越少 {#the-longer-you-use-it-the-less-you-explain}
+## Windows 上常见的注意事项 {#common-windows-gotchas}
 
-与任何其他平台相同的回报。第一节，Hermes 对您的 Windows 项目一无所知。第五节，它了解框架、约定和构建管道。第 30 节，它知道 Windows 特定的怪癖，这些怪癖从未被记录下来，但总是让新的贡献者绊倒。
+以下注意事项整理自 Windows CI 运行记录和用户反馈：
 
-Hermes 刚刚发货原生Windows。 Hindsight已经在那里了。将它们连接在一起，您的代码库记忆就会在您已经使用的平台上复合。
-
-使用`hermes memory setup`进行设置，或从[Hindsight Windows 安装指南](https://hindsight.vectorize.io/developer/installation#windows)开始。
+- **UTF-8 编码**：Hermes 和 Hindsight 会使用勾号和制表图形字符（✓、─、│）记录状态；Windows 默认的 `cp1252` 编码器无法处理这些字符，可能导致程序崩溃。如果首次运行时遇到 `UnicodeEncodeError`，请在 PowerShell 配置文件中设置 `PYTHONUTF8=1` 和 `PYTHONIOENCODING=utf-8`。Hindsight Windows CI 的每次运行都会设置这两个值，原因相同。
+- **Postgres 首次启动初始化时间**（仅 Local Embedded）：在未预热的 Windows 机器上，`pg0` 解包 Postgres 并运行 `initdb` 需要 60–90 秒。日志位于 `~/.hindsight/profiles/<profile>.log`。
+- **长文件路径**：如果项目目录层级较深，请在注册表中启用 `LongPathsEnabled`。Hindsight 自身的路径不会超过 260 个字符的限制，但部分 Python wheel 安装过程会超过限制。
+- **守护进程受到防病毒软件干扰**：Windows Defender 有时会在首次解包时将嵌入式 Postgres 二进制文件标记为威胁。如果启动缓慢或收到隔离警告，请将 `~/.hindsight/` 添加到排除列表。
 
 ---
 
-**进一步阅读：**
-- [构建一个记住您的代码库的Hermes编码助手](/blog/2026/05/25/hermes-coding-assistant-codebase-memory) — 这篇文章的平台无关版本
-- [什么是智能体记忆？](https://vectorize.io/what-is-agent-memory/) — 基本概念
-- [Hindsight v0.4.21 — 原生Windows 支持](/blog/2026/03/30/version-0-4-21) — 原始 Windows 版本
-- [Hindsight v0.5.5 — Windows 嵌入式模式完善](/blog/2026/04/28/version-0-5-5) — Windows 上的本地 pg0
-- [2026 年最佳 AI 智能体记忆系统](https://vectorize.io/articles/best-ai-agent-memory-systems/) — 全景观比较
+## 用得越久，需要解释的就越少 {#the-longer-you-use-it-the-less-you-explain}
+
+无论在哪个平台，长期使用都会带来同样的好处。第一次会话时，Hermes 对你的 Windows 项目一无所知。到第五次会话时，它已经了解框架、约定和构建流程。到第三十次会话时，它还会记住那些从未写成文档、却总让新贡献者踩坑的 Windows 特有情况。
+
+Hermes 刚刚推出了原生 Windows 支持，Hindsight 早已支持 Windows。将两者结合起来，你的代码库记忆就会在你日常使用的平台上持续积累。
+
+运行 `hermes memory setup` 完成设置，或从 [Hindsight Windows 安装指南](https://hindsight.vectorize.io/developer/installation#windows)开始。
+
+---
+
+**延伸阅读：**
+- [构建能记住代码库的 Hermes 编程助手](/blog/2026/05/25/hermes-coding-assistant-codebase-memory)：本文的平台无关版本
+- [什么是智能体记忆？](https://vectorize.io/what-is-agent-memory/)：基础概念介绍
+- [Hindsight v0.4.21：原生 Windows 支持](/blog/2026/03/30/version-0-4-21)：最初的 Windows 版本
+- [Hindsight v0.5.5：打磨 Windows 嵌入式模式](/blog/2026/04/28/version-0-5-5)：在 Windows 上本地运行 pg0
+- [2026 年最佳 AI 智能体记忆系统](https://vectorize.io/articles/best-ai-agent-memory-systems/)：完整的行业对比
+---

@@ -18,16 +18,16 @@ from hindsight_client import Hindsight
 
 client = Hindsight(base_url="http://localhost:8888")
 
-# 存储记忆
-client.retain(bank_id="python-sdk-bank", content="Alice 在 Google 工作")
+# 存入一条记忆
+client.retain(bank_id="python-sdk-bank", content="Alice works at Google")
 
 # 召回记忆
-results = client.recall(bank_id="python-sdk-bank", query="Alice 做什么工作？")
+results = client.recall(bank_id="python-sdk-bank", query="What does Alice do?")
 for r in results.results:
     print(r.text)
 
-# 反思，生成带上下文回答
-answer = client.reflect(bank_id="python-sdk-bank", query="介绍一下 Alice")
+# 反思：结合上下文生成答案
+answer = client.reflect(bank_id="python-sdk-bank", query="Tell me about Alice")
 print(answer.text)
 # [/docs:quickstart]
 
@@ -37,16 +37,16 @@ from hindsight_client import Hindsight
 
 client = Hindsight(
     base_url="http://localhost:8888",  # Hindsight API URL
-    timeout=30.0,                       # 请求超时，单位秒
+    timeout=30.0,                       # 请求超时时间，单位为秒
     # api_key="your-api-key",          # 可选 Bearer 令牌
 )
 
 # 核心操作
-client.retain(bank_id="python-sdk-test", content="你好，世界")
-results = client.recall(bank_id="python-sdk-test", query="你好")
+client.retain(bank_id="python-sdk-test", content="Hello world")
+results = client.recall(bank_id="python-sdk-test", query="Hello")
 
-# 记忆库、心智模型、指令和记忆辅助方法
-client.create_bank(bank_id="python-sdk-test", name="测试记忆库")
+# 记忆库、心智模型、强制指令和记忆的辅助方法
+client.create_bank(bank_id="python-sdk-test", name="Test Bank")
 models = client.list_mental_models(bank_id="python-sdk-test")
 directives = client.list_directives(bank_id="python-sdk-test")
 memories = client.list_memories(bank_id="python-sdk-test")
@@ -59,15 +59,15 @@ version = client.get_version()
 print(version.api_version)
 
 if not version.features.mcp:
-    raise RuntimeError("此服务器未提供 MCP 端点")
+    raise RuntimeError("This server does not expose the MCP endpoint")
 # [/docs:get-version]
 
 
 # [docs:retain]
-# Simple
+# 简单调用
 client.retain(
     bank_id="python-sdk-bank",
-    content="Alice 在 Google 担任软件工程师",
+    content="Alice works at Google as a software engineer",
 )
 
 # 带选项
@@ -75,12 +75,12 @@ from datetime import datetime
 
 client.retain(
     bank_id="python-sdk-bank",
-    content="Alice 升职了",
-    context="职业动态",
+    content="Alice got promoted",
+    context="career update",
     timestamp=datetime(2024, 1, 15),
     document_id="conversation_001",
     metadata={"source": "slack"},
-    retain_async=False,  # Set True for background processing
+    retain_async=False,  # 设为 True 可在后台处理
 )
 # [/docs:retain]
 
@@ -89,11 +89,11 @@ client.retain(
 client.retain_batch(
     bank_id="python-sdk-bank",
     items=[
-        {"content": "Alice 在 Google 工作", "context": "职业"},
-        {"content": "Bob 是数据科学家", "context": "职业"},
+        {"content": "Alice works at Google", "context": "career"},
+        {"content": "Bob is a data scientist", "context": "career"},
     ],
     document_id="conversation_001",
-    retain_async=False,  # Set True for background processing
+    retain_async=False,  # 设为 True 可在后台处理
 )
 # [/docs:retain-batch]
 
@@ -102,7 +102,7 @@ client.retain_batch(
 # 简单调用，返回 RecallResponse
 results = client.recall(
     bank_id="python-sdk-bank",
-    query="Alice 做什么工作？",
+    query="What does Alice do?",
 )
 
 for r in results.results:
@@ -111,19 +111,19 @@ for r in results.results:
 # 带选项
 results = client.recall(
     bank_id="python-sdk-bank",
-    query="Alice 做什么工作？",
+    query="What does Alice do?",
     types=["world", "observation"],  # 按事实类型筛选
     max_tokens=4096,
-    budget="high",  # low, mid, or high
+    budget="high",  # 可选 low、mid 或 high
 )
 # [/docs:recall]
 
 
 # [docs:recall-chunks]
-# 返回包含来源文本块的 RecallResponse
+# 返回包含来源文本分块的 RecallResponse
 response = client.recall(
     bank_id="python-sdk-bank",
-    query="Alice 做什么工作？",
+    query="What does Alice do?",
     types=["world", "experience"],
     budget="mid",
     max_tokens=4096,
@@ -143,12 +143,12 @@ for r in response.results:
 # [docs:reflect]
 answer = client.reflect(
     bank_id="python-sdk-bank",
-    query="关于 Alice，我应该了解什么？",
-    budget="low",  # low, mid, or high
-    context="准备会议",
+    query="What should I know about Alice?",
+    budget="low",  # 可选 low、mid 或 high
+    context="preparing for a meeting",
 )
 
-print(answer.text)  # Generated response
+print(answer.text)  # 生成的响应
 # [/docs:reflect]
 
 
@@ -156,11 +156,11 @@ print(answer.text)  # Generated response
 client.create_bank(
     bank_id="python-sdk-bank",
     name="Assistant",
-    mission="你是一位乐于助人的 AI 助手，跟踪用户偏好和对话历史。",
+    mission="You're a helpful AI assistant - keep track of user preferences and conversation history.",
     disposition={
-        "skepticism": 3,    # 1-5：信任到怀疑
-        "literalism": 3,    # 1-5：灵活到字面
-        "empathy": 3,       # 1-5：冷淡到共情
+        "skepticism": 3,    # 1-5：从信任到怀疑
+        "literalism": 3,    # 1-5：从灵活解读到字面解读
+        "empathy": 3,       # 1-5：从疏离到共情
     },
 )
 # [/docs:create-bank]
@@ -186,16 +186,16 @@ from hindsight_client import Hindsight
 async def main():
     client = Hindsight(base_url="http://localhost:8888")
 
-    # 异步存储
-    await client.aretain(bank_id="python-sdk-bank", content="你好，世界")
+    # 异步存入
+    await client.aretain(bank_id="python-sdk-bank", content="Hello world")
 
     # 异步召回
-    results = await client.arecall(bank_id="python-sdk-bank", query="你好")
+    results = await client.arecall(bank_id="python-sdk-bank", query="Hello")
     for r in results.results:
         print(r.text)
 
     # 异步反思
-    answer = await client.areflect(bank_id="python-sdk-bank", query="我说了什么？")
+    answer = await client.areflect(bank_id="python-sdk-bank", query="What did I say?")
     print(answer.text)
 
     await client.aclose()
@@ -209,7 +209,7 @@ from hindsight_client import Hindsight
 
 with Hindsight(base_url="http://localhost:8888") as client:
     client.retain(bank_id="python-sdk-bank", content="Hello")
-    results = client.recall(bank_id="python-sdk-bank", query="你好")
+    results = client.recall(bank_id="python-sdk-bank", query="Hello")
 # 客户端自动关闭
 # [/docs:context-manager]
 
@@ -220,4 +220,4 @@ with Hindsight(base_url="http://localhost:8888") as client:
 requests.delete(f"{HINDSIGHT_URL}/v1/default/banks/python-sdk-bank")
 requests.delete(f"{HINDSIGHT_URL}/v1/default/banks/python-sdk-test")
 
-print("python-sdk.py: 全部示例通过")
+print("python-sdk.py: All examples passed")

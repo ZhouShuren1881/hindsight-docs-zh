@@ -1,42 +1,42 @@
 ---
-title: "OpenHands（以前的 OpenDevin）忘记每项任务。这是一命令修复。"
+title: "OpenHands（原名 OpenDevin）会忘记每项任务。用一条命令即可解决。"
 authors: [benfrank241]
 slug: "2026/06/19/openhands-persistent-memory"
 date: 2026-06-19T12:00
 tags: [openhands, opendevin, mcp, memory, persistent-memory, hindsight, agents, tutorial]
-description: "使用Hindsight为OpenHands（以前的OpenDevin）添加持久的长期记忆。一个命令将 Hindsight MCP 服务器连接到 config.toml 中，并将记忆召回/记忆存储规则放入智能体.md 中，这样智能体就会在每个任务开始时回忆起相关上下文，并在工作时保留持久的事实。"
+description: "使用 Hindsight 为 OpenHands（原名 OpenDevin）添加持久的长期记忆。只需一条命令，就能将 Hindsight MCP 服务器接入 config.toml，并把召回/存入规则写入 AGENTS.md，让智能体在每项任务开始时召回相关上下文，并在工作过程中存入值得长期保留的事实。"
 image: /img/blog/openhands-persistent-memory.webp
 hide_table_of_contents: true
 ---
 
-![OpenHands 持久记忆Hindsight](/img/blog/openhands-persistent-memory.webp)
+![借助 Hindsight 为 OpenHands 添加持久记忆](/img/blog/openhands-persistent-memory.webp)
 
-[OpenHands](https://github.com/OpenHands/OpenHands)（以前称为 OpenDevin）是最强大的开源编码智能体之一 - 它读取您的存储库、运行命令、编辑文件和发布更改。但每项任务都是从一张白纸开始的。你上周解释的架构决策、你昨天纠正的约定、你告诉它永远不要使用的库——在任务结束时一切都消失了。
+[OpenHands](https://github.com/OpenHands/OpenHands) 是功能强大的开源编码智能体之一（原名 OpenDevin）：它可以读取代码仓库、运行命令、编辑文件并交付更改。但每项任务开始时，它都像一张白纸。你上周解释过的架构决策、昨天纠正过的约定、你告诉它绝不要使用的库，都会在任务结束时一并消失。
 
-这篇文章是Hindsight OpenHands 集成的演练。一个命令将 Hindsight 的 **MCP服务器** 连接到您的配置中，并将记忆召回/记忆存储规则放入 `AGENTS.md` 中，因此智能体在每项任务开始时都会提取相关上下文，并在工作时保存持久的事实。
+本文将介绍 Hindsight 与 OpenHands 的集成方式。只需一条命令，就能将 Hindsight 的 **MCP 服务器**接入配置，并把召回/存入规则写入 `AGENTS.md`，让智能体在每项任务开始时提取相关上下文，并在工作过程中保存值得长期保留的事实。
 
-## 概览 {#tldr}
+## 简介 {#tldr}
 
 <!-- truncate -->
 
-- OpenHands 智能体冷启动每项任务——不记得过去的决定、偏好或惯例。
-- Hindsight积分使用OpenHands'**原生MCP支持**。 `pip install hindsight-openhands`，运行`init`，完成。
-- `init`将Hindsight**MCP服务器**添加到`config.toml`（赋予智能体`recall` / `retain` / `reflect`工具），并将记忆召回/记忆存储**规则**写入`AGENTS.md`。
-- 因为`AGENTS.md`是永远在线的上下文，所以该规则可靠地引导智能体：首先是记忆召回，存储记忆持久的事实——不需要提示。
-- 记忆存在于您为每个项目选择的Hindsight**记忆库**中，因此每个存储库都有自己独立的记忆。
-- Hindsight Cloud意味着没有基础设施。 [免费注册。](https://ui.hindsight.vectorize.io)
+- OpenHands 智能体每项任务都从零开始：它不记得以往的决策、偏好或约定。
+- Hindsight 集成使用 OpenHands 的**原生 MCP 支持**。运行 `pip install hindsight-openhands`，再运行 `init` 即可。
+- `init` 会将 Hindsight **MCP 服务器**添加到 `config.toml`（为智能体提供 `recall` / `retain` / `reflect` 工具），并将召回/存入**规则**写入 `AGENTS.md`。
+- `AGENTS.md` 会始终载入上下文，因此这条规则能可靠地引导智能体：先召回，再存入值得长期保留的事实，无需额外提示。
+- 记忆存放在你为项目选择的 Hindsight **记忆库**中，因此每个代码仓库都有独立的记忆。
+- 使用 Hindsight Cloud 无需自行搭建基础设施。[免费注册。](https://ui.hindsight.vectorize.io)
 
-## 为什么OpenHands需要持久记忆 {#why-openhands-needs-persistent-memory}
+## 为什么 OpenHands 需要持久记忆 {#why-openhands-needs-persistent-memory}
 
-OpenHands 非常擅长“做事”：给它一个任务，它会计划、运行工具并迭代，直到工作完成。在任务中它具有完整的工作上下文。但该上下文仅限于任务范围。关闭它，开始下一个，智能体就归零了。
+OpenHands 擅长执行任务：你给它一个任务，它便会制定计划、调用工具并反复迭代，直到完成。在单项任务中，它拥有完整的工作上下文；但上下文只在该任务期间有效。关闭任务后再开始下一项，智能体就会回到起点。
 
-对于日复一日地针对同一个存储库运行的编码智能体，这是您首先遇到的限制。它重新推导出每个任务的项目结构。它重新建议您已经拒绝的依赖项。它忘记了您上次执行的部署步骤。你最终会重新解释相同的上下文，直到感觉自己完成这项工作变得更容易为止。
+如果你每天都让编码智能体处理同一个代码仓库，这会很快成为明显的限制。它会在每项任务中重新梳理项目结构，重新建议你已经否决的依赖项，也会忘记你上次一步步教它执行的部署流程。你不得不一遍遍解释相同的背景，最后甚至觉得自己动手更省事。
 
-Hindsight 为 OpenHands 提供了一种在任务和会话中持续存在的记忆 - 并且因为 OpenHands 本身就讲 MCP，因此只需一个命令即可将其连接起来。
+Hindsight 让 OpenHands 能在不同任务和会话之间保留记忆。由于 OpenHands 原生支持 MCP，只需一条命令就能完成接入。
 
-## 它是如何工作的 {#how-it-works}
+## 工作原理 {#how-it-works}
 
-OpenHands 有 **原生 Streamable-HTTP MCP 支持**，因此 Hindsight MCP 端点直接连接 — 没有网桥，没有代理：
+OpenHands 原生支持 Streamable-HTTP MCP，因此 Hindsight MCP 端点可以直接接入，无需桥接或代理：
 
 ```toml
 [mcp]
@@ -45,21 +45,21 @@ shttp_servers = [
 ]
 ```
 
-仅此一项就为智能体提供了三种工具：`recall`、`retain`和`reflect`。但模型_可以_调用的工具不是它_将_调用的工具。整合的后半部分使记忆成为一种习惯，而不是一种选择。
+这样就为智能体提供了三个工具：`recall`、`retain` 和 `reflect`。但模型“可以”调用的工具，不代表它“会”去调用。集成的另一部分会让记忆成为习惯，而非可选项。
 
-OpenHands 将 `AGENTS.md` 加载到 **每项任务** 上的智能体上下文中。因此，集成在那里写入了记忆召回/记忆存储规则：
+OpenHands 会在**每项任务**中将 `AGENTS.md` 加载到智能体上下文里。因此，集成会在该文件中写入召回/存入规则：
 
-> 您通过HindsightMCP服务器（`recall`、`retain`和`reflect`工具）拥有持久的长期记忆。
+> 你通过 Hindsight MCP 服务器（`recall`、`retain` 和 `reflect` 工具）拥有持久的长期记忆。
 >
-> - 在每个任务开始时，根据用户的请求调用 `recall`，以在行动之前加载相关决策、首选项和项目上下文。使用相关的内容并忽略其余的。
-> -当您了解一个持久的事实 - 架构决策、用户偏好、约定或任何值得跨会话记住的内容时 - 调用 `retain` 来存储它。
-> ​​- 不要提及这些记忆操作，除非用户询问。
+> - 每项任务开始时，使用用户的请求调用 `recall`，在采取行动之前加载相关决策、偏好和项目背景。只采用相关内容，忽略其余内容。
+> - 如果你得知值得长期保留的事实（例如架构决策、用户偏好、约定，或任何值得在不同会话间记住的内容），就调用 `retain` 将其存储起来。
+> - 除非用户询问，否则不要提及这些记忆操作。
 
-该规则位于文件顶部受隔离的`<!-- HINDSIGHT:BEGIN -->` … `<!-- HINDSIGHT:END -->` 块中，因此它引导指令，并且可以在不触及您自己的内容的情况下更新或删除。
+这条规则位于文件顶部的 `<!-- HINDSIGHT:BEGIN -->` … `<!-- HINDSIGHT:END -->` 围栏块中，因此会优先出现在指令中，也可以单独更新或删除，不会影响你自己的内容。
 
 ## 设置 {#setup}
 
-安装包并在项目中运行`init`：
+安装软件包，并在项目中运行 `init`：
 
 ```bash
 pip install hindsight-openhands
@@ -67,59 +67,59 @@ cd your-project
 hindsight-openhands init --api-token YOUR_HINDSIGHT_API_KEY --bank-id my-project
 ```
 
-`init`将`[mcp]`条目合并到`./config.toml`中，并将规则写入`./AGENTS.md`中。推荐的后端是 **Hindsight Cloud** — [免费注册](https://ui.hindsight.vectorize.io) 并创建一个 API 密钥。
+`init` 会将 `[mcp]` 配置合并到 `./config.toml`，并将规则写入 `./AGENTS.md`。推荐使用 **Hindsight Cloud** 作为后端：[免费注册](https://ui.hindsight.vectorize.io)并创建 API 密钥。
 
-自托管的工作原理相同；在本地运行 API 并将 `init` 指向它（开放本地服务器不需要令牌）：
+自托管的接入方式相同：在本地运行 API，然后让 `init` 指向它（开放的本地服务器无需令牌）：
 
 ```bash
 hindsight-openhands init --api-url http://localhost:8888 --bank-id my-project
 ```
 
-如果`config.toml`无法安全解析，`init`永远不会接触它——它会打印要粘贴的确切片段。您还可以预览所有内容，而无需编写任何内容：
+如果 `config.toml` 无法安全解析，`init` 不会修改该文件，而是打印出可供粘贴的完整配置片段。你也可以先预览所有更改，而不写入任何内容：
 
 ```bash
 hindsight-openhands init --print-only
 ```
 
-## 每个项目记忆 {#per-project-memory}
+## 按项目隔离记忆 {#per-project-memory}
 
-`--bank-id`是记忆的路由键。 Hindsight记忆库只是一个命名空间，编码智能体的自然粒度是每个项目一个记忆库：
+`--bank-id` 是记忆的路由键。Hindsight 记忆库本质上是一个命名空间；对编码智能体来说，最自然的粒度是每个项目使用一个记忆库：
 
 ```bash
 hindsight-openhands init --bank-id acme-api
 ```
 
-每个存储库都有自己独立的记忆——`acme-api`的决策和约定永远不会渗透到`acme-frontend`。因为记忆库位于服务器端（在云或您自己的实例上），所以无论您在本地、在 CI 中还是从另一台机器运行 OpenHands，都会存在相同的记忆。如果不设置，记忆库id默认为`openhands`。
+每个代码仓库都有独立的记忆：`acme-api` 的决策和约定不会泄漏到 `acme-frontend`。由于记忆库存放在服务端（Hindsight Cloud 或你自己的实例），无论你在本地、CI 中还是另一台机器上运行 OpenHands，都能使用同一份记忆。如果没有设置，记忆库 ID 默认为 `openhands`。
 
 ## 命令 {#commands}
 
-|命令|它的作用|
+| 命令 | 作用 |
 | ------------------------------- | --------------------------------------------------------- |
-|`hindsight-openhands init`|添加MCP服务器+记忆召回/记忆存储规则|
-|`hindsight-openhands status`|显示服务器+规则是否配置|
-|`hindsight-openhands uninstall`|删除服务器+规则（保留您自己的内容完整）|
+| `hindsight-openhands init` | 添加 MCP 服务器和召回/存入规则 |
+| `hindsight-openhands status` | 显示服务器和规则是否已配置 |
+| `hindsight-openhands uninstall` | 移除服务器和规则（保留你自己的内容） |
 
-## 三件事是正确的 {#three-things-it-gets-right}
+## 三个做得好的地方 {#three-things-it-gets-right}
 
-**原生MCP，无桥接。** OpenHands 讲 Streamable-HTTP MCP，Hindsight 直接为其提供服务。没有本地代理进程来照顾，也没有任何东西可以与智能体一起运行——只有`config.toml`中的一个URL。
+**原生 MCP，无需桥接。** OpenHands 支持 Streamable-HTTP MCP，Hindsight 可直接提供服务。无需维护本地代理进程，也无需让其他服务与智能体一同运行；在 `config.toml` 中配置一个 URL 即可。
 
-**这条规则使记忆召回变得可靠。** 暴露记忆工具是不够的；模型必须实际使用它们。将规则置于始终在线的 `AGENTS.md` 上下文中意味着智能体会在每一项任务上提醒记忆召回和记忆存储，因此记忆不会落空。
+**规则让召回变得可靠。** 仅仅提供记忆工具还不够，模型还必须实际使用这些工具。将规则写入始终载入的 `AGENTS.md` 上下文后，智能体每项任务都会收到召回和存入的提醒，因此记忆的使用不再靠碰运气。
 
-​​**它可以像外科手术一样编辑您的文件。** `init` 合并到现有的 `config.toml` 和 `AGENTS.md` 而不是覆盖它们，并且该规则位于围栏块中。 `uninstall` 完全删除该块，而不删除任何其他内容。您的配置和智能体指令归您所有。
+**它会精准修改你的文件。** `init` 会合并到现有的 `config.toml` 和 `AGENTS.md` 中，而不是覆盖它们；规则也放在围栏块中。`uninstall` 只会移除该块，不会触碰其他内容。配置和智能体指令仍由你掌控。
 
 ## 回顾 {#recap}
 
-||OpenHands 默认|与 Hindsight|
+| | OpenHands 默认情况 | 使用 Hindsight |
 | --------------------- | ----------------- | -------------------------------------------------- |
-|跨任务记忆|无|持久，每个记忆库|
-|设置|不适用|一个命令 (`init`)|
-|交通|不适用|本机MCP（无桥）|
-|记忆召回/记忆存储|不适用|`recall` / `retain` / `reflect` 工具，规则引导|
-|每个项目的隔离|不适用|套装`--bank-id`|
-|移除|不适用|`uninstall` — 手术，非破坏性|
+| 跨任务记忆 | 无 | 持久记忆，按记忆库隔离 |
+| 设置方式 | 不适用 | 一条命令（`init`） |
+| 传输方式 | 不适用 | 原生 MCP（无需桥接） |
+| 召回/存入 | 不适用 | `recall` / `retain` / `reflect` 工具，由规则引导 |
+| 项目间隔离 | 不适用 | 设置 `--bank-id` |
+| 移除方式 | 不适用 | `uninstall`：精准移除，不造成破坏 |
 
 ## 后续步骤 {#next-steps}
 
 - **Hindsight Cloud：**[ui.hindsight.vectorize.io](https://ui.hindsight.vectorize.io)
 - **集成文档：**[OpenHands + Hindsight](/sdks/integrations/openhands)
-- **来源：**[vectorize-io/hindsight/hindsight-integrations/openhands](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/openhands)
+- **源代码：**[vectorize-io/hindsight/hindsight-integrations/openhands](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/openhands)

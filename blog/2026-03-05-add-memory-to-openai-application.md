@@ -1,5 +1,5 @@
 ---
-title: "5 分钟内让您的 OpenAI 应用程序记忆"
+title: "5 分钟为你的 OpenAI 应用添加记忆"
 authors: [benfrank241]
 date: 2026-03-05T12:00
 tags: [memory, openai, python, docker, rag, llm, vector, embedding, tutorial]
@@ -7,84 +7,84 @@ image: /img/blog/add-memory-to-openai-application.webp
 hide_table_of_contents: true
 ---
 
-使用OpenAISDK和Hindsight构建具有持久记忆的ChatGPT式聊天机器人。三个 API 调用 — `retain()`、`recall()`、`reflect()` — 您的应用程序会在重新启动后记住用户，无需向量数据库或 RAG 管道。
+使用 OpenAI SDK 和 Hindsight，构建一个具有持久记忆的 ChatGPT 式聊天机器人。只需调用三个 API：`retain()`、`recall()` 和 `reflect()`，应用重启后仍能记住用户，无需向量数据库或 RAG 流程。
 
 <!-- truncate -->
 
-## 概览 {#tldr}
+## 概要 {#tldr}
 
-您将构建一个ChatGPT风格的聊天机器人：
+你将构建一个 ChatGPT 式聊天机器人，让它能够：
 
-- 重新启动时记住事实
-- 自动回忆相关上下文
+- 在重启后仍记得事实
+- 自动召回相关上下文
 - 按需综合长期知识
 
-全部包含三个 API 调用：
+这一切只需调用三个 API：
 
-- `retain()` — 存储记忆
-- `recall()` — 检索相关的
-- `reflect()` — 综合一切
+- `retain()` — 存入记忆
+- `recall()` — 检索相关记忆
+- `reflect()` — 综合全部记忆
 
-没有矢量数据库。无嵌入管道。没有RAG管道。
+无需向量数据库，无需嵌入流程，也无需搭建 RAG 基础设施。
 
-复制、粘贴、运行。
+复制、粘贴、运行即可。
 
 ---
 
-## 问题：你的聊天机器人有失忆症 {#the-problem-your-chatbot-has-amnesia}
+## 问题：你的聊天机器人会失忆 {#the-problem-your-chatbot-has-amnesia}
 
-您使用OpenAI构建一个聊天机器人：
+你用 OpenAI 构建了一个聊天机器人：
 
 ```python
-messages = [{"role": "system", "content": "你是一个有用的助手。"}]
+messages = [{"role": "system", "content": "You are a helpful assistant."}]
 ```
 
-效果很好。
+一切运行良好。
 
-直到您重新启动该过程。
+直到你重启进程。
 
-现在它什么都不记得了。
+它就什么都不记得了。
 
-您可以将`messages`序列化到磁盘。但随后：
+你可以把 `messages` 序列化到磁盘。但这样一来：
 
-- 上下文窗口填满
-- token成本爆炸
-- 你开始截断历史
-- 助理忘记了早期的决定
+- 上下文窗口会被占满
+- token 成本会急剧上升
+- 你会开始截断历史记录
+- 助手会忘记早先做出的决定
 
-我们遇到了这栋大楼 Jerri，我们 Vectorize 的内部 AI 项目经理。
+我们在为 Vectorize 构建内部 AI 项目经理 Jerri 时也遇到了这个问题。
 
-Jerri 住在 Slack 中。它提取会议记录、跟踪行动项目并回答“我们对 X 做了什么决定？”没有持久的记忆，每一节课都从零开始。
+Jerri 运行在 Slack 中。它会摄取会议记录、跟踪行动事项，并回答“我们对 X 做了什么决定？”之类的问题。没有持久记忆，每次会话都得从头开始。
 
-那不是记忆。这是无状态自动完成。
+那不叫记忆，只是无状态的自动补全。
 
 你真正需要的是：
 
-1. 存储发生的事实
-2. 仅检索相关内容
-3. 必要时合成
+1. 事实发生时就将其存入
+2. 只检索相关内容
+3. 必要时进行综合
 
-这就是我们正在构建的。
+这就是我们要构建的功能。
 
 ---
 
-## 建筑 {#architecture}
+## 架构 {#architecture}
 
-这是整个循环：
+完整流程如下：
 
 ```
-User message
+用户消息
      ↓
-recall(query)      ← pull relevant memories
+recall(query)      ← 提取相关记忆
      ↓
-OpenAI completion  ← inject memory into system prompt
+OpenAI completion  ← 将记忆注入系统提示词
      ↓
-retain(exchange)   ← store conversation
+retain(exchange)   ← 存储对话
      ↓
-Response
+响应
 ```
 
-三通电话。 Jerri 在生产中运行相同的模式。
+总共调用三次 API。这也是 Jerri 在生产环境中使用的模式。
 
 ---
 
@@ -104,31 +104,31 @@ export HINDSIGHT_API_LLM_API_KEY=YOUR_OPENAI_KEY
 hindsight-api
 ```
 
-它在`http://localhost:8888`本地运行。
+服务会在本地的 `http://localhost:8888` 运行。
 
-它包括：
+其中包括：
 
-- 嵌入式Postgres
+- 内嵌式 Postgres
 - 事实提取
-- 语义搜索
+- 语义检索
 - 知识图谱
-- 合成引擎
+- 综合引擎
 
-没有外部基础设施。
+无需外部基础设施。
 
-> **不想自行托管？** [Hindsight Cloud](https://ui.hindsight.vectorize.io) 为您提供相同的 API，无需任何设置 — 只需将 `base_url` 交换为您的云端点即可。
+> **不想自行托管？** [Hindsight Cloud](https://ui.hindsight.vectorize.io) 提供相同的 API，无需任何设置；只需将 `base_url` 换成你的 Cloud 端点即可。
 
 ---
 
-## 第 2 步 — 基线聊天（无记忆） {#step-2--baseline-chat-no-memory}
+## 第 2 步 — 基础聊天（无记忆） {#step-2--baseline-chat-no-memory}
 
-让我们从损坏的版本开始：
+先来看这个有缺陷的版本：
 
 ```python
 from openai import OpenAI
 
 openai = OpenAI()
-messages = [{"role": "system", "content": "你是一个有用的助手。"}]
+messages = [{"role": "system", "content": "You are a helpful assistant."}]
 
 while True:
     user_input = input("You: ")
@@ -148,17 +148,17 @@ while True:
     print(reply)
 ```
 
-效果很好。
+运行得很好。
 
-重新启动。
+重启它。
 
 问：“我叫什么名字？”
 
-茫然地凝视。
+它只会茫然地看着你。
 
 ---
 
-## 步骤 3 — 添加 `retain()` {#step-3--add-retain}
+## 第 3 步 — 添加 `retain()` {#step-3--add-retain}
 
 创建一个记忆库：
 
@@ -169,12 +169,12 @@ hindsight = Hindsight(base_url="http://localhost:8888")
 
 hindsight.create_bank(
     bank_id="chatbot",
-    name="聊天机器人记忆",
-    reflect_mission="记住用户偏好和重要事实。",
+    name="Chatbot Memory",
+    reflect_mission="Remember user preferences and important facts.",
 )
 ```
 
-现在记忆存储每次交换：
+现在，把每轮对话都存入记忆库：
 
 ```python
 hindsight.retain(
@@ -185,13 +185,13 @@ hindsight.retain(
 
 就是这样。
 
-Hindsight 提取事实、识别实体、建立关系并将其存储在知识图中。这些你都管不了。
+Hindsight 会提取事实、识别实体、建立关系，并将它们存储在知识图谱中。所有这些都无需你管理。
 
 ---
 
-## 步骤 4 — 添加 `recall()` {#step-4--add-recall}
+## 第 4 步 — 添加 `recall()` {#step-4--add-recall}
 
-调用OpenAI之前，调取相关记忆：
+调用 OpenAI 之前，先检索相关记忆：
 
 ```python
 memories = hindsight.recall(
@@ -203,13 +203,13 @@ memories = hindsight.recall(
 memory_context = "\n".join(r.text for r in memories.results)
 ```
 
-在系统提示符下注入：
+将记忆注入系统提示词：
 
 ```python
-system_prompt = "你是一个有用的助手。"
+system_prompt = "You are a helpful assistant."
 
 if memory_context:
-    system_prompt += "\n\n此前相关上下文：\n" + memory_context
+    system_prompt += "\n\nRelevant past context:\n" + memory_context
 ```
 
 现在：
@@ -218,21 +218,21 @@ if memory_context:
 2. 重启
 3. 再问一次
 
-它记得。因为`recall`将相关的过去事实注入到提示中。
+它会记住，因为 `recall` 会把相关的过往事实注入提示词。
 
 ---
 
-## 步骤 5 — 添加 `reflect()` 进行合成 {#step-5--add-reflect-for-synthesis}
+## 第 5 步 — 使用 `reflect()` 综合记忆 {#step-5--add-reflect-for-synthesis}
 
-`recall` 返回事实。 `reflect` 返回推理。
+`recall` 返回事实，`reflect` 返回推理结果。
 
-对于以下问题：
+对于这类问题：
 
 - “你对我了解多少？”
-- “总结一下我们的谈话。”
-- “你看到了什么图案？”
+- “总结一下我们的对话。”
+- “你发现了哪些规律？”
 
-使用反思：
+可以使用 reflect：
 
 ```python
 reflection = hindsight.reflect(
@@ -243,15 +243,15 @@ reflection = hindsight.reflect(
 memory_context = reflection.text
 ```
 
-铰遍历知识图谱，运行LLM推理链，跨记忆进行综合。
+Reflect 会遍历知识图谱，运行 LLM 推理链，并综合多条记忆中的信息。
 
-在 Jerri 中，反思支持每周总结、冲刺评审和交叉会议分析。在您的聊天机器人中，它处理“退后一步思考”查询。
+在 Jerri 中，reflect 用于生成每周摘要、冲刺回顾和跨会议分析。对于你的聊天机器人，它可以处理“退一步想想”这类问题。
 
 ---
 
-## 完整工作示例 {#full-working-example}
+## 完整示例 {#full-working-example}
 
-将其复制到`chat.py`：
+将以下代码复制到 `chat.py`：
 
 ```python
 from openai import OpenAI
@@ -262,16 +262,16 @@ hindsight = Hindsight(base_url="http://localhost:8888")
 
 hindsight.create_bank(
     bank_id="chatbot",
-    name="聊天机器人记忆",
-    reflect_mission="记住用户偏好和关键事实。",
+    name="Chatbot Memory",
+    reflect_mission="Remember user preferences and key facts.",
 )
 
-SYSTEM_PROMPT = "你是一个有长期记忆力的得力助手。"
+SYSTEM_PROMPT = "You are a helpful assistant with long-term memory."
 
 SYNTHESIS_KEYWORDS = [
     "summarize",
-    "你对我了解多少",
-    "我们聊了什么",
+    "what do you know about me",
+    "what have we talked about",
 ]
 
 
@@ -294,7 +294,7 @@ def get_memory_context(user_input):
 def main():
     conversation = []
 
-    print("带记忆的聊天，输入 'quit' 退出。\n")
+    print("Chat with memory. Type 'quit' to exit.\n")
 
     while True:
         user_input = input("You: ")
@@ -338,63 +338,65 @@ export OPENAI_API_KEY=YOUR_KEY
 python chat.py
 ```
 
-重新启动。它仍然记得。
+重启后，它仍然记得。
 
 ---
 
-## 制作课程（来自 Building Jerri） {#production-lessons-from-building-jerri}
+## 生产环境经验（构建 Jerri 的经验） {#production-lessons-from-building-jerri}
 
-**1。 回复后记忆存储。** 否则助手会记住问题但不记得答案。
+**1. 回复后再存入记忆。** 否则，助手会记住问题，却不记得自己的回答。
 
-**2。使用 `budget="low"` 进行聊天循环。** 亚秒级延迟。仅在需要时升级。
+**2. 在聊天循环中使用 `budget="low"`。** 延迟不到一秒。只有在需要时才调高预算。
 
-**​​3。多用户应用程序中每个用户一个记忆库。** 否则记忆会在用户之间泄漏。
+**3. 多用户应用中，每位用户使用一个独立记忆库。** 否则，不同用户的记忆可能彼此泄漏。
 
-**4。设定一个使命。** 事实提取质量很大程度上取决于它。
+**4. 设置任务说明。** 事实提取质量在很大程度上取决于它。
 
-**5。从保留一切开始。** 稍后优化。
+**5. 先从全部存入开始。** 之后再优化。
 
 ---
 
 ## 何时使用此模式 {#when-to-use-this-pattern}
 
-**在以下情况下使用它：**
+**适合以下情况：**
 
 - 你需要跨会话记忆
-- 你想要跨时间的综合
-- 你不想构建RAG基础设施
+- 你希望综合一段时间内的信息
+- 你不想搭建 RAG 基础设施
 
-**如果出现以下情况，请勿使用它：**
+**以下情况不适合：**
 
-- 你只需要单会话上下文
-- 您正在存储结构化数据库记录
+- 你只需要单次会话内的上下文
+- 你存储的是结构化数据库记录
 
-这解决了“聊天历史”和“知识库”之间的空间。
+这种模式填补了“聊天历史”和“知识库”之间的空白。
 
 ---
 
-## 要记住的模式 {#the-pattern-to-remember}
+## 值得记住的模式 {#the-pattern-to-remember}
 
-- `retain` — 回复后
-- `recall` — 回复之前
-- `reflect` — 合成时
+- `retain` — 回复后调用
+- `recall` — 回复前调用
+- `reflect` — 综合信息时调用
 
-这就是循环。
+这就是整个循环。
 
-这就是 Jerri 在数周会议中的动力。
+Jerri 正是用这个模式处理数周的会议内容。
 
-这就是您在 15 分钟内刚刚构建的内容。
+你刚才花 15 分钟就构建出了这样的应用。
 
 ---
 
 ## 后续步骤 {#next-steps}
 
-- **添加每个用户记忆库** 每个用户具有唯一的 `bank_id`
-- **使用标签**用于范围记忆（`tags`用于记忆存储，`tags_match`用于记忆召回）
-- **添加结构化JSON输出** 与 `response_schema` 反思
-- **在 Web UI 中检查记忆** `localhost:9999` 经 Docker
-- **尝试[托管 Hindsight](https://ui.hindsight.vectorize.io)**而不是自托管
+- **为每位用户创建独立记忆库**，为每位用户设置唯一的 `bank_id`
+- **使用标签**限定记忆范围（存入时使用 `tags`，召回时使用 `tags_match`）
+- **为 reflect 添加结构化 JSON 输出**，使用 `response_schema`
+- **通过 Docker 在 Web UI 中查看记忆**：`localhost:9999`
+- **试试[托管版 Hindsight](https://ui.hindsight.vectorize.io)**，无需自行托管
 
-持久记忆将聊天机器人变成智能体。
+持久记忆能让聊天机器人变成智能体。
 
-现在你记得了。
+现在，你的聊天机器人也能记住了。
+
+---

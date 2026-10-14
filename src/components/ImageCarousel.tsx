@@ -22,7 +22,7 @@ export default function ImageCarousel({ images }: ImageCarouselProps): ReactNode
       border: '1px solid var(--ifm-color-emphasis-200)',
       marginBottom: '1.5rem',
     }}>
-      {/* Slide strip */}
+      {/* 幻灯片轨道 */}
       <div style={{ position: 'relative', background: 'var(--ifm-background-surface-color, #f8f9fa)' }}>
         <div style={{
           display: 'flex',
@@ -69,7 +69,7 @@ export default function ImageCarousel({ images }: ImageCarouselProps): ReactNode
         )}
       </div>
 
-      {/* Caption + indicators bar */}
+      {/* 说明文字与指示器栏 */}
       {(caption || images.length > 1) && (
         <div style={{
           display: 'flex',

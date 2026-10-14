@@ -1,117 +1,115 @@
 ---
-title: "Claude Code现在构建并读取自己的知识库"
+title: "Claude Code 现在会自行构建并读取知识库"
 authors: [benfrank241]
 slug: "2026/08/13/knowledge-pages-coding-agents"
 date: 2026-08-13T12:00
 tags: [hindsight, knowledge-pages, claude-code, coding-agents, agent-memory, self-updating-docs]
-description: "通过 Hindsight 的编码智能体集成，Claude Code会调查您的存储库，为其构建一个自我修复的 wiki，使其保持最新状态，并在执行每个任务之前阅读它。"
+description: "借助 Hindsight 的编码智能体集成，Claude Code 会调查代码库，为其构建一个能够自我修复的 wiki、持续更新内容，并在每项任务开始前读取它。"
 image: /img/blog/knowledge-pages-coding-agents.webp
 hide_table_of_contents: true
 ---
 
-![用于编码智能体的知识页面：Claude Code调查您的存储库，从其记忆中构建一个自我修复的维基，并在每个任务之前阅读它](/img/blog/knowledge-pages-coding-agents.webp)
+![面向编码智能体的知识页：Claude Code 调查代码库，根据记忆构建一个能够自我修复的 wiki，并在每项任务开始前读取它](/img/blog/knowledge-pages-coding-agents.webp)
 
-你的编码智能体非常出色，但健忘症。它完美地推理了一个任务，然后关闭会话，并忘记了该存储库使用`pnpm`，错误被键入结果值，并且您上个月已经排除了单独的矢量数据库。每次会话都会从头开始重新学习代码库。
+你的编码智能体聪明过人，却没有记忆。它能出色地推理任务，但结束会话后，就忘了这个代码库用的是 `pnpm`、错误采用带类型的 Result 值，也忘了你上个月已经排除过单独使用向量数据库的方案。每次会话都得从头重新了解代码库。
 
-[知识页面](https://hindsight.vectorize.io/developer/knowledge-pages)，在Hindsight 0.9.0 中发布，修复该问题。它们是记忆库编写的关于自身的活文件，并且随着记忆库的学习而重写自己。让他们点击编码的部分：使用[编码智能体集成](https://hindsight.vectorize.io/sdks/integrations/coding-agents)，您的智能体**构建、维护和读取**这些页面本身。 Claude Code会为你做到这一点。
+Hindsight 0.9.0 推出了[知识页](https://hindsight.vectorize.io/developer/knowledge-pages)，解决的正是这个问题。知识页是由记忆库根据自身内容生成的持续更新文档；随着记忆库学到新内容，这些文档也会重写。它们特别适合编码场景：通过[编码智能体集成](https://hindsight.vectorize.io/sdks/integrations/coding-agents)，智能体可以自行**构建、维护和读取**这些页面。Claude Code 会替你完成这些工作。
 
 <!-- truncate -->
 
 ## 概览 {#tldr}
 
-- **知识页面**是从记忆库的记忆合成的自我维护文档。每个人都回答一个问题（“我们的错误处理约定是什么？”）并随着新的记忆落地而自我治愈。
-- 安装编码智能体集成和**Claude Code在首次运行时调查您的存储库**，从您的 git 历史记录和过去的会话中播种架构、约定、关键决策和积极计划的页面。
-- It **保持最新状态** 在您工作时（每约 10 轮重新注入页面名单）和 **录制新作品** 通过 `hindsight_capture_initiative` 作为跟踪页面。
-- It **读回它们**：`hindsight_search_knowledge_pages`和`hindsight_read_knowledge_page`在智能体开始任务之前将右侧页面放在智能体前面。
-- 一个命令：`npx @vectorize-io/hindsight-coding-agents install claude-code`。在我们的基准测试中，记忆将Claude Code的更正减少了**~57%**。
+- **知识页**是根据记忆库中的记忆综合生成、并能自我维护的文档。每页回答一个问题（例如“我们的错误处理约定是什么？”），并会随着新记忆写入而自行更新。
+- 安装编码智能体集成后，**Claude Code 首次运行时会调查你的代码库**，再从 Git 历史和过去的会话中提取信息，为架构、约定、关键决策和当前计划创建页面。
+- 工作过程中，它会**持续更新页面**（每约 10 轮重新注入页面列表），并通过 `hindsight_capture_initiative` 将**新工作记录**为跟踪页面。
+- 它还会**读取这些页面**：`hindsight_search_knowledge_pages` 和 `hindsight_read_knowledge_page` 会在智能体开始任务前，把相关页面提供给它。
+- 只需运行一条命令：`npx @vectorize-io/hindsight-coding-agents install claude-code`。在我们的基准测试中，记忆让 Claude Code 所需的修正减少了 **约 57%**。
 
-## 知识页面实际上是什么 {#what-a-knowledge-page-actually-is}
+## 知识页究竟是什么 {#what-a-knowledge-page-actually-is}
 
-从形状和引擎开始，因为它们是不同的东西。其形状是一个 wiki：文件夹中的页面，可浏览、可搜索、可作为 Markdown 投影到磁盘。下面的引擎是记忆。
+先看外在形式和底层引擎，因为两者并不相同。外在形式像一个 wiki：页面按文件夹组织，可以浏览、搜索，也可以投影为 Markdown 文件写入磁盘。底层引擎则是记忆。
 
-页面是**投影视图**过度处理的记忆，就像数据库视图不是表一样。在编写页面之前，Hindsight已经从您的会话、提交和文档中提取事实，对它们进行重复数据删除，并通过集成调和它们的矛盾。您的原始历史仍然是*说什么*的真相来源。该页面是目前关于 *持有什么* 的调和真相。当决定从 X 更改为 Y 时，页面会显示 Y，并且可以说出原因，而不是保留两个段落。
+知识页是处理后记忆的**投影视图**，就像数据库视图并不是一张表。页面生成之前，Hindsight 已经从会话、提交和文档中提取事实、进行去重，并通过整合协调彼此矛盾的内容。原始历史仍然是“说过什么”的事实来源；页面则呈现当前“哪些内容成立”的协调结果。如果某项决定从 X 改为 Y，页面就会显示 Y，并且可以说明原因，而不会把两个版本隔一段文字并列保留。
 
-这就是为什么页面会自我修复而不是腐烂：它们是渲染，而不是存储。删除一个，什么也不会丢失；它会在下一个版本中从记忆中重新投影。
+因此，知识页会自我修复，而不会逐渐失效：它们是渲染结果，不是存储本身。删除某页不会丢失任何内容；下次构建时，它会根据记忆重新生成。
 
-## 您的编码智能体如何为您构建它 {#how-your-coding-agent-builds-it-for-you}
+## 编码智能体如何替你构建知识页 {#how-your-coding-agent-builds-it-for-you}
 
-这是使这一切变得自动而不是苦差事的部分。安装集成，并在冷存储库中的下一个会话中，在您自己的线束的 CLI 下安装 **探索智能体运行只读调查**。它映射了代码库并为初始页面提供了种子：组件图、核心概念、约定和模式、关键决策和基本原理以及积极的举措。从那一刻起，Hindsight维护它们。
+让这一切自动运行、无需手动维护，关键就在这里。安装集成后，在一个尚未探索过的代码库中启动下次会话时，**探索智能体会通过你所用 harness 的 CLI 执行只读调查**。它会梳理代码库，并创建初始页面：组件关系图、核心概念、约定与模式、关键决策及其依据，以及当前计划。从这时起，Hindsight 会持续维护这些页面。
 
-![知识视图：页面Claude Code播种并现在维护 — 架构、约定、决策、开放倡议 — 每一个都从存储库的记忆中合成](/img/blog/knowledge-pages-tree.webp)
+![Hindsight 控制平面中的知识库目录树](/img/blog/knowledge-pages-tree.webp)
 
-这些都不是你写的。智能体调查了存储库，然后Hindsight根据发现的内容合成了页面。每棵树刚建成时都有一个绿点，整棵树都是可搜索的。
+这些页面都不是你手动编写的。智能体调查了代码库，Hindsight 则根据调查结果综合生成页面。页面刚生成时会带有一个绿点，整个目录树也都可以搜索。
 
-当你继续工作时，无需你询问就会发生两件事：
+继续工作时，两件事会自动发生：
 
-- **维护。** 每约 10 个用户都会重新获取页面并重新注入当前名册，因此智能体始终针对最新版本（`pageRefreshEveryTurns`，默认 10）。
-- **新作品被录制。** 当您完成对某个功能的头脑风暴并开始构建时，智能体会调用 `hindsight_capture_initiative` 打开其跟踪页面。故意跳过错误修复和小杂务；倡议则不然。
+- **维护页面。** 每约 10 轮用户交互，集成就会重新获取页面并注入最新的页面列表，让智能体始终依据最新版本工作（`pageRefreshEveryTurns`，默认值为 10）。
+- **记录新工作。** 你完成某项功能的构思并开始开发时，智能体会调用 `hindsight_capture_initiative`，为它创建一个跟踪页面。按设计，错误修复和小型杂务会被跳过；计划中的项目则会记录下来。
 
-## A页是调和合成，不是笔记 {#a-page-is-reconciled-synthesis-not-notes}
+## 知识页是协调后的综合结果，而不是笔记 {#a-page-is-reconciled-synthesis-not-notes}
 
-打开一个，它读起来就像是一位细心的队友写的东西，只是没有人这样做。
+打开一页，它读起来就像一位细心的队友写的，只不过实际上没有人动笔。
 
-![呈现的知识页面 - “系统架构” - 从存储库的观察合成为干净的散文，并在最新整合后标记更新时刻](/img/blog/knowledge-pages-rendered.webp)
+![呈现出的知识页“系统架构”：根据代码库的观测综合成清晰的文字，并在最近一次整合后标记更新时间](/img/blog/knowledge-pages-rendered.webp)
 
-“更新”时间戳说明：新记忆登陆时页面会自行刷新。随着代码库的发展，您的架构文档保持诚实，维护为零，并且在您想要引导它的罕见时间有一个编辑按钮。
+“更新时间”透露了其中的机制：新记忆写入后，页面随即自行刷新。代码库不断演进，你的架构文档也能如实反映变化，无需维护；如果偶尔想调整方向，还可以点击“编辑”。
 
-## 引导页面：名称和问题 {#steering-a-page-a-name-and-a-question}
+## 引导知识页：名称和问题 {#steering-a-page-a-name-and-a-question}
 
-你永远不会创作正文。页面由**名称**和**来源查询**定义——每次整合后都会重新询问Hindsight问题，以从记忆中重建页面。
+你不需要编写页面正文。知识页由**名称**和**来源查询**定义——每次整合后，Hindsight 都会重新提出这个问题，并根据记忆重建页面。
 
-![页面编辑器：名称字段和“源查询”——从记忆中重建此页面的问题——加上可选标签](/img/blog/knowledge-pages-edit.webp)
+![在控制台中编辑知识页](/img/blog/knowledge-pages-edit.webp)
 
-改变问题，内容重新合成。这也是自动行为背后的手动杠杆：调查和`hindsight_capture_initiative`为您创建包含合理问题的页面，但您可以添加自己的问题（“我们的部署和回滚过程是什么？”），并且Hindsight从那时起就保持答案。你通过提出更好的问题来进行策划，而不是通过撰写和维护散文来进行。
+修改问题后，内容就会重新综合生成。这也是自动行为背后的手动控制方式：调查过程和 `hindsight_capture_initiative` 会替你创建问题合理的页面，但你也可以自行添加问题（例如“我们的部署和回滚流程是什么？”），之后 Hindsight 会持续维护对应答案。你可以通过提出更好的问题来维护内容，无需亲自撰写和维护文字。
 
-## 智能体也会读它 {#the-agent-reads-it-too}
+## 智能体也会读取知识页 {#the-agent-reads-it-too}
 
-这是记忆工具智能体*有*和实际记忆*用途*之间的区别。通过集成的 MCP 工具，Claude Code将读取知识库作为其正常循环的一部分：
+智能体“拥有”记忆工具，不代表它真的会“使用”记忆；这正是两者的区别。借助集成提供的 MCP 工具，Claude Code 会在日常工作流程中读取知识库：
 
-- `hindsight_search_knowledge_pages` — 混合搜索，为手头的任务拉出正确的页面。
-- `hindsight_read_knowledge_page` — 完整阅读特定页面。
-- `hindsight_reflect` — [更深层次的推理
-当单个页面太浅时，](https://hindsight.vectorize.io/blog/2026/07/24/recall-vs-reflect) 超过存储库的完整记忆。
-当单页太浅时，
+- `hindsight_search_knowledge_pages` — 混合搜索，为当前任务找到合适的页面。
+- `hindsight_read_knowledge_page` — 完整读取指定页面。
+- `hindsight_reflect` — 当单页内容不够深入时，基于代码库的完整记忆进行[更深入的推理](https://hindsight.vectorize.io/blog/2026/07/24/recall-vs-reflect)。
 
-所以会话不会冷启动。在智能体写入一行之前，它可以根据已建立的存储库提取约定页面和相关决策。这是最接近新员工阅读所有文档并且永远不会忘记的事情。
+这样一来，会话就不再从零开始。智能体动笔之前，可以先读取约定页面和相关决策，并以代码库中已有的信息为依据。这就像一位新同事读完所有文档，而且永远不会忘记其中内容。
 
-## 查看整体记忆：仓库一目了然 {#see-the-whole-memory-the-repo-at-a-glance}
+## 一览整个记忆：代码库全貌 {#see-the-whole-memory-the-repo-at-a-glance}
 
-页面是一个视图。记忆库的主页为您提供了另一个：一个**记忆星座**，它绘制了每个记忆以及它们之间的链接，并根据它们的连接方式（语义、时间、实体和因果关系）着色，旁边是页面和提供它们的文档。
+知识页是一种视图。记忆库的主页还提供另一种：一个**记忆星座图**，展示代码库中的每条记忆及其关联，并按关联类型着色——语义、时间、实体和因果关系；旁边还显示知识页和作为其信息来源的文档。
 
-![记忆库概述：存储库的记忆和链接的记忆星座，按连接类型着色，位于知识页面和最近文档旁边](/img/blog/knowledge-pages-overview.webp)
+![代码库的记忆星座图，展示记忆及其关联并按关联类型着色，旁边是知识页和最近的文档](/img/blog/knowledge-pages-overview.webp)
 
-这与智能体回忆和反映的记忆相同，变得可见。当答案看起来很薄弱时，星座会告诉你记忆是否丢失或只是未被检索。
+这里展示的正是智能体用来召回和反思的记忆。当答案显得单薄时，星座图可以帮助你判断：是记忆缺失，还是相关记忆尚未被检索出来。
 
 ## 设置 {#setup}
 
-一个命令将记忆、调查和页面工具连接到Claude Code：
+运行一条命令，就能把记忆、调查功能和页面工具接入 Claude Code：
 
 ```bash
 npx @vectorize-io/hindsight-coding-agents install claude-code
 ```
 
-相同的软件包支持舰队的其余部分 - `install codex`、`cursor-cli`、`copilot-cli`、`opencode` 等 - 或`install all` 对于每个检测到的智能体。 记忆可以存在于[Hindsight Cloud](https://ui.hindsight.vectorize.io)、您运行的服务器或本地守护进程中；你选择一次。
+同一个软件包也支持其他编码智能体：`install codex`、`cursor-cli`、`copilot-cli`、`opencode` 等；也可以运行 `install all`，为所有检测到的智能体安装。记忆可以存放在 [Hindsight Cloud](https://ui.hindsight.vectorize.io)、你自行运行的服务器或本地守护进程中；只需选择一次。
 
-## 为什么值得 {#why-it-is-worth-it}
+## 为什么值得使用 {#why-it-is-worth-it}
 
-**您在仓库中工作的时间越长，您的智能体就会变得越有用。** 从第一节课中学到的知识成为第五十节课的起始背景，而不是每天早上重新设置。在我们的 61 任务基准测试中，给予 Claude Code记忆将其所需的修正减少了约 **57%**，并且成本更低，运行时间更快。
+**你在一个代码库中工作得越久，智能体就越有用。** 第一次会话中学到的内容，会成为第五十次会话的初始上下文，而不是每天早上都被清空。在我们的 61 项任务基准测试中，为 Claude Code 提供记忆后，它所需的修正减少了约 **57%**，成本也更低，执行时间更短。
 
-**文档可以自行编写和修复。** 人类永远不会保持最新的页面，智能体免费保持最新，因为它们是它已经积累的记忆的呈现。
+**文档会自行编写和修复。** 人们往往不会持续更新这些页面，而智能体可以免费维护它们，因为页面只是它已经积累的记忆的呈现结果。
 
-**你可以阅读并相信你的智能体所知道的内容。** 默默积累记忆的智能体很难调试。一个包含自我修复页面的文件夹加上星座，可以将不透明的存储变成您可以打开、查看和更正的内容。
+**你可以查看并信任智能体掌握的信息。** 默默积累记忆的智能体很难调试。由可自我修复的页面和记忆星座图组成的文件夹，会把不透明的存储变成你可以打开、审阅和修正的内容。
 
-## 快速入门 {#quick-start}
+## 快速开始 {#quick-start}
 
-1. 安装：`npx @vectorize-io/hindsight-coding-agents install claude-code`，然后选择记忆所在的位置。
-2. 打开存储库中的Claude Code。第一个会议对其进行调查并为您的页面播种。
-3. 继续工作。智能体会在执行任务之前读取页面，记录新的计划，并且 Hindsight 使所有内容保持最新状态。
-4. 随时在控制平面、[API](https://hindsight.vectorize.io/developer/api/knowledge-pages)或通过`hindsight fs mount`浏览或引导页面。
+1. 安装：运行 `npx @vectorize-io/hindsight-coding-agents install claude-code`，并选择记忆的存放位置。
+2. 在代码库中启动 Claude Code。首次会话会调查代码库，并创建初始页面。
+3. 继续工作。智能体会在开始任务前读取页面、记录新的计划，Hindsight 则会持续更新所有内容。
+4. 随时在控制平面、通过 [API](https://hindsight.vectorize.io/developer/api/knowledge-pages)，或使用 `hindsight fs mount` 浏览或调整页面。
 
-推理不再是困难的部分。连续性是。阅读[0.9.0 发布说明](https://hindsight.vectorize.io/blog/2026/08/06/hindsight-0-9-0)，或安装集成并让您的编码智能体编写自己的文档。
+推理已经不再是难题，保持连续性才是。阅读 [0.9.0 发布说明](https://hindsight.vectorize.io/blog/2026/08/06/hindsight-0-9-0)，或者安装集成，让你的编码智能体编写自己的文档。
 
 ---
 
 **了解更多：**
-- [编码智能体集成](https://hindsight.vectorize.io/sdks/integrations/coding-agents) — 一个命令，Claude Code和其余内容的本机记忆
-- [知识页面开发者指南](https://hindsight.vectorize.io/developer/knowledge-pages) — 概念和底层模型
-- [给予任何智能体插件客户端记忆](https://hindsight.vectorize.io/blog/2026/08/12/agent-plugins-persistent-memory) — 此自动集成的显式、可移植对应物
+- [编码智能体集成](https://hindsight.vectorize.io/sdks/integrations/coding-agents) — 一条命令，为 Claude Code 及其他编码智能体接入原生记忆
+- [知识页开发者指南](https://hindsight.vectorize.io/developer/knowledge-pages) — 了解知识页概念及其底层模型
+- [为任意 Agent Plugins 客户端接入记忆](https://hindsight.vectorize.io/blog/2026/08/12/agent-plugins-persistent-memory) — 与此自动集成相对应的显式、可移植方案

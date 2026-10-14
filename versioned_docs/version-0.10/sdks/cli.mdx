@@ -2,12 +2,12 @@
 sidebar_position: 4
 ---
 
-# CLI参考 {#cli-reference}
+# CLI 参考 {#cli-reference}
 
 import CodeSnippet from '@site/src/components/CodeSnippet';
 import cliSh from '!!raw-loader!@site/examples/api/cli-reference.sh';
 
-TheHindsightCLI提供对记忆操作和记忆库管理的命令行访问。所有命令都遵循[OpenAPI 规范](/api-reference)，所以你可以使用`--help` 在任何命令上查看所有可用选项。
+Hindsight CLI 提供命令行接口，用于操作记忆和管理记忆库。所有命令均遵循 [OpenAPI 规范](/api-reference)，因此可以在任意命令后使用 `--help` 查看全部可用选项。
 
 ## 安装 {#installation}
 
@@ -17,11 +17,11 @@ curl -fsSL https://hindsight.vectorize.io/get-cli | bash
 
 ## 配置 {#configuration}
 
-配置API URL：
+配置 API URL：
 
 <CodeSnippet code={cliSh} section="cli-configure" language="bash" />
 
-也可以跑`hindsight configure` 没有交互式提示的标志，或使用环境变量（最高优先级）：
+也可以不带任何选项运行 `hindsight configure`，按交互式提示进行配置，或使用优先级最高的环境变量：
 
 ```bash
 export HINDSIGHT_API_URL=http://localhost:8888
@@ -30,63 +30,56 @@ export HINDSIGHT_API_KEY=your-api-key
 
 ### 命名配置文件 {#named-profiles}
 
-当您需要在多个Hindsight部署之间切换时（例如本地、
-舞台、制作）无需不断重写`~/.hindsight/config`，使用
-命名配置文件。每个配置文件都是一个 TOML 文件，位于
-`~/.hindsight/cli-profiles/<name>.toml` 并在每次调用时选择
-`-p/--profile`（或通过设置`$HINDSIGHT_PROFILE`）。
+如果需要在多个 Hindsight 部署（例如本地、预发布、生产环境）之间切换，又不想反复改写 `~/.hindsight/config`，可以使用命名配置文件。每个配置文件都是位于 `~/.hindsight/cli-profiles/<name>.toml` 的 TOML 文件，可在每次调用时通过 `-p/--profile` 选择，也可以通过设置 `$HINDSIGHT_PROFILE` 来选择。
 
 <CodeSnippet code={cliSh} section="cli-profiles" language="bash" />
 
-配置文件用编写 Unix 上的 `0600` 权限，因此API 密钥是
-只有所有者可读。
+在 Unix 上，配置文件以 `0600` 权限写入，确保只有所有者能够读取其中的 API 密钥。
 
-**配置优先级**（最高的在前）：
+**配置优先级**（从高到低）：
 
-1. 环境变量（`HINDSIGHT_API_URL`, `HINDSIGHT_API_KEY`)
-2. 命名配置文件 — 显式 `-p <name>`，否则`$HINDSIGHT_PROFILE`
-3. 共享配置文件（`~/.hindsight/config`，作者`hindsight configure`)
-4. 默认（`http://localhost:8888`)
+1. 环境变量（`HINDSIGHT_API_URL`、`HINDSIGHT_API_KEY`）
+2. 命名配置文件：优先使用显式指定的 `-p <name>`，否则使用 `$HINDSIGHT_PROFILE`
+3. 共享配置文件（`~/.hindsight/config`，由 `hindsight configure` 写入）
+4. 默认值（`http://localhost:8888`）
 
-`HINDSIGHT_API_URL` / `HINDSIGHT_API_KEY` 始终覆盖配置文件值，这
-使用安全`-p` 在脚本中，同时让 CI 通过以下方式注入凭据
-环境。
+`HINDSIGHT_API_URL` / `HINDSIGHT_API_KEY` 始终覆盖命名配置文件中的值，因此可以在脚本中安全地使用 `-p`，同时允许 CI 通过环境变量注入凭据。
 
 ## 核心命令 {#core-commands}
 
-### 记忆存储（存储记忆） {#retain-store-memory}
+### Retain（存入）：存入记忆 {#retain-store-memory}
 
-存储单个记忆：
+存入一条记忆：
 
 <CodeSnippet code={cliSh} section="cli-retain" language="bash" />
 
-### 记忆存储文件 {#retain-files}
+### 从文件存入记忆 {#retain-files}
 
 从文件批量导入：
 
 <CodeSnippet code={cliSh} section="cli-retain-files" language="bash" />
 
-### 记忆召回（搜索） {#recall-search}
+### Recall（召回）：搜索 {#recall-search}
 
-使用语义相似性搜索记忆：
+基于语义相似度搜索记忆：
 
 <CodeSnippet code={cliSh} section="cli-recall" language="bash" />
 
-### 反思（生成响应） {#reflect-generate-response}
+### Reflect（反思）：生成响应 {#reflect-generate-response}
 
-使用记忆和记忆库配置生成响应：
+根据记忆和记忆库的性格倾向生成响应：
 
 <CodeSnippet code={cliSh} section="cli-reflect" language="bash" />
 
-### 记忆历史 {#memory-history}
+### 记忆历史记录 {#memory-history}
 
-查看特定记忆单元的观察历史：
+查看特定记忆单元的观测历史记录：
 
 <CodeSnippet code={cliSh} section="cli-memory-history" language="bash" />
 
-### 清除观察 {#clear-observations}
+### 清空观测 {#clear-observations}
 
-删除记忆单元的所有观察，保留核心事实：
+移除一个记忆单元的所有观测，保留核心事实：
 
 <CodeSnippet code={cliSh} section="cli-memory-clear-observations" language="bash" />
 
@@ -116,15 +109,15 @@ export HINDSIGHT_API_KEY=your-api-key
 
 <CodeSnippet code={cliSh} section="cli-bank-mission" language="bash" />
 
-### 清除整个记忆库的观察 {#clear-observations-bank-wide}
+### 清空整个记忆库的观测 {#clear-observations-bank-wide}
 
-删除整个记忆库中的所有观察：
+移除整个记忆库中的所有观测：
 
 <CodeSnippet code={cliSh} section="cli-bank-clear-observations" language="bash" />
 
 ### 恢复整合 {#recover-consolidation}
 
-从失败或卡住的整合中恢复：
+恢复失败或卡住的整合：
 
 <CodeSnippet code={cliSh} section="cli-bank-consolidation-recover" language="bash" />
 
@@ -138,19 +131,19 @@ export HINDSIGHT_API_KEY=your-api-key
 
 ## 操作管理 {#operation-management}
 
-跟踪和管理异步操作（记忆存储文件、集成等）：
+跟踪和管理异步操作（`retain-files`、整合等）：
 
 <CodeSnippet code={cliSh} section="cli-operations" language="bash" />
 
 ## Webhook 管理 {#webhook-management}
 
-为记忆库活动配置事件传递挂钩：
+为记忆库活动配置事件投递 Webhook：
 
 <CodeSnippet code={cliSh} section="cli-webhooks" language="bash" />
 
 ## 知识库 {#knowledge-base}
 
-管理记忆库的知识页面 - 以文件夹树形式组织的活动文档。参见[知识页面](../developer/api/knowledge-pages) 了解它们是什么以及它们如何刷新。
+管理记忆库中的知识页，即按目录树组织的持续更新的文档。有关知识页的概念及刷新方式，参见[知识页](../developer/api/knowledge-pages)。
 
 <CodeSnippet code={cliSh} section="cli-kb-tree" language="bash" />
 
@@ -162,14 +155,13 @@ export HINDSIGHT_API_KEY=your-api-key
 
 <CodeSnippet code={cliSh} section="cli-kb-manage" language="bash" />
 
-:::tip `hindsight fs mount --bank <bank_id>` 将相同的知识库镜像到磁盘上
-真实markdown 文件，通过后台刷新循环保持最新 — 当您需要时很方便
-不如使用`grep`, `rg`，或者你的编辑器而不是上面的命令。
+:::tip
+`hindsight fs mount --bank <bank_id>` 将同一个知识库镜像到磁盘上，生成实际的 Markdown 文件，并通过后台刷新循环保持最新。如果更习惯使用 `grep`、`rg` 或编辑器来操作知识库，这种方式会很方便。
 :::
 
-## 审核日志 {#audit-logs}
+## 审计日志 {#audit-logs}
 
-检查记忆库的审计跟踪：
+查看记忆库的审计记录：
 
 <CodeSnippet code={cliSh} section="cli-audit" language="bash" />
 
@@ -179,60 +171,61 @@ export HINDSIGHT_API_KEY=your-api-key
 
 ## 全局选项 {#global-options}
 
-|旗帜|说明|
+| 选项 | 说明 |
 |------|-------------|
-|`-v, --verbose`|显示详细输出，包括request/response|
-|`-o, --output <format>`|输出格式：pretty、json、yaml|
-|`-p, --profile <name>`|使用命名配置文件（参见 [命名配置档案](#named-profiles))|
-|`--help`|显示帮助|
-|`--version`|显示版本|
+| `-v, --verbose` | 显示包含请求/响应的详细输出 |
+| `-o, --output <format>` | 输出格式：pretty、json、yaml |
+| `-p, --profile <name>` | 使用命名配置文件（参见[命名配置文件](#named-profiles)） |
+| `--help` | 显示帮助 |
+| `--version` | 显示版本 |
 
-## 控制平面 UI {#control-plane-ui}
+## 控制台界面 {#control-plane-ui}
 
-直接从CLI启动基于Web的控制平面UI：
+直接从 CLI 启动基于 Web 的控制台界面：
 
 ```bash
 hindsight ui
 ```
 
-这将使用配置中的 API URL 在端口 9999 上本地运行控制平面。用户界面提供：
+此命令使用配置中的 API URL，在本地端口 9999 上运行控制台。该界面提供以下功能：
 
-- **记忆库管理** — 浏览和管理您所有的记忆库
-- **实体浏览器** — 知识图谱可视化
-- **查询测试** — 交互式记忆召回和反思测试
-- **操作历史** — 查看摄取和处理日志
+- **记忆库管理**：浏览和管理所有记忆库
+- **实体浏览器**：以可视化方式呈现知识图谱
+- **查询测试**：交互式测试 Recall 和 Reflect
+- **操作历史记录**：查看摄取和处理日志
 
-:::tip UI命令需要Node.js待安装。它会自动下载并运行 `@vectorize-io/hindsight-control-plane` 通过 npx 封装。
+:::tip
+界面启动命令要求已安装 Node.js。它会通过 npx 自动下载并运行 `@vectorize-io/hindsight-control-plane` 包。
 :::
 
 ## 交互式浏览器 {#interactive-explorer}
 
-启动 TUI 浏览器，对您的记忆库进行视觉导航：
+启动终端用户界面（TUI）浏览器，以可视化方式浏览记忆库：
 
 ```bash
 hindsight explore
 ```
 
-资源管理器提供了一个交互式终端界面：
+浏览器提供交互式终端界面，支持以下操作：
 
-- **浏览记忆库** — 查看所有记忆库及其统计数据
-- **搜索记忆** — 运行具有实时结果的记忆召回查询
-- **查看记忆详情** — 打开记忆以查看其文本、元数据、实体和完整内容JSON字段
-- **查看实体** — 探索知识图谱和实体关系
-- **查看事实** — 浏览世界事实、经验和观察
-- **浏览文档** — 查看源文档及其提取的记忆
+- **浏览记忆库**：查看所有记忆库及其统计数据
+- **搜索记忆**：执行 Recall 查询并实时查看结果
+- **查看记忆详情**：打开记忆，查看文本、元数据、实体和完整的 JSON 字段
+- **查看实体**：探索知识图谱和实体关系
+- **查看事实**：浏览世界事实、经历事实和观测
+- **浏览文档**：查看来源文档及从中提取的记忆
 
 ### 键盘快捷键 {#keyboard-shortcuts}
 
-|键|行动|
+| 按键 | 操作 |
 |-----|--------|
-|`↑/↓`|导航项目|
-|`Enter`|选择商品/查看详情|
-|`Tab`|开关面板|
-|`/`|搜索|
-|`q`|退出|
+| `↑/↓` | 在条目间移动 |
+| `Enter` | 选择条目 / 查看详情 |
+| `Tab` | 切换面板 |
+| `/` | 搜索 |
+| `q` | 退出 |
 
-{/* 截图占位：explore 命令的终端界面 */}
+{/* 截图占位：explore 命令的 TUI */}
 
 ## 示例工作流程 {#example-workflow}
 

@@ -1,40 +1,40 @@
 ---
 sidebar_position: 23
-title: "Flowise 持久记忆Hindsight |整合"
-description: "使用Hindsight为任何Flowise聊天流程或智能体添加持久的长期记忆。三个工具节点——记忆存储、记忆感知、反思——与其他 LangChain 工具一起放入任何流程中。"
+title: "Flowise 中使用 Hindsight 实现持久记忆 | 集成"
+description: "使用 Hindsight 为任意 Flowise 聊天流程或智能体添加持久的长期记忆。三个工具节点——Hindsight Retain、Hindsight Recall 和 Hindsight Reflect——可与其他 LangChain 工具一起接入任意流程。"
 ---
 
 # Flowise {#flowise}
 
-持久记忆[Flowise](https://flowiseai.com) 聊天流程和智能体，来自 [Hindsight](https://hindsight.vectorize.io)。三个工具节点 — **Hindsight 记忆存储**，**Hindsight 记忆召回**，**Hindsight 反思** — 与其他 LangChain 工具一起放入任何流程。
+通过 [Hindsight](https://hindsight.vectorize.io)，为 [Flowise](https://flowiseai.com) 聊天流程和智能体提供持久记忆。三个工具节点——**Hindsight Retain**、**Hindsight Recall** 和 **Hindsight Reflect**——可与其他 LangChain 工具一起接入任意流程。
 
 [查看更新日志 →](/changelog/integrations/flowise)
 
 ## 为什么这很重要 {#why-this-matters}
 
-Flowise是浪链衍生的可视化构建器，适用于非开发者和开发者。直到现在，Flowise聊天流程已**各会话之间无状态**。与Hindsight工具节点您可以：
+Flowise 是基于 LangChain 构建的可视化工具，面向开发者和非开发者。过去，Flowise 聊天流程在不同会话之间**不保留状态**。借助 Hindsight 工具节点，你可以：
 
-- **记忆存储** 每一次封闭式对话、支持票或表单提交到记忆库中
-- **记忆召回** 之前的相关上下文LLM步骤让模型看到之前的历史
-- **反思** 在流程中提出综合问题（“我们对该客户了解多少？”）
+- 用 Retain（存入）将每次已结束的对话、支持工单或表单提交存入记忆库
+- 用 Recall（召回）在 LLM 步骤之前获取相关上下文，让模型看到此前的历史记录
+- 用 Reflect（反思）在流程中提出综合性问题（“我们对这位客户了解多少？”），基于记忆推理
 
 ## 安装 {#installation}
 
-Flowise仅在其主 monorepo 内分发节点，因此今天的安装意味着使用Flowise结帐  复制进来的Hindsight节点。面向用户的分布将是的上游PR `FlowiseAI/Flowise`。
+Flowise 目前只在其主 monorepo 中分发节点，因此安装时需要检出 Flowise 代码库并将 Hindsight 节点复制进去。面向用户的正式分发方式将是向上游 `FlowiseAI/Flowise` 提交 PR。
 
 ```bash
 git clone https://github.com/FlowiseAI/Flowise.git
 cd Flowise
 
-#复制三个工具节点
+# 复制三个工具节点
 cp -r /path/to/hindsight/hindsight-integrations/flowise/nodes/tools/Hindsight* \
   packages/components/nodes/tools/
 
-#复制凭证类别
+# 复制凭证类
 cp /path/to/hindsight/hindsight-integrations/flowise/credentials/HindsightApi.credential.ts \
   packages/components/credentials/
 
-#添加客户部门
+# 添加客户端依赖
 cd packages/components && pnpm add @vectorize-io/hindsight-client
 cd ../.. && pnpm install && pnpm build
 pnpm start  # opens http://localhost:3000
@@ -43,60 +43,62 @@ pnpm start  # opens http://localhost:3000
 ## 设置 {#setup}
 
 :::tip Hindsight Cloud（推荐）
-[免费注册](https://ui.hindsight.vectorize.io) — 无需运行基础设施。直接跳到下面创建您的凭证。
+[免费注册](https://ui.hindsight.vectorize.io)——无需自行运行基础设施。你可以直接跳到下面创建凭证。
 :::
 
-1. **注册** [Hindsight Cloud](https://ui.hindsight.vectorize.io)（免费套餐）或[自托管](/developer/installation)
-2. **获取 API 密钥** 来自Hindsight仪表板
-3. **在 Flowise 中**，创建类型为的新凭证 **Hindsight API**：
-   - **API URL** — 默认为 `https://api.hindsight.vectorize.io`（云）；更改为自托管
-   - **API 密钥** — 你的 `hsk_...` 密钥（对于自托管未经身份验证的实例可选）
+1. 注册 [Hindsight Cloud](https://ui.hindsight.vectorize.io)（免费套餐），或选择[自托管](/developer/installation)
+2. 从 Hindsight 控制台获取 API 密钥
+3. 在 Flowise 中创建 **Hindsight API** 类型的新凭证：
+   - **API URL** — 默认为 `https://api.hindsight.vectorize.io`（Cloud）；自托管时请改为对应地址
+   - **API Key** — 填入你的 `hsk_...` 密钥（对于未启用身份认证的自托管实例，此项可选）
 
 ## 工具 {#tools}
 
-每个Hindsight工具节点返回一个LangChain `DynamicStructuredTool`，因此它可以插入任何接受工具的智能体中。
+每个 Hindsight 工具节点都会返回一个 LangChain `DynamicStructuredTool`，因此可以接入任何支持工具的智能体。
 
-### Hindsight 记忆存储 {#hindsight-retain}
+### Hindsight Retain {#hindsight-retain}
 
-将内容存储在记忆库中。 Hindsight 在调用返回后异步提取事实。
+将内容存入记忆库。调用返回后，Hindsight 会异步提取事实。
 
-|字段|说明|
+| 字段 | 说明 |
 |---|---|
-|默认记忆库ID|记忆库到智能体未通过时的记忆存储|
+| 默认记忆库 ID | 当智能体未传入记忆库 ID 时，Retain 操作要存入内容的记忆库 |
 
-工具输入模式（智能体通过这些）：`bankId`，`content`，可选`tags`。
+工具输入模式（由智能体传入）：`bankId`、`content`，以及可选的 `tags`。
 
-### Hindsight 记忆召回 {#hindsight-recall}
+### Hindsight Recall {#hindsight-recall}
 
-在记忆库中搜索与查询相关的记忆。返回排名结果。
+在记忆库中搜索与查询相关的记忆，并返回排序后的结果。
 
-|字段|说明|
+| 字段 | 说明 |
 |---|---|
-|默认记忆库ID|智能体未通过时搜索记忆库|
-|默认预算|`low` / `mid` / `high`|
+| 默认记忆库 ID | 当智能体未传入记忆库 ID 时，要搜索的记忆库 |
+| 默认预算 | `low` / `mid` / `high` |
 
-工具输入模式：`bankId`，`query`，可选`budget`，`maxTokens`，`tags`。
+工具输入模式：`bankId`、`query`，以及可选的 `budget`、`maxTokens` 和 `tags`。
 
-### Hindsight 反思 {#hindsight-reflect}
+### Hindsight Reflect {#hindsight-reflect}
 
-通过记忆库返回LLM合成的答案。
+根据记忆库内容返回由 LLM 综合生成的答案。
 
-|字段|说明|
+| 字段 | 说明 |
 |---|---|
-|默认记忆库ID|记忆库 智能体未通过考试时的反思|
-|默认预算|`low` / `mid` / `high`|
+| 默认记忆库 ID | 当智能体未传入记忆库 ID 时，要基于其内容进行反思的记忆库 |
+| 默认预算 | `low` / `mid` / `high` |
 
-工具输入模式：`bankId`，`query`，可选`budget`。
+工具输入模式：`bankId`、`query`，以及可选的 `budget`。
 
 ## 聊天流程示例 {#example-chatflow}
 
-**对话式客服智能体**
+**对话式支持智能体**
 
-1. **ChatOpenAI**（或任何聊天LLM)
-2. **对话智能体** 附带三个工具：Hindsight记忆存储 +Hindsight 记忆召回 + Hindsight 反思，大家都一样`hindsightApi`证书
-3. 将默认记忆库 ID 设置为类似 每个工具上都有 `user-${sessionId}`
-4. 智能体学会在回答之前调用记忆召回，并在有意义的交流之后调用记忆存储。使用“推测”来表示“我们对这个用户了解多少？”提示。
+1. **ChatOpenAI**（或任意聊天 LLM）
+2. 使用 **Hindsight Retain**、**Hindsight Recall** 和 **Hindsight Reflect** 三个工具配置 **Conversational Agent**，并让它们共用同一个 `hindsightApi` 凭证
+3. 为每个工具设置默认记忆库 ID，例如 `user-${sessionId}`
+4. 让智能体学会在回答前调用 Recall，并在有意义的交流后调用 Retain。遇到“我们对这个用户了解多少？”这类问题时，使用 Reflect。
 
 ## 来源 {#source}
 
 - GitHub：[`hindsight-integrations/flowise`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/flowise)
+
+---

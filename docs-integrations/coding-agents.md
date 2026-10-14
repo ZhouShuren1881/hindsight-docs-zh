@@ -16,9 +16,9 @@ import CodingAgentsChart from '@site/src/components/CodingAgentsChart';
 
 由 [Hindsight](https://vectorize.io/hindsight) 支持的**编程智能体**长期项目记忆。
 一个软件包支持多个智能体：共享反思与注入核心，每个智能体只需一个轻量入口
-（**Claude Code**、**Codex CLI**、**DeepAgents Dcode**、**opencode**、**opencode 2**、**Kilo CLI**、**Cursor CLI**、**GitHub Copilot CLI**、**Grok Build**、**Qwen Code**、**Kimi Code**、**Factory Droid**、**ZCode**、**TraeCode**、**Antigravity CLI**、**Devin CLI**、**Cline CLI**、**pi**、**Prime Agent**、**DeepSeek Harness**、**WorkBuddy**、**CodeBuddy**）。导入完全自动进行，无需设置命令：工作时，仓库的 git 历史和对话会在后台流入记忆库。
+（**Claude Code**、**Codex CLI**、**DeepAgents Dcode**、**opencode**、**opencode 2**、**Kilo CLI**、**Cursor CLI**、**GitHub Copilot CLI**、**Grok Build**、**Qwen Code**、**Kimi Code**、**Factory Droid**、**ZCode**、**TraeCode**、**Antigravity CLI**、**Devin CLI**、**Cline CLI**、**pi**、**Prime Agent**、**DeepSeek Harness**、**WorkBuddy**、**CodeBuddy**）。摄取完全自动进行，无需设置命令：工作时，仓库的 git 历史和对话会在后台流入记忆库。
 
-基本前提是：真正修复问题所需的大部分信息可以从代码推导出来，但*最后一步*往往依赖代码中完全没有的项目决策，例如舍入规则、重试允许列表或平局处理策略。这些决策存在于 git 历史和以往对话中。此软件包在智能体开始工作时将它们呈现出来，并维护整理过的**知识页面**（架构、约定、进行中的工作），作为后续会话的起点。
+基本前提是：真正修复问题所需的大部分信息可以从代码推导出来，但*最后一步*往往依赖代码中完全没有的项目决策，例如舍入规则、重试允许列表或平局处理策略。这些决策存在于 git 历史和以往对话中。此软件包在智能体开始工作时将它们呈现出来，并维护整理过的**知识页**（架构、约定、进行中的工作），作为后续会话的起点。
 
 <Figure doc={codingAgents} />
 
@@ -86,7 +86,7 @@ npx @vectorize-io/hindsight-coding-agents install dcode
 
 安装程序将此软件包注册为 Dcode 本地插件市场，再调用 Dcode 自己的 `plugin install` 命令。软件包是原生 Agent Plugin：根目录的 `plugin.json` 提供共享技能、Hooks V2 的 `SessionStart`、`UserPromptSubmit` 和 `Stop` 生命周期，以及带命名空间的 `hindsight_*` MCP 服务器。通过 Dcode 正常插件管理器启用即可，无需修补 Dcode 配置或添加兼容桥接。
 
-Dcode 为插件 MCP 工具添加命名空间，因此显示为 `plugin__hindsight-coding-…__hindsight_…`，而非原始名称；智能体都能通过工具指南解析它们。无界面运行（`dcode -n`）时，Dcode 允许只读 Hindsight 工具，但两个写入工具（`hindsight_ingest_document`、`hindsight_capture_initiative`）需要批准，而该模式没有批准界面。请在交互式 TUI 中捕获工作计划或导入文档。同理，存在其他已安装智能体时，一次性代码库调查会通过那个智能体的 CLI 运行，与 Cursor、Copilot、Devin、Grok Build、Cline、Kilo 和 Prime Agent 相同。
+Dcode 为插件 MCP 工具添加命名空间，因此显示为 `plugin__hindsight-coding-…__hindsight_…`，而非原始名称；智能体都能通过工具指南解析它们。无界面运行（`dcode -n`）时，Dcode 允许只读 Hindsight 工具，但两个写入工具（`hindsight_ingest_document`、`hindsight_capture_initiative`）需要批准，而该模式没有批准界面。请在交互式 TUI 中捕获工作计划或摄取文档。同理，存在其他已安装智能体时，一次性代码库调查会通过那个智能体的 CLI 运行，与 Cursor、Copilot、Devin、Grok Build、Cline、Kilo 和 Prime Agent 相同。
 
 #### <StaticImage src="/img/harness/opencode.png" alt="" width="20" height="20" /> opencode
 
@@ -375,13 +375,13 @@ npx @vectorize-io/hindsight-coding-agents install claude-code --server cloud --a
 | 持久插件（opencode、opencode 2、Kilo CLI、Cline CLI、pi、Prime Agent、DeepSeek Harness） | 每个工作区加载插件时读取一次 | 重启智能体后 |
 | `hindsight_*` 工具后面的 MCP 服务器 | 启动时读取一次 | 下次会话中 |
 
-`apiToken` 是例外。服务器拒绝请求时，每个宿主都会重新读取它，因此启用身份验证或轮换密钥会在下一次调用时生效，无需重启。否则，轮换会让长期运行智能体的每次记忆调用持续失败，直到重启。其他设置均遵循上表，包括 `apiUrl`、`disabled`、记忆库路由、`gitIngest`、调查和知识页面设置。
+`apiToken` 是例外。服务器拒绝请求时，每个宿主都会重新读取它，因此启用身份验证或轮换密钥会在下一次调用时生效，无需重启。否则，轮换会让长期运行智能体的每次记忆调用持续失败，直到重启。其他设置均遵循上表，包括 `apiUrl`、`disabled`、记忆库路由、`gitIngest`、调查和知识页设置。
 
 `hindsight_diagnose` 会报告这两方面的差异：文件当前写了什么，以及运行中的客户端实际使用什么。
 
 ### 仅在明确启用的项目中运行 {#opt-in-only}
 
-默认每个项目都有记忆，这使插件无需设置。如果希望在明确允许前不记住任何内容，可以全局关闭记忆，并列出允许使用记忆的项目：
+默认每个项目都会启用记忆，这使插件无需设置。如果希望在明确允许前不记住任何内容，可以全局关闭记忆，并列出允许使用记忆的项目：
 
 ```jsonc
 {
@@ -426,32 +426,32 @@ npx @vectorize-io/hindsight-coding-agents install claude-code --server cloud --a
 | `retainTags`            | —                                    | 为集成写入的每个文档添加标签，例如 `["project:{gitProject}"]`，见下文**记录记忆来源** |
 | `retainMetadata`        | —                                    | 为集成写入的每个文档添加元数据，例如 `{"repo": "{gitProject}"}` |
 | `retainContext`         | 见说明 | 每次会话回写发送的 `context`。提取过程读取它来确定句子是谁的说法，因此默认点明双方说话者，要求将智能体自己声称的“已修复”或“通过”存为其说法，而非事实。接受与 `retainTags` 相同的 `{placeholder}` 模板 |
-| `manageBankConfig`      | `true`                               | 允许插件配置记忆库：写入所用的存储策略、`knowledge` 实体标签组，以及尚未设置的任务目标。写入是**增补式**的：只添加库未定义的内容，绝不覆盖现有值，因此控制平面编辑保留。唯一例外是插件自身策略的提取模式，遵循 `retainExtractionMode`。设为 `false` 可完全停止管理库配置，见下文**自行配置记忆库** |
+| `manageBankConfig`      | `true`                               | 允许插件配置记忆库：写入所用的存储策略、`knowledge` 实体标签组，以及尚未设置的任务说明。写入是**增补式**的：只添加库未定义的内容，绝不覆盖现有值，因此控制台编辑保留。唯一例外是插件自身策略的提取模式，遵循 `retainExtractionMode`。设为 `false` 可完全停止管理库配置，见下文**自行配置记忆库** |
 | `retainExtractionMode`  | `"concise"`                          | 服务器从会话、提交和文档提取记忆的方式：`"concise"`、`"verbose"`、`"verbatim"` 或 `"chunks"`（直接存储文本，不提取）。每次 Stop 都回写会话，因此决定每轮成本；`"verbose"` 提取更多细节，消耗数倍 token。每个会话同步插件自己的存储策略，因此修改也影响现有记忆库（`manageBankConfig: false` 时除外） |
-| `defaultBankConfig`     | —                                    | 为插件管理的记忆库提供自定义配置字段，例如 `{"enable_observations": false, "enable_auto_consolidation": false, "mental_model_min_refresh_interval_seconds": 21600}`。键使用记忆库配置 API 自身的字段名。同样遵循增补规则，仅在库未定义字段时写入，因此插件创建的库会采用这些值而非服务器默认值，控制平面设置永不被覆盖。与模板同名的键（`enable_observations`）优先采用此值；拒绝 `retain_strategies`、`entity_labels` 和 `retain_extraction_mode`，因为这些由插件管理。`manageBankConfig: false` 时忽略，见下文**自行配置记忆库**。与 `recallOptions` 相同，仅文件配置；在 `banks.<id>` 中替换全局映射，而非合并 |
-| `observationScopes`     | `"shared"`                           | 整合如何分组观察：`"shared"`（默认）= 每库一个全局范围，使仓库上的所有智能体构建一套信念；也支持 `"combined"`（服务器默认）、`"per_tag"`、`"all_combinations"`、`[["t"]]`；`"per_source"` 在全局范围之外为每种 `source:` 增加范围，让提交知识和对话知识分开整合 |
+| `defaultBankConfig`     | —                                    | 为插件管理的记忆库提供自定义配置字段，例如 `{"enable_observations": false, "enable_auto_consolidation": false, "mental_model_min_refresh_interval_seconds": 21600}`。键使用记忆库配置 API 自身的字段名。同样遵循增补规则，仅在库未定义字段时写入，因此插件创建的库会采用这些值而非服务器默认值，控制台设置永不被覆盖。与模板同名的键（`enable_observations`）优先采用此值；拒绝 `retain_strategies`、`entity_labels` 和 `retain_extraction_mode`，因为这些由插件管理。`manageBankConfig: false` 时忽略，见下文**自行配置记忆库**。与 `recallOptions` 相同，仅文件配置；在 `banks.<id>` 中替换全局映射，而非合并 |
+| `observationScopes`     | `"shared"`                           | 整合如何分组观测：`"shared"`（默认）= 每库一个全局范围，使仓库上的所有智能体形成一组认知判断；也支持 `"combined"`（服务器默认）、`"per_tag"`、`"all_combinations"`、`[["t"]]`；`"per_source"` 在全局范围之外为每种 `source:` 增加范围，让提交知识和对话知识分开整合 |
 | `disabled`              | `false`                              | 彻底关闭开关（插件/钩子不启用，形成无记忆基线） |
-| `reflectTimeoutMs`      | `20000`                              | **自动**会话反思超时；基于钩子的运行环境会注册 30 秒提示词钩子超时，因此超过约 20 秒时，还需提高宿主配置中的钩子 `timeout`，否则宿主会在反思中途终止钩子。超时或 5xx 时回退到知识页面搜索，再原始召回观察（记录日志） |
+| `reflectTimeoutMs`      | `20000`                              | **自动**会话反思超时；基于钩子的运行环境会注册 30 秒提示词钩子超时，因此超过约 20 秒时，还需提高宿主配置中的钩子 `timeout`，否则宿主会在反思中途终止钩子。超时或 5xx 时回退到知识页搜索，再原始召回观测（记录日志） |
 | `reflectToolTimeoutMs`  | `330000`                             | 智能体调用 `hindsight_reflect` 工具的超时：智能体会等待该调用，内容丰富记忆库的高预算综合可能持续数分钟。默认超过服务器自身的反思总时间限制（`HINDSIGHT_API_REFLECT_WALL_TIMEOUT`，300 秒），由服务器决定何时放弃。未设置时会继承显式提高的 `reflectTimeoutMs`，但较短值不会降低它 |
 | `injectTimeoutMs`       | `7000`                               | `autoInject: "pages"` 和 `autoInject: "recall"` 的检索超时，单位毫秒；也是反思超时/5xx 后页面搜索再召回的**共享**预算（召回仅获得搜索后剩余时间）。例如设为 `2000` 限制每轮延迟，较慢的自托管库可用 `15000`。环境变量后备：`HINDSIGHT_INJECT_TIMEOUT_MS`。钩子运行环境中，注入必须在宿主提示词钩子超时内完成（默认 30 秒）；带回退的反思要预留 **`reflectTimeoutMs` + `injectTimeoutMs`**，必要时提高宿主钩子的 `timeout` |
 | `reflectBudget`         | `"high"`                             | `hindsight_reflect` 工具的反思预算：`"low"`、`"mid"` 或 `"high"`。大记忆库的高预算综合超过服务器总时间限制时可降低。自动会话启动反思始终使用 `"low"` 以适应钩子时间窗口，不受此设置影响 |
-| `autoInject`            | `"reflect"`                          | 在会话**第一个提示词**时注入一次的内容：`"reflect"` = 低预算反思综合（超时/5xx 时回退到页面搜索，再召回）；`"pages"` = 搜索匹配提示词的知识页面；`"recall"` = 针对提示词召回库中记忆（由 `recallOptions` 指定，默认观察）；`"none"` = 不注入，智能体先搜索知识页面，仅页面信息不足时反思。`"pages"` 和 `"recall"` 仅检索、不调用 LLM，时间预算为 `injectTimeoutMs` |
+| `autoInject`            | `"reflect"`                          | 在会话**第一个提示词**时注入一次的内容：`"reflect"` = 低预算反思综合（超时/5xx 时回退到页面搜索，再召回）；`"pages"` = 搜索匹配提示词的知识页；`"recall"` = 针对提示词召回库中记忆（由 `recallOptions` 指定，默认观测）；`"none"` = 不注入，智能体先搜索知识页，仅页面信息不足时反思。`"pages"` 和 `"recall"` 仅检索、不调用 LLM，时间预算为 `injectTimeoutMs` |
 | `autoReflect`           | `true`                               | **已弃用**，请使用 `autoInject`。仍兼容（`false` = `autoInject: "none"`），设置 `autoInject` 时忽略，并记录弃用警告 |
-| `pageSearchLimit`       | `3`                                  | 一次搜索返回的知识页面数。作用于库的所有搜索：`autoInject: "pages"` 注入、反思回退，以及智能体自己的 `hindsight_search_knowledge_pages` 工具，因为限制位于它们共享的客户端中 |
-| `recallOptions`         | 见说明 | 逐键合并到每次召回请求体中的覆盖值，影响 `autoInject: "recall"` 和反思回退。键直接使用 API 召回参数，原样传入，因此无需新增选项就可设置召回接受的任何参数；唯一不可覆盖字段为 `query`。默认请求体是 `{"types": ["observation"], "budget": "low", "max_tokens": 2000, "include": {"entities": null}}`，逐键合并设置；`{"max_tokens": 4000}` 改变预算并保留其余项。观察是整合层，每 token 的回答价值最高，但**禁用整合的库不会生成观察**，默认召回结果为空：此类库设为 `{"types": ["world", "experience"]}`，或使用 `{"types": null}` 获取所有类型。与 `retainMetadata` 相同，仅文件配置；对象无法扁平化为环境变量 |
-| `toolGuideExtra`        | —                                    | 自定义智能体使用记忆的指导，在内置工具指南**之后**添加（会话启动及每次刷新时），也添加到 `hindsight_search_knowledge_pages` 结果的来源说明之后。只增补内置文本，不替换。与其他键一样可按运行环境或记忆库设置，例如“记忆是过去的记录，并非当前状态：采取行动前，请根据代码核实任何说法。” |
-| `pageRefreshEveryTurns` | `10`                                 | 每 N 个用户轮次重新获取知识页面，并重新注入页面列表及工具指南 |
-| `pageTriggerType`       | `"cron"`                             | 新知识页面何时刷新，即保持最新的成本：`"cron"`（默认）仅按 `pageTriggerCron`，且确实过时时刷新；`"auto-refresh"` 在每次生成新材料的整合后刷新；`"manual"` 从不自行刷新。自动刷新最及时，也最昂贵：每次整合每个页面一次综合。对应 Hindsight API 的页面 `trigger.refresh_cron`，或 `trigger.refresh_after_consolidation`（自动刷新为 `true`，手动为 `false`） |
+| `pageSearchLimit`       | `3`                                  | 一次搜索返回的知识页数。作用于库的所有搜索：`autoInject: "pages"` 注入、反思回退，以及智能体自己的 `hindsight_search_knowledge_pages` 工具，因为限制位于它们共享的客户端中 |
+| `recallOptions`         | 见说明 | 逐键合并到每次召回请求体中的覆盖值，影响 `autoInject: "recall"` 和反思回退。键直接使用 API 召回参数，原样传入，因此无需新增选项就可设置召回接受的任何参数；唯一不可覆盖字段为 `query`。默认请求体是 `{"types": ["observation"], "budget": "low", "max_tokens": 2000, "include": {"entities": null}}`，逐键合并设置；`{"max_tokens": 4000}` 改变预算并保留其余项。观测属于整合层，每 token 的回答价值最高，但**禁用整合的库不会生成观测**，默认召回结果为空：此类库设为 `{"types": ["world", "experience"]}`，或使用 `{"types": null}` 获取所有类型。与 `retainMetadata` 相同，仅文件配置；对象无法扁平化为环境变量 |
+| `toolGuideExtra`        | —                                    | 自定义智能体使用记忆的指导，在内置工具指南**之后**添加（会话启动及每次刷新时），也添加到 `hindsight_search_knowledge_pages` 结果的来源说明之后。只增补内置文本，不替换。与其他键一样可按运行环境或记忆库设置，e.g. "Memory is a past record, not current state: verify any claim against the code before acting on it." |
+| `pageRefreshEveryTurns` | `10`                                 | 每 N 个用户轮次重新获取知识页，并重新注入页面列表及工具指南 |
+| `pageTriggerType`       | `"cron"`                             | 新知识页何时刷新，即保持最新的成本：`"cron"`（默认）仅按 `pageTriggerCron`，且确实过时时刷新；`"auto-refresh"` 在每次生成新材料的整合后刷新；`"manual"` 从不自行刷新。自动刷新最及时，也最昂贵：每次整合每个页面一次综合。对应 Hindsight API 的页面 `trigger.refresh_cron`，或 `trigger.refresh_after_consolidation`（自动刷新为 `true`，手动为 `false`） |
 | `pageTriggerCron`       | `"H * * * *"`                        | `pageTriggerType: "cron"` 的调度，使用 UTC、标准 5 字段 cron，例如 `"0 3 * * *"`。默认每小时执行，每个页面使用自己的哈希分钟。设置页面的 `trigger.refresh_cron`，API 将其与 `refresh_after_consolidation` 视为互斥；无变化时跳过调度刷新。将字段写为 `H`，可为各页面分配独立值，见下文**使用 `H` 分散刷新** |
-| `pages`                 | 所有页面 | 初始化知识页面的逐页面配置，键为页面名称（不区分大小写）：`false` 完全跳过页面，`{"source_query": "..."}` 使用你的问题而非内置问题初始化。省略时全部五页采用内置查询。这是自定义页面措辞的受支持方式：插件会重新同步实际查询与配置不一致的页面，因此通过 API 或控制平面编辑的查询会在下次会话被替换。跳过页面**不会删除**已有页面：保留内容，停止重新同步。你的查询也会附加范围限定条款，防止改写后的页面将依赖项决策当成当前项目决策。与 `recallOptions` 相同，仅文件配置；`banks.<id>` 中替换全局映射，而非合并 |
-| `customPages`           | —                                    | 自定义知识页面，与上面五页一起初始化，以页面名称为键：`{"Security posture": {"source_query": "...", "tags": ["knowledge:decision"]}}`。`source_query` 必需；`tags` 可选，用于选择提供给页面的事实，省略时使用库内全部内容。有意独立于 `pages`，让该处未知名称保持为拼写警告，而非静默创建页面。仅文件配置，在 `banks.<id>` 中替换而非合并 |
+| `pages`                 | 所有页面 | 初始化知识页的逐页面配置，键为页面名称（不区分大小写）：`false` 完全跳过页面，`{"source_query": "..."}` 使用你的问题而非内置问题初始化。省略时全部五页采用内置查询。这是自定义页面措辞的受支持方式：插件会重新同步实际查询与配置不一致的页面，因此通过 API 或控制台编辑的查询会在下次会话被替换。跳过页面**不会删除**已有页面：保留内容，停止重新同步。你的查询也会附加范围限定条款，防止改写后的页面将依赖项决策当成当前项目决策。与 `recallOptions` 相同，仅文件配置；`banks.<id>` 中替换全局映射，而非合并 |
+| `customPages`           | —                                    | 自定义知识页，与上面五页一起初始化，以页面名称为键：`{"Security posture": {"source_query": "...", "tags": ["knowledge:decision"]}}`。`source_query` 必需；`tags` 可选，用于选择提供给页面的事实，省略时使用库内全部内容。有意独立于 `pages`，让该处未知名称保持为拼写警告，而非静默创建页面。仅文件配置，在 `banks.<id>` 中替换而非合并 |
 | `autoSeed`              | `true`                               | SessionStart：根据 git 历史自动初始化尚未使用仓库的记忆库 |
 | `seedLimit`             | `300`                                | 自动初始化：最近 N 次提交上限 |
 | `codebaseSurvey`        | `true`                               | SessionStart：对尚未使用仓库结构进行无界面调查，通过当前运行环境自己的 CLI（claude/codex/antigravity/opencode）运行，回退到任意可用智能体 |
 | `surveyModel`           | `haiku`                              | 调查模型，仅适用于 Claude 方案（`claude -p --model`）；其他智能体使用其配置的默认模型 |
 | `surveyBudgetUsd`       | `2`                                  | 调查费用上限，仅适用于 Claude 方案（`claude -p --max-budget-usd`）；其他智能体依靠只读沙箱 |
 | `surveyRefreshCommits`  | `20`                                 | 距上次调查累积这么多提交后，在 SessionStart 重新调查，让结构页面跟踪持续变化的架构（`0` = 仅调查首次使用的仓库，之后不再调查） |
-| `retainSessions`        | `true`                               | 会话回写，所有运行环境均遵循：钩子运行环境在 Stop 写入记录，Factory Droid 也在取消通知时写入；插件运行环境（opencode、opencode 2、Kilo）每轮更新插入，并在空闲时刷新，以捕获逐轮处理看不到的回答。全局、按运行环境或按库设为 `false` 可停止写入记录（后台历史导入也停止），召回、git 导入和记忆工具仍可使用 |
+| `retainSessions`        | `true`                               | 会话回写，所有运行环境均遵循：钩子运行环境在 Stop 写入记录，Factory Droid 也在取消通知时写入；插件运行环境（opencode、opencode 2、Kilo）每轮更新插入，并在空闲时刷新，以捕获逐轮处理看不到的回答。全局、按运行环境或按库设为 `false` 可停止写入记录（后台历史导入也停止），召回、git 摄取和记忆工具仍可使用 |
 | `maxParallelRetains`    | `10`                                 | 记忆存储相关并发请求上限：drain() 的逐操作轮询以及 deepen 的聊天/git 存储池。API 限制的是突发流量而非单个请求；出现 429 时应降低而非提高 |
 | `logLevel`              | `"info"`                             | 插件日志详细程度（`"debug"` \| `"info"` \| `"warn"` \| `"error"`）；`HINDSIGHT_LOG_LEVEL` 环境变量优先 |
 | `autoUpdate`            | `true`                               | 自动保持已安装运行时最新：每天一次，会话启动时查询 npm 发布版本，较新时在后台更新 `~/.hindsight/coding-agents`。不更改宿主接入配置，因此新增钩子入口的发布仍需手动 `install`。设为 `false` 可固定版本；`disabled` 也会停止更新，因为未启用插件应保持静止。只替换按文档通过 `npx` 安装的运行时；`npm i -g` 安装、作为项目依赖嵌入或由检出目录构建的副本由其管理者按原安装方式更新。需要 PATH 中有 `npx` 和 `npm` |
@@ -461,7 +461,7 @@ npx @vectorize-io/hindsight-coding-agents install claude-code --server cloud --a
 
 默认页面**每小时错峰刷新**：`pageTriggerCron` 为 `"H * * * *"`，每个页面在一小时内获得自己的分钟（见下文），没有新内容可合并时，服务器会跳过该次调度。这样页面与仓库状态的差距不超过一小时，也无需支付自动刷新的成本：持续整合的仓库中，每次整合每个页面都要进行一次 LLM 综合。设置 `pageTriggerType: "auto-refresh"` 可恢复每次整合后刷新。
 
-`pageTriggerType`/`pageTriggerCron` 仅决定页面**何时**刷新。**如何**刷新由服务器决定：Hindsight 创建的知识页面采用增量刷新（每次编辑页面而非重建），不对同级页面进行反思。这些设置合并到默认值之上，而非替换它们。
+`pageTriggerType`/`pageTriggerCron` 仅决定页面**何时**刷新。**如何**刷新由服务器决定：Hindsight 创建的知识页采用增量刷新（每次编辑页面而非重建），不对同级页面进行反思。这些设置合并到默认值之上，而非替换它们。
 
 ### 使用 `H` 分散刷新 {#spreading-refreshes-with-h}
 
@@ -477,13 +477,13 @@ npx @vectorize-io/hindsight-coding-agents install claude-code --server cloud --a
 | `"H H(0-5) * * *"` | 每天一次，仅在 00:00–05:59 内分散 |
 | `"0 3 * * *"`      | 无 `H`，无哈希，严格按表达式同时运行 |
 
-`H` 是 [Jenkins 的语法](https://www.jenkins.io/doc/book/pipeline/syntax/#cron-syntax)，用于解决相同问题。它不会传到 API：插件创建页面时先解析为普通 cron 表达式（`"41 17 * * *"`），因此控制平面中看到的是可以编辑的常规调度。哈希只是分散页面，并不保证各自时间互斥；两个页面仍可能落在同一分钟，但不会所有页面同时运行。
+`H` 是 [Jenkins 的语法](https://www.jenkins.io/doc/book/pipeline/syntax/#cron-syntax)，用于解决相同问题。它不会传到 API：插件创建页面时先解析为普通 cron 表达式（`"41 17 * * *"`），因此控制台中看到的是可以编辑的常规调度。哈希只是分散页面，并不保证各自时间互斥；两个页面仍可能落在同一分钟，但不会所有页面同时运行。
 
-**这些设置也适用于仓库已有的页面。** 每次会话都会将此插件创建的页面——初始化的分类页面及所有捕获的工作计划——与配置比较，并重新同步有差异的页面。因此在默认值变化前初始化的记忆库会自行切换为每小时调度；在控制平面手动更改触发方式的页面，也会在下次智能体运行时恢复为配置策略。配置文件是这些页面的权威来源：要使用不同调度，请修改 `pageTriggerType`/`pageTriggerCron`（仅影响某仓库时使用记忆库级配置），而非编辑页面。只操作插件声明的字段，页面的 `mode`、排除的同级页面和最小刷新间隔保持原样。
+**这些设置也适用于仓库已有的页面。** 每次会话都会将此插件创建的页面——初始化的分类页面及所有捕获的工作计划——与配置比较，并重新同步有差异的页面。因此在默认值变化前初始化的记忆库会自行切换为每小时调度；在控制台手动更改触发方式的页面，也会在下次智能体运行时恢复为配置策略。配置文件是这些页面的权威来源：要使用不同调度，请修改 `pageTriggerType`/`pageTriggerCron`（仅影响某仓库时使用记忆库级配置），而非编辑页面。只操作插件声明的字段，页面的 `mode`、排除的同级页面和最小刷新间隔保持原样。
 
-### 自定义知识页面 — `pages` {#customize-knowledge-pages--pages}
+### 自定义知识页 — `pages` {#customize-knowledge-pages--pages}
 
-每个仓库默认都有相同的五个页面。它们是**知识分类体系**，而非源码摘要：每页综合记忆库导入的提交历史和以往对话，并绑定某个知识层级，因此只使用提取器路由到该层级的事实。
+每个仓库默认都有相同的五个页面。它们是**知识分类体系**，而非源码摘要：每页综合记忆库摄取的提交历史和以往对话，并绑定某个知识层级，因此只使用提取器路由到该层级的事实。
 
 | 页面 | 回答的问题 | 层级标签 |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------- | ------------------------ |
@@ -502,7 +502,7 @@ npx @vectorize-io/hindsight-coding-agents install claude-code --server cloud --a
     "Component map": false,
     // 初始化，但使用你的问题而非内置问题
     "Key decisions and rationale": {
-      "source_query": "我们对数据保留、加密和 PII 处理作出了哪些决定，为什么？优先考虑约束新代码行为的决策。",
+      "source_query": "What did we decide about data retention, encryption and PII handling, and why? Prefer decisions that constrain what new code may do.",
     },
   },
 }
@@ -530,7 +530,7 @@ npx @vectorize-io/hindsight-coding-agents install claude-code --server cloud --a
     "coding-agent::payments-api": {
       "pages": {
         "Core concepts": {
-          "source_query": "支付领域包含哪些实体——订单、账本、结算状态——它们在我们的模型中各自意味着什么？",
+          "source_query": "What are the payment domain's entities — orders, ledgers, settlement states — and what does each mean in OUR model?",
         },
       },
     },
@@ -540,10 +540,10 @@ npx @vectorize-io/hindsight-coding-agents install claude-code --server cloud --a
 
 使用前需要了解四点：
 
-- **这是持久修改页面措辞的唯一方式。** 每个会话将初始化页面与配置查询比较并重新同步差异，因此通过 API 或控制平面编辑的 `source_query` 会在下次智能体运行时被替换。此处设置的措辞才是配置值。重新同步替换查询时，插件会在日志中说明是哪一页，不会静默处理。
+- **这是持久修改页面措辞的唯一方式。** 每个会话将初始化页面与配置查询比较并重新同步差异，因此通过 API 或控制台编辑的 `source_query` 会在下次智能体运行时被替换。此处设置的措辞才是配置值。重新同步替换查询时，插件会在日志中说明是哪一页，不会静默处理。
 - **自定义查询仍附加范围限定条款。** 防止依赖项决策出现在项目页面的句子也会附加到自定义查询；库中含有仓库使用的库和服务的事实，没有此条款就会将它们当成你的项目知识。
 - **层级标签仍遵循分类体系。** 它决定综合过程读取哪些事实；改写问题改变的是如何询问这些事实，而非事实范围。
-- **`false` 不删除任何内容。** 已初始化页面保留内容，只是停止重新同步；想删除时请在控制平面移除。
+- **`false` 不删除任何内容。** 已初始化页面保留内容，只是停止重新同步；想删除时请在控制台移除。
 
 不匹配上述任何页面的名称会被忽略，并在插件日志记录警告，让拼写错误明确暴露，而非看起来像禁用了页面。此设置不用于添加自定义页面：智能体的 `hindsight_capture_initiative` 工具已会为每个工作计划创建独立查询的页面。
 
@@ -555,11 +555,11 @@ npx @vectorize-io/hindsight-coding-agents install claude-code --server cloud --a
 {
   "customPages": {
     "Security posture": {
-      "source_query": "当前项目有哪些安全决策——身份验证、机密信息处理、PII、依赖策略——它们对新代码有什么约束？",
+      "source_query": "What are this project's security decisions — authn, secrets handling, PII, dependency policy — and what do they constrain in new code?",
       "tags": ["knowledge:decision"],
     },
     "Operational runbook": {
-      "source_query": "此项目如何部署、监控和回滚？生产环境出过什么故障，如何修复？",
+      "source_query": "How does this project get deployed, monitored and rolled back? What has broken in production, and what fixed it?",
     },
   },
 }
@@ -571,17 +571,17 @@ npx @vectorize-io/hindsight-coding-agents install claude-code --server cloud --a
 
 **为何使用独立设置。** `pages` 拒绝不匹配任何初始化页面的名称，因此拼写错误会明确暴露。如果未知键表示“创建页面”，`"Componnet map"` 就会悄悄创建第二个空页，而非修改目标页面。同理，`customPages` 拒绝已初始化页面的名称；应在 `pages` 下改写它。
 
-自己在控制平面创建的页面属于第三类，插件绝不操作它们：初始化过程仅访问配置为自己管理的页面。
+自己在控制台创建的页面属于第三类，插件绝不操作它们：初始化过程仅访问配置为自己管理的页面。
 
 ### 自行配置记忆库 — `manageBankConfig` {#a-bank-you-shape-yourself--managebankconfig}
 
-连接记忆库后，插件会配置导入所需结构：为它写入的文档种类（`git`、`gitlog`、`conversation`、`document`、`survey`）设置记忆存储策略，添加将事实路由到知识页面的 `knowledge` 实体标签组，并在库尚无任务目标时添加编程任务目标。
+连接记忆库后，插件会配置导入所需结构：为它写入的文档种类（`git`、`gitlog`、`conversation`、`document`、`survey`）设置记忆存储策略，添加将事实路由到知识页的 `knowledge` 实体标签组，并在库尚无任务说明时添加编程任务说明。
 
-**它只添加缺失内容。** 自己定义的策略、对插件策略的修改、改写后的标签组、在控制平面重写的任务目标，每次会话都会永远原样保留。记忆库已有配置优先。代价是：插件发布中对现有策略或标签的*改写*，不会应用到已拥有这些条目的库。要恢复当前默认值，请清除库上的覆盖设置（在控制平面删除该策略或整个 `retain_strategies` 条目）；下次会话发现该处未定义，就会重新初始化。
+**它只添加缺失内容。** 自己定义的策略、对插件策略的修改、改写后的标签组、在控制台重写的任务说明，每次会话都会永远原样保留。记忆库已有配置优先。代价是：插件发布中对现有策略或标签的*改写*，不会应用到已拥有这些条目的库。要恢复当前默认值，请清除库上的覆盖设置（在控制台删除该策略或整个 `retain_strategies` 条目）；下次会话发现该处未定义，就会重新初始化。
 
-一个字段例外：插件自己的四种策略（`git`、`gitlog`、`conversation`、`document`）的提取模式遵循 `retainExtractionMode`。每次会话发现偏离都会恢复，与初始化页面的查询一样。请在 `coding-agent.json` 修改，而非控制平面。策略其他字段和自定义策略仍保持原样。
+一个字段例外：插件自己的四种策略（`git`、`gitlog`、`conversation`、`document`）的提取模式遵循 `retainExtractionMode`。每次会话发现偏离都会恢复，与初始化页面的查询一样。请在 `coding-agent.json` 修改，而非控制台。策略其他字段和自定义策略仍保持原样。
 
-**新记忆库的自定义默认值 — `defaultBankConfig`。** 模板未指明的字段由服务器提供：自动整合开启、观察开启、心智模型刷新间隔下限 60 秒。每个仓库一个记忆库时，这些设置会产生费用；智能体接触新仓库就会创建一个全部开启的新库，而在控制平面手动调整过的库已有较低成本的基线。`defaultBankConfig` 在插件配置中统一声明基线，并随创建记忆库的同一次导入传入：
+**新记忆库的自定义默认值 — `defaultBankConfig`。** 模板未指明的字段由服务器提供：自动整合开启、观测开启、心智模型刷新间隔下限 60 秒。每个仓库一个记忆库时，这些设置会产生费用；智能体接触新仓库就会创建一个全部开启的新库，而在控制台手动调整过的库已有较低成本的基线。`defaultBankConfig` 在插件配置中统一声明基线，并随创建记忆库的同一次导入传入：
 
 ```json
 {
@@ -593,9 +593,9 @@ npx @vectorize-io/hindsight-coding-agents install claude-code --server cloud --a
 }
 ```
 
-键直接使用记忆库配置 API 字段名并原样传入，因此 API 接受的内容都可以放在这里。与模板一样遵循增补规则，只在库未定义时写入，所以现有库在下次会话会采用它们，**已设置的字段除外**：控制平面选择的值即使等于服务器默认值也保持不变，旧插件版本初始化的值同样保留（模板会随任务目标写入 `enable_observations: true`；清除库中的覆盖值，才能采用你的默认值）。与模板同名的键以自定义默认值优先。插件自行管理的三个字段——`retain_strategies`、`entity_labels` 和 `retain_extraction_mode`——会被拒绝并警告：前两者逐条合并，后者属于 `retainExtractionMode`。
+键直接使用记忆库配置 API 字段名并原样传入，因此 API 接受的内容都可以放在这里。与模板一样遵循增补规则，只在库未定义时写入，所以现有库在下次会话会采用它们，**已设置的字段除外**：控制台选择的值即使等于服务器默认值也保持不变，旧插件版本初始化的值同样保留（模板会随任务说明写入 `enable_observations: true`；清除库中的覆盖值，才能采用你的默认值）。与模板同名的键以自定义默认值优先。插件自行管理的三个字段——`retain_strategies`、`entity_labels` 和 `retain_extraction_mode`——会被拒绝并警告：前两者逐条合并，后者属于 `retainExtractionMode`。
 
-设置 `manageBankConfig: false` 可让插件完全不操作库配置，包括 `defaultBankConfig`。适用于与非编程工作共享的库，或自行配置的库。此时库需要自行定义上述五种策略。缺少策略会**静默回退**：服务器不会拒绝指定了不存在策略的记忆存储请求，而是记录警告并使用库自身配置提取。因此提交差异、会话记录和调查标记会受到相同通用处理，而非各自所需的提取方式。两种情况下都会初始化知识页面；`pageTriggerType` 决定其成本。
+设置 `manageBankConfig: false` 可让插件完全不操作库配置，包括 `defaultBankConfig`。适用于与非编程工作共享的库，或自行配置的库。此时库需要自行定义上述五种策略。缺少策略会**静默回退**：服务器不会拒绝指定了不存在策略的记忆存储请求，而是记录警告并使用库自身配置提取。因此提交差异、会话记录和调查标记会受到相同通用处理，而非各自所需的提取方式。两种情况下都会初始化知识页；`pageTriggerType` 决定其成本。
 
 与此处所有字段一样，可以按记忆库设置，通常也应该这样做：
 
@@ -694,17 +694,17 @@ npx @vectorize-io/hindsight-coding-agents install claude-code --server cloud --a
 
 插件自身的 `source:` 和 `harness:` 标签为保留项。这些命名空间中的自定义条目会被忽略并警告，确保文档的智能体归属始终反映实际写入者。
 
-### 每个仓库一套信念 {#one-set-of-beliefs-per-repo}
+### 每个仓库共享一组认知判断 {#one-set-of-beliefs-per-repo}
 
 此集成写入的每个文档都携带来源标签：`source:chat`、`harness:<id>`、`knowledge:<kind>`，以及 `retainTags` 添加的所有标签。它们说明记忆由**谁写入**，用于过滤召回、显示文档智能体标志，并保留在事实上。
 
-但它们并非[观察](/developer/observations)的合适边界。整合默认值 `combined` 为每组不同标签构建一套观察，因此两个智能体在同一仓库工作会产生两套平行信念：按运行环境分开、永不合并、互相不可见，整合成本翻倍。由哪个智能体输入，不会改变约定或决策是否成立。
+但它们并非[观测](/developer/observations)的合适边界。整合默认值 `combined` 会按不同标签组合分别形成观测，因此两个智能体在同一仓库工作会产生两组彼此平行的认知判断：按运行环境分开、永不合并、互相不可见，整合成本翻倍。由哪个智能体输入，不会改变约定或决策是否成立。
 
-因此集成使用 `observationScopes: "shared"` 存储：每个库只有一个全局无标签观察范围，这正是记忆库本来的含义——一个项目的记忆。可设置此字段更改：
+因此集成使用 `observationScopes: "shared"` 存储：每个库只有一个全局无标签观测范围，这正是记忆库本来的含义——一个项目的记忆。可设置此字段更改：
 
 ```jsonc
 {
-  "observationScopes": "combined", // 每组不同标签一套观察（服务器默认）
+  "observationScopes": "combined", // 每组不同标签一套观测（服务器默认）
   "banks": {
     "coding-agent::mono": { "observationScopes": "per_tag" }, // 与所有行为字段一样，可按仓库设置
   },
@@ -713,7 +713,7 @@ npx @vectorize-io/hindsight-coding-agents install claude-code --server cloud --a
 
 ### 将代码与对话分开 — `per_source` {#splitting-code-from-conversation--per_source}
 
-`shared` 将仓库生成的所有文档放入同一套信念。`"per_source"` 保留这套信念，同时按来源增加独立集合，从而可以分别询问“提交中说了什么”和“对话中决定了什么”：
+`shared` 将仓库生成的所有文档放入同一组认知判断中。`"per_source"` 保留这组判断，同时按来源增加独立集合，从而可以分别询问“提交中说了什么”和“对话中决定了什么”：
 
 ```jsonc
 { "observationScopes": "per_source" }
@@ -723,17 +723,17 @@ npx @vectorize-io/hindsight-coding-agents install claude-code --server cloud --a
 
 携带两个 `source:` 标签的文档会各自获得一个范围，这是有意设计而非重复。提交消息初始文档带 `source:git` 和 `source:git-log`，因此 `source:git-log` 仅接受初始文档，表示提交*消息*的内容；`source:git` 在 `gitIngest: "full"` 下还汇集每次提交差异。两个问题，两个答案，各自在整合时内部去重。事实属于多个维度正是设计目的。
 
-无法用范围列表表达这种行为。服务器将显式 `list[list[str]]` 视为无条件范围，不按记忆自身标签过滤。因此 `[[], ["source:git"], ["source:chat"]]` 会将每个文档写入全部三个范围，`source:git` 中也会充满来自聊天记录的信念。只有逐文档决定范围才能分离。
+无法用范围列表表达这种行为。服务器将显式 `list[list[str]]` 视为无条件范围，不按记忆自身标签过滤。因此 `[[], ["source:git"], ["source:chat"]]` 会将每个文档写入全部三个范围，`source:git` 中也会充满基于聊天记录形成的认知判断。只有逐文档决定范围才能分离。
 
-每个文档多消耗一次整合，只读取 `source:`，因此易变的来源标签永远不会成为范围。仍先写入全局范围，且其内容不变，因此知识页面读取的无标签观察不受影响。
+每个文档多消耗一次整合，只读取 `source:`，因此易变的来源标签永远不会成为范围。仍先写入全局范围，且其内容不变，因此知识页读取的无标签观测不受影响。
 
-`"per_tag"` 和 `"all_combinations"` 会进一步拆分，显式 `[["project:demo"], …]` 则按字面声明范围。`HINDSIGHT_OBSERVATION_SCOPES` 设置标量模式，范围列表只能通过文件配置。更改不会重写旧范围下已整合的观察：它们保留在原处，新工作按新设置累积。
+`"per_tag"` 和 `"all_combinations"` 会进一步拆分，显式 `[["project:demo"], …]` 则按字面声明范围。`HINDSIGHT_OBSERVATION_SCOPES` 设置标量模式，范围列表只能通过文件配置。更改不会重写旧范围下已整合的观测：它们保留在原处，新工作按新设置累积。
 
 ## 诊断与日志 {#diagnostics--logging}
 
 所有日志位于 `~/.hindsight/coding-agents-logs/`（仅所有者可访问）。每个文件达到 10 MB 时轮转为 `<file>.1`。
 
-**分级插件日志**（供人工调试）：`~/.hindsight/coding-agents-logs/plugin.log`（通过 `HINDSIGHT_LOG_FILE` 覆盖），包含各组件（包括导入引擎）带时间戳的 `LEVEL [scope] message` 行。默认级别为 `info`；临时调试可在配置设置 `"logLevel": "debug"` 或 `HINDSIGHT_LOG_LEVEL=debug`（`debug` 时下文所有诊断事件也会镜像到此，因此一个文件即可了解完整过程）。
+**分级插件日志**（供人工调试）：`~/.hindsight/coding-agents-logs/plugin.log`（通过 `HINDSIGHT_LOG_FILE` 覆盖），包含各组件（包括摄取引擎）带时间戳的 `LEVEL [scope] message` 行。默认级别为 `info`；临时调试可在配置设置 `"logLevel": "debug"` 或 `HINDSIGHT_LOG_LEVEL=debug`（`debug` 时下文所有诊断事件也会镜像到此，因此一个文件即可了解完整过程）。
 
 **结构化诊断事件**（供机器/运行环境使用）：每次反思和页面获取结果以一行 JSON 追加到 `~/.hindsight/coding-agents-logs/diag.jsonl`（通过 `HINDSIGHT_DIAG_FILE` 覆盖）：
 
@@ -748,7 +748,7 @@ npx @vectorize-io/hindsight-coding-agents install claude-code --server cloud --a
 }
 ```
 
-`reflect_failed` / `pages_failed` 记录错误；比较启用与禁用记忆时请查看此文件：反思失败的运行实际相当于无记忆。超时或 5xx 时，钩子回退到知识页面搜索；没有页面匹配时，再原始召回库中记忆。`reflect_fallback_pages` / `reflect_fallback_observations` 记录每一步返回内容（报错时为 `*_failed`）。初始化开始记录为 `seed_started`。
+`reflect_failed` / `pages_failed` 记录错误；比较启用与禁用记忆时请查看此文件：反思失败的运行实际相当于无记忆。超时或 5xx 时，钩子回退到知识页搜索；没有页面匹配时，再原始召回库中记忆。`reflect_fallback_pages` / `reflect_fallback_observations` 记录每一步返回内容（报错时为 `*_failed`）。初始化开始记录为 `seed_started`。
 
 `autoInject` 指定检索来源而非反思时，该来源会记录自身结果及返回条目数：`"pages"` 使用 `inject_pages`，`"recall"` 使用 `inject_recall`（报错时为 `inject_pages_failed` / `inject_recall_failed`）。这些轮次不写反思事件，因为没有执行反思。
 

@@ -1,7 +1,7 @@
 ---
 sidebar_position: 6
 title: "使用 Hindsight 为 Codex CLI 添加持久记忆 | 集成指南"
-description: "使用 Hindsight 为 OpenAI Codex CLI 添加持久记忆。三个 Python 钩子脚本在每次提示词之前自动召回上下文并存储对话，无需改变工作流程。"
+description: "使用 Hindsight 为 OpenAI Codex CLI 添加持久记忆。三个 Python 钩子脚本会在每次提示词之前自动召回上下文，并存入对话，无需改变工作流程。"
 ---
 
 # Codex
@@ -20,15 +20,15 @@ npx @vectorize-io/hindsight-coding-agents install codex --import-conversations
 
 **服务器配置自动迁移。** `install` 读取 `~/.hindsight/codex.json`，保留相同的 `apiUrl` 和令牌；空 URL 仍表示本地守护进程，不会在未告知的情况下切换到 Hindsight Cloud。需要更改时传入 `--server`。
 
-**对话通过 `--import-conversations` 从本地记录重新导入**为新文档，而不是从旧记忆库复制。旧记忆库默认由所有项目共享，文档仅记录会话 ID，因此要确定哪些记录属于当前仓库，本来就需要读取本地记录。
+**对话通过 `--import-conversations` 从本地对话记录重新导入**为新文档，而不是从旧记忆库复制。旧记忆库默认由所有项目共享，文档仅记录会话 ID，因此要确定哪些记录属于当前仓库，本来就需要读取本地对话记录。
 
-**其他内容不会迁移。** 旧 `recall*`、`retain*` 设置、任务目标和记忆库命名选项描述的是已被此软件包替换的流水线。命名也会变化：每个仓库一个记忆库，由所有智能体共享。参见[从独立智能体插件迁移](/sdks/integrations/coding-agents#migrating-from-the-per-agent-plugins)。
+**其他内容不会迁移。** 旧 `recall*`、`retain*` 设置、任务说明和记忆库命名选项描述的是已被此软件包替换的流水线。命名也会变化：每个仓库一个记忆库，由所有智能体共享。参见[从独立智能体插件迁移](/sdks/integrations/coding-agents#migrating-from-the-per-agent-plugins)。
 :::
 
 
 [查看更新日志 →](/changelog/integrations/codex)
 
-通过 [Hindsight](https://vectorize.io/hindsight) 为 [Codex CLI](https://github.com/openai/codex) 提供持久记忆。三个 Python 钩子脚本在每次提示词之前自动召回相关上下文，并在每轮之后存储对话，无需改变 Codex 工作流程。
+通过 [Hindsight](https://vectorize.io/hindsight) 为 [Codex CLI](https://github.com/openai/codex) 提供持久记忆。三个 Python 钩子脚本在每次提示词之前自动召回相关上下文，并在每轮之后存入对话记录，无需改变 Codex 工作流程。
 
 ## 快速入门 {#quick-start}
 
@@ -51,7 +51,7 @@ curl -fsSL https://hindsight.vectorize.io/get-codex | bash -s -- --uninstall
 ## 功能 {#features}
 
 - **自动召回** — 每次用户提交提示词时，查询 Hindsight 相关记忆并以 `additionalContext` 注入（对话记录中不可见，Codex 可见）
-- **自动存储** — 每次 Codex 回答后，将对话记录存储到 Hindsight，供以后召回
+- **自动存入** — 每次 Codex 回答后，将对话记录存入 Hindsight，供以后召回
 - **动态记忆库 ID** — 根据工作目录支持项目级记忆隔离
 - **会话级 upsert** — 使用会话 ID 作为文档 ID，重新运行同一会话会更新内容而非产生重复
 - **零依赖** — 仅使用 Python 标准库，无需 pip 安装
@@ -64,17 +64,17 @@ curl -fsSL https://hindsight.vectorize.io/get-codex | bash -s -- --uninstall
 |------|-------|---------|
 | `session_start.py` | `SessionStart` | 预热：确认 Hindsight 可访问 |
 | `recall.py` | `UserPromptSubmit` | **自动召回**：查询记忆，以 `additionalContext` 注入 |
-| `retain.py` | `Stop` | **自动存储**：提取对话记录，异步 POST 到 Hindsight |
+| `retain.py` | `Stop` | **自动存入**：提取对话记录，异步 POST 到 Hindsight |
 
 在 `UserPromptSubmit` 时，钩子读取提示词，查询 Hindsight 中最相关的记忆，并输出 `hookSpecificOutput.additionalContext` 块。Codex 会将其放在对话开头，然后发送给模型：
 
 ```
 <hindsight_memories>
-以往对话中的相关记忆……
-当前时间 - 2026-03-27 09:14
+Relevant memories from past conversations...
+Current time - 2026-03-27 09:14
 
-- 项目使用 FastAPI 和 asyncpg，而非 SQLAlchemy [world] (2026-03-26)
-- 偏好的测试框架：pytest 和 pytest-asyncio [experience] (2026-03-26)
+- Project uses FastAPI with asyncpg — not SQLAlchemy [world] (2026-03-26)
+- Preferred testing framework: pytest with pytest-asyncio [experience] (2026-03-26)
 </hindsight_memories>
 ```
 
@@ -155,13 +155,13 @@ uvx hindsight-embed
 
 ---
 
-### 自动记忆存储 {#auto-retain}
+### 自动存入 {#auto-retain}
 
 | 设置 | 环境变量 | 默认值 | 说明 |
 |---------|---------|---------|-------------|
-| `autoRetain` | `HINDSIGHT_AUTO_RETAIN` | `true` | 自动存储总开关。 |
+| `autoRetain` | `HINDSIGHT_AUTO_RETAIN` | `true` | 自动存入总开关。 |
 | `retainMode` | `HINDSIGHT_RETAIN_MODE` | `"full-session"` | `"full-session"` 发送每个会话的完整记录（按会话 ID 更新插入）。`"chunked"` 每 N 轮发送滑动窗口。 |
-| `retainEveryNTurns` | — | `10` | 每 N 轮触发存储。`1` = 每轮。较高值减少 API 调用。 |
+| `retainEveryNTurns` | — | `10` | 每 N 轮触发存入。`1` = 每轮。较高值减少 API 调用。 |
 | `retainOverlapTurns` | — | `2` | 从上一块额外包含的轮数（仅分块模式）。 |
 | `retainRoles` | — | `["user", "assistant"]` | 存储的对话记录中包含的角色。 |
 | `retainTags` | — | `["{session_id}"]` | 存储文档附带的标签。`{session_id}` 在运行时替换。 |
@@ -195,14 +195,14 @@ uvx hindsight-embed
 
 **未召回记忆**：只有存储内容后，召回才会返回结果。先完成一次 Codex 会话，或使用[实践示例](https://github.com/vectorize-io/hindsight-cookbook/tree/main/applications/codex-memory)手动初始化记忆库。
 
-**记忆未存储**：`retainEveryNTurns` 默认 `10`，每 10 轮才触发存储。测试时在 `~/.hindsight/codex.json` 添加 `"retainEveryNTurns": 1`。
+**记忆未存入**：`retainEveryNTurns` 默认 `10`，每 10 轮才触发存入。测试时在 `~/.hindsight/codex.json` 添加 `"retainEveryNTurns": 1`。
 
 **调试模式**：在 `~/.hindsight/codex.json` 添加 `"debug": true`，查看 Hindsight 每轮执行的操作：
 
 ```
-[Hindsight] 从记忆库 'codex' 召回，查询长度：42
-[Hindsight] 注入 3 条记忆
-[Hindsight] 存储到记忆库 'codex'，文档 'sess-abc123'，2 条消息，847 个字符
+[Hindsight] Recalling from bank 'codex', query length: 42
+[Hindsight] Injecting 3 memories
+[Hindsight] Retaining to bank 'codex', doc 'sess-abc123', 2 messages, 847 chars
 ```
 
 **召回延迟高**：使用 `"recallBudget": "low"` 或降低 `recallMaxTokens`，加快召回查询。

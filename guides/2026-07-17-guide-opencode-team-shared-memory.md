@@ -1,71 +1,71 @@
 ---
-title: "指南：团队记忆与OpenCode — 工程会议的共享记忆库"
+title: "指南：使用 OpenCode 构建团队共享记忆——工程约定共用记忆库"
 authors: [benfrank241]
 date: 2026-07-17
 tags: [how-to, opencode, multi-agent, memory]
-description: "让整个工程团队与 Hindsight 共享 OpenCode 记忆库，因此每个开发人员的会议都借鉴相同的约定、已知错误和过去的决策。"
+description: "借助 Hindsight 为整个工程团队提供一个共享的 OpenCode 记忆库，让每位开发者的会话都能利用同一套约定、已知缺陷和过往决策。"
 image: /img/guides/guide-opencode-team-shared-memory.svg
 hide_table_of_contents: true
 ---
 
-![指南：OpenCode 团队记忆，用共享记忆库保存工程约定](/img/guides/guide-opencode-team-shared-memory.svg)
+![指南：使用 OpenCode 构建团队共享记忆——工程约定共用记忆库](/img/guides/guide-opencode-team-shared-memory.svg)
 
-如果你跑OpenCode在整个工程团队中，影响力最高的举措是 **团队记忆**：单个共享Hindsight每个开发者的记忆库OpenCode会话读取和写入。整个团队不会从每个人的设置中重新学习相同的约定、已知错误和过去的决策，而是从一个机构记忆中汲取灵感。
+如果你在整个工程团队中使用 OpenCode，最能发挥作用的一项改进就是**团队记忆**：建立一个共享的 Hindsight 记忆库，供每位开发者的 OpenCode 会话读取和写入。这样，整个团队就能从同一份组织记忆中获取信息，无须每个人各自反复学习相同的约定、已知缺陷和过往决策。
 
-大多数OpenCode-with-Hindsight设置默认为每个项目或每个开发人员记忆，这是独立工作的正确选择。但是，一位开发人员学到的编码约定、上个月某人击中的一支枪，或者过去的架构决策之所以如此的原因，都是 *团队* 应该记住的事情，而不仅仅是在场的人。共享的记忆库将那些一次性的发现转化为每个人都能看到的记忆召回。
+大多数 OpenCode 与 Hindsight 的配置默认采用按项目或按开发者划分的记忆库，这适合彼此隔离的工作。不过，一位开发者学到的编码约定、某人上个月踩过的坑，或过去某项架构决策背后的原因，都应该由*团队*共同记住，而不只留在当事人的记忆中。共享记忆库能把这些一次性的发现转化为每个人都能召回的信息。
 
-本指南是关于策略，而不是安装。它涵盖了何时共享记忆库与隔离记忆库、静态和动态记忆库 ID 如何为团队服务，以及如何随着记忆库的增长保持记忆召回干净。插件设置本身已经涵盖 - 请参阅 [使用 Hindsight 为 OpenCode 添加记忆](https://hindsight.vectorize.io/guides/2026/04/16/guide-opencode-memory-with-hindsight) - 所以在这里我们重点关注团队记忆决策。
+本指南讨论的是策略，而不是安装过程。内容涵盖何时共享记忆库、何时隔离记忆库，静态和动态记忆库 ID 如何服务团队，以及记忆库逐渐扩充时如何保持召回内容整洁。插件本身的配置已在[使用 Hindsight 为 OpenCode 添加记忆](https://hindsight.vectorize.io/guides/2026/04/16/guide-opencode-memory-with-hindsight)中介绍；这里聚焦在此基础上的团队记忆决策。
 
 <!-- truncate -->
 
 > **快速解答**
 >
-> ​​1。决定共享团队记忆中的内容：约定、已知错误、过去的决定。
-> 2.将每个人的 OpenCode 插件指向同一个 Hindsight 后端。
-> 3.设置静态`HINDSIGHT_BANK_ID`（例如`acme-platform-team`）因此所有会话共享一个记忆库。
-> 4.相反，将真正私有或每个存储库的工作保存在单独的记忆库中。
-> 5.验证一个开发人员存储的约定是否显示在另一开发人员的会话中。
+> 1. 确定哪些内容应纳入团队共享记忆：约定、已知缺陷和过往决策。
+> 2. 将每个人的 OpenCode 插件指向同一个 Hindsight 后端。
+> 3. 设置静态 `HINDSIGHT_BANK_ID`（例如 `acme-platform-team`），让所有会话共用一个记忆库。
+> 4. 将真正私密或按仓库隔离的工作放在单独的记忆库中。
+> 5. 验证一位开发者存入的约定能否出现在另一位开发者的会话中。
 
 ## 为什么团队需要共享编码记忆 {#why-a-team-needs-shared-coding-memory}
 
-在团队中，相同的知识会被一遍又一遍地重新发现。一位开发人员了解到必须在 API 之前部署支付服务，另一位开发人员花了一个下午重新发现它。有人记录了为什么重试逻辑使用指数退避，六周后，一位新员工建议将其取消。
+在团队中，同样的知识会被一再发现。一位开发者了解到支付服务必须先于 API 部署，另一位开发者却花了一个下午才重新发现这一点。有人记录了重试逻辑为何使用指数退避；六周后，新员工又提议删掉这套逻辑。
 
-每个开发人员的记忆并不能解决这个问题，因为每个人的OpenCode只记住他们自己的会话。共享团队记忆是这样的：当支付部署顺序被保留一次时，每个队友的OpenCode都会在下一个相关会话中回忆起它。价值与团队规模成正比——团队越大，重新学习共享记忆库消除的冗余就越多。
+按开发者划分的记忆库无法解决这个问题，因为每个人的 OpenCode 只记得自己的会话。团队共享记忆则可以：支付服务的部署顺序只要存入一次，每位队友的 OpenCode 就会在下次相关会话中召回它。团队越大，共享记忆库消除的重复学习就越多，因此它带来的价值也会随团队规模增长。
 
-团队的优秀候选人记忆库：
+适合纳入团队记忆库的内容包括：
 
-- **约定** — 仓库更喜欢 pnpm，严格TypeScript，常规提交。
-- **已知缺陷与易错点** —“临时数据库每晚重置”，“不调用账单API循环。”
-- **此前决策** — 为什么选择或拒绝一个库，为什么服务边界位于它所在的位置。
+- **约定**——仓库偏好使用 pnpm、严格模式的 TypeScript 和 Conventional Commits。
+- **已知缺陷和易踩的坑**——“预发布环境的数据库每晚都会重置”“不要在循环中调用账单 API”。
+- **过往决策**——为何选择或拒绝某个库，服务边界为何划在当前位置。
 
-## 共享团队记忆库与每个开发人员记忆库 {#a-shared-team-bank-vs-per-developer-banks}
+## 团队共享记忆库与按开发者划分的记忆库 {#a-shared-team-bank-vs-per-developer-banks}
 
-该插件可让您选择记忆的落地位置。两种常见的形状：
+插件允许你选择记忆写入哪个记忆库。常见的两种方式是：
 
-- **一个团队共享记忆库。** 大家的OpenCode指向同一个记忆库ID。每一次会议都会贡献并读取共享的机构记忆。最适合应该成为常识的惯例和决策。
-- **按开发者或项目划分记忆库。** 每个开发人员（或每个存储库）都有一个独立的记忆库。最适合私人临时工作、实验，或者两个项目永远不应该看到彼此的上下文时。
+- **一个团队共享记忆库。** 每个人的 OpenCode 都指向同一个记忆库 ID。每次会话都会为共享的组织记忆贡献内容，也会从中读取信息。适合存放应成为团队共识的约定和决策。
+- **按开发者或项目划分记忆库。** 每位开发者（或每个仓库）各自使用独立的记忆库。适合私人的临时工作、实验，或两个项目绝不应互相读取上下文的情况。
 
-这些在整个公司中并不相互排斥 - 您可以为团队的核心平台存储库运行共享记忆库，并为不相关的副项目运行独立的记忆库。对于任何给定的工作流要问的问题很简单：*其他老年人的T0应该记忆这个吗？*如果是，则属于共享记忆库。
+在公司范围内，这两种方式并不互斥——你可以为团队的核心平台仓库使用共享记忆库，同时为无关的副项目使用独立记忆库。面对任何一项具体工作，只需问：*其他队友的 OpenCode 应该召回这条信息吗？*如果应该，就把它存入共享记忆库。
 
-**何时应隔离而非共享：**
+**适合隔离而不共享的情况：**
 
-- 这项工作是探索性的，您不希望队友看到不成熟的发现。
-- 两个项目不相关，共享记忆只会增加噪音。
-- 内容属于敏感内容，不应在团队会议中传播。
+- 工作仍在探索阶段，你不希望尚不成熟的发现出现在队友的会话中。
+- 两个项目彼此无关，共享召回只会引入噪声。
+- 内容涉及敏感信息，不应传播到团队成员的会话中。
 
-## 团队的静态记忆库 ID 与动态记忆库 ID {#static-vs-dynamic-bank-ids-for-teams}
+## 团队使用静态还是动态记忆库 ID {#static-vs-dynamic-bank-ids-for-teams}
 
-该插件从其记忆库-ID 配置中解析要使用的记忆库，这是在团队范围内或每个上下文中创建记忆库的杠杆。完整的机制在 [配置指南](https://hindsight.vectorize.io/guides/2026/04/16/guide-opencode-memory-with-hindsight) 和 [集成文档](/sdks/integrations/opencode)；以下是每个人如何映射到团队记忆。
+插件根据记忆库 ID 配置确定要使用哪个记忆库；这个配置决定记忆库适用于整个团队，还是仅适用于特定上下文。完整机制见[设置指南](https://hindsight.vectorize.io/guides/2026/04/16/guide-opencode-memory-with-hindsight)和[集成文档](/sdks/integrations/opencode)。下面说明两种方式如何用于团队记忆。
 
-### 静态记忆库ID — 团队默认 {#static-bank-id--the-team-default}
+### 静态记忆库 ID——团队默认方案 {#static-bank-id--the-team-default}
 
-静态记忆库 ID 是为团队提供共享记忆的最简单方法。每个开发人员都设置相同的值，因此他们所有的OpenCode会话都会读取和写入相同的记忆库：
+静态记忆库 ID 是为团队提供一个共享记忆库的最简单方式。每位开发者设置相同的值，这样他们所有的 OpenCode 会话都会读取和写入同一个记忆库：
 
 ```bash
 export HINDSIGHT_BANK_ID="acme-platform-team"
 ```
 
-因为优先顺序是`defaults < ~/.hindsight/opencode.json < plugin options < env vars`，可以在签到时标准化团队记忆库`opencode.json` 或共享 `~/.hindsight/opencode.json`，并且仍然让个人在需要时使用环境变量覆盖它。
+由于优先级顺序为 `defaults < ~/.hindsight/opencode.json < plugin options < env vars`，你可以把团队记忆库设置写入已提交到仓库的 `opencode.json`，或写入共享的 `~/.hindsight/opencode.json`，同时仍允许个人在需要时通过环境变量覆盖它。
 
 ```json
 {
@@ -79,94 +79,94 @@ export HINDSIGHT_BANK_ID="acme-platform-team"
 }
 ```
 
-### 动态记忆库 ID — 团队加上每个项目的隔离 {#dynamic-bank-ids--team-plus-per-project-isolation}
+### 动态记忆库 ID——团队共享名称并按项目隔离 {#dynamic-bank-ids--team-plus-per-project-isolation}
 
-当一个团队跨多个存储库工作并且您想要隔离时*内*团队，启用动态记忆库 ID。该插件从粒度字段组成记忆库（默认`agent::project`，与 `agent`，`project`，`channel`，和`user`可用）：
+当团队跨多个仓库协作，又希望在*团队内部*按项目隔离时，可以启用动态记忆库 ID。插件会根据粒度字段组合出记忆库 ID（默认组合为 `agent::project`；也可以使用 `agent`、`project`、`channel` 和 `user`）：
 
 ```bash
 export HINDSIGHT_DYNAMIC_BANK_ID=true
 ```
 
-与`agent::project`，每个项目都会自动获得自己的记忆库，而共享的智能体名称在整个团队中保持命名一致——同一存储库上的每个开发人员都位于同一个记忆库中，无需手动编辑配置。如果您需要在共享设置中进行每个用户的分离（例如为多人提供服务的共享智能体），则 `channel` 和 `user` 字段涵盖：
+使用 `agent::project` 时，每个项目都会自动拥有自己的记忆库；共享的智能体名称则能让团队内的命名保持一致。同一仓库上的每位开发者都会进入同一个记忆库，无须手动编辑配置。如果你需要在共享配置中按用户隔离（例如，一个共享智能体服务多位用户），可以使用 `channel` 和 `user` 字段：
 
 ```bash
 export HINDSIGHT_CHANNEL_ID="acme-platform"
 export HINDSIGHT_USER_ID="user123"
 ```
 
-经验法则：**静态** 当整个团队应该共享一个记忆库时； **动态** 当团队跨越多个项目并且您希望每个项目的自动记忆库具有一致的命名时。
+经验法则：整个团队应该共用一个记忆库时，使用**静态** ID；团队跨多个项目，且希望自动为每个项目创建命名一致的记忆库时，使用**动态** ID。
 
-## 连接OpenCode至Hindsight {#connect-opencode-to-hindsight}
+## 将 OpenCode 连接到 Hindsight {#connect-opencode-to-hindsight}
 
-本指南假设Hindsight插件已安装并指向您的后端。如果不是，请首先遵循标准设置 - 添加 `@vectorize-io/opencode-hindsight` 给你的OpenCode配置，将其指向本地服务器或Hindsight Cloud，并启用自动记忆召回和自动记忆存储：
+本指南假设 Hindsight 插件已经安装并指向你的后端。如果还没有，请先完成标准设置：将 `@vectorize-io/opencode-hindsight` 添加到 OpenCode 配置中，将其指向本地服务器或 Hindsight Cloud，并启用自动召回和自动存入：
 
 - [使用 Hindsight 为 OpenCode 添加记忆](https://hindsight.vectorize.io/guides/2026/04/16/guide-opencode-memory-with-hindsight)
 
-一旦生效，唯一特定于团队的更改就是上面的记忆库-ID 策略。
+完成后，唯一与团队有关的改动就是前面介绍的记忆库 ID 策略。
 
-## 大规模保持团队记忆清洁 {#keeping-team-recall-clean-at-scale}
+## 团队规模扩大后如何保持召回内容整洁 {#keeping-team-recall-clean-at-scale}
 
-共享记忆库比个人记忆库更有价值，但它也收集了更多内容，因此记忆召回卫生更重要。一些做法可以让团队记忆库保持敏锐：
+共享记忆库比个人记忆库更有价值，但它收集的内容也更多，因此需要更注意召回内容的管理。以下做法有助于让团队记忆库保持精简、实用：
 
-- **标记存储记忆并筛选召回。** 该插件支持`retainTags` 和 `recallTags`（与`recallTagsMatch`模式`any`，`all`，`any_strict`，`all_strict`）。按区域标记 — `payments`，`infra`，`frontend` — 因此前端会话可能会偏向前端记忆而不是整个团队的历史。
-- **调整召回预算。**`recallBudget` (`low`，`mid`，`high`) 控制引入多少上下文。从 开始 `mid`；更大的团队记忆库可能值得`low` 用于重点课程和 `high` 仅当广泛的背景确实有帮助时。
-- **控制存储频率。**`retainEveryNTurns` 限制自动记忆存储，因此记忆库可以捕获有意义的状态，而无需将每个微转动保存为单独的噪声。
-- **排除探索性临时工作。** 将半成品或实验会话路由到隔离的记忆库，以便共享的记忆库保持权威。
+- **为存入的记忆添加标签，并按标签筛选召回。** 插件支持 `retainTags` 和 `recallTags`，以及 `recallTagsMatch` 模式 `any`、`all`、`any_strict`、`all_strict`。按领域添加标签，例如 `payments`、`infra`、`frontend`，这样前端会话就能优先召回前端相关记忆，而不是团队的全部历史。
+- **调整召回预算。** `recallBudget`（`low`、`mid`、`high`）控制引入多少上下文。可以先从 `mid` 开始；团队记忆库更大时，重点明确的会话可能适合用 `low`，只有在广泛上下文确实有帮助时才用 `high`。
+- **控制存入频率。** `retainEveryNTurns` 会限制自动存入的频率，让记忆库记录有意义的状态，而不把每个细小的对话轮次都作为独立噪声保存下来。
+- **不要把探索性工作写入共享库。** 将尚未成熟或实验性的会话导向独立记忆库，让共享记忆库继续作为团队的可靠依据。
 
-## 验证共享记忆是否有效 {#verify-that-shared-memory-is-working}
+## 验证共享记忆是否正常工作 {#verify-that-shared-memory-is-working}
 
-当一个开发人员的会话出现在另一个开发人员的会话中时，团队记忆就发挥作用了。跨两台机器或两个帐户进行测试：
+如果一位开发者的会话能在另一位开发者的会话中体现出来，团队记忆就开始发挥作用了。可以用两台机器或两个账户进行测试：
 
-1. 开发者A运行OpenCode与共享`HINDSIGHT_BANK_ID` 并存储约定（例如“在API”）。
-2. 让会话空闲，以便自动记忆存储将其写入共享记忆库。
-3. 开发者B运行OpenCode指向同一个记忆库。
-4. 开发人员 B 询问部署顺序。
-5. 记忆召回应该显示开发人员 A 存储的约定 - 即使 B 从未直接学习过它。
+1. 开发者 A 在 OpenCode 中使用共享的 `HINDSIGHT_BANK_ID`，并存入一条约定（例如 "deploy payments before the API"）。
+2. 让会话保持空闲，等待自动存入功能将这条信息写入共享记忆库。
+3. 开发者 B 运行 OpenCode，并将其指向同一个记忆库。
+4. 开发者 B 询问部署顺序。
+5. 召回应显示开发者 A 存入的约定，即使 B 从未亲自了解过它。
 
-如果 B 的会话回忆起 A 的约定，则共享记忆库处于活动状态。您还可以通过询问来明确确认OpenCode使用`hindsight_recall`反对共享记忆库。
+如果 B 的会话召回了 A 存入的约定，就说明共享记忆库已正常工作。你也可以明确要求 OpenCode 使用 `hindsight_recall` 从共享记忆库中召回信息，以进一步确认。
 
 ## 常见错误 {#common-mistakes}
 
-### 在不相关的项目中共享一个记忆库 {#sharing-one-bank-across-unrelated-projects}
+### 在无关项目之间共用一个记忆库 {#sharing-one-bank-across-unrelated-projects}
 
-共享记忆库是为了团队的共同知识，而不是为了合并不相关的存储库。如果两个项目永远不应该看到彼此的上下文，请为它们提供单独的记忆库（每个项目静态，或使用 动态） `project` 粒度）。
+共享记忆库用于保存团队共同的知识，而不是合并无关仓库的内容。如果两个项目不应互相读取上下文，就为它们使用不同的记忆库（按项目设置静态 ID，或使用 `project` 粒度的动态 ID）。
 
-### 团队未统一记忆库 ID {#not-aligning-bank-ids-across-the-team}
+### 团队成员的记忆库 ID 不一致 {#not-aligning-bank-ids-across-the-team}
 
-只有每个人都下定决心，团队记忆才会发挥作用*同上*记忆库。一个人的错别字 `HINDSIGHT_BANK_ID`默默地将它们分割到私人记忆库中。标准化共享配置中的值。
+只有每个人都指向*同一个*记忆库，团队记忆才能发挥作用。某位成员把 `HINDSIGHT_BANK_ID` 拼错后，系统可能会悄悄把他导向一个私人记忆库。请在共享配置中统一该值。
 
 ### 让探索性工作污染共享记忆库 {#letting-exploratory-work-pollute-the-shared-bank}
 
-半完成的实验保留在团队记忆库表面，作为每个人的嘈杂记忆召回。在独立的记忆库上保留临时工作。
+存入团队记忆库的未完成实验会成为噪声，影响每个人的召回结果。请把临时工作留在独立的记忆库中。
 
-### 在会话空闲之前测试记忆存储 {#testing-retain-before-the-session-idles}
+### 在会话空闲前测试存入功能 {#testing-retain-before-the-session-idles}
 
-自动记忆存储火力全开`session.idle`。如果您在第一个开发人员会话空闲之前检查共享记忆库，则该记忆可能尚未存储。
+自动存入会在 `session.idle` 事件触发。如果第一位开发者的会话还没有进入空闲状态，你就检查共享记忆库，那么相关记忆可能尚未存入。
 
-## 常见问题解答 {#faq}
+## 常见问题 {#faq}
 
-### 我需要Hindsight Cloud吗？ {#do-i-need-hindsight-cloud}
+### 我需要使用 Hindsight Cloud 吗？ {#do-i-need-hindsight-cloud}
 
-没有。自托管Hindsight服务器也可以工作——只需将每个队友的插件指向同一个`HINDSIGHT_API_URL`。云只是使分布式团队可以轻松访问单个共享后端。
+不需要。自托管的 Hindsight 服务器同样可用；只需让每位队友的插件都指向同一个 `HINDSIGHT_API_URL`。对于分布式团队，Cloud 只是让大家更容易访问同一个共享后端。
 
-### 我如何确保整个团队写入同一个记忆库？ {#how-do-i-make-sure-the-whole-team-writes-to-the-same-bank}
+### 如何确保整个团队都写入同一个记忆库？ {#how-do-i-make-sure-the-whole-team-writes-to-the-same-bank}
 
-使用静态`HINDSIGHT_BANK_ID` 在共享配置中设置，或具有一致的智能体名称的动态记忆库 ID，因此每个项目的记忆库对每个人来说都是相同的名称。
+可以在共享配置中设置静态 `HINDSIGHT_BANK_ID`，也可以使用动态记忆库 ID，并统一智能体名称，这样每个人都会以相同的名称创建各项目记忆库。
 
-### 我们可以分享一些记忆，但隔离其他工作吗？ {#can-we-share-some-memory-but-isolate-other-work}
+### 我们能否共享部分记忆，同时隔离其他工作？ {#can-we-share-some-memory-but-isolate-other-work}
 
-是的。为共同的约定和决策运行共享的记忆库，为私人或不相关的工作运行单独的记忆库。记忆库-ID策略决定了每个会话的记忆落地的位置。
+可以。为共同约定和决策使用共享记忆库，为私密或无关工作使用独立记忆库。记忆库 ID 策略决定了每次会话的记忆写入哪个库。
 
-### 随着团队的成长，共享的记忆库不会变得嘈杂吗？ {#wont-a-shared-bank-get-noisy-as-the-team-grows}
+### 团队扩大后，共享记忆库会不会变得嘈杂？ {#wont-a-shared-bank-get-noisy-as-the-team-grows}
 
-​​可以，这就是记忆卫生很重要的原因。使用标签、适当的记忆召回预算和记忆存储节流，并将探索性工作排除在共享记忆库之外。
+有可能，所以需要管理好召回内容。使用标签、合适的召回预算和存入频率限制，并把探索性工作留在共享记忆库之外。
 
 ## 后续步骤 {#next-steps}
 
-- 按照中的插件设置进行操作 [使用 Hindsight 为 OpenCode 添加记忆](https://hindsight.vectorize.io/guides/2026/04/16/guide-opencode-memory-with-hindsight)
-- 从开始 [Hindsight Cloud](https://hindsight.vectorize.io) 如果您想要为团队提供托管后端
-- 阅读[完整 Hindsight 文档](/)
-- 跟随[快速入门指南](/developer/api/quickstart)
-- 回顾[Hindsight 记忆召回 API](/developer/api/recall)
-- 回顾[Hindsight 记忆存储 API](/developer/api/retain)
-- 阅读[OpenCode 集成文档](/sdks/integrations/opencode)
+- 按照[使用 Hindsight 为 OpenCode 添加记忆](https://hindsight.vectorize.io/guides/2026/04/16/guide-opencode-memory-with-hindsight)中的说明配置插件。
+- 如果想为团队使用托管后端，可以从 [Hindsight Cloud](https://hindsight.vectorize.io) 开始。
+- 阅读[完整的 Hindsight 文档](/)。
+- 阅读[快速入门指南](/developer/api/quickstart)。
+- 查阅 [Hindsight 的召回 API](/developer/api/recall)。
+- 查阅 [Hindsight 的存入 API](/developer/api/retain)。
+- 阅读 [OpenCode 集成文档](/sdks/integrations/opencode)。

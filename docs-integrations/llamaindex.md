@@ -1,15 +1,15 @@
 ---
 sidebar_position: 8
-title: "LlamaIndex 持久记忆Hindsight |整合"
-description: "通过Hindsight为LlamaIndex智能体添加长期记忆。支持智能体驱动工具 (HindsightToolSpec) 和通过 BaseMemory 接口自动记忆。"
+title: "通过 Hindsight 实现 LlamaIndex 持久记忆 | 集成"
+description: "通过 Hindsight 为 LlamaIndex 智能体添加长期记忆。支持智能体主动调用工具（HindsightToolSpec），也支持通过 BaseMemory 接口自动管理记忆。"
 ---
 
 # LlamaIndex {#llamaindex}
 
-持久的长期记忆[LlamaIndex](https://docs.llamaindex.ai/)智能体，通过 Hindsight 提供记忆。 `hindsight-llamaindex`包提供了两种互补的模式：
+借助 Hindsight，为 [LlamaIndex](https://docs.llamaindex.ai/) 智能体提供持久的长期记忆。`hindsight-llamaindex` 包提供两种互补的接入方式：
 
-- **`HindsightToolSpec`** — 智能身体驱动的记忆工具（retain/recall/reflect)
-- **`HindsightMemory`** — 自动记忆LlamaIndex的`BaseMemory`接口
+- **`HindsightToolSpec`** — 由智能体主动调用记忆工具（retain/recall/reflect）
+- **`HindsightMemory`** — 通过 LlamaIndex 的 `BaseMemory` 接口自动管理记忆
 
 [查看更新日志 →](/changelog/integrations/llamaindex)
 
@@ -21,9 +21,9 @@ pip install hindsight-llamaindex
 
 ---
 
-## 自动记忆（BaseMemory） {#automatic-memory-basememory}
+## 自动管理记忆（BaseMemory） {#automatic-memory-basememory}
 
-将Hindsight记忆添加到LlamaIndex智能体的最简单方法。每轮都会自动存储消息，并调用相关记忆并将其作为上下文注入。
+这是为 LlamaIndex 智能体接入 Hindsight 记忆最简单的方式。每轮对话结束时，消息都会自动存入；系统还会召回相关记忆并将其作为上下文注入。
 
 ```python
 import asyncio
@@ -38,11 +38,11 @@ async def main():
     memory = HindsightMemory.from_client(
         client=client,
         bank_id="user-123",
-        mission="跟踪用户偏好和项目背景",
+        mission="Track user preferences and project context",
     )
 
     agent = ReActAgent(tools=[], llm=OpenAI(model="gpt-4o"))
-    response = await agent.run("记住我更喜欢深色模式", memory=memory)
+    response = await agent.run("Remember that I prefer dark mode", memory=memory)
     print(response)
 
 asyncio.run(main())
@@ -50,35 +50,35 @@ asyncio.run(main())
 
 ### 工作原理 {#how-it-works}
 
-|活动|发生了什么|
+| 事件 | 处理方式 |
 |-------|-------------|
-|智能体接收输入|`aget(input)` 回忆起相关记忆Hindsight，作为系统消息前置|
-|智能体产生输出|`aput(message)` 保留消息至Hindsight未来记忆召回|
-|新的会话开始|以前的记忆可以通过记忆召回获得；本地聊天缓冲区开始为空|
+| 智能体收到输入 | `aget(input)` 从 Hindsight 召回相关记忆，并将其作为系统消息置于前面 |
+| 智能体生成输出 | `aput(message)` 将消息存入 Hindsight，供以后召回 |
+| 开始新的会话 | 之前的记忆仍可通过召回获取；本地聊天记录缓冲区则从空状态开始 |
 
-### `HindsightMemory.from_client()` {#hindsightmemoryfromclient}
+### `HindsightMemory.from_client()` {#hindsightmemoryfrom_client}
 
-|参数|类型|默认|说明|
+| 参数 | 类型 | 默认值 | 说明 |
 |-----------|------|---------|-------------|
-|`client`|`Hindsight`|*必填*|Hindsight 客户端实例|
-|`bank_id`|`str`|*必填*|记忆 记忆库 ID|
-|`mission`|`str`|`None`|记忆库任务 — 首次使用时自动创建记忆库|
-|`context`|`str`|`"llamaindex"`|记忆存储操作的源标签|
-|`budget`|`str`|`"mid"`|记忆召回预算水平|
-|`max_tokens`|`int`|`4096`|最大记忆召回令牌|
-|`tags`|`list[str]`|`None`|记忆存储操作标签|
-|`recall_tags`|`list[str]`|`None`|要过滤的标签 记忆召回|
-|`recall_tags_match`|`str`|`"any"`|标签匹配模式|
-|`system_prompt`|`str`|*（内置）*|记忆系统消息模板。必须包含 `{memories}`|
-|`chat_history_limit`|`int`|`100`|本地缓冲区中的最大消息数|
+| `client` | `Hindsight` | *必填* | Hindsight 客户端实例 |
+| `bank_id` | `str` | *必填* | 记忆库 ID |
+| `mission` | `str` | `None` | 记忆库的任务说明；首次使用时自动创建记忆库 |
+| `context` | `str` | `"llamaindex"` | Retain 操作的来源标签 |
+| `budget` | `str` | `"mid"` | Recall 的预算级别 |
+| `max_tokens` | `int` | `4096` | Recall 返回结果的最大 token 数 |
+| `tags` | `list[str]` | `None` | Retain 操作使用的标签 |
+| `recall_tags` | `list[str]` | `None` | 用于筛选 Recall 结果的标签 |
+| `recall_tags_match` | `str` | `"any"` | 标签匹配模式 |
+| `system_prompt` | `str` | *（内置）* | 记忆系统消息的模板。必须包含 `{memories}` |
+| `chat_history_limit` | `int` | `100` | 本地缓冲区中保留的最大消息数 |
 
-还有：`HindsightMemory.from_url(hindsight_api_url, bank_id, ...)` 用于在没有预先构建的客户端的情况下进行创建。
+还可以使用 `HindsightMemory.from_url(hindsight_api_url, bank_id, ...)`，无需预先创建客户端即可构造实例。
 
 ---
 
-## 智能体驱动工具 (BaseToolSpec) {#agent-driven-tools-basetoolspec}
+## 智能体主动调用工具（BaseToolSpec） {#agent-driven-tools-basetoolspec}
 
-对于显式控制，将retain/recall/reflect公开为智能体可以选择调用的工具。
+如果需要显式控制，可以将 retain/recall/reflect 作为工具提供给智能体，由智能体选择何时调用。
 
 ### 快速入门：工具规范 {#quick-start-tool-spec}
 
@@ -95,18 +95,18 @@ async def main():
     spec = HindsightToolSpec(
         client=client,
         bank_id="user-123",
-        mission="跟踪用户偏好",
+        mission="Track user preferences",
     )
     tools = spec.to_tool_list()
 
     agent = ReActAgent(tools=tools, llm=OpenAI(model="gpt-4o"))
-    response = await agent.run("记住我更喜欢深色模式")
+    response = await agent.run("Remember that I prefer dark mode")
     print(response)
 
 asyncio.run(main())
 ```
 
-### 快速入门：工厂功能 {#quick-start-factory-function}
+### 快速入门：工厂函数 {#quick-start-factory-function}
 
 ```python
 from hindsight_llamaindex import create_hindsight_tools
@@ -114,17 +114,17 @@ from hindsight_llamaindex import create_hindsight_tools
 tools = create_hindsight_tools(
     client=client,
     bank_id="user-123",
-    mission="跟踪用户偏好",
+    mission="Track user preferences",
 )
 ```
 
 ### 选择工具 {#selecting-tools}
 
 ```python
-#通过 to_tool_list()
+# 使用 to_tool_list()
 tools = spec.to_tool_list(spec_functions=["recall_memory", "reflect_on_memory"])
 
-#通过工厂标志
+# 使用工厂函数的标志参数
 tools = create_hindsight_tools(
     client=client,
     bank_id="user-123",
@@ -136,114 +136,114 @@ tools = create_hindsight_tools(
 
 ### 配置 {#configuration}
 
-通过设置默认值 `configure()`，覆盖每次调用：
+通过 `configure()` 设置默认值，并可在每次调用时覆盖：
 
 ```python
 from hindsight_llamaindex import configure
 
 configure(
     hindsight_api_url="http://localhost:8888",
-    api_key="your-api-key",  # 或设置 HINDSIGHT_API_KEY 环境变量
+    api_key="your-api-key",  # 也可以设置 HINDSIGHT_API_KEY 环境变量
     budget="mid",
     tags=["source:llamaindex"],
     context="my-app",
-    mission="跟踪用户偏好",
+    mission="Track user preferences",
 )
 
-# 现在创建工具时无需传入 client/url
+# 现在创建工具时无需传入 client 或 URL
 tools = create_hindsight_tools(bank_id="user-123")
 ```
 
 ### `HindsightToolSpec()` {#hindsighttoolspec}
 
-|参数|类型|默认|说明|
+| 参数 | 类型 | 默认值 | 说明 |
 |-----------|------|---------|-------------|
-|`bank_id`|`str`|*必填*|Hindsight 记忆库进行操作|
-|`client`|`Hindsight`|`None`|预配置Hindsight客户端|
-|`hindsight_api_url`|`str`|`None`|API URL（如果没有提供客户端则使用）|
-|`api_key`|`str`|`None`|API 密钥（如果没有提供客户端则使用）|
-|`budget`|`str`|`None` → `"mid"`|Recall/reflect预算：`low`，`mid`，`high`|
-|`max_tokens`|`int`|`None` → `4096`|记忆结果的最大 token 数数|
-|`tags`|`list[str]`|`None`|存储记忆时应用的标签|
-|`recall_tags`|`list[str]`|`None`|过滤记忆结果的标签|
-|`recall_tags_match`|`str`|`None` → `"any"`|标签匹配：`any`，`all`，`any_strict`，`all_strict`|
-|`retain_metadata`|`dict[str, str]`|`None`|记忆存储操作的默认元数据|
-|`retain_document_id`|`str`|`None`|记忆存储的文档 ID。自动生成`{session}-{timestamp}` 如果未设置|
-|`retain_context`|`str`|`"llamaindex"`|记忆存储操作的源标签|
-|`recall_types`|`list[str]`|`None`|事实类型：`world`，`experience`，`observation`|
-|`recall_include_entities`|`bool`|`False`|在记忆结果中包含实体信息|
-|`reflect_context`|`str`|`None`|反思的附加背景|
-|`reflect_max_tokens`|`int`|`None`|回忆的最大 token 数（默认为 `max_tokens`)|
-|`reflect_response_schema`|`dict`|`None`|JSON 约束输出的模式|
-|`reflect_tags`|`list[str]`|`None`|标签（默认为 `recall_tags`)|
-|`reflect_tags_match`|`str`|`None`|标签匹配 ⟪ （默认为 `recall_tags_match`)|
-|`mission`|`str`|`None`|记忆库任务 — 首次使用时自动创建记忆库|
+| `bank_id` | `str` | *必填* | 要操作的 Hindsight 记忆库 |
+| `client` | `Hindsight` | `None` | 预先配置好的 Hindsight 客户端 |
+| `hindsight_api_url` | `str` | `None` | API URL（未提供客户端时使用） |
+| `api_key` | `str` | `None` | API 密钥（未提供客户端时使用） |
+| `budget` | `str` | `None` → `"mid"` | Recall/Reflect 的预算：`low`、`mid`、`high` |
+| `max_tokens` | `int` | `None` → `4096` | Recall 结果的最大 token 数 |
+| `tags` | `list[str]` | `None` | 存入记忆时使用的标签 |
+| `recall_tags` | `list[str]` | `None` | 用于筛选 Recall 结果的标签 |
+| `recall_tags_match` | `str` | `None` → `"any"` | 标签匹配模式：`any`、`all`、`any_strict`、`all_strict` |
+| `retain_metadata` | `dict[str, str]` | `None` | Retain 操作的默认元数据 |
+| `retain_document_id` | `str` | `None` | Retain 操作使用的文档 ID。未设置时自动生成 `{session}-{timestamp}` |
+| `retain_context` | `str` | `"llamaindex"` | Retain 操作的来源标签 |
+| `recall_types` | `list[str]` | `None` | 事实类型：`world`、`experience`、`observation` |
+| `recall_include_entities` | `bool` | `False` | 是否在 Recall 结果中包含实体信息 |
+| `reflect_context` | `str` | `None` | Reflect 使用的附加上下文 |
+| `reflect_max_tokens` | `int` | `None` | Reflect 的最大 token 数（默认使用 `max_tokens`） |
+| `reflect_response_schema` | `dict` | `None` | 用于约束 Reflect 输出的 JSON Schema |
+| `reflect_tags` | `list[str]` | `None` | Reflect 使用的标签（默认使用 `recall_tags`） |
+| `reflect_tags_match` | `str` | `None` | Reflect 的标签匹配模式（默认使用 `recall_tags_match`） |
+| `mission` | `str` | `None` | 记忆库的任务说明；首次使用时自动创建记忆库 |
 
 ---
 
-## 生产环境模式 {#production-patterns}
+## 生产环境中的用法 {#production-patterns}
 
-### 记忆库使命 {#bank-mission}
+### 记忆库任务说明 {#bank-mission}
 
-设定一个任务，为记忆引擎提供事实提取的上下文：
+设置任务说明，为记忆引擎的事实提取提供上下文：
 
 ```python
-# Tools
+# 工具
 spec = HindsightToolSpec(
     client=client,
     bank_id="user-123",
-    mission="跟踪用户编码偏好、项目背景和技术决策",
+    mission="Track user coding preferences, project context, and technical decisions",
 )
 
-# Memory
+# 记忆
 memory = HindsightMemory.from_client(
     client=client,
     bank_id="user-123",
-    mission="跟踪用户编码偏好、项目背景和技术决策",
+    mission="Track user coding preferences, project context, and technical decisions",
 )
 ```
 
-记忆库在首次使用时自动创建。如果它已经存在，则会默默地跳过创建。
+首次使用时会自动创建记忆库。如果记忆库已存在，系统会静默跳过创建。
 
-### 记忆用标签界定范围 {#memory-scoping-with-tags}
+### 使用标签限定记忆范围 {#memory-scoping-with-tags}
 
 ```python
 spec = HindsightToolSpec(
     client=client,
     bank_id="user-123",
-    tags=["source:chat", "session:abc"],        #适用于所有保留
-    recall_tags=["source:chat"],                 #过滤回忆聊天记录
+    tags=["source:chat", "session:abc"],        # 应用于所有 Retain 操作
+    recall_tags=["source:chat"],                 # 仅从聊天记忆中筛选 Recall 结果
     recall_tags_match="any",
 )
 ```
 
 ### 错误处理 {#error-handling}
 
-两种模式都可以优雅地处理错误——记录操作并返回友好的消息，而不是引发异常。 即使记忆不可用，智能体仍能继续运作。
+这两种模式都会妥善处理错误：记录操作，并返回易于理解的消息，而不是抛出异常。即使记忆不可用，智能体也能继续运行。
 
-### 结合工具+记忆 {#combining-tools--memory}
+### 组合使用工具与记忆 {#combining-tools--memory}
 
-同时使用两种模式以获得最大的灵活性：
+同时使用两种模式可以获得更大的灵活性：
 
 ```python
 from hindsight_llamaindex import create_hindsight_tools, HindsightMemory
 
-#自动记忆以丰富上下文
+# 自动管理记忆，以丰富上下文
 memory = HindsightMemory.from_client(client=client, bank_id="user-123")
 
-#智能体驱动的显式工具 反思
+# 提供智能体主动调用的 Reflect 工具
 tools = create_hindsight_tools(
     client=client,
     bank_id="user-123",
-    include_retain=False,   #记忆自动处理记忆存储
-    include_recall=False,   #记忆自动处理记忆召回
-    include_reflect=True,   #智能体还可以明确反思
+    include_retain=False,   # Retain 由 memory 自动处理
+    include_recall=False,   # Recall 由 memory 自动处理
+    include_reflect=True,   # 智能体仍可显式调用 Reflect
 )
 
 agent = ReActAgent(tools=tools, llm=llm)
 
-#将记忆传递给run()
-response = await agent.run("我应该优先考虑什么？", memory=memory)
+# 将 memory 传给 run()
+response = await agent.run("What should I prioritize?", memory=memory)
 ```
 
 ## 环境要求 {#requirements}
@@ -251,3 +251,5 @@ response = await agent.run("我应该优先考虑什么？", memory=memory)
 - Python 3.10+
 - `llama-index-core >= 0.11.0`
 - `hindsight-client >= 0.4.0`
+
+---

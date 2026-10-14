@@ -1,15 +1,15 @@
 {
   "version": "1",
   "bank": {
-    "retain_mission": "提取用户偏好、其对自身陈述的事实、提出过的请求、关心的话题，以及任何承诺或后续事项。忽略闲聊与无实质内容。",
+    "retain_mission": "提取用户偏好、用户明确陈述的个人事实、提出过的请求、关心的话题，以及任何承诺或后续事项。忽略闲聊和填充性内容。",
     "enable_observations": true,
-    "observations_mission": "跟踪稳定的用户偏好、沟通风格、反复出现的话题，以及用户需求随时间的变化。"
+    "observations_mission": "跟踪用户稳定的偏好、沟通风格、反复出现的话题，以及用户需求随时间的变化。"
   },
   "mental_models": [
     {
       "id": "user-profile",
-      "name": "用户画像",
-      "source_query": "我们对这位用户有哪些了解？其偏好、背景是什么，喜欢怎样互动？",
+      "name": "用户档案",
+      "source_query": "我们了解这位用户的哪些情况？他们有哪些偏好和背景，喜欢怎样互动？",
       "max_tokens": 2048,
       "trigger": {
         "refresh_after_consolidation": true
@@ -17,8 +17,8 @@
     },
     {
       "id": "open-threads",
-      "name": "待处理事项",
-      "source_query": "过去的对话中还有哪些话题、任务或后续事项尚未完成或解决？",
+      "name": "待跟进事项",
+      "source_query": "过去的对话中，还有哪些话题、任务或后续事项尚未完成或解决？",
       "max_tokens": 1024,
       "trigger": {
         "refresh_after_consolidation": true

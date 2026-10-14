@@ -1,63 +1,61 @@
 ---
-title: "Cursor 持久记忆：编辑器和 CLI 的一个记忆库"
+title: "Cursor 持久记忆：编辑器与 CLI 共用一个记忆库"
 authors: [benfrank241]
 slug: "2026/06/12/cursor-persistent-memory"
 date: 2026-06-12T12:00
 tags: [cursor, cursor-cli, memory, persistent-memory, hindsight, coding-agents, tutorial]
-description: "两个新的Hindsight集成为Cursor提供持久的长期记忆：一个用于Cursor编辑器（在Cursor3.x中提供了针对损坏的sessionStartadditionalContext通道的解决方法），另一个用于CursorCLI。两者可以共享相同的记忆库。"
+description: "Hindsight 新增了两种集成，为 Cursor 提供持久的长期记忆：一种用于 Cursor 编辑器（针对 Cursor 3.x 中失效的 sessionStart additionalContext 通道提供绕行方案），另一种用于 Cursor CLI。两者可以共用同一个记忆库。"
 image: /img/blog/cursor-persistent-memory.webp
 hide_table_of_contents: true
 ---
 
-![Cursor 持久记忆Hindsight](/img/blog/cursor-persistent-memory.webp)
+![Cursor 与 Hindsight 的持久记忆](/img/blog/cursor-persistent-memory.webp)
 
-[Cursor](https://cursor.com) 有开发人员实际使用的两个界面：编辑器和 [Cursor CLI](https://cursor.com/docs/cli)。两者都运行智能体。两人都不记得会议之间的任何事情。今天有两个新的 Hindsight 集成解决了这个问题，并且（这是有趣的部分）它们都可以在同一个记忆库中写入和读取。在任务中从编辑器切换到 CLI，智能体已经知道您昨天的决定。
+[Cursor](https://cursor.com) 有两种开发者实际会用到的界面：编辑器和 [Cursor CLI](https://cursor.com/docs/cli)。两者都能运行智能体，但都不会在不同会话之间保留记忆。现在有两种新的 Hindsight 集成可以解决这个问题。有意思的是，它们既能写入同一个记忆库，也能从中读取。任务进行到一半时从编辑器切换到 CLI，智能体仍然知道你昨天作出的决定。
 
-这篇文章是两种集成的演练：`hindsight-cursor`用于编辑器和`hindsight-cursor-cli`用于命令行智能体。这个故事主要是将相同的记忆原语连接到两个不同的生命周期中，在编辑器方面有一个值得注意的细节：Cursor 3.x 在其会话启动上下文注入通道中存在一个已知错误，并且编辑器集成附带了一个干净的解决方法。
+本文将介绍这两种集成：用于编辑器的 `hindsight-cursor`，以及用于命令行智能体的 `hindsight-cursor-cli`。两者使用的记忆基础能力大致相同，只是接入了不同的生命周期。编辑器集成还有一个值得注意的细节：Cursor 3.x 的会话启动上下文注入通道存在已知问题，因此该集成提供了一个简洁的绕行方案。
 
 ## 概览 {#tldr}
 
 <!-- truncate -->
 
-- ​​两个pip软件包：`hindsight-cursor`（编辑器，第一方）和`hindsight-cursor-cli`（CLI，由[@Korayem](https://github.com/Korayem)社区构建）。
-- 两者都使用Cursor的生命周期钩子：每个聊天会话/提示之前的记忆召回，每个任务或每N轮之后的记忆存储。
-- **编辑器集成还附带一个MCP服务器**，用于会话期间的显式 `recall` / `retain` / `reflect` 工具，位于自动会话启动记忆召回之上。
-- **编辑器集成围绕 Cursor 3.x 错误**打破了原生的`additionalContext`注入通道。记忆被写入Cursor的规则引擎可靠地拾取的工作区规则文件中。
-- **CLI 集成有四个钩子**（`sessionStart`、`beforeSubmitPrompt`、`stop`、`sessionEnd`）并需要 Cursor CLI v0.45+。
-- 点都在同一个`bankId`并且切换表面是透明的。
+- 两个 pip 软件包：`hindsight-cursor`（编辑器，官方集成）和 `hindsight-cursor-cli`（由社区成员 [@Korayem](https://github.com/Korayem) 构建）。
+- 两者都使用 Cursor 生命周期钩子：每次聊天会话或提示之前召回记忆，每个任务结束后或每 N 轮存入记忆。
+- **编辑器集成还提供 MCP 服务器**，除了自动在会话开始时召回记忆，也支持在会话期间显式调用 `recall` / `retain` / `reflect` 工具。
+- **编辑器集成绕过了 Cursor 3.x 的一个问题**：原生的 `additionalContext` 注入通道失效。记忆会写入工作区规则文件，再由 Cursor 的规则引擎可靠地读取。
+- **CLI 集成有四个钩子**（`sessionStart`、`beforeSubmitPrompt`、`stop`、`sessionEnd`），并要求 Cursor CLI v0.45+。
+- 将两种集成指向相同的 `bankId`，就能无缝切换使用。
 
-## 为什么Cursor需要持久记忆 {#why-cursor-needs-persistent-memory}
+## Cursor 为什么需要持久记忆 {#why-cursor-needs-persistent-memory}
 
-新的Cursor会话是一个没有上下文的新模型。它可以读取您工作区中的文件，并且它具有您在`.cursor/rules`中写入的任何内容。它没有任何关于之前会议的信息：您在周二调试的错误、您上周讨论的架构决策、您为该代码库命名测试文件的方式建立的约定。
+每个新的 Cursor 会话都是一个没有上下文的新模型。它可以读取工作区中的文件，也能获取你写在 `.cursor/rules` 中的内容。但它不知道之前会话里发生过什么：你周二调试过的错误、上周讨论过的架构决策，或你为这个代码库制定的测试文件命名约定。
 
-您可以使用规则文件手动固定上下文。这适用于你记得写下来的事情，但不适用于你后来才意识到重要的事情。持久记忆弥补了这一差距：每个会话都会保留自己，每个新会话都会自动回忆起相关的过去内容。
+你可以手动把上下文写进规则文件。这对你记得要记录的事情有效，却无法涵盖那些当时没意识到重要、后来才发现有用的信息。持久记忆可以补上这个缺口：每个会话都会存入自身内容，每个新会话都会自动召回相关的过往内容。
 
-两个表面，一个记忆层。
+两个界面，一层记忆。
 
 ## `hindsight-cursor`：编辑器集成 {#hindsight-cursor-the-editor-integration}
 
-编辑器集成是一个`pip`插件，安装到项目的`.cursor-plugin/hindsight-memory/`目录中。它连接了两个互补的机制。
+编辑器集成是一个 `pip` 插件，会安装到项目的 `.cursor-plugin/hindsight-memory/` 目录。它接入了两种互补机制。
 
-**​​插件挂钩（自动）。
-当智能体处理每个新聊天的第一个提示时，**`session_start.py`运行。它针对您的记忆库运行项目级记忆召回并显示结果，以便智能体在回答之前看到它。 `retain.py` 在每个任务之后在 `stop` 事件上运行并存储脚本。
+**插件钩子（自动运行）。** 智能体处理每个新聊天的第一条提示时会运行 `session_start.py`。该脚本会针对你的记忆库执行项目级记忆召回，并展示结果，让智能体在回答前就能看到相关内容。每项任务结束后，`retain.py` 会在 `stop` 事件触发时运行并存储对话记录。
 
-**MCP 服务器（按需）。** 安装程序还编写 `.cursor/mcp.json` 将 Cursor 连接到 Hindsight 的 MCP 端点，为智能体提供三个显式工具（`recall`、`retain`、`reflect`），以便在需要记忆时可以在会话中调用。超出了开始时注入的内容。
+**MCP 服务器（按需调用）。** 安装程序还会写入 `.cursor/mcp.json`，将 Cursor 连接到 Hindsight 的 MCP 端点。这样智能体就能使用三个显式工具（`recall`、`retain`、`reflect`），并在会话中需要更多记忆时主动调用；这些工具补充了会话开始时自动注入的记忆。
 
-### Cursor 3.x 解决方法 {#the-cursor-3x-workaround}
+### Cursor 3.x 的绕行方案 {#the-cursor-3x-workaround}
 
-Cursor 用于传递会话启动钩子输出的本机通道是 `additionalContext` JSON 字段：钩子在标准输出上打印记忆文本，Cursor 将其放置在智能体的系统提示符中。在 Cursor 3.x 中，该通道已损坏（错误是 [得到Cursor工作人员的认可](https://forum.cursor.com/t/sessionstart-hook-additional-context-is-never-injected-into-agents-initial-system-context/158452)，在撰写本文时针对 3.6.31 仍然开放）。如果 `additionalContext` 是唯一的传递路径，则回忆永远不会到达模型。
+Cursor 原本通过 `additionalContext` JSON 字段传递会话启动钩子的输出：钩子把记忆文本打印到标准输出，Cursor 再将其放入智能体的系统提示中。但在 Cursor 3.x 中，这条通道失效了（Cursor 工作人员已[确认这个问题](https://forum.cursor.com/t/sessionstart-hook-additional-context-is-never-injected-into-agents-initial-system-context/158452)；本文撰写时，该问题在 3.6.31 版本中仍未解决）。如果只通过 `additionalContext` 传递，召回的记忆就无法到达模型。
 
-插件通过 **还有** 将调用的记忆写入 `<workspace>/.cursor/rules/hindsight-session.mdc` 以及 `alwaysApply: true` 来解决这个问题。工作区规则文件由Cursor的规则引擎可靠地注入，因此智能体在每次新聊天的第一个提示时都能看到记忆。
+该插件通过**同时**将召回的记忆写入 `<workspace>/.cursor/rules/hindsight-session.mdc` 来绕过问题，并在 frontmatter 中设置 `alwaysApply: true`。Cursor 的规则引擎会可靠地注入工作区规则文件，因此智能体在每个新聊天的第一条提示中就能看到记忆。
 
-一些值得了解的细节：
+有几点值得了解：
 
-- **每个新智能体的第一个提示都有记忆。** Cursor 阻止提示提交，直到 `sessionStart` 钩子返回； 记忆延迟通常低于一秒。
-- **规则文件在每个`sessionStart`的顶部重新生成。** 上一课的陈旧记忆不会持续存在。
-- **规则文件是自动`.gitignore`'d
-git 工作区中的**（幂等追加；非 git 工作区无操作）。
-- **`additionalContext` 仍然发送到标准输出** 用于向前兼容。如果 Cursor 恢复原生频道，同一插件无需更改代码即可继续工作。
+- **每个新智能体的第一条提示都包含记忆。** Cursor 会等到 `sessionStart` 钩子返回后才允许提交提示；记忆召回通常不到一秒。
+- **每次 `sessionStart` 开始时都会重新生成规则文件。** 上一会话遗留的过时记忆不会继续保留。
+- **在 Git 工作区中，规则文件会自动加入 `.gitignore`。** 这项追加操作可重复执行而不会重复添加；非 Git 工作区中则不执行任何操作。
+- **`additionalContext` 仍会输出到标准输出**，以便兼容未来版本。如果 Cursor 恢复了原生通道，该插件无需修改代码就能继续工作。
 
-如果您不想让插件触及您的工作区规则，请设置`useRulesFileFallback: false`，插件将回退到（当前已损坏的）本机通道。仅当您宁愿看到错误而不愿让插件编写规则文件时才有用。
+如果你不希望插件修改工作区规则，可以设置 `useRulesFileFallback: false`，让插件退回到（目前仍失效的）原生通道。只有在你宁愿接受该问题的影响，也不想让插件写入规则文件时，这个设置才有用。
 
 ### 安装 {#install}
 
@@ -67,41 +65,40 @@ cd /path/to/your-project
 hindsight-cursor init --api-url https://api.hindsight.vectorize.io --api-token YOUR_KEY
 ```
 
-然后**完全退出并重新打开Cursor**：插件在启动时加载。
+然后**彻底退出并重新打开 Cursor**：插件会在启动时加载。
 
-对于自托管，请删除 `--api-url` / `--api-token` 标志并在本地运行 Hindsight (`docker run ghcr.io/vectorize-io/hindsight:latest`)。如果您不想自己运行服务器，该插件还可以通过 `uvx` 自动管理本地 `hindsight-embed` 守护进程。
+如果要自托管，请省略 `--api-url` / `--api-token` 参数，并在本地运行 Hindsight（`docker run ghcr.io/vectorize-io/hindsight:latest`）。如果你不想自行运行服务器，该插件也可以通过 `uvx` 自动管理本地 `hindsight-embed` 守护进程。
 
 ## `hindsight-cursor-cli`：CLI 集成 {#hindsight-cursor-cli-the-cli-integration}
 
-CLI 集成是一个单独的包，由[@Korayem](https://github.com/Korayem) 社区构建，它将四个 Cursor CLI 挂钩连接到相同的记忆召回/记忆存储原语。
+CLI 集成是一个独立的软件包，由社区成员 [@Korayem](https://github.com/Korayem) 构建。它将四个 Cursor CLI 钩子接入同一套记忆召回和存入能力。
 
-|钩子|行动|
-|---|---|
-|`sessionStart`|确认 Hindsight 可达，并在需要时预热本地守护进程|
-|`beforeSubmitPrompt`|召回相关记忆并将其注入为`additional_context`|
-|`stop`|每配置N轮，将对话保留长期记忆|
-|`sessionEnd`|强制最终记忆存储，因此仍然存储短会话|
+| 钩子 | 操作 |
+| --- | --- |
+| `sessionStart` | 确认 Hindsight 可访问；如有需要，预热本地守护进程 |
+| `beforeSubmitPrompt` | 召回相关记忆，并将其作为 `additional_context` 注入 |
+| `stop` | 每经过配置的 N 轮，将对话存入长期记忆 |
+| `sessionEnd` | 强制执行最后一次记忆存入，确保较短的会话也能保存 |
 
-此生命周期与编辑器插件有两点不同：
+这种生命周期与编辑器插件有两点不同：
 
-- **记忆召回在每次提示之前触发，而不仅仅是会话开始。** CLI 是一个更加逐个转弯的界面，每个提示的记忆召回意味着每个新问题都会得到适合的上下文，而不是依赖于顶部的单个广泛的项目级记忆召回。
-- **`sessionEnd`保证记忆存储。
-如果 `stop` 仅每 N 轮触发一次，** 短 CLI 会话（一到两个提示，然后退出）通常会掉在地板上。 `sessionEnd` 钩子弥补了这一差距。
+- **每条提示之前都会触发记忆召回，而不仅是在会话开始时触发。** CLI 的交互更侧重逐轮处理；每条提示都进行记忆召回，可以为每个新问题匹配合适的上下文，而不是只依赖会话开始时的一次宽泛项目级召回。
+- **`sessionEnd` 会确保执行记忆存入。** 过去，如果 `stop` 只在每 N 轮触发，较短的 CLI 会话（输入一两条提示后就退出）可能会被漏掉。`sessionEnd` 钩子弥补了这个缺口。
 
-### 安装 {#install}
+### 安装 {#install-1}
 
 ```bash
 pip install hindsight-cursor-cli
 hindsight-cursor-cli install --api-url https://api.hindsight.vectorize.io --api-token YOUR_KEY
 ```
 
-安装程序将挂钩脚本复制到`~/.cursor/hooks/cursor-cli/`，使用脚本的绝对路径写入`~/.cursor/hooks.json`（与任何现有条目合并），并为个人覆盖添加种子`~/.hindsight/cursor-cli.json`。重新启动 Cursor CLI 以加载挂钩。
+安装程序会将钩子脚本复制到 `~/.cursor/hooks/cursor-cli/`，把脚本的绝对路径写入 `~/.cursor/hooks.json`（并与现有条目合并），同时生成 `~/.hindsight/cursor-cli.json` 供个人覆盖配置使用。重启 Cursor CLI 以加载这些钩子。
 
-Cursor CLI v0.45+ 需要钩子支持。挂钩脚本仅使用 Python 3 stdlib，运行时不需要 `pip install`。
+钩子功能要求 Cursor CLI v0.45+。钩子脚本只使用 Python 3 标准库，运行时无需执行 `pip install`。
 
-## 在两个表面上共享一个记忆库 {#sharing-one-bank-across-both-surfaces}
+## 在两个界面间共用一个记忆库 {#sharing-one-bank-across-both-surfaces}
 
-两个集成都写入`bankId`。默认情况下，编辑器使用`cursor`，CLI 使用`cursor-cli`。将他们指向同一个记忆库，他们共享记忆：
+两种集成都向 `bankId` 指定的记忆库写入内容。默认情况下，编辑器使用 `cursor`，CLI 使用 `cursor-cli`。将两者指向同一个记忆库，就能共享记忆：
 
 ```json
 // ~/.hindsight/cursor.json AND ~/.hindsight/cursor-cli.json
@@ -112,9 +109,9 @@ Cursor CLI v0.45+ 需要钩子支持。挂钩脚本仅使用 Python 3 stdlib，�
 }
 ```
 
-现在，您从 CLI 会话中记忆存储的任何内容都会显示在编辑器的会话启动记忆召回中，反之亦然。您周二早上在火车上与 CLI 智能体讨论的决定将在周二下午出现在编辑的第一个提示中。
+这样，你在 CLI 会话中存入的内容就会出现在编辑器的会话启动记忆召回中，反过来也一样。周二早上你在火车上与 CLI 智能体讨论的决定，周二下午就会出现在编辑器的第一条提示中。
 
-对于跨两个表面的每个项目隔离，将两个配置切换为动态记忆库 ID：
+如果要让这两个界面中的每个项目分别隔离，请将两份配置都切换为动态记忆库 ID：
 
 ```json
 {
@@ -123,74 +120,74 @@ Cursor CLI v0.45+ 需要钩子支持。挂钩脚本仅使用 Python 3 stdlib，�
 }
 ```
 
-两个集成都从工作空间路径（基本名称）派生`project`。如果您想在同一存储库的工作树之间共享记忆，CLI 还支持`gitProject`。
+两种集成都根据工作区路径的基本名称生成 `project`。如果你想在同一代码库的多个工作树之间共享记忆，CLI 还支持 `gitProject`。
 
-## 相同点和不同点 {#whats-the-same-and-whats-different}
+## 相同点与不同点 {#whats-the-same-and-whats-different}
 
-大部分配置表面是共享的。差异在于每个表面可以做什么，而不是 Hindsight 的行为方式。
+大部分配置选项是共用的。两者的差异在于各自界面能做什么，而不是 Hindsight 的行为有何不同。
 
-||`hindsight-cursor`（编辑）|`hindsight-cursor-cli`（命令行）|
-|---|---|---|
-|作者|Hindsight团队（第一方）|[@Korayem](https://github.com/Korayem)（社区）|
-|挂钩|`sessionStart`, `stop`|`sessionStart`、`beforeSubmitPrompt`、`stop`、`sessionEnd`|
-|记忆召回触发|每次聊天一次（会话开始）|每个提示一次|
-|MCP 服务器|是（`recall` / `retain` / `reflect` 工具）|否|
-|Cursor 3.x `additionalContext` 解决方法|工作区规则-文件后备|不适用（使用不同的通道）|
-|本地守护进程自动管理|是 (`uvx hindsight-embed`)|是|
-|默认 `bankId`|`cursor`|`cursor-cli`|
-|Cursor 版本要求|Cursor 3.x（解决该错误）|Cursor CLI v0.45+|
-|运行时 Python 依赖|仅 stdlib|仅 stdlib|
+| | `hindsight-cursor`（编辑器） | `hindsight-cursor-cli`（CLI） |
+| --- | --- | --- |
+| 作者 | Hindsight 团队（官方） | [@Korayem](https://github.com/Korayem)（社区） |
+| 钩子 | `sessionStart`、`stop` | `sessionStart`、`beforeSubmitPrompt`、`stop`、`sessionEnd` |
+| 记忆召回触发时机 | 每次聊天一次（会话开始时） | 每条提示一次 |
+| MCP 服务器 | 有（提供 `recall` / `retain` / `reflect` 工具） | 无 |
+| Cursor 3.x `additionalContext` 绕行方案 | 回退到工作区规则文件 | 不适用（使用不同的通道） |
+| 自动管理本地守护进程 | 有（`uvx hindsight-embed`） | 有 |
+| 默认 `bankId` | `cursor` | `cursor-cli` |
+| Cursor 版本要求 | Cursor 3.x（绕过该问题） | Cursor CLI v0.45+ |
+| 运行时 Python 依赖 | 仅标准库 | 仅标准库 |
 
-两者共享：完整的`retainMode`语义 (`full-session` / `chunked`), `recallBudget` (`low` / `mid` / `high`), `recallMaxTokens`, `dynamicBankId` + `dynamicBankGranularity`, `HINDSIGHT_*` 环境变量覆盖，以及 Hindsight Cloud或自主机连接。
+两者共用：完整的 `retainMode` 语义（`full-session` / `chunked`）、`recallBudget`（`low` / `mid` / `high`）、`recallMaxTokens`、`dynamicBankId` + `dynamicBankGranularity`、`HINDSIGHT_*` 环境变量覆盖，以及连接 Hindsight Cloud 或自托管服务的能力。
 
 ## 权衡 {#tradeoffs}
 
-**编辑器：规则文件解决方法将文件放入您的工作区中。** 它很小，每次会话都会重新生成，并且自动`.gitignore`'d。大多数人不会注意到。如果您根本不想让插件写入您的工作区，`useRulesFileFallback: false` 会恢复到本机通道，但代价是没有记忆传递，直到 Cursor 修复上游错误。
+**编辑器：规则文件绕行方案会在工作区中放入一个文件。** 文件很小，每次会话都会重新生成，并且会自动加入 `.gitignore`。大多数人不会注意到它。如果你完全不希望插件写入工作区，可以将 `useRulesFileFallback` 设为 `false`，改用原生通道；代价是 Cursor 修复上游问题之前，记忆都无法传递给模型。
 
-**CLI：每次提示记忆召回成本更高。** 每个提示都会在智能体运行之前触发Hindsight 查询。在 Hindsight Cloud上，通常不到一秒，但它不是免费的。如果需要跳过，请将`recallBudget`删除至`"low"`，或设置`autoRecall: false`。
+**CLI：每条提示都召回记忆，成本更高。** 智能体运行之前，每条提示都会触发一次 Hindsight 查询。在 Hindsight Cloud 上，通常不到一秒，但仍会产生开销。如果需要跳过召回，可以将 `recallBudget` 降为 `"low"`，或设置 `autoRecall: false`。
 
-​​**两者：记忆存储异步提取事实。** 记忆存储调用会在成绩单到达记忆库时返回，而不是在提取器完成时返回。事实在几秒钟内就可以回忆起来。这对于聊天式工作流程来说很好，因为下一个会话至少还有一分钟的时间。对于在同一运行中记忆存储然后记忆召回的自动化脚本，请给提取器一个节奏。
+**两者：存入操作会异步提取事实。** 存入调用会在对话记录写入记忆库后返回，而不是等到提取器处理完成后才返回。几秒钟后，这些事实便可供召回。对于聊天式工作流来说，这没有问题，因为下一次会话至少要过一分钟才开始。对于在同一次运行中先存入、再召回的自动化脚本，请给提取器一点处理时间。
 
-**两个记忆库与一个记忆库是一个真正的选择。** 共享一个记忆库很方便，但在同一事实集中混合了编辑器和 CLI 使用模式。两个记忆库为每个表面提供了自己的上下文，但失去了跨表面的连续性。大多数人会对拥有一个共享的记忆库感到更高兴；如果需要，基于标签的过滤 (`retainTags`) 仍然可以区分哪个表面产生了什么。
+**选择共用一个记忆库还是使用两个记忆库，确实需要权衡。** 共用一个记忆库很方便，但会把编辑器和 CLI 的使用模式混在同一组事实中。使用两个记忆库可以让每个界面拥有自己的上下文，却会失去跨界面的连续性。多数人会更适合共用一个记忆库；如果需要区分信息来自哪个界面，仍可使用基于标签的筛选（`retainTags`）。
 
 ## 设置 {#setup}
 
-两者的快速路径：
+两种集成都可以按以下步骤快速完成设置：
 
-1. 在[hindsight.vectorize.io](https://ui.hindsight.vectorize.io)注册（免费套餐就足够了）。
-2. 从仪表板上获取API钥匙。
-3. 安装您想要的任何集成：
+1. 在 [hindsight.vectorize.io](https://ui.hindsight.vectorize.io) 注册（免费套餐就够用）。
+2. 从控制台获取 API 密钥。
+3. 安装你需要的集成：
    ```bash
-   pip install hindsight-cursor                  # editor
+   pip install hindsight-cursor                  # 编辑器
    pip install hindsight-cursor-cli              # CLI
    ```
-4. 每次集成运行一次安装程序：
+4. 对每种集成各运行一次安装程序：
    ```bash
    cd /path/to/your-project
    hindsight-cursor init --api-url https://api.hindsight.vectorize.io --api-token YOUR_KEY
    hindsight-cursor-cli install --api-url https://api.hindsight.vectorize.io --api-token YOUR_KEY
    ```
-5. 重新启动Cursor（完全退出并重新打开编辑器；重新启动 CLI 会话）。智能体从下一个提示开始就有记忆。
+5. 重启 Cursor（彻底退出并重新打开编辑器；重启 CLI 会话）。从下一条提示开始，智能体就能使用记忆。
 
-如果您希望两个表面共享一个记忆库，请在`~/.hindsight/cursor.json`和`~/.hindsight/cursor-cli.json`中设置相同的`bankId`。
+如果希望两个界面共用一个记忆库，请在 `~/.hindsight/cursor.json` 和 `~/.hindsight/cursor-cli.json` 中设置相同的 `bankId`。
 
 ## 回顾 {#recap}
 
-||Cursor 默认|与 Hindsight|
-|---|---|---|
-|跨会话记忆（编辑）|无|在会话开始时调用，在 `stop` 保留|
-|跨提示记忆 (CLI)|无|在每个提示前调用，保留在 `stop` + `sessionEnd`|
-|编辑器中的按需记忆工具|无|MCP `recall` / `retain` / `reflect`|
-|每个项目的隔离|手动规则|可选通过`dynamicBankId`|
-|跨编辑器 + CLI 共享记忆|不适用|两个配置中都有一个 `bankId`|
-|Cursor 3.x `additionalContext` 错误|击中你|通过规则文件解决|
+| | Cursor 默认行为 | 使用 Hindsight 后 |
+| --- | --- | --- |
+| 编辑器跨会话记忆 | 无 | 会话开始时召回；在 `stop` 时存入 |
+| CLI 跨提示记忆 | 无 | 每条提示前召回；在 `stop` 和 `sessionEnd` 时存入 |
+| 编辑器中的按需记忆工具 | 无 | MCP `recall` / `retain` / `reflect` |
+| 按项目隔离 | 手动配置规则 | 可选使用 `dynamicBankId` |
+| 编辑器与 CLI 之间共享记忆 | 不适用 | 两份配置使用同一个 `bankId` |
+| Cursor 3.x `additionalContext` 问题 | 会受影响 | 通过规则文件绕行 |
 
 ## 后续步骤 {#next-steps}
 
 - **Hindsight Cloud：**[ui.hindsight.vectorize.io](https://ui.hindsight.vectorize.io)
 - **编辑器集成文档：**[Cursor + Hindsight](/sdks/integrations/cursor)
 - **CLI 集成文档：**[Cursor CLI + Hindsight](/sdks/integrations/cursor-cli)
-- **来源：**
-  [`hindsight-integrations/cursor`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/cursor),
+- **源代码：**
+  [`hindsight-integrations/cursor`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/cursor)、
   [`hindsight-integrations/cursor-cli`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/cursor-cli)
-- **HindsightAPI参考：**[API 快速入门](/developer/api/quickstart)
+- **Hindsight API 参考：**[API 快速入门](/developer/api/quickstart)

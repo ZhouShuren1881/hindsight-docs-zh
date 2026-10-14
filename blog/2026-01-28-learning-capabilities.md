@@ -1,6 +1,6 @@
 ---
 slug: learning-capabilities
-title: "会学习的智能体记忆：观察与心智模型"
+title: "会学习的智能体记忆：观测与心智模型"
 authors: [nicoloboschi]
 image: /img/reflect-operation.webp
 date: 2026-01-28T12:00
@@ -8,7 +8,7 @@ hide_table_of_contents: true
 tags: [release]
 ---
 
-今天我们发布了Hindsight 0.4.0，它为AI智能体引入了两个强大的学习功能：**观察**用于自动知识整合，以及**心智模型**用于由用户整理的摘要。
+今天我们发布了 Hindsight 0.4.0，为 AI 智能体带来两种强大的学习能力：用于自动整合知识的**观测**，以及由用户维护摘要的**心智模型**。
 
 <!-- truncate -->
 
@@ -18,258 +18,257 @@ import mentalModelsApi from '@site/figures/mental-models-api.json';
 
 ## 两个学习层次 {#two-levels-of-learning}
 
-Hindsight 0.4.0引入了分层学习系统：
+Hindsight 0.4.0 引入了一个分层学习系统：
 
-|等级|它是什么|它是如何创建的|
+| 层级 | 内容 | 创建方式 |
 |-------|------------|------------------|
-|**心智模型**|用户整理的常见查询摘要|通过API手动创建|
-|**观察**|由事实整合而成的知识|记忆存储后自动|
+| **心智模型** | 针对常见查询、由用户维护的摘要 | 通过 API 手动创建 |
+| **观测** | 从事实整合而来的知识 | 每次存入后自动创建 |
 
-在`reflect`期间，智能体按优先顺序检查这些内容——首先是心智模型（你整理的知识），然后是观察（自动合成），然后是原始事实。
+执行 `reflect` 时，智能体会按以下优先顺序检查：先检查心智模型（由你维护的知识），再检查观测（自动综合生成），最后检查原始事实。
 
 ---
 
-## 观察：自动知识整合 {#observations-automatic-knowledge-consolidation}
+## 观测：自动整合知识 {#observations-automatic-knowledge-consolidation}
 
-### 实体摘要和意见的演变 {#evolution-from-entity-summaries-and-opinions}
+### 从实体摘要和观点演变而来 {#evolution-from-entity-summaries-and-opinions}
 
-在Hindsight 0.3.0 中，我们有两个独立的综合知识系统：
+在 Hindsight 0.3.0 中，我们有两个彼此独立的综合知识系统：
 
-- **实体摘要**：根据相关事实综合的每个实体的摘要。为经常提到的实体自动生成 - 如果“Alice”出现在许多事实中，您会得到类似“Alice 是 Google 的软件工程师，于 2020 年加入并领导搜索团队”的摘要。内容客观，并限定于实体范围。
+- **实体摘要**：按实体汇总相关事实。系统会为经常被提及的实体自动生成摘要。例如，如果许多事实中都出现了“Alice”，你就会得到类似“Alice 是 Google 的软件工程师，于 2020 年加入公司并领导搜索团队”的摘要。摘要内容客观，范围限于该实体。
 
-- **意见**：在`reflect`操作过程中形成的信念，受到记忆库性格特征的影响。这些通过置信度分数捕获主观判断，例如“Python最适合数据科学”（置信度：0.85）。
+- **观点**：在 `reflect` 操作期间形成的认知判断，并受记忆库的性格倾向影响。观点以置信度分数表达主观判断，例如“Python 最适合数据科学”（置信度：0.85）。
 
-两个系统都很好地实现了它们的目的，但它们独立运行。实体摘要以实体为中心，观点以信念为中心，两者都没有捕捉到知识如何随时间演变的全貌。
+这两个系统都很好地发挥了各自的作用，但彼此独立：实体摘要以实体为中心，观点以认知判断为中心，两者都无法完整呈现知识如何随时间演变。
 
-**观察** 将这些概念统一到一个单一的、更具表现力的系统中，该系统捕获从积累的证据中出现的模式、偏好和学习。
+**观测** 将这两个概念整合为一个表达力更强的系统，用来记录随着证据不断积累而显现的模式、偏好和认知。
 
-### 什么是观察？ {#what-are-observations}
+### 什么是观测？ {#what-are-observations}
 
-观察是由多个事实综合而成的**巩固知识**。与作为单独信息的原始事实不同，观察代表了从积累的证据中出现的模式和见解。
+观测是从多个事实中综合生成的**整合知识**。原始事实是独立的信息片段，而观测则体现了随着证据积累而显现的模式和洞见。
 
-|原始事实|观察|
+| 原始事实 | 观测 |
 |-----------|--------------|
-|“爱丽丝更喜欢Python”|“Alice 是一位专注于 Python 的开发人员，重视可读性和简单性，推荐类型提示，并且更喜欢使用 pytest 进行测试”|
-|“Alice 不喜欢冗长的代码”||
-|“爱丽丝推荐类型提示”||
+| “Alice 更喜欢 Python” | “Alice 是一位专注于 Python 的开发者，重视可读性和简洁性，会推荐类型提示，并且更喜欢使用 pytest 进行测试” |
+| “Alice 不喜欢冗长的代码” | |
+| “Alice 推荐使用类型提示” | |
 
-### 自动后台整合 {#automatic-background-consolidation}
+### 自动在后台整合 {#automatic-background-consolidation}
 
-每次`retain()`调用后，Hindsight的整合引擎会自动运行：
+每次调用 `retain()` 后，Hindsight 的整合引擎都会自动运行：
 
-1. **分析新事实** 反对现有知识
-2. **检测模式**跨相关信息
-3. **综合观察** 捕捉高阶洞察
-4. **追踪证据** 将每个观察结果与其支持事实联系起来
+1. **分析新事实**，并与现有知识进行比较
+2. **发现相关信息中的模式**
+3. **综合生成观测**，提炼出更高层次的洞见
+4. **追踪证据**，将每条观测与其支持事实关联起来
 
 <Figure doc={observations} />
 
-### 随证据演变 {#evidence-based-evolution}
+### 基于证据演变 {#evidence-based-evolution}
 
-观察随着新证据的到来而演变，捕捉整个旅程而不仅仅是当前状态：
+随着新证据出现，观测会不断演变，记录事情的发展过程，而不只是当前状态：
 
-|时间|事实|观察|
+| 时间 | 事实 | 观测 |
 |------|------|--------------|
-|第 1 周|“用户喜欢React”|“用户更喜欢React进行前端开发”|
-|第 2 周|“用户称赞React的组件模型”|“用户对React充满热情，尤其是它的组件模型”|
-|第三周|“用户切换到Vue并且不会再使用React”|“用户之前是React爱好者，欣赏其组件模型，但现在已转向Vue”|
+| 第 1 周 | “用户喜欢 React” | “用户更喜欢使用 React 进行前端开发” |
+| 第 2 周 | “用户称赞 React 的组件模型” | “用户热衷于 React，尤其喜欢它的组件模型” |
+| 第 3 周 | “用户改用 Vue，以后不会再用 React” | “用户以前是 React 爱好者，欣赏它的组件模型，但现在已改用 Vue” |
 
-注意最终的观察如何捕获**全程**——不仅仅是“用户更喜欢Vue”，而是完整的演变。你的智能体现在明白：
+注意，最终的观测记录了**完整的变化过程**，而不只是“用户更喜欢 Vue”。因此，智能体现在能够理解：
 
-- 用户故意远离React（这不是无知）
-- 他们之前很欣赏React的组件模型（相关上下文）
-- 推荐React教程是不合适的
+- 用户是有意改用 Vue 的（并非因为不了解 React）。
+- 用户以前很欣赏 React 的组件模型（这是有用的上下文）。
+- 此时再推荐 React 教程并不合适。
 
-### 以任务为导向的整合 {#mission-oriented-consolidation}
+### 以任务说明为导向的整合 {#mission-oriented-consolidation}
 
-观察力受到记忆库**使命**的影响。当您设定任务时，集成引擎将专注于提取服务于该目的的知识：
+观测会受到记忆库**任务说明** 的影响。设置任务说明后，整合引擎会着重提取有助于实现该目的的知识：
 
 ```python
 client.create_bank(
     bank_id="support-agent",
-    mission="您是客户支持智能体 - 跟踪客户偏好，"
-            "过去的问题和沟通方式。"
+    mission="You're a customer support agent - track customer preferences, "
+            "past issues, and communication styles."
 )
 ```
 
-执行此任务时，引擎会优先考虑与客户相关的观察，同时跳过短暂的细节。没有使命，它执行通用整合。
+有了这段任务说明，引擎会优先生成与客户相关的观测，同时跳过短暂细节。未设置任务说明时，引擎会进行通用整合。
 
 ---
 
-## 心智模型：用户策划的知识 {#mental-models-user-curated-knowledge}
+## 心智模型：由用户维护的知识 {#mental-models-user-curated-knowledge}
 
-虽然观察是自动创建的，但**心智模型**可以让您明确控制智能体如何回答常见问题。
+观测会自动创建，而**心智模型** 让你能够明确控制智能体如何回答常见问题。
 
-### ​​什么是心智模型？ {#what-are-mental-models}
+### 什么是心智模型？ {#what-are-mental-models}
 
-心智模型是您为记忆库策划的**保存了反思回复**。当您创建心智模型时，Hindsight 使用源查询运行反思操作并存储结果。在后续反思调用中，首先检查这些预先计算的摘要。
+心智模型是由你为记忆库维护的**已保存的 Reflect 响应**。创建心智模型时，Hindsight 会根据来源查询执行一次 Reflect 操作，并保存结果。在后续的 Reflect 调用中，系统会优先检查这些预先计算的摘要。
 
 <Figure doc={mentalModelsApi} />
 
-### 为什么要使用心智模型？ {#why-use-mental-models}
+### 为什么使用心智模型？ {#why-use-mental-models}
 
-|好处|说明|
+| 优点 | 说明 |
 |---------|-------------|
-|**一致性**|常见问题每次都有相同的答案|
-|**速度**|立即返回预先计算的响应|
-|**品质**|您已审阅的手动整理摘要|
-|**控制**|准确定义应如何回答关键主题|
+| **一致性** | 常见问题每次都会得到相同的答案 |
+| **速度** | 立即返回预先计算的响应 |
+| **质量** | 摘要由你手动维护并审核 |
+| **控制力** | 准确定义关键主题应如何作答 |
 
-### 心智模型的两种使用方法 {#two-ways-to-use-mental-models}
+### 使用心智模型的两种方式 {#two-ways-to-use-mental-models}
 
-心智模型有两种工作方式：
+心智模型有两种用法：
 
-1. **自动via 不敢**：`reflect`调用时，智能体首先自动检查心智模型。如果存在相关的，则将其用于通知响应。
+1. **通过 Reflect 自动使用**：调用 `reflect` 时，智能体会自动优先检查心智模型。如果存在相关模型，就会用它来辅助生成响应。
 
-2. **直接查找**：心智模型的工作方式就像一个键值存储——你可以通过 ID 立即检索它们，完全绕过了推理循环。
+2. **直接查找**：心智模型的工作方式类似键值存储。你可以按 ID 立即获取模型，完全跳过 Reflect 的推理循环。
 
 ```python
-#ID直接查找——即时响应，无需LLM调用
+# 通过 ID 直接查找——立即响应，无需调用 LLM
 mental_model = client.get_mental_model(
     bank_id="my-bank",
     mental_model_id="team-communication"
 )
-print(mental_model.content)  #预先计算的答案，随时可用
+print(mental_model.content)  # 预先计算好的答案，可直接使用
 ```
 
-当您确切地知道您需要什么心智模型并想要最快的响应时，这非常有用 - 不需要 LLM 推理，只需简单的数据库查找。
+如果你明确知道需要哪个心智模型，并希望尽可能快地获得响应，这种方式就很有用：无需 LLM 推理，只需执行简单的数据库查找。
 
 ### 创建心智模型 {#creating-mental-models}
 
 ```python
-#为常见问题创建心智模型
+# 为常见问题创建心智模型
 response = client.create_mental_model(
     bank_id="my-bank",
-    name="团队沟通偏好",
-    source_query="团队更喜欢如何沟通？",
+    name="Team Communication Preferences",
+    source_query="How does the team prefer to communicate?",
     tags=["team"]
 )
 ```
 
 ### 自动刷新 {#automatic-refresh}
 
-心智模型可以自动与您的观察保持同步：
-观察更新时刷新的
+心智模型可以自动与观测保持同步：
 
 ```python
-#心智模型
+# 观测更新后刷新的心智模型
 response = client.create_mental_model(
     bank_id="my-bank",
-    name="项目状态",
-    source_query="目前项目进展如何？",
+    name="Project Status",
+    source_query="What is the current project status?",
     trigger={"refresh_after_consolidation": True}
 )
 ```
 
 ---
 
-## 指令：合规性和护栏 {#directives-compliance-and-guardrails}
+## 强制指令：合规与防护规则 {#directives-compliance-and-guardrails}
 
-除了学习能力之外，**指令**还提供了你的智能体在〜操作过程中必须始终遵循的硬性规则。与*影响力*推理风格的性格特征不同，指令是在每个响应中强制执行的绝对要求。
+除了学习能力，**强制指令** 还为智能体提供必须在 Reflect 操作期间始终遵守的硬性规则。性格倾向会*影响*推理风格，而强制指令则是每次响应都必须执行的绝对要求。
 
-使用合规性、隐私和安全约束指令：
-- “切勿提供医疗诊断或治疗建议”
-- “始终用正式英语回复”
-- “切勿分享个人身份信息”
-- “在提出事实主张时始终引用来源”
+强制指令可用于合规、隐私和安全约束：
+- “绝不提供医疗诊断或治疗建议”
+- “始终使用正式英语回复”
+- “绝不分享个人身份信息”
+- “提出事实主张时始终引用来源”
 
-指令作为硬约束注入到 反思提示中，并包含在响应的 `based_on` 字段中。请参阅[指令文档](../developer/api/memory-banks#directives)了解如何创建和管理它们。
+强制指令会作为硬性约束注入 Reflect 提示词，并包含在响应的 `based_on` 字段中。如何创建和管理强制指令，请参阅[强制指令文档](../developer/api/memory-banks#directives)。
 
 ---
 
-## 0.3.0 有何变化 {#what-changes-from-030}
+## 0.3.0 版有哪些变化 {#what-changes-from-030}
 
 ### 统一记忆类型 {#unified-memory-types}
 
-意见和实体摘要现已合并到观察中：
+现在，观点和实体摘要都整合到了观测中：
 
 ```python
-#0.3.0 - 通过类型的意见，通过 include_entities 的实体摘要
+# 0.3.0 - 通过 types 获取观点，通过 include_entities 获取实体摘要
 response = client.recall(
     bank_id="my-bank",
-    query="你觉得Python怎么样？",
+    query="What do you think about Python?",
     types=["opinion"],
-    include_entities=True  #获取实体摘要
+    include_entities=True  # 获取实体摘要
 )
 
-#0.4.0 - 观察统一两者
+# 0.4.0 - 观测统一了两者
 response = client.recall(
     bank_id="my-bank",
-    query="你觉得Python怎么样？",
+    query="What do you think about Python?",
     types=["observation"]
 )
 ```
 
-### 从置信度分数到证据跟踪 {#from-confidence-scores-to-evidence-tracking}
+### 从置信度分数转向证据追踪 {#from-confidence-scores-to-evidence-tracking}
 
-意见有数字置信度分数（0.0-1.0）。 观察而不是追踪：
+观点带有数值置信度分数（0.0–1.0）。观测则会追踪：
 
-- **支持事实**：观察背后的证据
-- **最后更新**：最后一次精炼观察的时间
-- **新鲜度**：观察是否反映了最近的信息
+- **支持事实**：为观测提供依据的证据
+- **最后更新时间**：观测上次经过优化的时间
+- **更新状态**：观测是否反映了近期信息
 
-从单一分数到证据跟踪的转变意味着你的智能体可以解释*为什么*它相信某事，而不仅仅是*多么自信*它是。
+从单一分数转向追踪证据后，智能体能够解释*为什么*它相信某件事，而不仅仅说明它*有多确信*。
 
-### 自动与按需 {#automatic-vs-on-demand}
+### 自动整合与按需生成 {#automatic-vs-on-demand}
 
-实体摘要是为顶级实体自动创建的，但意见仅在`reflect`期间形成。 观察总是在`retain`之后自动合并，确保知识保持最新状态而无需显式查询。
+系统会为最常出现的实体自动创建实体摘要，而观点仅在 `reflect` 期间形成。每次 `retain` 后都会自动整合观测，因此无需显式查询，知识也能保持最新。
 
-### 背景成为使命 {#background-becomes-mission}
+### 从 background 改为 mission {#background-becomes-mission}
 
-记忆库的`background`字段已重命名为`mission`。在迁移过程中，您现有的背景文本会自动复制到任务字段 - 无需执行任何操作。
+记忆库的 `background` 字段已重命名为 `mission`。迁移时，现有的 background 文本会自动复制到 mission 字段，无需执行任何操作。
 
-### 代理回忆 {#agentic-reflect}
+### 具备智能体行为的 Reflect {#agentic-reflect}
 
-`reflect`操作现在是代理式的——它通过迭代检索记忆并在制定响应之前查阅心智模型和观察来进行更深入的推理。这使得反思变得更加聪明，特别是对于需要综合多个主题信息的复杂问题。
+`reflect` 操作现在具备智能体行为：它会通过迭代检索记忆，并在组织响应前查阅心智模型和观测，从而进行更深入的推理。这让 Reflect 更擅长回答复杂问题，尤其是需要综合多个主题信息的问题。
 
-权衡是，反思可能需要更长的时间才能做出反应。对于延迟敏感的用例，当您只需要检索事实时，请考虑直接使用`recall`。
+代价是 Reflect 可能需要更长时间才能响应。对于对延迟敏感、只需检索事实的场景，可以直接使用 `recall`。
 
 ### 数据迁移 {#data-migration}
 
-**重要：** 升级到0.4.0时，现有的意见和实体摘要将被删除。整合引擎将根据您现有的事实自动创建新的观察。这是一次性迁移 - 您的原始事实将被保留，升级后将根据它们综合观察。
+**重要：** 升级到 0.4.0 时，现有的观点和实体摘要将被删除。整合引擎会根据现有事实自动创建新观测。这是一次性迁移：原始事实会保留，升级后系统会以这些事实为依据综合生成观测。
 
 ### 迁移清单 {#migration-checklist}
 
-**如果您在记忆召回中使用`types=["opinion"]`：**
+**如果你在 recall 中使用了 `types=["opinion"]`：**
 
-1. 更新至`types=["observation"]`
-2. 观察结合了以实体为中心的总结和基于信念的见解
+1. 改为使用 `types=["observation"]`。
+2. 观测会同时包含以实体为中心的摘要和基于认知判断的洞见。
 
-**如果您在记忆召回中使用`include_entities=True`：**
+**如果你在 recall 中使用了 `include_entities=True`：**
 
-1. 实体摘要现已包含在观察中
-2. 使用`types=["observation"]`检索它们
+1. 实体摘要现已包含在观测中。
+2. 使用 `types=["observation"]` 检索这些内容。
 
-**如果您依赖置信度分数：**
+**如果你依赖置信度分数：**
 
-1. 使用`based_on`字段获取支持证据
-2. 支持事实的数量和新近程度表明了强度
+1. 使用 `based_on` 字段访问支持证据。
+2. 支持事实的数量和新近程度可以反映证据强度。
 
-**如果您在记忆库上设置`background`：**
+**如果你为记忆库设置了 `background`：**
 
-1. 该字段现在称为`mission`
-2. 现有值会自动迁移
+1. 该字段现已更名为 `mission`。
+2. 现有值会自动迁移。
 
-**不需要改变：**
+**Reflect 无需改动：**
 
-观察结果会通过 `based_on` 字段自动包含在反思响应中。
+观测会通过 `based_on` 字段自动包含在 Reflect 响应中。
 
 ---
 
-## 下一步是什么 {#whats-next}
+## 后续计划 {#whats-next}
 
-这些学习能力是我们正在探索的更复杂的智能体记忆能力的基础：
+这些学习能力为我们正在探索的、更高级的智能体记忆能力奠定了基础：
 
 - **时间推理**：更好地理解知识如何随时间演变
-- **选择性整合**：对合成到观察中的内容进行细粒度控制
-- **整合见解**：观察如何形成和更新的可见性
+- **选择性整合**：更精细地控制哪些内容会被综合到观测中
+- **整合洞见**：了解观测如何形成和更新
 
 ---
 
-**资源：**
-- [记忆召回API](../developer/api/recall) — 检索观察结果和事实
-- [反思API](../developer/api/reflect) — 回复现在包括支持观察
-- [心智模型API](../developer/api/mental-models) — 创建和管理精选摘要
-- [观察指南](../developer/observations) — 深入了解知识整合
-- [指令](../developer/api/memory-banks#directives) — 合规性和护栏的硬性规则
+**相关资源：**
+- [Recall API](../developer/api/recall) — 检索观测和事实
+- [Reflect API](../developer/api/reflect) — 响应现在会包含支持观测
+- [心智模型 API](../developer/api/mental-models) — 创建和管理由用户维护的摘要
+- [观测指南](../developer/observations) — 深入了解知识整合
+- [强制指令](../developer/api/memory-banks#directives) — 用于合规与防护规则的硬性约束
 - [完整变更日志](../changelog)

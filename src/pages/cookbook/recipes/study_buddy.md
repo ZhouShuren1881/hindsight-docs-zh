@@ -2,7 +2,7 @@
 sidebar_position: 11
 ---
 
-# 拥有 Hindsight 记忆的学习伙伴 {#study-buddy-with-hindsight-memory}
+# 基于 Hindsight 记忆的学习伙伴 {#study-buddy-with-hindsight-memory}
 
 
 :::tip 运行此笔记本
@@ -11,21 +11,21 @@ sidebar_position: 11
 :::
 
 
-个性化学习助手，跟踪已学内容、识别知识空缺并辅助间隔重复。
+个性化学习助手，可跟踪学习内容、识别知识空缺，并帮助安排间隔复习。
 
 ## 功能 {#features}
-- 跟踪学习过程和主题
-- 观察各主题的熟悉程度
+- 跟踪学习过程和已学主题
+- 监测各主题的信心水平
 - 识别知识空缺
-- 建议间隔重复复习主题
+- 建议通过间隔复习回顾相关主题
 
 ## 前置条件 {#prerequisites}
 - OpenAI API 密钥
-- 通过 Docker 在本地运行 Hindsight，配置见下文
+- 在本地通过 Docker 运行 Hindsight（设置方法见下文）
 
-## 本地启动 Hindsight {#start-hindsight-locally}
+## 在本地启动 Hindsight {#start-hindsight-locally}
 
-运行笔记本前，在终端启动 Hindsight：
+运行此笔记本前，请先在终端启动 Hindsight：
 
 ```bash
 export OPENAI_API_KEY="your-openai-api-key"
@@ -46,18 +46,18 @@ docker run --rm -it --pull always -p 8888:8888 -p 9999:9999 \
 
 ## 2. 配置 OpenAI API 密钥 {#2-configure-openai-api-key}
 
-按提示输入 OpenAI API 密钥，Hindsight 和演示共同使用。
+按提示输入 OpenAI API 密钥；Hindsight 和本演示都会使用此密钥。
 
 
 ```python
 import getpass
 import os
 
-# 设置 Hindsight 与演示共同使用的 OpenAI API 密钥
+# 设置 Hindsight 和本演示共用的 OpenAI API 密钥
 if not os.getenv("OPENAI_API_KEY"):
-    os.environ["OPENAI_API_KEY"] = getpass.getpass("请输入 OpenAI API 密钥：")
+    os.environ["OPENAI_API_KEY"] = getpass.getpass("Enter your OpenAI API key: ")
 
-print("API 密钥配置完成！")
+print("API key configured!")
 ```
 
 ## 3. 初始化客户端 {#3-initialize-clients}
@@ -80,7 +80,7 @@ openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 USER_ID = "student-demo"
 
-print("客户端初始化完成！")
+print("Clients initialized!")
 ```
 
 ## 4. 定义辅助函数 {#4-define-helper-functions}
@@ -88,13 +88,13 @@ print("客户端初始化完成！")
 
 ```python
 def record_study_session(topic: str, notes: str, confidence: str = "medium") -> str:
-    """记录主题、笔记和自评熟悉程度。"""
+    """Record a study session with topic, notes, and self-assessed confidence."""
     today = datetime.now().strftime("%B %d, %Y")
 
-    content = f"""{today} - 学习记录
-主题：{topic}
-熟悉程度：{confidence}
-笔记：{notes}"""
+    content = f"""{today} - STUDY SESSION
+Topic: {topic}
+Confidence Level: {confidence}
+Notes: {notes}"""
 
     hindsight.retain(
         bank_id=USER_ID,
@@ -107,17 +107,17 @@ def record_study_session(topic: str, notes: str, confidence: str = "medium") -> 
         },
     )
 
-    return f"已记录 '{topic}' 学习（熟悉程度：{confidence}）"
+    return f"Recorded study session on '{topic}' (confidence: {confidence})"
 
 
 def record_question(topic: str, question: str, understood: bool) -> str:
-    """记录学习中提出的问题。"""
+    """Record a question asked during study."""
     today = datetime.now().strftime("%B %d, %Y")
 
-    content = f"""{today} - 问题
-主题：{topic}
-问题：{question}
-已理解：{"是" if understood else "否，需要复习"}"""
+    content = f"""{today} - QUESTION
+Topic: {topic}
+Question: {question}
+Understood: {"Yes" if understood else "No - needs review"}"""
 
     hindsight.retain(
         bank_id=USER_ID,
@@ -129,14 +129,14 @@ def record_question(topic: str, question: str, understood: bool) -> str:
         },
     )
 
-    return f"已记录 '{topic}' 的问题"
+    return f"Recorded question on '{topic}'"
 
 
 def study_buddy(user_query: str) -> str:
-    """与学习伙伴交互。"""
+    """Interact with the study buddy."""
     memories = hindsight.recall(
         bank_id=USER_ID,
-        query=f"学习 主题 笔记 问题 {user_query}",
+        query=f"study session topic notes questions {user_query}",
         budget="high",
     )
 
@@ -144,23 +144,23 @@ def study_buddy(user_query: str) -> str:
     if memories and memories.results:
         memory_context = "\n".join(f"- {m.text}" for m in memories.results[:8])
 
-    system_prompt = f"""你是有帮助的学习伙伴和导师。
-可访问学生的学习历史，包括：
-- 已学主题和笔记
-- 自评熟悉程度
-- 提过的问题，以及是否理解答案
+    system_prompt = f"""You are a helpful study buddy and tutor.
+You have access to the student's study history, including:
+- Topics they've studied and their notes
+- Their self-assessed confidence levels
+- Questions they've asked and whether they understood the answers
 
-学习历史：
-{memory_context if memory_context else "尚无学习历史。"}
+Study History:
+{memory_context if memory_context else "No study history recorded yet."}
 
-你的职责：
-1. 回答正在学习的主题问题
-2. 根据历史识别知识空缺
-3. 建议复习主题，支持间隔重复
-4. 提供鼓励和学习技巧
-5. 将新概念与已学内容联系
+Your role:
+1. Answer questions about topics they're studying
+2. Identify knowledge gaps based on their history
+3. Suggest topics to review (spaced repetition)
+4. Provide encouragement and study tips
+5. Connect new concepts to things they've already learned
 
-保持支持性和教学性，相关时引用此前学习。"""
+Be supportive and pedagogical. Reference their previous learning when relevant."""
 
     response = openai_client.chat.completions.create(
         model="gpt-4o-mini",
@@ -176,7 +176,7 @@ def study_buddy(user_query: str) -> str:
 
     hindsight.retain(
         bank_id=USER_ID,
-        content=f"学生询问：{user_query}\n提供的解释：{answer[:300]}...",
+        content=f"Student asked: {user_query}\nExplanation given: {answer[:300]}...",
         metadata={"category": "tutoring"},
     )
 
@@ -184,25 +184,25 @@ def study_buddy(user_query: str) -> str:
 
 
 def get_review_suggestions() -> str:
-    """获取复习主题建议。"""
+    """Get suggestions for topics to review."""
     suggestions = hindsight.reflect(
         bank_id=USER_ID,
-        query="""分析学习历史并建议：
-        1. 熟悉程度低、需要复习的主题
-        2. 很久前学过、应重新回顾的主题
-        3. 未充分理解的问题
-        4. 可能遗漏的主题关联
+        query="""Analyze this student's study history and suggest:
+        1. Topics with low confidence that need more review
+        2. Topics studied a while ago that should be revisited
+        3. Questions that weren't fully understood
+        4. Connections between topics they might have missed
 
-        按对理解改善的价值排序。""",
+        Prioritize by what would most improve their understanding.""",
         budget="high",
     )
     return suggestions.text if hasattr(suggestions, 'text') else str(suggestions)
 
 
 def get_knowledge_summary(topic: str = None) -> str:
-    """总结学生掌握的知识。"""
-    query = f"总结学生对{topic}的了解" if topic else \
-            "总结学生整体知识与进度"
+    """Get a summary of what the student knows."""
+    query = f"Summarize what this student knows about {topic}" if topic else \
+            "Summarize this student's overall knowledge and progress"
 
     summary = hindsight.reflect(
         bank_id=USER_ID,
@@ -211,39 +211,39 @@ def get_knowledge_summary(topic: str = None) -> str:
     )
     return summary.text if hasattr(summary, 'text') else str(summary)
 
-print("辅助函数定义完成！")
+print("Helper functions defined!")
 ```
 
 ## 5. 记录学习过程 {#5-record-study-sessions}
 
 
 ```python
-print("正在记录学习过程……")
+print("Recording study sessions...")
 
 sessions = [
     {
-        "topic": "经典力学：牛顿定律",
-        "notes": "学习 F=ma、作用反作用和惯性，完成斜面问题。",
+        "topic": "Classical Mechanics - Newton's Laws",
+        "notes": "Covered F=ma, action-reaction pairs, inertia. Solved problems on inclined planes.",
         "confidence": "high",
     },
     {
-        "topic": "经典力学：动量守恒",
-        "notes": "弹性与非弹性碰撞，二维碰撞题较困难。",
+        "topic": "Classical Mechanics - Conservation of Momentum",
+        "notes": "Elastic vs inelastic collisions. Struggled with 2D collision problems.",
         "confidence": "low",
     },
     {
-        "topic": "经典力学：广义坐标",
-        "notes": "初步学习拉格朗日力学与自由度。",
+        "topic": "Classical Mechanics - Generalized Coordinates",
+        "notes": "Introduction to Lagrangian mechanics. Degrees of freedom concept.",
         "confidence": "medium",
     },
     {
-        "topic": "波动：简谐运动",
-        "notes": "简谐运动方程、周期、频率，与弹簧和摆联系。",
+        "topic": "Waves - Simple Harmonic Motion",
+        "notes": "SHM equations, period, frequency. Connected to springs and pendulums.",
         "confidence": "high",
     },
     {
-        "topic": "波动：频域",
-        "notes": "开始学习傅里叶变换，数学部分难懂，需练习。",
+        "topic": "Waves - Frequency Domain",
+        "notes": "Started Fourier transforms. Math is confusing, need more practice.",
         "confidence": "low",
     },
 ]
@@ -257,13 +257,13 @@ for session in sessions:
 
 
 ```python
-print("正在记录问题……")
+print("Recording questions...")
 
 questions = [
-    ("动量守恒", "碰撞中为什么动量守恒？", True),
-    ("动量守恒", "如何解二维碰撞题？", False),
-    ("广义坐标", "拉格朗日方法相对牛顿方法有什么优势？", True),
-    ("频域", "何时用傅里叶变换，何时用拉普拉斯变换？", False),
+    ("Conservation of Momentum", "Why is momentum conserved in collisions?", True),
+    ("Conservation of Momentum", "How do I solve 2D collision problems?", False),
+    ("Generalized Coordinates", "What's the advantage of Lagrangian over Newtonian?", True),
+    ("Frequency Domain", "When do I use Fourier transforms vs Laplace?", False),
 ]
 
 for topic, question, understood in questions:
@@ -271,27 +271,27 @@ for topic, question, understood in questions:
     print(f"  {result}")
 ```
 
-## 7. 交互学习 {#7-interactive-study-session}
+## 7. 互动学习过程 {#7-interactive-study-session}
 
 
 ```python
 import time
 
 print("=" * 60)
-print("  学习对话")
+print("  Study Session")
 print("=" * 60)
 
 queries = [
-    "再解释一下广义坐标好吗？记得学过，但细节模糊。",
-    "下周考试前应复习什么？",
-    "二维碰撞仍不懂，能带我解一个例题吗？",
+    "Can you explain generalized coordinates again? I remember we covered it but I'm fuzzy on the details.",
+    "What topics should I review before my exam next week?",
+    "I'm still confused about 2D collision problems. Can you walk me through an example?",
 ]
 
 for query in queries:
-    print(f"\n学生：{query}")
+    print(f"\nStudent: {query}")
     print("-" * 40)
     response = study_buddy(query)
-    print(f"学习伙伴：{response}")
+    print(f"Study Buddy: {response}")
     time.sleep(1)
 ```
 
@@ -300,30 +300,30 @@ for query in queries:
 
 ```python
 print("=" * 60)
-print("  推荐复习主题")
+print("  Recommended Review Topics")
 print("=" * 60)
 print(get_review_suggestions())
 ```
 
-## 9. 知识摘要 {#9-knowledge-summary}
+## 9. 知识总结 {#9-knowledge-summary}
 
 
 ```python
 print("=" * 60)
-print("  知识摘要")
+print("  Knowledge Summary")
 print("=" * 60)
 print(get_knowledge_summary())
 ```
 
-## 10. 尝试自己的问题 {#10-try-your-own-question}
+## 10. 尝试提出自己的问题 {#10-try-your-own-question}
 
 
 ```python
-your_question = "我目前最大的知识空缺是什么？"  # 可修改此问题
+your_question = "What are my biggest knowledge gaps right now?"  # 可替换为自己的问题
 
-print(f"你：{your_question}")
+print(f"You: {your_question}")
 print("-" * 40)
-print(f"学习伙伴：{study_buddy(your_question)}")
+print(f"Study Buddy: {study_buddy(your_question)}")
 ```
 
 ## 11. 清理 {#11-cleanup}
@@ -331,5 +331,5 @@ print(f"学习伙伴：{study_buddy(your_question)}")
 
 ```python
 hindsight.close()
-print("客户端连接已关闭。")
+print("Client connection closed.")
 ```

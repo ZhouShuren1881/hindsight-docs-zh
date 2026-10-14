@@ -1,91 +1,91 @@
 ---
 sidebar_position: 32
-title: "n8n 持久记忆Hindsight |整合"
-description: "使用Hindsight为任何n8n工作流程添加持久的长期记忆。社区节点提供记忆存储、记忆感知和亮度操作 - 将它们与 Slack、Sheets、OpenAI 和 400 多个其他集成一起放入任何工作流程中。"
+title: "使用 Hindsight 为 n8n 添加持久记忆 | 集成"
+description: "使用 Hindsight 为任何 n8n 工作流添加持久的长期记忆。社区节点提供 Retain、Recall 和 Reflect 操作，可与 Slack、Sheets、OpenAI 及其他 400 多种集成一起用于任何工作流。"
 ---
 
 # n8n {#n8n}
 
-持久记忆[n8n](https://n8n.io) 工作流程通过 [Hindsight](https://hindsight.vectorize.io)。 `@vectorize-io/n8n-nodes-hindsight`社区节点包新增三个操作 — **记忆存储**，**记忆召回**，**反思** — 与任何其他产品一起工作n8n节点。
+通过 [Hindsight](https://hindsight.vectorize.io)，为 [n8n](https://n8n.io) 工作流提供持久记忆。`@vectorize-io/n8n-nodes-hindsight` 社区节点包新增了三个操作：**Retain**（存入）、**Recall**（召回）和 **Reflect**（反思），可与任何其他 n8n 节点配合使用。
 
 [查看更新日志 →](/changelog/integrations/n8n)
 
 ## 为什么这很重要 {#why-this-matters}
 
-n8n是自动化的结缔组织：来自 Gmail、Slack、Sheets、Stripe、Notion 的触发器；跨 400 多个应用程序的操作。到现在为止**无状态** — 每个工作流程运行都是全新的。与Hindsight节点您可以：
+n8n 是自动化流程的连接枢纽：它可以接收来自 Gmail、Slack、Sheets、Stripe 和 Notion 的触发事件，并在 400 多种应用中执行操作。此前，n8n 一直是**无状态的**，每次工作流运行都会从头开始。借助 Hindsight 节点，你可以：
 
-- **记忆存储**：将已关闭的工单、销售通话摘要或表单提交存入记忆库。
-- **记忆召回**：在 OpenAI、Anthropic 或 Cohere 步骤之前检索相关上下文，让 LLM 能看到既往历史。
-- **反思**：在工作流内提出综合性问题，例如“我们对这位客户了解多少？”
+- **Retain（存入）**：将每个已关闭的支持工单、销售通话摘要或表单提交存入记忆库。
+- **Recall（召回）**：在 OpenAI、Anthropic 或 Cohere 步骤之前召回相关上下文，让 LLM 获取此前的历史信息。
+- **Reflect（反思）**：在工作流中直接提出综合性问题，例如“我们对这位客户了解多少？”
 
 ## 安装 {#installation}
 
-在你的n8n实例，转到**设置 → 社区节点 → 安装（Settings → Community Nodes → Install）** 并输入：
+在你的 n8n 实例中，前往 **Settings → Community Nodes → Install（设置 → 社区节点 → 安装）**，然后输入：
 
 ```
 @vectorize-io/n8n-nodes-hindsight
 ```
 
-或者自托管n8n：
+自托管 n8n 时，也可以运行：
 
 ```bash
 cd ~/.n8n/custom
 npm install @vectorize-io/n8n-nodes-hindsight
 ```
 
-重新启动n8n； **Hindsight** 节点出现在节点面板中。
+重启 n8n 后，节点面板中就会出现 **Hindsight** 节点。
 
 ## 设置 {#setup}
 
 :::tip 推荐：Hindsight Cloud
-[免费注册](https://ui.hindsight.vectorize.io) 并获取一个 API 密钥 — 无需自托管。
+[免费注册](https://ui.hindsight.vectorize.io)并获取 API 密钥，无需自行托管。
 :::
 
-1. **注册** [Hindsight Cloud](https://ui.hindsight.vectorize.io)（免费套餐）或[自托管](/developer/installation)
-2. **获取 API 密钥** 来自Hindsight仪表板
-3. **在 n8n 中**，创建一个新**Hindsight API** 与您的凭证APIURL（默认为Hindsight Cloud）和`hsk_...`键
+1. 在 [Hindsight Cloud](https://ui.hindsight.vectorize.io) 注册（提供免费套餐），或选择[自托管](/developer/installation)。
+2. 从 Hindsight 控制台获取 API 密钥。
+3. 在 n8n 中创建新的 **Hindsight API** 凭据，并填写 API URL（默认为 Hindsight Cloud）和 `hsk_...` 密钥。
 
 ## 操作 {#operations}
 
-### 记忆存储 {#retain}
+### Retain（存入） {#retain}
 
-将内容存储在记忆库中。 Hindsight 在调用返回后异步提取事实。
+将内容存入记忆库。调用返回后，Hindsight 会异步提取事实。
 
-|字段|说明|
+| 字段 | 说明 |
 |---|---|
-|记忆库ID|记忆库存储（首次使用时自动创建）|
-|内容|免费文本到记忆存储|
-|标签|逗号分隔的标签|
+| 记忆库 ID | 要存入内容的记忆库（首次使用时会自动创建） |
+| 内容 | 要存入的自由文本 |
+| 标签 | 以逗号分隔的标签 |
 
-### 记忆召回 {#recall}
+### Recall（召回） {#recall}
 
-在记忆库中搜索与查询相关的记忆。返回一个`results`数组。
+在记忆库中搜索与查询相关的记忆，并返回一个 `results` 数组。
 
-|字段|说明|
+| 字段 | 说明 |
 |---|---|
-|记忆库ID|记忆库搜索|
-|查询|自然语言查询|
-|预算|`low` / `mid` / `high`|
-|最大 token 数|返回记忆内容的 token 数上限|
-|标签过滤器|按标签过滤|
+| 记忆库 ID | 要搜索的记忆库 |
+| 查询 | 自然语言查询 |
+| 预算 | `low` / `mid` / `high` |
+| 最大 token 数 | 返回的记忆 token 数上限 |
+| 标签筛选 | 按标签筛选 |
 
-### 反思 {#reflect}
+### Reflect（反思） {#reflect}
 
-获取  LLM 仪表板中的LLM-记忆库中的综合答案。退货`text`。
+基于记忆库获取 LLM 综合生成的答案，并返回 `text`。
 
-|字段|说明|
+| 字段 | 说明 |
 |---|---|
-|记忆库ID|记忆库|
-|查询|要回答的问题|
-|预算|`low` / `mid` / `high`|
+| 记忆库 ID | 记忆库 |
+| 查询 | 要回答的问题 |
+| 预算 | `low` / `mid` / `high` |
 
-## 工作流程示例 {#example-workflows}
+## 工作流示例 {#example-workflows}
 
-**客服助手** — 每张已关闭的 Zendesk 票证都会保留分辨率。每张新票都以针对记忆库的记忆召回开始，以显示过去类似的问题，然后将该上下文传递给OpenAI起草第一个回复。
+**客服助手** — 每当 Zendesk 工单关闭时，将其解决方案存入记忆库。每个新工单都会先在记忆库中召回类似历史问题，再把相关上下文传给 OpenAI，起草第一条回复。
 
-**销售通话教练**——Gong webhook →Hindsight记忆存储（调用摘要）。在每次下一次准备通话之前，对潜在客户的姓名进行记忆，以提取之前的每个接触点，然后将其格式化为每日准备文档。
+**销售通话教练** — Gong webhook → Hindsight Retain（通话摘要）。每次后续准备销售通话前，按潜在客户姓名进行召回，提取此前的所有接触记录，再将其整理到每日准备文档中。
 
-**个人 Slack 机器人** — Slack DM 触发器 →Hindsight关于用户问题的记忆召回 →OpenAI获取答案 → Slack 回复。机器人会记住会话中的每一次对话。
+**个人 Slack 机器人** — Slack DM 触发器 → Hindsight 根据用户问题执行 Recall → OpenAI 生成答案 → Slack 回复。机器人会跨会话记住每次对话。
 
 ## 来源 {#source}
 

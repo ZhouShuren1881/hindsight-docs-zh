@@ -6,34 +6,27 @@ import {LuArrowUpRight} from 'react-icons/lu';
 import styles from './CodingAgentsChart.module.css';
 
 /**
- * What memory does to a coding agent, from AMB's sdebench dataset.
+ * AMB sdebench 数据集展示了记忆对编程智能体的影响。
  *
- * Rendered twice, which is what the `variant` prop is for: inside the
- * homepage's coding-agents card (`card`), and on the coding-agents integration
- * page (`full`), which is where the explanation of what it measures lives. It
- * used to sit in the homepage's own Benchmarks section; it reads better as the
- * evidence for a path the reader has just been offered than as a second chart
- * under the accuracy one.
+ * 通过 `variant` 属性在两个位置渲染：主页的编程智能体卡片中使用 `card`，
+ * 集成页面（解释指标含义的页面）中使用 `full`。它以前位于主页的基准测试部分；
+ * 作为读者刚看到的方案的证据，比放在准确率图表下方作为第二张图更合适。
  *
- * The retrieval-accuracy chart answers "does it retrieve well". This answers the
- * question a developer evaluating a coding-agent plugin actually has: does it
- * make the agent cheaper and less annoying. Both move at once, so the form has
- * to be two-dimensional — one arrow per agent, from no memory to Hindsight, and
- * every arrow points up and to the left.
+ * 检索准确率图表回答“检索效果好吗”。这张图回答评估编程智能体插件的开发者
+ * 真正关心的问题：它能否降低智能体成本，减少令人烦恼的纠正。两个指标同时变化，
+ * 因此图表采用二维形式：每个智能体一支箭头，从无记忆指向 Hindsight，
+ * 所有箭头都朝左上方。
  *
- * The agent's own logo marks the Hindsight end and a hollow grey dot marks the
- * other, so "where Hindsight is" needs no legend lookup: it is wherever the logo
- * is. Every point also carries its corrections value, the way AMB labels its
- * own version of this chart.
+ * 智能体自己的徽标标记 Hindsight 端，空心灰点标记另一端，因此无需查图例，
+ * 看到徽标就知道 Hindsight 的位置。每个点还标出纠正次数，和 AMB 自己的图表一样。
  *
- * Numbers are derived from the per-run table at
- * agentmemorybenchmark.ai/dataset/sdebench, 61 tasks × 3 runs per cell:
- * corrections/task = mean(interventions)/61, cost/task = mean(cost)/61. The
- * corrections figures reproduce the labels AMB prints on its own chart to two
- * decimals, which is what makes the derived cost column trustworthy too.
+ * 数值根据 agentmemorybenchmark.ai/dataset/sdebench 的逐次运行表计算；
+ * 每个单元格包含 61 项任务 × 3 次运行：纠正次数/任务 = mean(interventions)/61，
+ * 成本/任务 = mean(cost)/61。纠正次数复现了 AMB 自己图表上显示的两位小数标签，
+ * 这也使推算出的成本列值得信赖。
  *
- * sdebench is the one dataset where accuracy is NOT the story: every run solves
- * 60–61 of 61 either way. Memory changes what it costs to get there.
+ * sdebench 是一个准确率并非重点的数据集：无论是否使用记忆，每次运行都能完成
+ * 61 项中的 60–61 项。记忆改变的是达到这一结果的成本。
  */
 const AGENTS: {
   name: string;
@@ -62,21 +55,19 @@ const AGENTS: {
 ];
 
 /**
- * Two shapes for two homes.
+ * 两种形状对应两个展示位置。
  *
- * `full` is wide and short, for a full content column: squeezed narrower, the
- * three labelled marks land on top of each other.
+ * `full` 又宽又矮，适合完整内容栏；如果再压窄，三个带标签的标记会彼此重叠。
  *
- * `card` is squarer, for the homepage's coding-agents card — roughly half the
- * width, so the plot has to give up aspect ratio rather than legibility. The
- * type does not shrink with it (see `.compact` in the stylesheet).
+ * `card` 更接近方形，适合主页的编程智能体卡片；宽度约为一半，因此图表会牺牲
+ * 长宽比来保持可读性。文字不会随之缩小（见样式表中的 `.compact`）。
  */
 const GEOMETRY = {
   full: {W: 940, H: 270, PLOT: {left: 60, right: 860, top: 34, bottom: 196}},
   card: {W: 560, H: 286, PLOT: {left: 56, right: 520, top: 40, bottom: 216}},
 };
 
-// Cost on a log scale, as AMB plots it: the spread is multiplicative.
+// 成本按对数刻度绘制，与 AMB 的图表一致：刻度间隔表示乘法关系。
 const COST = {min: 0.24, max: 0.72};
 const FIXES_MAX = 1.5;
 
@@ -87,8 +78,8 @@ export default function CodingAgentsChart({
   variant = 'full',
 }: {
   title?: string;
-  /** `card` drops the heading, the "Full results" link and the caption: it is
-      rendered inside a card that is itself a link, and a nested <a> is invalid. */
+  /** `card` 不显示标题、“完整结果”链接或图注：它渲染在自身就是链接的卡片内，
+      不能嵌套使用 <a>。 */
   variant?: keyof typeof GEOMETRY;
 }): ReactNode {
   const {withBaseUrl} = useBaseUrlUtils();
@@ -100,7 +91,7 @@ export default function CodingAgentsChart({
     ((Math.log(c) - Math.log(COST.min)) / (Math.log(COST.max) - Math.log(COST.min))) *
       (PLOT.right - PLOT.left);
 
-  // Inverted: fewer corrections is better, so fewer is higher up.
+  // 纵轴反向：纠正次数越少越好，因此数值越少，位置越靠上。
   const ly = (f: number) => PLOT.top + (f / FIXES_MAX) * (PLOT.bottom - PLOT.top);
 
   return (
@@ -161,8 +152,7 @@ export default function CodingAgentsChart({
 
       {AGENTS.map((a) => (
         <g key={a.name}>
-          {/* Where it starts. Hollow and grey: "no memory" is a state every
-              agent shares, not a series of its own. */}
+          {/* 起始位置。空心灰点表示所有智能体共有的“无记忆”状态，并非独立数据系列。 */}
           <circle className={styles.before} cx={lx(a.from.cost)} cy={ly(a.from.fixes)} r={4.5} />
           <text
             className={styles.valueBefore}
@@ -180,11 +170,10 @@ export default function CodingAgentsChart({
             markerEnd="url(#hca-arrow)"
           />
 
-          {/* Where Hindsight is: the agent's own mark, at its true position.
-              The white chip is not decoration — several of these logos are
-              near-black line art and would disappear against the hero band.
-              Name above and value below, both centred on the mark: beside it,
-              two of the three agents land close enough to collide. */}
+          {/* Hindsight 的位置：智能体自己的徽标位于准确坐标。白色底片并非装饰，
+              有几个徽标是近黑色线稿，直接放在主视觉色带上会看不清。
+              名称放在徽标上方，数值放在下方，二者都以徽标为中心；若放在旁边，
+              三个智能体中有两个会因位置太近而重叠。 */}
           <rect
             className={styles.chip}
             x={lx(a.to.cost) - CHIP / 2}

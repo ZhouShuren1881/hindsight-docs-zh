@@ -2,7 +2,7 @@
 sidebar_position: 10
 ---
 
-# 拥有 Hindsight 记忆的个性化搜索智能体 {#personalized-search-agent-with-hindsight-memory}
+# 使用 Hindsight 记忆的个性化搜索智能体 {#personalized-search-agent-with-hindsight-memory}
 
 
 :::tip 运行此笔记本
@@ -11,7 +11,7 @@ sidebar_position: 10
 :::
 
 
-学习偏好、位置、饮食需求和生活方式，提供符合上下文的搜索结果。
+这个搜索助手会逐步了解你的偏好、所在地、饮食需求和生活方式，从而提供符合上下文的搜索结果。
 
 ## 功能 {#features}
 - 学习位置、饮食限制和生活方式
@@ -57,15 +57,15 @@ import os
 
 # 设置 Hindsight 与演示共同使用的 OpenAI API 密钥
 if not os.getenv("OPENAI_API_KEY"):
-    os.environ["OPENAI_API_KEY"] = getpass.getpass("请输入 OpenAI API 密钥：")
+    os.environ["OPENAI_API_KEY"] = getpass.getpass("Enter your OpenAI API key: ")
 
 # Tavily 可选，用于真实网页搜索
 if not os.getenv("TAVILY_API_KEY"):
-    tavily_key = getpass.getpass("请输入 Tavily API 密钥，或按回车跳过：")
+    tavily_key = getpass.getpass("Enter your Tavily API key (or press Enter to skip): ")
     if tavily_key:
         os.environ["TAVILY_API_KEY"] = tavily_key
 
-print("API 密钥配置完成！")
+print("API keys configured!")
 ```
 
 ## 3. 初始化客户端 {#3-initialize-clients}
@@ -90,14 +90,14 @@ try:
     from tavily import TavilyClient
     tavily = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
     HAS_TAVILY = True
-    print("已配置 Tavily，使用真实网页搜索！")
+    print("Tavily configured - using real web search!")
 except (ImportError, Exception) as e:
     HAS_TAVILY = False
-    print("提示：Tavily 未配置，使用模拟搜索结果")
+    print("Note: Using simulated search results (Tavily not configured)")
 
 USER_ID = "search-user-demo"
 
-print("客户端初始化完成！")
+print("Clients initialized!")
 ```
 
 ## 4. 定义辅助函数 {#4-define-helper-functions}
@@ -105,29 +105,29 @@ print("客户端初始化完成！")
 
 ```python
 def store_preference(preference: str) -> str:
-    """存储用户偏好。"""
+    """Store a user preference."""
     hindsight.retain(
         bank_id=USER_ID,
-        content=f"用户偏好：{preference}",
+        content=f"User preference: {preference}",
         metadata={"category": "preference"},
     )
-    return f"已了解：{preference}"
+    return f"Learned: {preference}"
 
 
 def store_interaction(query: str, response: str) -> None:
-    """存储搜索交互。"""
+    """Store a search interaction."""
     hindsight.retain(
         bank_id=USER_ID,
-        content=f"搜索查询：{query}\n结果要点：{response[:200]}",
+        content=f"Search query: {query}\nResult highlights: {response[:200]}",
         metadata={"category": "search_history"},
     )
 
 
 def get_user_context(query: str) -> str:
-    """检索相关用户上下文。"""
+    """Retrieve relevant user context."""
     memories = hindsight.recall(
         bank_id=USER_ID,
-        query=f"偏好 位置 饮食 生活方式 {query}",
+        query=f"preferences location dietary lifestyle {query}",
         budget="mid",
     )
 
@@ -137,20 +137,20 @@ def get_user_context(query: str) -> str:
 
 
 def personalized_search(query: str) -> str:
-    """执行个性化搜索。"""
+    """Perform a personalized search."""
     user_context = get_user_context(query)
 
-    enhancement_prompt = f"""根据用户偏好和查询，建议如何增强搜索。
+    enhancement_prompt = f"""Given this user's preferences and the search query, suggest how to enhance the search.
 
-用户偏好：
-{user_context if user_context else "尚未记录偏好。"}
+User preferences:
+{user_context if user_context else "No preferences recorded yet."}
 
-搜索查询：{query}
+Search query: {query}
 
-返回 JSON 对象，包含：
-- "enhanced_query"：结合相关偏好的改进查询
-- "filters"：具体筛选条件，例如“素食”“五英里以内”
-- "reasoning"：简要解释应用的个性化调整"""
+Return a JSON object with:
+- "enhanced_query": The improved search query incorporating relevant preferences
+- "filters": Any specific filters to apply (e.g., "vegetarian", "within 5 miles")
+- "reasoning": Brief explanation of personalizations applied"""
 
     enhancement = openai_client.chat.completions.create(
         model="gpt-4o-mini",
@@ -173,22 +173,22 @@ def personalized_search(query: str) -> str:
             for r in search_results.get('results', [])
         )
     else:
-        results_text = f"[模拟搜索结果：{query}]"
+        results_text = f"[Simulated search results for: {query}]"
 
-    response_prompt = f"""根据搜索结果和用户偏好提供个性化摘要。
+    response_prompt = f"""Based on the search results and user preferences, provide a personalized summary.
 
-用户偏好：
-{user_context if user_context else "尚未记录偏好。"}
+User preferences:
+{user_context if user_context else "No preferences recorded yet."}
 
-查询：{query}
+Query: {query}
 
-应用的搜索增强：
+Search enhancement applied:
 {enhanced_info}
 
-搜索结果：
+Search results:
 {results_text}
 
-提供有帮助、考虑用户偏好的回答。"""
+Provide a helpful, personalized response that takes into account their preferences."""
 
     response = openai_client.chat.completions.create(
         model="gpt-4o-mini",
@@ -204,40 +204,40 @@ def personalized_search(query: str) -> str:
 
 
 def get_preference_profile() -> str:
-    """总结用户偏好资料。"""
+    """Get a summary of the user's preference profile."""
     profile = hindsight.reflect(
         bank_id=USER_ID,
-        query="""总结你对用户的了解：
-        - 位置和社区
-        - 饮食偏好和限制
-        - 工作方式和日程
-        - 爱好
-        - 家庭情况
-        - 购物偏好""",
+        query="""Summarize what we know about this user:
+        - Location and neighborhood
+        - Dietary preferences and restrictions
+        - Work style and schedule
+        - Hobbies and interests
+        - Family situation
+        - Shopping preferences""",
         budget="high",
     )
     return profile.text if hasattr(profile, 'text') else str(profile)
 
-print("辅助函数定义完成！")
+print("Helper functions defined!")
 ```
 
 ## 5. 建立用户资料 {#5-build-user-profile}
 
 
 ```python
-print("正在学习用户偏好……")
+print("Learning user preferences...")
 
 preferences = [
-    "住在旧金山 Mission 区",
-    "远程软件工程师",
-    "素食，尽量选择有机食品",
-    "五岁女儿叫 Emma",
-    "周末喜欢徒步和户外活动",
-    "远程工作偏好安静咖啡馆",
-    "乳糖不耐受，使用燕麦奶",
-    "关注可持续环保产品",
-    "通常周二和周四下午有空",
-    "丈夫对坚果过敏",
+    "Lives in San Francisco, Mission District",
+    "Works remotely as a software engineer",
+    "Vegetarian, prefers organic food when possible",
+    "Has a 5-year-old daughter named Emma",
+    "Enjoys hiking and outdoor activities on weekends",
+    "Prefers quiet coffee shops for remote work",
+    "Lactose intolerant, uses oat milk",
+    "Interested in sustainable and eco-friendly products",
+    "Usually free on Tuesday and Thursday afternoons",
+    "Husband is allergic to nuts",
 ]
 
 for pref in preferences:
@@ -252,17 +252,17 @@ for pref in preferences:
 import time
 
 print("=" * 60)
-print("  个性化搜索结果")
+print("  Personalized Search Results")
 print("=" * 60)
 
 searches = [
-    "寻找适合远程工作的咖啡馆",
-    "推荐家庭晚餐餐馆",
-    "五岁孩子生日礼物建议",
+    "Find a good coffee shop for working remotely",
+    "Restaurant recommendations for a family dinner",
+    "Birthday gift ideas for a 5-year-old",
 ]
 
 for query in searches:
-    print(f"\n搜索：{query}")
+    print(f"\nSearch: {query}")
     print("-" * 40)
     result = personalized_search(query)
     print(result)
@@ -274,7 +274,7 @@ for query in searches:
 
 ```python
 print("=" * 60)
-print("  用户偏好资料")
+print("  User Preference Profile")
 print("=" * 60)
 print(get_preference_profile())
 ```
@@ -283,9 +283,9 @@ print(get_preference_profile())
 
 
 ```python
-your_search = "附近最好的徒步路线"  # 可修改此问题
+your_search = "Best hiking trails near me"  # 可修改此问题
 
-print(f"搜索：{your_search}")
+print(f"Search: {your_search}")
 print("-" * 40)
 print(personalized_search(your_search))
 ```
@@ -295,5 +295,5 @@ print(personalized_search(your_search))
 
 ```python
 hindsight.close()
-print("客户端连接已关闭。")
+print("Client connection closed.")
 ```

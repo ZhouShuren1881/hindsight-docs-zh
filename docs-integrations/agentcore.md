@@ -1,14 +1,14 @@
 ---
 sidebar_position: 14
-title: "使用 Hindsight 为 Amazon Bedrock AgentCore 提供持久记忆 | 集成"
-description: "为 Amazon Bedrock AgentCore Runtime 智能体添加长期记忆。使用稳定用户身份而非临时 runtimeSessionId，实现跨会话持久化。"
+title: "使用 Hindsight 为 Amazon Bedrock AgentCore Runtime 智能体提供持久记忆 | 集成"
+description: "为 Amazon Bedrock AgentCore Runtime 智能体添加长期记忆。使用稳定的用户身份而非临时的 runtimeSessionId，让记忆跨会话持久保存。"
 ---
 
 # Amazon Bedrock AgentCore Runtime
 
 使用 Hindsight 为 [Amazon Bedrock AgentCore Runtime](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-sessions.html) 智能体提供持久记忆。
 
-AgentCore Runtime 会话是临时的，空闲后会终止，之后重新创建全新环境。`hindsight-agentcore` 提供持久的跨会话记忆，使智能体在任意数量的 Runtime 会话间记住用户、决策和学到的模式。
+AgentCore Runtime 会话明确是临时的：空闲后会终止，并重新提供全新的环境。`hindsight-agentcore` 可添加跨会话的持久记忆，让智能体在任意数量的 Runtime 会话中记住用户、决策和学到的模式。
 
 [查看更新日志 →](/changelog/integrations/agentcore)
 
@@ -21,15 +21,15 @@ AgentCore Runtime 调用
    before_turn()         ← 从 Hindsight 召回相关记忆
         │
         ▼
-   智能体执行            ← 注入历史上下文
+  智能体执行              ← 将历史上下文补充到提示中
         │
         ▼
-   after_turn()          ← 异步存储输出到 Hindsight
+   after_turn()          ← 将输出存入 Hindsight（异步）
 ```
 
-记忆以稳定的用户身份为键，**不是** `runtimeSessionId`。记忆库不会随会话更替而消失。
+记忆以稳定的用户身份为键，**而不是** `runtimeSessionId`。记忆库会在会话更替后继续保留。
 
-默认记忆库名称格式：
+默认记忆库格式：
 ```
 tenant:{tenant_id}:user:{user_id}:agent:{agent_name}
 ```
@@ -42,7 +42,7 @@ pip install hindsight-agentcore
 
 ## 快速开始 {#quick-start}
 
-:::tip 推荐使用 Hindsight Cloud
+:::tip 推荐：Hindsight Cloud
 [免费注册](https://ui.hindsight.vectorize.io)并获取 API 密钥，无需自行托管。
 :::
 
@@ -62,7 +62,7 @@ adapter = HindsightRuntimeAdapter(agent_name="support-agent")
 async def handler(event: dict) -> dict:
     context = TurnContext(
         runtime_session_id=event["sessionId"],
-        user_id=event["userId"],       # 来自已验证认证，不可信任客户端直接提供
+        user_id=event["userId"],       # 来自已验证的身份认证，不得由客户端提供
         agent_name="support-agent",
         tenant_id=event.get("tenantId"),
         request_id=event.get("requestId"),
@@ -79,7 +79,7 @@ async def handler(event: dict) -> dict:
 async def run_my_agent(payload: dict, memory_context: str) -> dict:
     prompt = payload["prompt"]
     if memory_context:
-        prompt = f"历史上下文：\n{memory_context}\n\n当前请求：{prompt}"
+        prompt = f"Past context:\n{memory_context}\n\nCurrent request: {prompt}"
 
     output = await call_bedrock(prompt)
     return {"output": output}
@@ -87,7 +87,7 @@ async def run_my_agent(payload: dict, memory_context: str) -> dict:
 
 ## 底层钩子 {#lower-level-hooks}
 
-如需直接控制召回 → 执行 → 存储循环：
+如需直接控制召回 → 执行 → 存入的循环：
 
 ```python
 memory_context = await adapter.before_turn(context, query=user_message)
@@ -99,9 +99,9 @@ await adapter.after_turn(context, result=result["output"], query=user_message)
 
 ## 检索模式 {#retrieval-modes}
 
-### 召回（默认） {#recall-default}
+### Recall（默认） {#recall-default}
 
-快速多策略检索（语义 + 关键词 + 图 + 时间）：
+快速的多策略检索（语义 + 关键词 + 图 + 时间）：
 
 ```python
 from hindsight_agentcore import RecallPolicy
@@ -111,9 +111,9 @@ adapter = HindsightRuntimeAdapter(
 )
 ```
 
-### 反思 {#reflect}
+### Reflect {#reflect}
 
-通过 LLM 综合生成上下文，用于复杂推理任务：
+由 LLM 综合生成上下文，适用于复杂推理任务：
 
 ```python
 adapter = HindsightRuntimeAdapter(
@@ -121,52 +121,52 @@ adapter = HindsightRuntimeAdapter(
 )
 ```
 
-`reflect` 较慢，应按需使用，留给明确的规划步骤或路由决策。
+请有选择地使用 `reflect`，因为它速度较慢。将它留给明确的规划步骤或路由决策。
 
-## 异步存储 {#async-retention}
+## 异步存入 {#async-retention}
 
-默认情况下，`after_turn()` 在后台启动存储任务，不延迟用户当前轮次：
+默认情况下，`after_turn()` 会将记忆存入作为后台任务触发，不会延迟用户当前轮次：
 
 ```python
 configure(retain_async=True)   # 默认
-configure(retain_async=False)  # 返回前等待存储
+configure(retain_async=False)  # 返回前等待存入完成
 ```
 
 ## 长时间运行的工作流 {#long-running-workflows}
 
-跨多个 Runtime 会话的任务，应在开始和完成时存储记忆：
+对于跨多个 Runtime 会话的任务，应在开始和完成时存入记忆：
 
 ```python
 # 任务开始
 await adapter.after_turn(
     context,
-    result="开始分析 Acme Corp 的季度业务评审",
+    result="Started QBR analysis for Acme Corp",
     query=task_description,
 )
 
-# ……工作可能跨多个会话……
+# ... 可能跨多个会话的长时间运行工作 ...
 
 # 任务完成
 await adapter.after_turn(
     context,
-    result=f"季度业务评审完成，发现：{summary}",
+    result=f"Completed QBR analysis. Finding: {summary}",
     query=task_description,
 )
 ```
 
 ## 身份与认证 {#identity-and-auth}
 
-**切勿使用 `runtimeSessionId` 作为记忆库 ID。** 会话会过期，而记忆必须跨会话保留。
+**绝不要使用 `runtimeSessionId` 作为记忆库 ID。** 会话会过期，记忆必须跨会话保留。
 
-优先使用的身份来源，按顺序如下：
-1. AgentCore JWT/OAuth 上下文中经过验证的用户 ID。
-2. `X-Amzn-Bedrock-AgentCore-Runtime-User-Id` 请求头。
-3. 可信服务端部署中，由应用提供的用户 ID。
+首选身份来源（按优先顺序）：
+1. AgentCore JWT/OAuth 上下文中经过验证的用户 ID
+2. `X-Amzn-Bedrock-AgentCore-Runtime-User-Id` 请求头
+3. 可信服务端部署中由应用提供的用户 ID
 
 ```python
 context = TurnContext(
     runtime_session_id=event["sessionId"],
-    user_id=jwt_claims["sub"],         # 已验证令牌中的稳定身份
+    user_id=jwt_claims["sub"],         # 来自已验证令牌的稳定身份
     agent_name="support-agent",
     tenant_id=jwt_claims.get("tenant"),
 )
@@ -185,29 +185,29 @@ def my_resolver(context: TurnContext) -> str:
 adapter = HindsightRuntimeAdapter(bank_resolver=my_resolver)
 ```
 
-**安全规则：** 身份缺失时，解析器必须拒绝继续并返回 `BankResolutionError`，而非导致跨用户记忆泄露。
+**安全规则：** 如果缺少身份信息，解析器必须以失败关闭方式处理（抛出 `BankResolutionError`），以免记忆泄露给其他用户。
 
 ## 配置参考 {#configuration-reference}
 
 | 选项 | 环境变量 | 默认值 | 说明 |
 |---|---|---|---|
-| `hindsight_api_url` | `HINDSIGHT_API_URL` | Hindsight Cloud | Hindsight 服务器地址 |
-| `api_key` | `HINDSIGHT_API_KEY` | — | Hindsight Cloud API 密钥 |
-| `recall_budget` | — | `"mid"` | 搜索深度：`low`、`mid`、`high` |
+| `hindsight_api_url` | `HINDSIGHT_API_URL` | Hindsight Cloud | Hindsight 服务器 URL |
+| `api_key` | `HINDSIGHT_API_KEY` | — | Hindsight Cloud 的 API 密钥 |
+| `recall_budget` | — | `"mid"` | 检索深度：`low`、`mid`、`high` |
 | `recall_max_tokens` | — | `1500` | 召回的最大 token 数 |
-| `retain_async` | — | `True` | 非阻塞存储 |
-| `timeout` | — | `15.0` | HTTP 超时，单位为秒 |
-| `tags` | — | `[]` | 为所有存储记忆附加的标签 |
+| `retain_async` | — | `True` | 非阻塞式存入 |
+| `timeout` | — | `15.0` | HTTP 超时时间，单位为秒 |
+| `tags` | — | `[]` | 应用于所有存入记忆的标签 |
 | `verbose` | — | `False` | 记录记忆操作日志 |
 
 ## 失败情况 {#failure-modes}
 
 | 失败 | 行为 |
 |---|---|
-| Hindsight 不可用 | `before_turn()` 返回 `""`，智能体继续执行 |
-| 召回超时 | 返回 `""`，智能体继续执行 |
-| 存储失败 | 记录警告，不影响用户当前轮次 |
-| 记忆库解析失败 | 拒绝继续，避免跨用户记忆泄露 |
+| Hindsight 不可用 | `before_turn()` 返回 `""`，智能体继续运行 |
+| 召回超时 | 返回 `""`，智能体继续运行 |
+| 存入失败 | 记录警告，不影响用户当前轮次 |
+| 记忆库解析错误 | 以失败关闭方式处理，避免跨用户记忆泄露 |
 
 ## 环境要求 {#requirements}
 

@@ -8,11 +8,11 @@ image: /img/blog/guide-move-hermes-memory-from-local-files-to-hindsight-cloud.pn
 hide_table_of_contents: true
 ---
 
-如果希望**将 Hermes 记忆从本地文件迁移到 Hindsight Cloud**，主要工作是分离过去放在一起的两类记忆。Hermes 可以保留本地、有容量限制的文件记忆作为智能体自身上下文，而 Hindsight Cloud 成为持久的长期记忆后端，跨会话保存，也更适合跨设备或共享工作流扩展。
+如果你想**将 Hermes 记忆从本地文件迁移到 Hindsight Cloud**，关键是把过去混在一起的两类记忆分开。Hermes 可以继续用有容量限制的本地文件记忆保存智能体本地上下文，同时由 Hindsight Cloud 充当持久的长期记忆后端，让记忆跨会话保留，并更好地适配跨设备或共享工作流。
 
-重点不是逐字节复制所有本地内容，而是保留真正关注的持久事实，再让 Hermes 指向托管 Hindsight 后端，让未来的存储和召回在云端进行。实践中，需要备份当前记忆文件、将提供商配置切换为 Cloud，并在完全依赖新路径前，用已知事实验证召回。
+关键不在于逐字节复制所有本地内容，而在于保留你真正关心的持久事实，然后将 Hermes 指向托管的 Hindsight 后端，使之后的记忆存入和召回都在那里进行。实际操作中，先备份当前 Hermes 记忆文件，再将记忆提供方配置切换到 Cloud，并用几条已知事实验证召回，确认无误后再完全依赖新路径。
 
-本指南介绍安全迁移路径、Hermes 的 Hindsight Cloud 配置，以及如何测试切换后助手仍记得重要信息。可以参考 [Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)、[快速入门指南](/developer/api/quickstart)、[记忆存储 API 参考](/developer/api/retain)和[文档首页](/)。
+本指南介绍如何安全迁移、如何为 Hermes 配置 Hindsight Cloud，以及如何确认切换后助手仍记得重要信息。操作时可同时参考 [Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)、[快速入门指南](/developer/api/quickstart)、[Retain API 参考](/developer/api/retain)和[文档首页](/)。
 
 <!-- truncate -->
 
@@ -80,18 +80,18 @@ cfg = {
 }
 
 path.write_text(json.dumps(cfg, indent=2) + '\n')
-print(f'已更新 {path}')
+print(f'Updated {path}')
 PY
 ```
 
-这不会删除本地 Hermes 文件，而是改变今后长期记忆的读写位置。
+这不会删除本地 Hermes 文件，只会改变今后长期记忆的读取和写入位置。
 
 ### 4. 如需立即延续记忆，为新记忆库提供初始内容 {#4-seed-the-new-bank-if-you-need-continuity-on-day-one}
 
 如果希望几条关键事实立即可用，将紧凑摘要存入新记忆库。例如：
 
 ```text
-用户偏好简洁回答，计划在 5 月推出产品 Alpha，使用 Postgres，最关注计费可靠性和发布清单。
+The user prefers concise answers, is launching Product Alpha in May, uses Postgres, and cares most about billing reliability and release checklists.
 ```
 
 无需初始化所有内容，只存入丢失后会让你困扰的持久上下文。

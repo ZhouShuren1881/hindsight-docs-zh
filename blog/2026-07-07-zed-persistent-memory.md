@@ -1,58 +1,58 @@
 ---
-title: "给予Zed的AI辅助持久记忆"
+title: "让 Zed 的 AI 助手拥有持久记忆"
 authors: [benfrank241]
 slug: "2026/07/07/zed-persistent-memory"
 date: 2026-07-07T12:00
 tags: [hindsight, zed, integration, memory, persistent-memory, mcp, tutorial]
-description: "Zed编辑的AI助理在任务中非常敏锐，但他们之间却是陌生人。Hindsight给予它长期的记忆，可以在不同的会话中回忆和保留。"
+description: "Zed 编辑器的 AI 助手在单项任务中表现出色，但任务之间却像陌生人。hindsight-zed 为它提供长期记忆，让它能在不同会话中召回和存入信息。"
 image: /img/blog/zed-persistent-memory.webp
 hide_table_of_contents: true
 ---
 
-![Zed编辑器与Hindsight的持久记忆](/img/blog/zed-persistent-memory.webp)
+![借助 Hindsight 为 Zed 编辑器提供持久记忆](/img/blog/zed-persistent-memory.webp)
 
-[Zed](https://zed.dev) 是一个快速、Rust 构建的编辑器，其智能体面板中有一个真正优秀的 AI 助手。但就像大多数编码智能体一样，它在单个任务中非常出色，而在它们之间却很陌生。关闭面板，明天开始新的对话，它忘记了这个存储库使用 pnpm，您上周确定了存储库模式，并且您喜欢将测试放在一起。
+[Zed](https://zed.dev) 是一款速度很快、用 Rust 构建的编辑器，它的 Agent Panel 里有一位确实出色的 AI 助手。但和大多数编程智能体一样，它在单项任务中表现出色，任务之间却像陌生人。关闭面板，明天开始一段新对话，它就忘了这个代码库使用 pnpm、你上周决定采用仓库模式，以及你喜欢把测试和代码放在一起。
 
-`hindsight-zed` 解决了这个问题。一个命令将 Zed 的智能体面板连接到共享的 [Hindsight](https://github.com/vectorize-io/hindsight) 记忆，因此智能体可以在回答之前记忆相关决策，并在每个会话中在工作时记忆存储持久的事实。
+`hindsight-zed` 可以解决这个问题。只需一条命令，就能把 Zed 的 Agent Panel 连接到共享的 [Hindsight](https://github.com/vectorize-io/hindsight) 记忆库，让智能体在回答前召回相关决策，并在工作过程中存入值得长期保留的事实，供所有会话使用。
 
 <!-- truncate -->
 
 ## 概览 {#tldr}
 
-- `hindsight-zed init` 在 Zed 中注册 Hindsight **MCP服务器** 并添加一条规则告诉智能体使用它。
-- 智能体获得三个工具：`recall`、`retain`和`reflect`。
-- 记忆召回在 **查询时间** 针对您的实际消息运行，因此它会提取与您刚刚询问的内容相关的上下文，没有延迟。
-- 与[Hindsight Cloud](https://hindsight.vectorize.io)或自托管服务器配合使用。 [智能体记忆](https://vectorize.io/what-is-agent-memory)比对话更长久。
+- `hindsight-zed init` 会在 Zed 中注册 Hindsight **MCP 服务器**，并添加一条指示智能体使用它的规则。
+- 智能体会获得三个工具：`recall`（召回）、`retain`（存入）和 `reflect`（反思）。
+- 召回会在**查询时**针对你的实际消息运行，因此它能提取与你刚刚提出的问题相关的上下文，不会有延迟。
+- 它既可与 [Hindsight Cloud](https://hindsight.vectorize.io) 配合使用，也可连接自托管服务器。这是一种能延续到对话之外的[智能体记忆](https://vectorize.io/what-is-agent-memory)。
 
-## 问题：没有昨天的好助手 {#the-problem-a-great-assistant-with-no-yesterday}
+## 问题：出色的助手，却没有昨天 {#the-problem-a-great-assistant-with-no-yesterday}
 
-一个编码助手会忘记会话之间的所有事情，让你记忆深刻。每次打开新的对话时，您都需要重新解释堆栈，重申约定，并重新论证您已经做出的决定。该模型有能力；它只是没有连续性。
+编程助手如果在会话之间什么都记不住，你就得自己充当记忆。每次开始新对话，你都要重新解释技术栈、重申约定，还要再次讨论已经做过的决定。模型本身很有能力，只是缺少连续性。
 
-持久记忆弥补了这一差距。记忆的要点是，你已经告诉你的智能体的事情，以及它已经弄清楚的事情，下次仍然存在。这就是将每个会话工具变成真正了解您的项目的助手的原因。
+持久记忆弥补了这个缺口。记忆的意义在于：你已经告诉智能体的内容，以及它已经推断出的内容，下次仍然可用。这样，每次会话都从头开始的工具才能变成真正了解你项目的助手。
 
-## Zed的记忆如何运作 {#how-zeds-memory-works}
+## Zed 的记忆如何运作 {#how-zeds-memory-works}
 
-Zed 不公开预提示钩子，因此在转弯之前没有地方自动注入上下文。 Zed 为您提供的是两个构建块，并且集成使用了这两个构建块。
+Zed 没有提供预提示钩子，因此无法在每轮对话开始前自动注入上下文。Zed 提供了两个构件，而这项集成会同时使用它们。
 
-**MCP 上下文服务器。**Zed运行其`settings.json`中`context_servers`下列出的[模型上下文协议](https://modelcontextprotocol.io)服务器，并在智能体面板中公开其工具。 `hindsight-zed`在那里注册HindsightMCP服务器，该服务器负责智能体`recall`、`retain`和`reflect`工具。
+**MCP 上下文服务器。** Zed 会运行 `settings.json` 中 `context_servers` 项下列出的[模型上下文协议](https://modelcontextprotocol.io)服务器，并在 Agent Panel 中提供这些服务器的工具。`hindsight-zed` 会在那里注册 Hindsight MCP 服务器，从而向智能体提供 `recall`、`retain` 和 `reflect` 工具。
 
-**全局说明文件。** Zed 在每个智能体对话中都包含 `~/.config/zed/AGENTS.md`。集成将一条简短的规则写入该文件，位于受隔离的 `<!-- HINDSIGHT:BEGIN -->` 到 `<!-- HINDSIGHT:END -->` 块内，因此它永远不会触及您自己的规则。该规则告诉智能体在每个任务开始时调用 `recall` 来加载相关决策、偏好和项目上下文，并在得知值得跨会话保留的持久事实时调用 `retain`。
+**全局指令文件。** Zed 会在每次智能体对话中加入 `~/.config/zed/AGENTS.md`。集成会把一条简短规则写入该文件，并放在由 `<!-- HINDSIGHT:BEGIN -->` 和 `<!-- HINDSIGHT:END -->` 标记围住的代码块中，因此不会触碰你自己的规则。这条规则会指示智能体在每项任务开始时调用 `recall`，加载相关决策、偏好和项目上下文；每当它了解到值得留存以供后续会话使用的事实时，就调用 `retain`。
 
-结果是在查询时针对您实际发送的消息进行记忆召回。因为它是在您提出请求时运行，而不是按照固定的时间表运行，所以它可以提取与该特定请求相关的记忆。从你的座位上它是自动的：你打字，智能体会安静地检查它的记忆，然后回答。
+这样一来，召回会在查询时针对你实际发送的消息运行。它在你提出请求时执行，而非按固定计划运行，因此可以找出与当前请求相关的记忆。对你来说，这个过程是自动的：你输入问题，智能体会在后台查看记忆，然后作答。
 
-一张运输单。 Zed 尚未提供本机 HTTP MCP 传输，因此服务器通过 [`mcp-remote`](https://www.npmjs.com/package/mcp-remote) stdio 桥连接，通过 `npx` 运行。因为该桥在 Node.js 上运行，并且安装 CLI 也是一个 Node 工具，所以 Node.js 是唯一的要求。不需要Python。
+还有一点与传输方式有关：Zed 目前尚未内置 HTTP MCP 传输，因此服务器通过 [`mcp-remote`](https://www.npmjs.com/package/mcp-remote) 标准输入/输出桥接程序连接，并由 `npx` 运行。由于桥接程序运行在 Node.js 上，安装 CLI 也是一个 Node.js 工具，因此只需安装 Node.js，无需 Python。
 
-## 安装和快速启动 {#install-and-quick-start}
+## 安装和快速开始 {#install-and-quick-start}
 
 ```bash
 npx hindsight-zed init --api-token YOUR_HINDSIGHT_API_KEY --bank-id my-memory
 ```
 
-`hindsight-zed` 是一个零依赖节点 CLI，因此 `npx` 无需全局安装即可运行它。更喜欢持久命令？首先运行`npm install -g hindsight-zed`。
+`hindsight-zed` 是一个零依赖的 Node.js CLI，使用 `npx` 即可运行，无需全局安装。如果你更喜欢使用持久安装的命令，可以先运行 `npm install -g hindsight-zed`。
 
-`init`将`hindsight`MCP服务器添加到`~/.config/zed/settings.json`并将记忆召回/记忆存储规则添加到`~/.config/zed/AGENTS.md`。重启Zed，打开智能体面板，`hindsight`服务器应该显示一个绿点。
+`init` 会把 `hindsight` MCP 服务器添加到 `~/.config/zed/settings.json`，并把召回/存入规则添加到 `~/.config/zed/AGENTS.md`。重启 Zed 并打开 Agent Panel 后，`hindsight` 服务器旁应显示一个绿色圆点。
 
-这就是整个设置。在幕后，设置条目如下所示：
+设置就完成了。其底层配置项如下所示：
 
 ```jsonc
 {
@@ -70,58 +70,58 @@ npx hindsight-zed init --api-token YOUR_HINDSIGHT_API_KEY --bank-id my-memory
 }
 ```
 
-如果你的`settings.json`使用注释（JSONC），`init`不会重写它。相反，它会打印确切的 `context_servers` 条目供您粘贴。您可以随时使用 `hindsight-zed init --print-only` 查看该片段。
+如果你的 `settings.json` 使用了注释（JSONC），`init` 不会重写该文件，而是打印出可供你粘贴的完整 `context_servers` 配置项。你随时可以运行 `hindsight-zed init --print-only` 查看这段配置。
 
 ## 命令 {#commands}
 
-|命令|它的作用|
+| 命令 | 作用 |
 | --- | --- |
-|`hindsight-zed init`|添加MCP服务器和记忆召回/记忆存储规则|
-|`hindsight-zed status`|显示服务器和规则是否配置|
-|`hindsight-zed uninstall`|删除服务器和规则|
-|`hindsight-zed init --print-only`|打印配置以手动添加|
+| `hindsight-zed init` | 添加 MCP 服务器和召回/存入规则 |
+| `hindsight-zed status` | 显示服务器和规则是否已配置 |
+| `hindsight-zed uninstall` | 移除服务器和规则 |
+| `hindsight-zed init --print-only` | 打印配置，供手动添加 |
 
-如果您没有全局安装，请在其中任何一个前面加上 `npx ` 前缀。
+如果你没有全局安装，可以在以上任一命令前加上 `npx `。
 
-## 云或自托管 {#cloud-or-self-hosted}
+## 使用云服务或自托管服务 {#cloud-or-self-hosted}
 
-对于 **Hindsight Cloud**，从仪表板传递 API 密钥。 API URL 默认为 `https://api.hindsight.vectorize.io`，因此无需设置其他内容。
+使用 **Hindsight Cloud** 时，请传入从控制面板获取的 API 密钥。API URL 默认为 `https://api.hindsight.vectorize.io`，无需额外设置。
 
-对于 **自托管** 服务器，使用 `--api-url http://localhost:8888` 指向您自己的基本 URL。开放的本地服务器不需要令牌。
+使用**自托管**服务器时，通过 `--api-url http://localhost:8888` 指定你自己的基础 URL。开放的本地服务器无需令牌。
 
-配置从标志、环境或`~/.hindsight/zed.json`（由`init`编写）解析：
+配置可通过命令行标志、环境变量或 `~/.hindsight/zed.json` 设置（该文件由 `init` 写入）：
 
-|设置|环境变量|默认|
+| 设置 | 环境变量 | 默认值 |
 | --- | --- | --- |
-|API 网址|`HINDSIGHT_API_URL`|`https://api.hindsight.vectorize.io`|
-|API 令牌|`HINDSIGHT_API_TOKEN`|无（云所需）|
-|记忆库id|`HINDSIGHT_ZED_BANK_ID`|`zed`|
+| API URL | `HINDSIGHT_API_URL` | `https://api.hindsight.vectorize.io` |
+| API 令牌 | `HINDSIGHT_API_TOKEN` | 无（Cloud 必填） |
+| 记忆库 ID | `HINDSIGHT_ZED_BANK_ID` | `zed` |
 
-记忆库是一个孤立的存储。将Zed和您的其他工具指向同一个记忆库id，它们共享一个记忆，这就是[每个AI工具都有一个记忆](/blog/2026/04/07/one-memory-for-every-ai-tool)背后的想法。
+记忆库是一个彼此隔离的存储空间。让 Zed 和其他工具使用同一个记忆库 ID，它们就会共享同一份记忆；这正是[每种 AI 工具共用一份记忆](/blog/2026/04/07/one-memory-for-every-ai-tool)这一做法的核心。
 
-## 验证其是否有效 {#verify-it-works}
+## 验证是否正常工作 {#verify-it-works}
 
-在一次对话中给智能体一个持久的事实：“这个存储库使用 pnpm，从不使用 npm。”开始 **新** 对话并询问相关内容，例如“添加 date-fns 依赖项”。具有记忆意识的智能体会回忆起惯例并在没有提醒的情况下到达 pnpm，因为该事实已保留到 Hindsight 并根据您的新请求进行了回忆。
+在一次对话中告诉智能体一条值得长期记住的事实：“这个代码库使用 pnpm，绝不使用 npm。”然后开始一段**新**对话，提出相关请求，例如“添加 date-fns 依赖项”。记忆增强型智能体会回想起这条约定，无需提醒就使用 pnpm，因为这条事实已存入 Hindsight，并针对你的新请求进行了召回。
 
-你也可以从另一边看到这一切的发生。打开您的Hindsight记忆库，您将看到第一次对话后保留的约定显示为存储的记忆。
+你也可以从另一端观察这一过程。打开你的 Hindsight 记忆库，就能看到第一次对话后存入的约定已作为一条记忆保存下来。
 
 ## 常见问题 {#frequently-asked-questions}
 
-**智能体记忆会自动识别吗？**
-记忆召回是智能体调用的工具，全局规则告诉它在每个任务开始时调用`recall`。因此，在实践中，它会自行运行，并且由于它在查询时运行，因此它会使用您的实际消息来查找相关的记忆。
+**智能体会自动召回记忆吗？**
+召回是由智能体调用的工具，全局规则会指示它在每项任务开始时调用 `recall`。因此，实际使用时它会自行运行；而且由于它在查询时运行，会根据你的实际消息查找相关记忆。
 
-**我需要安装什么？**
-仅 Node.js（版本 18.3 或更高版本）。 `hindsight-zed` 是一个零依赖 Node CLI，Zed 的 MCP 桥 (`mcp-remote`) 也通过 `npx` 在 Node 上运行。不需要Python。
+**需要安装什么？**
+只需安装 Node.js（18.3 或更高版本）。`hindsight-zed` 是一个零依赖的 Node.js CLI，Zed 的 MCP 桥接程序 `mcp-remote` 也通过 `npx` 在 Node.js 上运行。无需 Python。
 
-**它会覆盖我的Zed配置吗？**
-没有。该规则位于 `AGENTS.md` 中受围栏保护的 `HINDSIGHT` 区块内，而 `init` 则保持其余部分不变。如果您的 `settings.json` 有注释，`init` 会打印片段而不是重写文件。
+**它会覆盖我的 Zed 配置吗？**
+不会。规则位于 `AGENTS.md` 中由 `HINDSIGHT` 标记围住的代码块内，`init` 会保留文件其余部分。如果你的 `settings.json` 含有注释，`init` 会打印配置片段，而不是重写文件。
 
-**`reflect`有什么作用？**
-除了`recall`和`retain`之外，智能体还可以调用`reflect`来巩固和推理其存储的内容，因此记忆会随着积累而提高，而不是变成一堆扁平的笔记。
+**`reflect` 有什么作用？**
+除了 `recall` 和 `retain`，智能体还可以调用 `reflect`，对已存入的内容进行整合和推理。这样，记忆会随着积累而不断改进，而不是变成一堆扁平的笔记。
 
-## 进一步阅读 {#further-reading}
+## 延伸阅读 {#further-reading}
 
-- [什么是智能体记忆？](https://vectorize.io/what-is-agent-memory)：记忆召回和保留背后的概念。
-- [最佳AI智能体记忆系统](https://vectorize.io/articles/best-ai-agent-memory-systems)：主要记忆框架的比较。
-- [Cursor持久记忆](/blog/2026/06/12/cursor-persistent-memory)：与其他AI优先编辑器的想法相同。
-- [每个AI工具一个记忆](/blog/2026/04/07/one-memory-for-every-ai-tool)：将Zed和你的其他智能体指向同一个记忆库。
+- [什么是智能体记忆？](https://vectorize.io/what-is-agent-memory)：了解召回与存入背后的概念。
+- [最佳 AI 智能体记忆系统](https://vectorize.io/articles/best-ai-agent-memory-systems)：比较主要的记忆框架。
+- [Cursor 持久记忆](/blog/2026/06/12/cursor-persistent-memory)：在另一款 AI 优先的编辑器中实现同样的功能。
+- [每种 AI 工具共用一份记忆](/blog/2026/04/07/one-memory-for-every-ai-tool)：让 Zed 和你的其他智能体连接到同一个记忆库。

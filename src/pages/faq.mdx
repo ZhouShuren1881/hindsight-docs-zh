@@ -20,7 +20,7 @@ import PageHero from '@site/src/components/PageHero';
 - [记忆存储、记忆召回与反思有什么区别？](#whats-the-difference-between-retain-recall-and-reflect)
 - [何时使用记忆召回，何时使用反思？](#when-should-i-use-recall-vs-reflect)
 - [何时使用心智模型？](#when-should-i-use-mental-models)
-- [心智模型与知识页面](#whats-the-difference-between-a-mental-model-and-a-knowledge-page)
+- [心智模型与知识页](#whats-the-difference-between-a-mental-model-and-a-knowledge-page)
 - [预期延迟](#whats-the-typical-latency-for-recall-operations)
 - [标签、元数据与实体标签](#does-hindsight-support-metadata-filtering)
 - [控制召回的记忆类型](#how-do-i-control-which-types-of-memories-are-recalled)
@@ -56,7 +56,7 @@ Hindsight 专为智能体记忆设计，具有以下独特优势：
 - **可用于生产环境**：扩展至数百万条记忆，召回延迟为 50–500ms
 - **开发者友好**：简单的 API（retain、recall、reflect），Python/TypeScript/Go/Rust SDK，以及 LiteLLM/Vercel AI SDK 集成
 
-与向量数据库（仅搜索）或 RAG 系统（文档检索）相比，Hindsight 提供随用户发展而演化的**动态记忆**。
+与向量数据库（仅搜索）或 RAG 系统（文档检索）相比，Hindsight 提供会随用户发展而演化的**记忆**。
 
 ---
 
@@ -83,7 +83,7 @@ Hindsight 专为智能体记忆设计，具有以下独特优势：
 
 ### Hindsight 应该使用哪个模型？ {#which-model-should-i-use-with-hindsight}
 
-**[模型排行榜](https://benchmarks.hindsight.vectorize.io/)**针对记忆存储、反思与观察整合，从准确率、速度、成本和可靠性方面对模型进行基准测试，是寻找适合使用场景的权衡方案的最佳起点。
+**[模型排行榜](https://benchmarks.hindsight.vectorize.io/)**针对 Retain、Reflect 和观测整合，从准确率、速度、成本和可靠性方面对模型进行基准测试，是寻找适合使用场景的权衡方案的最佳起点。
 
 [![模型排行榜](/img/leaderboard.webp)](https://benchmarks.hindsight.vectorize.io/)
 
@@ -122,10 +122,10 @@ Hindsight 专为智能体记忆设计，具有以下独特优势：
 使用管理 CLI **恢复**：
 
 ```bash
-# 如果知道哪个工作进程已终止：
+# 如果知道哪个工作进程已经失效：
 hindsight-admin decommission-worker <old-worker-id>
 
-# 或者，释放整个工作进程集群中的任务：
+# 或者，统一释放所有工作进程领取的任务：
 hindsight-admin decommission-workers
 ```
 
@@ -137,7 +137,7 @@ hindsight-admin decommission-workers
 
 ### 如何隔离用户数据？ {#how-do-i-isolate-user-data}
 
-**记忆库**是隔离的记忆存储（类似“大脑”），包含独立的记忆、实体、关系，以及可选的性格倾向特征（怀疑程度、字面理解程度、共情程度）。各记忆库完全隔离，没有数据泄漏。
+**记忆库**是隔离的记忆存储（类似“大脑”），包含独立的记忆、实体、关系，以及可选的性格倾向（怀疑程度、字面理解程度、共情程度）。各记忆库彼此完全隔离，不会发生数据泄漏。
 
 多用户应用有两种做法：
 
@@ -162,9 +162,9 @@ hindsight-admin decommission-workers
 
 Hindsight 有三项核心操作：
 
-- **记忆存储（retain）**：存储数据（事实、实体、关系）
-- **记忆召回（recall）**：根据查询搜索并检索原始记忆数据
-- **反思（reflect）**：让 AI 智能体使用检索到的记忆回答查询
+- **Retain（存入）**：存储数据（事实、实体、关系）
+- **Recall（召回）**：根据查询搜索并检索原始记忆数据
+- **Reflect（反思）**：让 AI 智能体使用检索到的记忆回答查询
 
 API 详情请参阅[操作](/developer/api/operations)。
 
@@ -182,18 +182,18 @@ API 详情请参阅[操作](/developer/api/operations)。
 **在以下情况使用反思：**
 - 需要根据记忆生成可直接使用的答案，无需额外调用 LLM
 - 需要由记忆库的性格倾向（怀疑程度、字面理解程度、共情程度）塑造回答
-- 查询需要跨事实、观察与心智模型进行多步推理
+- 查询需要跨事实、观测与心智模型进行多步推理
 - 需要基于记忆的推理提供结构化输出（通过 `response_schema`）
 - 需要引用：反思会返回哪些记忆、心智模型与指令影响了答案
 
 **关键区别**：召回返回数据，反思返回答案。召回提供原材料，反思则利用记忆库的性格倾向与自主搜索循环为你推理。
 
 ```
-recall("Alice 喜欢什么食物？")
-→ ["Alice 喜欢寿司", "Alice 偏好素食选项"]   # 原始事实
+recall("What food does Alice like?")
+→ ["Alice loves sushi", "Alice prefers vegetarian options"]   # raw facts
 
-reflect("应该给 Alice 点什么？")
-→ "建议点一份素食寿司拼盘：Alice 喜欢寿司，也偏好素食选项。"  # 有记忆依据的答案
+reflect("What should I order for Alice?")
+→ "I'd recommend a vegetarian sushi platter — Alice loves sushi and prefers vegetarian options."  # grounded answer
 ```
 
 完整 API 详情请参阅[记忆召回](/developer/api/recall)与[反思](/developer/reflect)。
@@ -202,32 +202,32 @@ reflect("应该给 Alice 点什么？")
 
 ### 何时使用心智模型？ {#when-should-i-use-mental-models}
 
-**心智模型**是针对你定义的问题维护的持久答案，根据记忆库知识综合生成，并在知识变化时于后台重写。以下需求适合使用心智模型：
+**心智模型**是针对你定义的问题维护的常备答案，根据记忆库知识综合生成，并在知识变化时于后台重写。以下需求适合使用心智模型：
 
 - 超越原始事实的高层理解（例如“用户偏好函数式编程模式”）
 - 长期行为模式（例如“客户对价格敏感，但重视质量”）
 - 即时可用的答案，请求处理过程中无需推理
 - 为 **reflect** 操作中的 AI 智能体推理提供上下文
 
-通过定义问题创建心智模型，Hindsight 会生成内容并保持更新。反思优先检查心智模型，因此最新的心智模型可以直接作答，无需深入观察和原始事实。参阅[心智模型](/developer/api/mental-models)。
+通过定义问题创建心智模型，Hindsight 会生成内容并保持更新。Reflect 会优先检查心智模型，因此内容最新的心智模型可以直接作答，无需继续下探到观测和原始事实。参阅[心智模型](/developer/api/mental-models)。
 
 ---
 
-### 心智模型与知识页面有什么区别？ {#whats-the-difference-between-a-mental-model-and-a-knowledge-page}
+### 心智模型与知识页有什么区别？ {#whats-the-difference-between-a-mental-model-and-a-knowledge-page}
 
-**知识页面也是心智模型**，使用相同引擎与刷新行为，但增加了两点：在文件夹树中的位置，以及面向文档而非答案调整的默认配置（仅基于观察构建、每次整合后增量刷新、不受其他页面影响，以及更大的内容预算）。
+**知识页也是心智模型**，使用相同引擎与刷新行为，但增加了两点：在文件夹树中的位置，以及面向文档而非答案调整的默认配置（仅基于观测构建、每次整合后增量刷新、不受其他页面影响，以及更大的内容预算）。
 
-| | 心智模型 | 知识页面 |
+| | 心智模型 | 知识页 |
 |---|---|---|
 | 形式 | 针对问题的持久答案 | 带有 frontmatter 的 Markdown 文档 |
 | 组织方式 | 按标签限定范围的平面列表 | 嵌套文件夹与页面 |
-| 来源 | 默认所有事实类型 | 默认仅观察 |
+| 来源 | 默认所有事实类型 | 默认仅观测 |
 | 刷新 | 默认关闭 | 每次整合后增量刷新 |
 | 典型使用者 | 通过查找获取答案的应用或智能体 | 浏览与阅读的人或智能体 |
 
-系统需要查询答案时，使用普通心智模型。结果需要像 wiki 一样供直接浏览与阅读时，使用知识页面。心智模型上的所有可配置项同样适用于知识页面。
+系统需要查询答案时，使用普通心智模型。结果需要像 wiki 一样供直接浏览与阅读时，使用知识页。心智模型上的所有可配置项同样适用于知识页。
 
-参阅[心智模型](/developer/api/mental-models)及开发者文档的知识页面章节。
+参阅[心智模型](/developer/api/mental-models)及开发者文档的知识页章节。
 
 ---
 
@@ -247,7 +247,7 @@ reflect("应该给 Alice 点什么？")
 支持通过**标签**筛选。标签是存储时附加到记忆的字符串标记，在召回或反思时用作可见性筛选器。仅返回标签值匹配的记忆。
 
 ```python
-# 存储时标记记忆
+# 存入记忆时添加标签
 client.retain(bank_id="my-bank", items=[{
     "content": "...",
     "tags": ["user:alice"],
@@ -266,18 +266,18 @@ client.recall(bank_id="my-bank", query="...", tags=["user:alice"])
 若需要针对类似实体的值进行显式标签筛选，可使用带 `tag: true` 的**实体标签**。实体标签允许定义受控的 `key:value` 分类词汇（例如 `user:alice`、`topic:algebra`），在存储时提取。为标签组设置 `tag: true` 会自动将每个提取的标签写入记忆单元，使其可通过标准的 `tags`/`tags_match` 筛选：
 
 ```python
-# 记忆库配置：设置 tag: true 的实体标签组
+# 记忆库配置：设置了 tag: true 的实体标签组
 {
     "entity_labels": [{
         "key": "user",
         "type": "text",
         "tag": True,
-        "description": "此记忆所属的用户"
+        "description": "The user this memory belongs to"
     }]
 }
 
-# 提取标签 "user:alice"，并同时将其写入记忆标签
-# 召回时使用标准 tags 参数筛选
+# 提取实体标签 "user:alice"，同时将其写入 tags
+# 召回时通过标准的 tags 参数筛选
 client.recall(bank_id="my-bank", query="...", tags=["user:alice"])
 ```
 
@@ -315,9 +315,9 @@ client.recall(bank_id="my-bank", query="...", tags=["user:alice"])
 
 ```json
 [
-  {"role": "user",      "content": "我上个月搬到了柏林。"},
-  {"role": "assistant", "content": "你觉得那里怎么样？"},
-  {"role": "user",      "content": "很喜欢，尤其是美食。"}
+  {"role": "user",      "content": "I moved to Berlin last month."},
+  {"role": "assistant", "content": "How are you finding it?"},
+  {"role": "user",      "content": "Love it, especially the food scene."}
 ]
 ```
 
@@ -326,9 +326,9 @@ JSON 数组是最常见的对话形式，因此 Hindsight 对其进行了内部�
 **替代方案：带前缀的纯文本**
 
 ```
-[2025-06-01T10:32:00Z] user: 我上个月搬到了柏林。
-[2025-06-01T10:32:05Z] assistant: 你觉得那里怎么样？
-[2025-06-01T10:32:20Z] user: 很喜欢，尤其是美食。
+[2025-06-01T10:32:00Z] user: I moved to Berlin last month.
+[2025-06-01T10:32:05Z] assistant: How are you finding it?
+[2025-06-01T10:32:20Z] user: Love it, especially the food scene.
 ```
 
 为每条消息添加用户名与时间戳前缀可改善提取质量，LLM 会利用这些信号正确归属事实并推理时间。
@@ -339,7 +339,7 @@ JSON 数组是最常见的对话形式，因此 Hindsight 对其进行了内部�
 await client.retain(
     bank_id="my-bank",
     documents=[{
-        "id": "chat-session-abc123",  # 稳定 ID 支持更新或插入
+        "id": "chat-session-abc123",  # 稳定 ID 支持插入或更新
         "content": conversation,       # 截至目前的完整对话
     }]
 )
@@ -353,18 +353,18 @@ await client.retain(
 
 ### Hindsight 的图与传统知识图谱有何不同？ {#how-is-hindsights-graph-different-from-a-traditional-knowledge-graph}
 
-Hindsight 使用**以事件为中心的图**，围绕具体时刻（对话、观察、记忆）组织数据，而非静态、孤立的事实。记忆是锚点：实体关联到其出现的记忆，记忆之间也可直接关联（下文详述）。最贴切的类比是地图与剪贴簿。
+Hindsight 使用**以事件为中心的图**，围绕具体时刻（对话、观测、记忆）组织数据，而非静态、孤立的事实。记忆是锚点：实体关联到其出现的记忆，记忆之间也可直接关联（下文详述）。最贴切的类比是地图与剪贴簿。
 
 **传统图（如 Neo4j）是一张地图。**它展示地点如何通过道路直接连接，映射世界中固定的结构事实：
 
 ```
-[多伦多] ──IS_IN──> [加拿大]
+[Toronto] ──IS_IN──> [Canada]
 ```
 
 **Hindsight 的图是一本剪贴簿。**每页是一条记忆。在这一页贴上该时刻出现的所有人物、概念和标签的贴纸。贴纸彼此不连接，只是共同出现在同一页：
 
 ```
-剪贴簿页面：“数学课”
+Scrapbook page: "Math Class"
   [Alice]   [Acme]   [pedagogy:scaffolding]
 ```
 
@@ -374,7 +374,7 @@ Hindsight 使用**以事件为中心的图**，围绕具体时刻（对话、观
 
 **传统图难以处理变化。**如果 Alice 离开 Acme Corp 加入 Stark Industries，你必须手动删除或重写旧的 `[WORKS_AT]` 箭头。否则图会表示她同时在两家公司工作，与现实矛盾。传统图面向绝对的当前状态，数据变化时会丢失历史。
 
-**Hindsight 保留历史，因此能轻松处理变化。**如果 Alice 换了工作，无需重写过去。只要创建新的剪贴簿页面 `记忆：周二的通话`，并贴上 `[Stark Industries]` 贴纸即可。去年的旧页面仍准确地将她关联到 `[Acme Corp]`。图自然跟踪世界如何演变，无需复杂的数据库维护。
+**Hindsight 保留历史，因此能轻松处理变化。**如果 Alice 换了工作，无需重写过去。只要创建新的剪贴簿页面 `Memory: Tuesday's Call`，并贴上 `[Stark Industries]` 贴纸即可。去年的旧页面仍准确地将她关联到 `[Acme Corp]`。图自然跟踪世界如何演变，无需复杂的数据库维护。
 
 #### 贴纸从何而来？如何控制？ {#where-do-the-stickers-come-from-how-do-i-control-them}
 

@@ -1,5 +1,5 @@
 ---
-title: "如何用Hindsight为OpenClaw添加持久记忆"
+title: "如何使用 Hindsight 为 OpenClaw 添加持久记忆"
 authors: [benfrank241]
 date: 2026-03-06T12:00
 tags: [openclaw, memory, agents, persistent-memory, knowledge-graph, tutorial]
@@ -7,47 +7,47 @@ image: /img/blog/adding-memory-to-openclaw-with-hindsight.webp
 hide_table_of_contents: true
 ---
 
-OpenClaw 的内置记忆取决于智能体决定保存什么——而模型并不能始终如一地做到这一点。 [Hindsight](https://github.com/vectorize-io/hindsight)用自动提取和自动记忆召回取代它：捕获每个对话，在后台提取事实和实体，并在每次响应之前自动注入相关上下文。一个插件安装，一个设置向导，无需Docker。
+OpenClaw 的内置记忆依赖智能体自行决定要保存什么，而模型并不能始终如一地做好这件事。[Hindsight](https://github.com/vectorize-io/hindsight) 通过自动提取和自动召回取代这套机制：每段对话都会被捕获，事实和实体会在后台提取，并且每次响应前都会自动注入相关上下文。只需安装一个插件、运行一次设置向导，无需 Docker。
 
 <!-- truncate -->
 
 ## 概览 {#tldr}
 
-- OpenClaw 的内置记忆是基于文件的 — 磁盘上的 Markdown 文件，具有 SQLite 向量搜索。它有效，但智能体必须决定记住什么。 Hindsight 自动化整个管道。
-- Hindsight 是开源的，默认在本地运行。除非您另有选择，否则您的对话、提取的知识和记忆存储永远不会离开您的机器。
-- 一个插件安装，一个设置向导。选择云、外部API或嵌入式守护程序模式。
-- 记忆会在每次响应之前自动注入上下文中——无需调用工具，无需编写检索逻辑。
-- 对于团队来说，云或外部API模式将多个OpenClaw实例连接到共享的Hindsight服务器，以便它们都共享记忆。
+- OpenClaw 的内置记忆以文件为基础：磁盘上的 Markdown 文件加上 SQLite 向量搜索。它能正常工作，但必须由智能体决定记住什么。Hindsight 会自动完成整条处理流程。
+- Hindsight 是开源软件，默认在本地运行。除非您另行选择，否则对话、提取出的知识和记忆存储都不会离开您的设备。
+- 安装一个插件，运行一次设置向导。您可以选择 Cloud、External API 或嵌入式守护进程模式。
+- 每次响应前，记忆都会自动注入上下文，无需调用工具，也无需编写检索逻辑。
+- 对于团队，Cloud 或 External API 模式可将多个 OpenClaw 实例连接到同一台 Hindsight 服务器，让它们共享记忆。
 
 ## 问题 {#the-problem}
 
-OpenClaw 是一款始终在线的 AI 助手，存在于您的消息应用程序中 - WhatsApp、Telegram、Slack、Discord、iMessage 等。它连接到LLM，代表您执行任务，并通过您已使用的通道进行通信。
+OpenClaw 是一款常驻运行的 AI 助手，可在 WhatsApp、Telegram、Slack、Discord、iMessage 等消息应用中使用。它连接到 LLM，代表您执行任务，并通过您日常使用的渠道与您通信。
 
-OpenClaw内置记忆功能，这是一个贴心的设计。该系统使用磁盘上的纯 Markdown 文件：`memory/YYYY-MM-DD.md` 中的每日笔记用于会话级上下文，以及精心策划的 `MEMORY.md` 用于长期知识。 SQLite 支持的向量索引（使用 `sqlite-vec`）支持对这些文件进行语义搜索，甚至还有一个实验性的 QMD 后端，将 BM25 关键字搜索与向量检索相结合。
+OpenClaw 内置了记忆功能，设计也很周到。系统使用磁盘上的纯 Markdown 文件：`memory/YYYY-MM-DD.md` 中的每日笔记用于保存会话级上下文，经过整理的 `MEMORY.md` 则用于保存长期知识。基于 SQLite 的向量索引（使用 `sqlite-vec`）可对这些文件进行语义搜索；此外还有一个实验性的 QMD 后端，将 BM25 关键词搜索与向量检索结合起来。
 
-但是有一个基本约束：**智能体必须决定记住什么**。文档直接说——“如果你想要粘住一些东西，请让机器人来写它。” 记忆是模型必须明确选择保存的仅附加文本。今天和昨天的每日笔记会在会话开始时自动加载，但任何较旧的内容都需要智能体使用 `memory_search` 工具主动搜索。
+但这里有一个根本限制：**智能体必须自行决定要记住什么**。文档对此直言不讳：“如果你想让某件事留下来，就让机器人把它写下来。”记忆是只能追加的文本，必须由模型明确选择保存。今天和昨天的每日笔记会在会话开始时自动加载；更早的内容则需要智能体主动使用 `memory_search` 工具搜索。
 
-在实践中，这意味着：
+实际使用中，这意味着：
 
-- 重要的事实被忽略，因为模型没有想到把它们写下来。
-- 记忆的质量取决于LLM遵循其自身指令来保存信息的程度。
-- 随着日常笔记的积累，找到正确的上下文需要智能体在正确的时间使用正确的查询进行搜索——而模型并不能始终如一地做到这一点。
+- 模型没想到要记下来的重要事实可能就此遗漏。
+- 记忆质量取决于 LLM 遵循自身指令、持久保存信息的能力。
+- 每日笔记不断累积后，要找到合适的上下文，就需要智能体在正确的时间用合适的查询进行搜索；而模型并不能始终如一地做到这一点。
 
-还有一个对于OpenClaw 用户特别重要的数据问题。 OpenClaw 在 *你的* 机器上运行并与 *你的* 消息应用程序对话。期望是本地优先，默认情况下是私有的。任何通过第三方云服务路由对话的记忆解决方案都会打破这种模式。
+对于 OpenClaw 用户，还有一个特别重要的数据问题。OpenClaw 在*您的*设备上运行，并与*您的*消息应用通信。人们期待它以本地为先，默认保护隐私。任何将对话经由第三方云服务传输的记忆方案，都会破坏这种模式。
 
-## 方法 {#the-approach}
+## 方案 {#the-approach}
 
-[Hindsight](https://github.com/vectorize-io/hindsight) 是一个开源记忆引擎，它通过自动化、结构化的知识提取取代了 OpenClaw 的记忆层。与内置系统的主要区别：
+[Hindsight](https://github.com/vectorize-io/hindsight) 是一款开源记忆引擎，通过自动化的结构化知识提取取代 OpenClaw 的记忆层。它与内置系统的主要区别如下：
 
-**自动捕捉，非手动。** 每个对话都会在每个回合后被捕获，而无需智能体来决定什么值得记住。 Hindsight 在后台提取事实、实体和关系——不需要提示模型“保存”。
+**自动捕获，而非手动保存。** 每轮结束后都会捕获对话，无需智能体判断哪些内容值得记住。Hindsight 在后台提取事实、实体和关系，无需提示模型“把这个保存下来”。
 
-**结构化知识，而不是平面文本。** Hindsight 不是在 Markdown 文件中追加行，而是提取离散事实（“生产数据库在端口 5433 上运行”），跟踪实体（人员、服务、项目），并映射它们之间的关系（“身份验证服务依赖于 Redis 进行会话”）。
+**结构化知识，而非扁平文本。** Hindsight 不会在 Markdown 文件末尾追加文本，而是提取独立事实（例如“生产数据库运行在 5433 端口”），追踪实体（人员、服务和项目），并梳理它们之间的关系（例如“身份验证服务依赖 Redis 来管理会话”）。
 
-**自动记忆召回，而不是基于工具的检索。**OpenClaw的内置记忆公开了智能体可以调用的`memory_search`工具，但模型并不一致地使用搜索工具。 Hindsight 通过将相关记忆注入上下文*之前* 每个智能体响应中，完全回避了这一点。智能体不需要知道记忆系统的存在。
+**自动召回，而非基于工具的检索。** OpenClaw 的内置记忆提供了智能体可以调用的 `memory_search` 工具，但模型并不能始终如一地使用搜索工具。Hindsight 完全绕过了这一环节：每次智能体响应*之前*，都会把相关记忆注入上下文。智能体无需知道记忆系统的存在。
 
-**防止反馈循环。** 当记忆在响应之前被注入上下文时，它们就成为对话的一部分。如果不小心，那些注入的记忆将会被重新存储并重新提取为新的事实，从而导致指数级增长和重复。该插件会在保留之前自动删除自己的 `<hindsight_memories>` 标签，从而防止出现这种循环。
+**防止反馈循环。** 响应前注入上下文的记忆会成为对话的一部分。如果处理不当，这些注入的记忆会再次被存储并提取为新事实，导致内容指数级增长并产生重复。插件会在存入记忆前自动移除自身的 `<hindsight_memories>` 标签，从而避免这种循环。
 
-**​​本地优先，开源。**Hindsight通过`hindsight-embed`运行，`hindsight-embed`是一个守护进程，它将记忆API和PostgreSQL实例捆绑到计算机上的单个进程中。没有数据离开您的环境。整个代码库是开源的。
+**本地优先，开源。** Hindsight 通过 `hindsight-embed` 运行。这是一个守护进程，会将记忆 API 和 PostgreSQL 实例打包在一起，作为单个进程运行于您的设备上。数据不会离开您的环境，整个代码库也都是开源的。
 
 ```
 ┌─────────────────┐       ┌────────────────────────────────┐
@@ -62,13 +62,13 @@ OpenClaw内置记忆功能，这是一个贴心的设计。该系统使用磁盘
 
 ## 实施 {#implementation}
 
-### 第1步：安装插件 {#step-1-install-the-plugin}
+### 第 1 步：安装插件 {#step-1-install-the-plugin}
 
 ```bash
 openclaw plugins install @vectorize-io/hindsight-openclaw
 ```
 
-您应该看到确认安装的输出，并且Hindsight接管记忆插槽：
+您应看到安装确认，以及 Hindsight 接管记忆插槽的提示：
 
 ```
 Exclusive slot "memory" switched from "memory-core" to "hindsight-openclaw".
@@ -81,31 +81,31 @@ Installed plugin: hindsight-openclaw
 npx --package @vectorize-io/hindsight-openclaw hindsight-openclaw-setup
 ```
 
-向导将引导您完成三种模式：
+向导会引导您选择以下三种模式之一：
 
-- **云** — 在 `https://api.hindsight.vectorize.io` 管理 Hindsight。出现提示时粘贴您的 [云 API 令牌](https://ui.hindsight.vectorize.io)。无需本地设置——这是最快的路径。
-- **外部API** — 您自己运行的 Hindsight 部署。提示输入 URL 和可选的令牌。
-- **嵌入式守护进程** — 在本机上生成本地 `hindsight-embed` 守护进程。提示输入 LLM 提供商和 API 密钥。
+- **Cloud**：使用由 Hindsight 托管的服务，地址为 `https://api.hindsight.vectorize.io`。根据提示粘贴您的 [Cloud API 令牌](https://ui.hindsight.vectorize.io)。无需本地设置，这是最快的方式。
+- **External API**：连接到您自行运行的 Hindsight 部署。向导会询问 URL，并可选询问令牌。
+- **嵌入式守护进程**：在这台设备上启动本地 `hindsight-embed` 守护进程。向导会询问 LLM 服务提供方和 API 密钥。
 
-从智能体的角度来看，这三者都是等效的——无论模式如何，自动捕捉和自动记忆的工作方式都是相同的。云是最简单的起点；当您需要设备上的所有内容时，嵌入式是正确的选择。
+从智能体的角度看，这三种模式是等效的：无论选择哪种模式，自动捕获和自动召回的工作方式都相同。Cloud 是最容易上手的选择；如果您需要所有内容都留在设备上，嵌入式模式更合适。
 
-该向导还可以针对 CI 或脚本化设置以非交互方式运行：
+您也可以在 CI 或脚本化设置中以非交互方式运行向导：
 
 ```bash
 # Cloud
 npx --package @vectorize-io/hindsight-openclaw hindsight-openclaw-setup \
     --mode cloud --token hsk_your_cloud_token
 
-#嵌入OpenAI
+# 使用 OpenAI 的嵌入式模式
 npx --package @vectorize-io/hindsight-openclaw hindsight-openclaw-setup \
     --mode embedded --provider openai --api-key sk-...
 
-#嵌入 Claude Code（通过 Claude Code CLI 进行身份验证 — 无需单独的 API 密钥）
+# 使用 Claude Code 的嵌入式模式（通过 Claude Code CLI 进行身份验证，无需单独的 API 密钥）
 npx --package @vectorize-io/hindsight-openclaw hindsight-openclaw-setup \
     --mode embedded --provider claude-code
 ```
 
-您在这里配置的LLM是**仅用于记忆提取**（后台处理）。您的主要OpenClaw智能体使用您单独配置的任何模型。
+此处配置的 LLM **仅用于记忆提取**（后台处理）。您的 OpenClaw 主智能体使用哪个模型，由您另行配置。
 
 ### 第 3 步：启动 {#step-3-launch}
 
@@ -113,40 +113,40 @@ npx --package @vectorize-io/hindsight-openclaw hindsight-openclaw-setup \
 openclaw gateway
 ```
 
-插件连接到您配置的后端（云、外部API或本地守护进程）。您应该在网关输出中看到确认：
+插件会连接到您配置的后端（Cloud、外部 API 或本地守护进程）。您应在网关输出中看到确认信息：
 
 ```
 [Hindsight] ✓ Using provider: openai, model: gpt-4o-mini
 ```
 
-这就是整个设置。
+设置到此完成。
 
-### 验证它是否正常工作 {#verifying-its-working}
+### 验证是否正常运行 {#verifying-its-working}
 
-几次对话后，检查网关日志以确认记忆操作正在发生：
+进行几轮对话后，检查网关日志，确认记忆操作正在执行：
 
 ```bash
 tail -f /tmp/openclaw/openclaw-*.log | grep Hindsight
 ```
 
-您应该看到类似以下的行：
+您应能看到类似以下的日志：
 
 ```
 [Hindsight] Retained X messages for session ...
 [Hindsight] Auto-recall: Injecting X memories
 ```
 
-如果您想浏览您的智能体所学的内容，Hindsight 守护进程包含一个 Web UI（仅限嵌入模式）：
+如果想浏览智能体已经学到的内容，可以使用 Hindsight 守护进程附带的 Web UI（仅嵌入式模式提供）：
 
 ```bash
 uvx hindsight-embed@latest -p openclaw ui
 ```
 
-### 外部API模式：跨实例共享记忆 {#external-api-mode-shared-memory-across-instances}
+### External API 模式：在多个实例间共享记忆 {#external-api-mode-shared-memory-across-instances}
 
-如果您正在运行多个OpenClaw实例（例如，一个在笔记本电脑上，一个在服务器上），或者如果您的团队想要共享智能体记忆，请连接到共享的HindsightAPI服务器，而不是运行本地守护程序。
+如果您运行着多个 OpenClaw 实例（例如，笔记本电脑和服务器上各一个），或者团队需要共享智能体记忆，可以连接到共享的 Hindsight API 服务器，而不是运行本地守护进程。
 
-设置向导（`--mode api`或`--mode cloud`）以交互方式覆盖此路径。直接在`~/.openclaw/openclaw.json`中配置：
+设置向导（`--mode api` 或 `--mode cloud`）会以交互方式引导您完成此配置。您也可以直接在 `~/.openclaw/openclaw.json` 中配置：
 
 ```json
 {
@@ -164,18 +164,18 @@ uvx hindsight-embed@latest -p openclaw ui
 }
 ```
 
-在此模式下，不会启动本地守护进程。该插件在启动时对远程API执行健康检查，并通过它路由所有记忆操作——记忆存储、记忆召回、反思。您可以在日志中验证它是否正常工作：
+在此模式下，不会启动本地守护进程。插件启动时会对远程 API 执行健康检查，并通过该 API 路由所有记忆操作，包括 Retain（存入）、Recall（召回）和 Reflect（反思）。您可以在日志中确认运行状态：
 
 ```
 [Hindsight] External API mode enabled: https://your-hindsight-server.example.com
 [Hindsight] External API health check passed
 ```
 
-> **想要完全跳过自托管吗？** [Hindsight Cloud](https://ui.hindsight.vectorize.io) 作为外部 API 端点 — 只需使用您的云 URL 和 API 令牌，或使用 `--mode cloud` 运行向导。对于共享记忆比仅限本地更重要的团队或多实例设置，云是最快的路径。
+> **想完全跳过自托管吗？** [Hindsight Cloud](https://ui.hindsight.vectorize.io) 可作为外部 API 端点使用：只需使用您的 Cloud URL 和 API 令牌，或通过 `--mode cloud` 运行向导。对于更看重共享记忆而非仅限本地运行的团队或多实例部署，Cloud 是最快的选择。
 
 ## 记忆隔离 {#memory-isolation}
 
-默认情况下，该插件根据智能体、通道和用户上下文创建单独的记忆库 - 因此每个独特的组合都有自己独立的记忆库。记忆库 ID 通过 `dynamicBankGranularity` 从可配置字段导出：
+默认情况下，插件会根据智能体、通道和用户上下文创建不同的记忆库，因此每种独特组合都有自己独立的记忆存储。记忆库 ID 根据可通过 `dynamicBankGranularity` 配置的字段生成：
 
 ```json
 {
@@ -192,43 +192,44 @@ uvx hindsight-embed@latest -p openclaw ui
 }
 ```
 
-在此示例中，每个提供商+用户的记忆都是隔离的，这意味着同一用户在提供商内的所有通道上共享记忆。
+在此示例中，记忆按服务提供方和用户隔离；也就是说，同一用户在同一服务提供方内的所有通道间共享记忆。
 
-可用隔离场：
-- `agent` — 机器人身份
-- `channel` — 对话或组 ID
-- `user` — 与机器人交互的人
-- `provider` — 消息平台（Slack、Telegram 等）
+可用于隔离的字段：
 
-默认为`["agent", "channel", "user"]`，它为每个用户每个通道每个智能体提供完全隔离。设置 `dynamicBankId: false` 为所有对话使用单个共享记忆库，并设置 `bankId` 显式指定记忆库名称。使用`bankIdPrefix`跨环境命名记忆库（例如`"prod"`、`"staging"`）。
+- `agent`：机器人身份
+- `channel`：对话或群组 ID
+- `user`：与机器人交互的人
+- `provider`：消息平台（Slack、Telegram 等）
 
-## 保留和记忆控制 {#retention-and-recall-controls}
+默认值为 `["agent", "channel", "user"]`，这会按用户、通道和智能体分别实现完全隔离。设置 `dynamicBankId: false` 可让所有对话共用一个记忆库；设置 `bankId` 可显式指定记忆库名称。使用 `bankIdPrefix` 可为不同环境中的记忆库添加命名空间（例如 `"prod"`、`"staging"`）。
 
-该插件附带了合理的默认值，但大多数行为都是可配置的。
+## 保留与召回控制 {#retention-and-recall-controls}
 
-**保留** 控制存储的内容：
+插件提供了合理的默认值，但大多数行为都可以配置。
 
-|选项|默认|说明|
+**保留**用于控制存入哪些内容：
+
+| 选项 | 默认值 | 说明 |
 |--------|---------|-------------|
-|`autoRetain`|`true`|每回合后自动记忆存储对话。将 `false` 设置为禁用。|
-|`retainRoles`|`["user", "assistant"]`|保留的记录中要包含哪些消息角色。|
-|`retainEveryNTurns`|`1`|​​ 记忆存储每 N 回合。值 > 1 启用带有滑动窗口的分块保留。|
-|`retainOverlapTurns`|`0`|当分块保留触发时，包括额外的先前回合。|
+| `autoRetain` | `true` | 每轮对话后自动存入对话内容。设为 `false` 可禁用。 |
+| `retainRoles` | `["user", "assistant"]` | 要纳入存储记录的消息角色。 |
+| `retainEveryNTurns` | `1` | 每 N 轮存入一次。值大于 1 时，会启用带滑动窗口的分块存入。 |
+| `retainOverlapTurns` | `0` | 分块存入触发时，额外包含此前的对话轮次。 |
 
-**记忆召回** 控制注入的内容：
+**召回**用于控制注入哪些内容：
 
-|选项|默认|说明|
+| 选项 | 默认值 | 说明 |
 |--------|---------|-------------|
-|`autoRecall`|`true`|每回合前自动注入记忆。当智能体有自己的记忆召回工具时，设置`false`。|
-|`recallBudget`|`"mid"`|记忆召回努力：`low`、`mid`或`high`。较高的预算使用更多的检索策略。|
-|`recallMaxTokens`|`1024`|记忆召回响应的最大令牌 — 控制每轮注入多少记忆上下文。|
-|`recallTypes`|`["world", "experience"]`|记忆类型到记忆召回。默认情况下排除详细的 `observation` 条目。|
-|`recallTopK`|无限制|每回合注入记忆数量的硬性上限。|
-|`recallContextTurns`|`1`|编写记忆召回查询时要包括的先前用户轮次数。|
-|`recallPromptPreamble`|内置字符串|自定义文本放置在注入上下文中的回忆上方。|
-|`recallInjectionPosition`|`"prepend"`|在哪里注入回忆：`prepend`、`append`、或`user`。使用 `append` 保留大型静态系统提示的提示缓存。|
+| `autoRecall` | `true` | 每轮开始前自动注入记忆。当智能体有自己的召回工具时，设为 `false`。 |
+| `recallBudget` | `"mid"` | 召回强度：`low`、`mid` 或 `high`。预算越高，使用的检索策略越多。 |
+| `recallMaxTokens` | `1024` | 召回响应的最大 token 数，控制每轮注入多少记忆上下文。 |
+| `recallTypes` | `["world", "experience"]` | 要召回的记忆类型。默认排除篇幅较长的 `observation` 条目。 |
+| `recallTopK` | unlimited | 每轮注入记忆数量的硬性上限。 |
+| `recallContextTurns` | `1` | 编写召回查询时纳入的此前用户对话轮次。 |
+| `recallPromptPreamble` | built-in string | 注入上下文中的召回记忆上方显示的自定义文本。 |
+| `recallInjectionPosition` | `"prepend"` | 召回记忆的注入位置：`prepend`、`append` 或 `user`。使用 `append` 可在系统提示较长且固定时保留提示缓存。 |
 
-示例：具有多回合上下文的高保真记忆召回：
+示例：结合多轮上下文进行高保真召回：
 
 ```json
 {
@@ -248,73 +249,72 @@ uvx hindsight-embed@latest -p openclaw ui
 }
 ```
 
-## 陷阱和边缘情况 {#pitfalls--edge-cases}
+## 陷阱与边缘情况 {#pitfalls--edge-cases}
 
-**记忆提取是异步的。** 每回合后都会在后台提取事实。如果您结束一个会话并立即开始一个新会话，则最新的事实可能仍在处理中。实际上，这可能需要一两秒，因此不要期望跨会话即时可用。
+**记忆提取是异步的。** 每轮对话结束后，系统都会在后台提取事实。如果您结束一个会话后立即开始新会话，最新的事实可能仍在处理中。实际处理时间可能只有一两秒，因此不要期待它们能在不同会话间即时可用。
 
-**提取质量取决于您选择的型号。** 非常小的或低质量的提取模型会错过细微的技术细节。 `gpt-4o-mini` 和 `claude-3-5-haiku` 是可靠的默认设置——足够可靠的事实提取，足够便宜，可以在每一个回合中运行。
+**提取质量取决于您选择的模型。** 非常小或质量较低的提取模型可能会漏掉细微的技术细节。`gpt-4o-mini` 和 `claude-3-5-haiku` 是可靠的默认选择：它们足以可靠地提取事实，成本也足够低，可以每轮都运行。
 
-**记忆召回窗口是有界的。** 默认`recallMaxTokens` 1024 意味着并非每个相关记忆都会出现在每个响应中。检索是按相关性排序的，因此最相关的事实首先出现，但要注意上限。您可以在 config.xml 中将其增加到 2048 或更高。
+**召回窗口有上限。** 默认的 `recallMaxTokens` 为 1024，这意味着并非每条相关记忆都会出现在每次响应中。检索结果按相关性排序，最相关的事实会优先显示，但请留意这个上限。您可以在配置中将其调高到 2048 或更高。
 
-**记忆隔离默认为每个智能体+每个通道+每个用户。** 这意味着您的 Slack 群聊记忆不会渗入您的 Telegram DM 记忆中，反之亦然。如果您希望跨通道统一记忆，请将`dynamicBankGranularity`调整为`["user"]`或为单个共享记忆库设置`dynamicBankId: false`。
+**记忆默认按智能体、通道和用户隔离。** 这意味着 Slack 群聊中的记忆不会混入 Telegram 私信，反之亦然。如果您希望跨通道统一记忆，可将 `dynamicBankGranularity` 调整为仅包含 `["user"]`，或设置 `dynamicBankId: false` 来使用单个共享记忆库。
 
-**嵌入式PostgreSQL需要系统库。** `hindsight-embed` 通过 [pg0](https://github.com/vectorize-io/pg0) 捆绑 PostgreSQL。在最小的 Docker 映像（例如 `ubuntu:latest`）上，您需要在守护进程启动之前安装 `libxml2` 和 `libreadline`：
+**嵌入式 PostgreSQL 需要系统库。** `hindsight-embed` 通过 [pg0](https://github.com/vectorize-io/pg0) 打包 PostgreSQL。在精简的 Docker 镜像（例如 `ubuntu:latest`）中，必须先安装 `libxml2` 和 `libreadline`，守护进程才能启动：
 
 ```bash
 apt-get install -y libxml2 libreadline8t64
 ```
 
-如果您遇到其他缺少库的错误，请检查您平台的 pg0 自述文件。
+如果遇到其他缺失库的错误，请查阅适用于您平台的 pg0 README。
 
-**PostgreSQL 无法以 root 身份运行。** 如果您在 Docker 内运行，请确保您使用的是非 root 用户。 PostgreSQL 的 `initdb` 拒绝以 root 身份运行，并且守护进程将因 `initdb: error: cannot be run as root` 失败。创建一个用户并切换到该用户：
+**PostgreSQL 不能以 root 身份运行。** 如果在 Docker 中运行，请确保使用非 root 用户。PostgreSQL 的 `initdb` 拒绝以 root 身份运行，守护进程会因此报错并显示 `initdb: error: cannot be run as root`。请创建用户并切换到该用户：
 
 ```dockerfile
 RUN useradd -m -s /bin/bash myuser
 USER myuser
 ```
 
-**首次运行下载约 3GB 的依赖项。** 在第一次 `openclaw gateway` 启动时，`hindsight-embed` 下载 Python 软件包，包括 PyTorch、句子转换器和（在 x86 上）CUDA 库。这可能需要几分钟时间，并可能导致守护程序启动超时。插件会自动重试，后续启动会使用缓存的包 - 因此这是一次性成本。
+**首次运行会下载约 3GB 的依赖项。** 首次运行 `openclaw gateway` 时，`hindsight-embed` 会下载 Python 软件包，包括 PyTorch、sentence-transformers，以及在 x86 架构上使用的 CUDA 库。这可能需要几分钟，也可能导致守护进程启动超时。插件会自动重试，之后的启动会使用缓存的软件包，因此这笔开销只会发生一次。
 
-**外部API恢复力。** 如果您使用外部 API 模式并且 API 暂时无法访问，则该插件会将记忆存储操作排队到本地 JSONL 文件中，并在连接恢复后重播它们。中断期间不会丢失任何对话。
+**外部 API 的韧性。** 如果您使用 External API 模式，而 API 暂时无法访问，插件会将存入记忆的操作排入本地 JSONL 文件，待连接恢复后再重放。服务中断期间不会丢失对话。
 
-**调试日志记录。** 如果某些功能未按预期工作，请在插件配置中启用`debug: true`。这会生成记忆召回查询、保留记录、记忆库 ID 派生等的详细日志记录。
+**调试日志。** 如果某些功能未按预期运行，可在插件配置中启用 `debug: true`。这会详细记录召回查询、保留的对话记录、记忆库 ID 的生成过程等信息。
 
 ## 权衡与替代方案 {#tradeoffs--alternatives}
 
-**何时坚持OpenClaw的内置记忆：**
+**适合继续使用 OpenClaw 内置记忆的情况：**
 
-- 您更喜欢纯 Markdown 文件的透明度，您可以在任何文本编辑器中编辑并使用 Git 进行版本控制。
-- 您的用例是轻量级的且仅限于会话范围 - 每日笔记加上 `MEMORY.md` 可以满足您的需求。
-- 您不希望任何其他进程与网关一起运行。
+- 您看重纯 Markdown 文件的透明性，可以用任何文本编辑器修改，也可以用 Git 进行版本控制。
+- 您的使用场景较轻量，且仅涉及会话范围；每日笔记和 `MEMORY.md` 已能满足需求。
+- 您不希望网关旁边再运行其他进程。
 
-**当Hindsight是更好的选择时：**
+**适合选择 Hindsight 的情况：**
 
-- 您想要自动提取记忆，而不依赖模型来决定保存什么。
-- 你需要一致的自动记忆召回，而不是希望智能体在正确的时间调用`memory_search`。
-- 您需要结构化知识（事实、实体、关系）而不是原始文本。
-- 您需要在多个OpenClaw实例或团队成员之间共享记忆。
-- ​​您希望对保留的内容、回忆的内容以及如何跨智能体和通道隔离记忆进行细粒度控制。
+- 您希望自动提取记忆，而不依赖模型自行决定要保存什么。
+- 您需要稳定的自动召回，而不是寄希望于智能体在合适的时间调用 `memory_search`。
+- 您需要结构化知识（事实、实体和关系），而非原始文本。
+- 您需要在多个 OpenClaw 实例或团队成员之间共享记忆。
+- 您希望细致控制存入哪些内容、召回哪些内容，以及如何在不同智能体和通道间隔离记忆。
 
-**本地守护进程与云与外部API：**
+**本地守护进程、Cloud 与 External API：**
 
-本地嵌入式守护进程将所有内容保留在一台计算机上 - 这是个人使用的正确默认设置。云是共享记忆或多设备设置的最简单路径，无需管理基础设施。外部API模式为您提供与自托管服务器相同的共享记忆优势。由于 Hindsight 是开源的，您可以在自己的基础设施上自行托管并保持相同的数据所有权保证。
+本地嵌入式守护进程会将所有内容留在一台计算机上，这是个人使用时合适的默认选择。对于共享记忆或多设备场景，Cloud 是最简单的方式，无需管理基础设施。External API 模式则通过自托管服务器提供同样的共享记忆优势。由于 Hindsight 是开源的，您也可以在自己的基础设施上自托管，并保有相同的数据所有权保障。
 
 ## 回顾 {#recap}
 
-OpenClaw的内置记忆是基于文件且透明的，但它取决于智能体决定记住什么以及何时搜索。 Hindsight 用自动提取和自动记忆召回取代了这一点——捕获对话，在后台提取事实，并在每次响应之前将相关知识注入上下文中。
+OpenClaw 的内置记忆以文件为基础且透明，但它依赖智能体决定记住什么、何时搜索。Hindsight 通过自动提取和自动召回取代了这套机制：捕获对话，在后台提取事实，并在每次响应前将相关知识注入上下文。
 
-核心见解：自动工作的记忆与依赖模型行为的记忆有本质上的不同。当智能体不必选择保存什么或何时搜索时，它只需拥有正确的上下文即可。
+核心要点是：自动运行的记忆，与依赖模型行为的记忆有本质区别。当智能体无需选择保存什么或何时搜索时，它只需获得正确的上下文即可。
 
-而且由于Hindsight是开源且本地优先（或者云，如果您愿意的话），您可以保留相同的数据所有权模型，这使得OpenClaw首先引人注目。
+而且，Hindsight 是开源软件并以本地为先（您也可以选择 Cloud），因此您能保有让 OpenClaw 从一开始就如此吸引人的数据所有权模式。
 
 ## 后续步骤 {#next-steps}
 
-- [注册Hindsight Cloud](https://ui.hindsight.vectorize.io) — 无需运行任何本地基础设施即可开始的最快方式。
-- 安装插件并通过不同渠道进行一些对话。然后打开 Web UI (`uvx hindsight-embed@latest -p openclaw ui`) 以查看捕获的内容（嵌入模式）。
-- 使用不同的LLM提供者进行提取实验并比较捕获事实的质量。
-- 使用`recallBudget`、`recallMaxTokens`和`recallContextTurns`调整记忆召回，为您的用例找到正确的平衡。
-- 如果希望跨渠道共享记忆或按提供商隔离记忆，请调整 `dynamicBankGranularity`。
-- 如果您希望跨渠道共享记忆或每个提供商隔离记忆，请调整`dynamicBankGranularity`。
-- 浏览[Hindsight 来源GitHub](https://github.com/vectorize-io/hindsight)以了解提取管道。
-- 阅读[完整集成文档](/sdks/integrations/openclaw)以获取完整的配置参考。
-- 如果您正在运行多个OpenClaw实例，请尝试云或外部API模式来共享记忆。
+- [注册 Hindsight Cloud](https://ui.hindsight.vectorize.io)，这是无需运行任何本地基础设施即可快速上手的方式。
+- 安装插件，并通过不同通道进行几次对话。然后打开 Web UI（`uvx hindsight-embed@latest -p openclaw ui`）查看捕获的内容（嵌入式模式）。
+- 尝试使用不同的 LLM 服务提供方进行提取，并比较捕获事实的质量。
+- 调整 `recallBudget`、`recallMaxTokens` 和 `recallContextTurns`，为您的使用场景找到合适的召回效果。
+- 如果希望记忆在不同通道间共享，或按服务提供方隔离，请调整 `dynamicBankGranularity`。
+- 浏览 GitHub 上的 [Hindsight 源代码](https://github.com/vectorize-io/hindsight)，了解提取流程。
+- 阅读[完整集成文档](/sdks/integrations/openclaw)，查看完整的配置参考。
+- 如果您运行着多个 OpenClaw 实例，可尝试 Cloud 或 External API 模式来共享记忆。

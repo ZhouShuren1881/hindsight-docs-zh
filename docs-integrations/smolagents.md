@@ -1,22 +1,22 @@
 ---
 sidebar_position: 12
-title: "SmolAgents 持久记忆与 Hindsight |整合"
-description: "使用Hindsight记忆存储、记忆召回和反思工具向 HuggingFace SmolAgents 添加长期记忆 - 您的智能体可以直接调用的嵌入式工具子类。"
+title: "使用 Hindsight 为 SmolAgents 构建持久记忆 | 集成"
+description: "使用 Hindsight 的 Retain（存入）、Recall（召回）和 Reflect（反思）工具，为 HuggingFace SmolAgents 添加长期记忆。这些 Tool 子类可直接供智能体调用。"
 ---
 
 # SmolAgents {#smolagents}
 
-持久记忆工具[SmolAgents](https://github.com/huggingface/smolagents) 智能体，通过 Hindsight 提供记忆。使用 SmolAgents 的原生工具模式，通过记忆存储、记忆召回和反思，为您的智能体提供长期记忆。
+通过 Hindsight 为 [SmolAgents](https://github.com/huggingface/smolagents) 智能体提供持久记忆工具。借助 SmolAgents 原生的 `Tool` 模式，使用 Retain（存入）、Recall（召回）和 Reflect（反思）为智能体添加长期记忆。
 
 [查看更新日志 →](/changelog/integrations/smolagents)
 
 ## 功能 {#features}
 
-- **原生工具子类** - 每个工具都扩展了 SmolAgents `Tool`基类
-- **记忆指令** - 预记忆召回注入智能体系统提示
-- **三种记忆工具** - 记忆存储（存储）、记忆召回（搜索）、反思（综合）——包括任意组合
-- **工厂函数** - 通过共享配置在一次调用中创建所有工具
-- **简单配置** - 全局配置一次，或者直接传一个客户端
+- **原生 Tool 子类** - 每个工具都继承 SmolAgents 的 `Tool` 基类
+- **记忆指令** - 预先召回记忆，将其注入智能体的系统提示
+- **三种记忆工具** - Retain（存入）、Recall（召回）、Reflect（反思）——可任选组合
+- **工厂函数** - 一次调用即可使用共享配置创建所有工具
+- **简单配置** - 可一次性进行全局配置，也可以直接传入客户端
 
 ## 安装 {#installation}
 
@@ -27,7 +27,7 @@ pip install hindsight-smolagents
 ## 快速入门 {#quick-start}
 
 :::tip 推荐：Hindsight Cloud
-[免费注册](https://ui.hindsight.vectorize.io) 并获取一个 API 密钥 — 无需自托管。
+[免费注册](https://ui.hindsight.vectorize.io)并获取 API 密钥，无需自行托管。
 :::
 
 ```python
@@ -37,7 +37,7 @@ from hindsight_smolagents import create_hindsight_tools
 tools = create_hindsight_tools(
     bank_id="user-123",
     hindsight_api_url="https://api.hindsight.vectorize.io",
-    api_key="hsk_...",  # 或设置 HINDSIGHT_API_KEY 环境变量
+    api_key="hsk_...",  # 也可以设置 HINDSIGHT_API_KEY 环境变量
 )
 
 agent = CodeAgent(
@@ -45,19 +45,19 @@ agent = CodeAgent(
     model=HfApiModel(),
 )
 
-agent.run("记住我更喜欢深色模式")
-agent.run("我的偏好是什么？")
+agent.run("Remember that I prefer dark mode")
+agent.run("What are my preferences?")
 ```
 
-智能体现在可以调用三个工具：
+现在，智能体可以调用以下三个工具：
 
-- **`hindsight_retain`** — 将信息存储到长期记忆中
-- **`hindsight_recall`** — 在长期记忆中搜索相关事实
-- **`hindsight_reflect`** — 根据记忆合成一个合理的答案
+- **`hindsight_retain`** — 将信息存入长期记忆
+- **`hindsight_recall`** — 从长期记忆中检索相关事实
+- **`hindsight_reflect`** — 基于记忆综合生成经过推理的答案
 
 ### 自托管（本地开发） {#self-hosting-local-development}
 
-如果你通过以下命令在本地运行 Hindsight：`./scripts/dev/start-api.sh`，替换服务地址：
+如果通过 `./scripts/dev/start-api.sh` 在本地运行 Hindsight，请替换 URL：
 
 ```python
 tools = create_hindsight_tools(
@@ -66,11 +66,11 @@ tools = create_hindsight_tools(
 )
 ```
 
-参见[安装指南](/developer/installation) 用于自托管设置。
+有关自托管设置，请参阅[安装指南](/developer/installation)。
 
-## 带记忆指令 {#with-memory-instructions}
+## 使用记忆指令 {#with-memory-instructions}
 
-预记忆召回相关记忆并注入到系统提示中：
+预先召回相关记忆，并将其注入系统提示：
 
 ```python
 from hindsight_smolagents import create_hindsight_tools, memory_instructions
@@ -88,13 +88,13 @@ memories = memory_instructions(
 agent = CodeAgent(
     tools=tools,
     model=HfApiModel(),
-    system_prompt=f"你是一位乐于助人的助手。\n\n{memories}",
+    system_prompt=f"You are a helpful assistant.\n\n{memories}",
 )
 ```
 
-## 个人工具 {#individual-tools}
+## 单独使用工具 {#individual-tools}
 
-您也可以直接使用工具类：
+也可以直接使用工具类：
 
 ```python
 from hindsight_smolagents import HindsightRetainTool, HindsightRecallTool
@@ -116,7 +116,7 @@ agent = CodeAgent(
 
 ## 选择工具 {#selecting-tools}
 
-仅包含您需要的工厂工具：
+通过工厂函数，只启用所需工具：
 
 ```python
 tools = create_hindsight_tools(
@@ -124,82 +124,82 @@ tools = create_hindsight_tools(
     hindsight_api_url="https://api.hindsight.vectorize.io",
     enable_retain=True,
     enable_recall=True,
-    enable_reflect=False,  #省略反思工具
+    enable_reflect=False,  # 省略 Reflect 工具
 )
 ```
 
 ## 全局配置 {#global-configuration}
 
-不要将连接详细信息传递给每个工具，而是配置一次：
+可以先进行一次全局配置，而不必为每个工具分别传入连接信息：
 
 ```python
 from hindsight_smolagents import configure, create_hindsight_tools
 
 configure(
     hindsight_api_url="https://api.hindsight.vectorize.io",
-    api_key="your-api-key",       # 或设置 HINDSIGHT_API_KEY 环境变量
-    budget="mid",                  # 记忆召回预算：low/mid/high
-    max_tokens=4096,               #记忆结果的最大 token 数数
-    tags=["env:prod"],             #存储记忆的标签
-    recall_tags=["scope:global"],  #要过滤的标签 记忆召回
+    api_key="your-api-key",       # 也可以设置 HINDSIGHT_API_KEY 环境变量
+    budget="mid",                  # Recall 预算：low/mid/high
+    max_tokens=4096,               # Recall 结果的最大 token 数
+    tags=["env:prod"],             # 存入记忆时使用的标签
+    recall_tags=["scope:global"],  # 用于筛选 Recall 结果的标签
     recall_tags_match="any",       # 标签匹配模式：any/all/any_strict/all_strict
 )
 
-#现在创建工具而无需传递连接详细信息
+# 现在创建工具时无需传入连接信息
 tools = create_hindsight_tools(bank_id="user-123")
 ```
 
 ## 配置参考 {#configuration-reference}
 
-### `create_hindsight_tools()` {#createhindsighttools}
+### `create_hindsight_tools()` {#create_hindsight_tools}
 
-|参数|默认|说明|
+| 参数 | 默认值 | 说明 |
 |---|---|---|
-|`bank_id`|*必填*|Hindsight记忆库ID|
-|`client`|`None`|预配置Hindsight客户端|
-|`hindsight_api_url`|`None`|API URL（如果没有提供客户端则使用）|
-|`api_key`|`None`|API 密钥（如果没有提供客户端则使用）|
-|`budget`|`"mid"`|记忆召回与反思的预算级别 (low/mid/high)|
-|`max_tokens`|`4096`|记忆识别结果的最大 token 数|
-|`tags`|`None`|存储记忆时应用的标签|
-|`recall_tags`|`None`|搜索时要过滤的标签|
-|`recall_tags_match`|`"any"`|标签匹配模式|
-|`enable_retain`|`True`|包括记忆存储（存储）工具|
-|`enable_recall`|`True`|包括记忆召回（搜索）工具|
-|`enable_reflect`|`True`|包括 反思（综合）工具|
+| `bank_id` | *必填* | Hindsight 记忆库 ID |
+| `client` | `None` | 预先配置好的 Hindsight 客户端 |
+| `hindsight_api_url` | `None` | API URL（未提供客户端时使用）|
+| `api_key` | `None` | API 密钥（未提供客户端时使用）|
+| `budget` | `"mid"` | Recall/Reflect 预算级别（low/mid/high）|
+| `max_tokens` | `4096` | Recall 结果的最大 token 数 |
+| `tags` | `None` | 存入记忆时应用的标签 |
+| `recall_tags` | `None` | 检索记忆时用于筛选的标签 |
+| `recall_tags_match` | `"any"` | 标签匹配模式 |
+| `enable_retain` | `True` | 是否包含 Retain（存入）工具 |
+| `enable_recall` | `True` | 是否包含 Recall（召回）工具 |
+| `enable_reflect` | `True` | 是否包含 Reflect（反思）工具 |
 
-### `memory_instructions()` {#memoryinstructions}
+### `memory_instructions()` {#memory_instructions}
 
-|参数|默认|说明|
+| 参数 | 默认值 | 说明 |
 |---|---|---|
-|`bank_id`|*必填*|Hindsight记忆库ID|
-|`client`|`None`|预配置Hindsight客户端|
-|`hindsight_api_url`|`None`|API URL（如果没有提供客户端则使用）|
-|`api_key`|`None`|API 密钥（如果没有提供客户端则使用）|
-|`query`|`"relevant context about the user"`|记忆注入的记忆召回查询|
-|`budget`|`"low"`|记忆召回预算水平|
-|`max_results`|`5`|注入的最大记忆|
-|`max_tokens`|`4096`|记忆识别结果的最大 token 数|
-|`prefix`|`"Relevant memories:\n"`|记忆列表之前的文本|
-|`tags`|`None`|用于过滤记忆召回结果的标签|
-|`tags_match`|`"any"`|标签匹配模式|
+| `bank_id` | *必填* | Hindsight 记忆库 ID |
+| `client` | `None` | 预先配置好的 Hindsight 客户端 |
+| `hindsight_api_url` | `None` | API URL（未提供客户端时使用）|
+| `api_key` | `None` | API 密钥（未提供客户端时使用）|
+| `query` | `"relevant context about the user"` | 用于注入记忆的 Recall 查询 |
+| `budget` | `"low"` | Recall 预算级别 |
+| `max_results` | `5` | 最多注入的记忆条数 |
+| `max_tokens` | `4096` | Recall 结果的最大 token 数 |
+| `prefix` | `"Relevant memories:\n"` | 添加在记忆列表前的文本 |
+| `tags` | `None` | 用于筛选 Recall 结果的标签 |
+| `tags_match` | `"any"` | 标签匹配模式 |
 
 ### `configure()` {#configure}
 
-|参数|默认|说明|
+| 参数 | 默认值 | 说明 |
 |---|---|---|
-|`hindsight_api_url`|Hindsight Cloud (`https://api.hindsight.vectorize.io`)|Hindsight API 网址|
-|`api_key`|`HINDSIGHT_API_KEY`环境|API 用于身份验证的密钥|
-|`budget`|`"mid"`|默认记忆召回预算水平|
-|`max_tokens`|`4096`|记忆召回的默认最大 token 数|
-|`tags`|`None`|记忆存储操作的默认标签|
-|`recall_tags`|`None`|要过滤的默认标签 记忆召回|
-|`recall_tags_match`|`"any"`|默认标签匹配模式|
-|`verbose`|`False`|启用详细日志记录|
+| `hindsight_api_url` | Hindsight Cloud (`https://api.hindsight.vectorize.io`) | Hindsight API URL |
+| `api_key` | `HINDSIGHT_API_KEY` 环境变量 | 用于身份验证的 API 密钥 |
+| `budget` | `"mid"` | 默认 Recall 预算级别 |
+| `max_tokens` | `4096` | Recall 的默认最大 token 数 |
+| `tags` | `None` | Retain 操作默认使用的标签 |
+| `recall_tags` | `None` | Recall 默认使用的筛选标签 |
+| `recall_tags_match` | `"any"` | 默认标签匹配模式 |
+| `verbose` | `False` | 是否启用详细日志 |
 
 ## 环境要求 {#requirements}
 
 - Python >= 3.10
 - smolagents
 - hindsight-client >= 0.4.0
-- A 正在运行 Hindsight API 服务器
+- 正在运行的 Hindsight API 服务器

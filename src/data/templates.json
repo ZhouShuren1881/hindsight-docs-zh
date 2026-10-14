@@ -3,7 +3,7 @@
     {
       "id": "conversation",
       "name": "对话",
-      "description": "适用于聊天智能体和助手。跟踪用户偏好与对话模式，并逐步构建用户画像。",
+      "description": "面向基于聊天的智能体和助手。跟踪用户偏好与对话模式，并随着时间推移逐步构建用户画像。",
       "category": "chat",
       "integrations": [
         "litellm",
@@ -25,7 +25,7 @@
     {
       "id": "coding-agent",
       "name": "编程智能体",
-      "description": "适用于编程助手和智能体。跨会话记住项目架构、技术决策、编程模式、评审偏好与工作流。采用较高的字面解读倾向，以便准确召回技术信息。",
+      "description": "面向编程助手和智能体。跨会话记住项目架构、技术决策、编程模式、评审偏好和工作流。采用较高的字面解读倾向，以便准确召回技术细节。",
       "category": "coding",
       "integrations": [
         "claude-code",
@@ -37,7 +37,7 @@
     {
       "id": "personal-assistant",
       "name": "个人助手",
-      "description": "适用于持续运行的个人助手，可管理任务、记住偏好，并在日常生活中保持上下文。跟踪承诺、日常习惯与个人背景。",
+      "description": "面向持续在线的个人助手，可管理任务、记住偏好，并在日常生活中保持上下文。跟踪承诺、日常习惯和个人背景。",
       "category": "assistant",
       "integrations": [
         "openclaw",
@@ -50,7 +50,7 @@
     {
       "id": "business-executive",
       "name": "企业高管",
-      "description": "适用于根据会议记录跟踪客户、销售机会、项目交付和产品开发的高管与运营人员。提取决策、承诺、负责人和状态变化，并构建销售管道、交付、产品及关系心智模型。采用较高的字面解读倾向，以准确召回数字、日期和承诺。",
+      "description": "面向通过会议记录跟踪客户、销售机会、项目交付和产品开发的高管与运营人员。提取决策、承诺、负责人和状态变化，并构建销售管道、交付、产品及关系心智模型。采用较高的字面解读倾向，以便准确召回数字、日期和承诺。",
       "category": "business",
       "integrations": [
         "hermes",
@@ -65,7 +65,7 @@
     {
       "id": "hermes-gateway-bot",
       "name": "网关 / 社区机器人",
-      "description": "适用于通过多个聊天平台（Telegram、Discord、Slack）与多人交流的智能体。分别维护每个人的画像，学习各个社区的规范，并跨用户跟踪未结事项。",
+      "description": "面向通过聊天平台（Telegram、Discord、Slack）与多人交流的智能体。分别维护每个人的画像，学习各个社区的规范，并跨用户跟踪未结事项。",
       "category": "chat",
       "integrations": [
         "langgraph",
@@ -78,7 +78,7 @@
     {
       "id": "hermes-orchestrator",
       "name": "多智能体编排器",
-      "description": "适用于专业智能体编排。记住决策及其理由、职责边界、交接，以及以往升级事件的处理结果。采用较高的字面解读倾向和怀疑倾向，以便精确协调。",
+      "description": "面向由专业智能体组成的编排系统。记住决策及其理由、职责边界、交接，以及以往升级事件的处理方式。采用较高的字面解读倾向和怀疑倾向，以便精确协调。",
       "category": "orchestration",
       "integrations": [
         "langgraph",
@@ -91,7 +91,7 @@
     {
       "id": "customer-support",
       "name": "客户支持智能体",
-      "description": "适用于客服和客户沟通智能体。记住客户问题、解决方案、情绪与账户背景，让每次互动都有充分的上下文。具备较高的共情倾向，绝不重复询问已知信息。",
+      "description": "面向客服和客户沟通智能体。记住客户问题、解决方案、情绪、账户背景，让每次互动都能结合相关信息。具备较强的共情倾向，绝不重复询问已知详情。",
       "category": "support",
       "integrations": [
         "langgraph",
@@ -104,7 +104,7 @@
     {
       "id": "research-assistant",
       "name": "研究助手",
-      "description": "适用于研究、监测和知识工作智能体，可撰写简报和内容摘要，或维护第二大脑。了解用户的兴趣，跟踪应忽略的内容以优化筛选，并逐步积累带有来源的持久知识。",
+      "description": "面向研究、监测和知识工作智能体，可撰写简报和摘要，或维护第二大脑。了解用户的兴趣，跟踪应忽略的内容以改进筛选，并逐步积累带有来源的持久知识。",
       "category": "research",
       "integrations": [
         "obsidian",

@@ -7,7 +7,7 @@ description: "使用 Hindsight 为 Claude Code 添加长期记忆。通过 Claud
 # Claude Code
 
 :::warning 已由 Coding Agents 插件取代
-**Claude Code 插件**已由 [编码智能体插件](/sdks/integrations/coding-agents)取代。一个软件包覆盖 Claude Code、Codex、opencode、Kilo、Cursor、Copilot、Grok、Antigravity、Devin、Cline 等 CLI 智能体，为每个仓库提供所有智能体共享的记忆库，而不是每个智能体一个记忆库。
+**Claude Code 插件**已被 [编码智能体插件](/sdks/integrations/coding-agents)取代。一个软件包覆盖 Claude Code、Codex、opencode、Kilo、Cursor、Copilot、Grok、Antigravity、Devin、Cline 等 CLI 智能体；每个仓库使用一个由所有智能体共享的记忆库，而不是每个智能体各用一个记忆库。
 
 本页面及已发布的软件包仍可使用，但不再开发。切换方法：
 
@@ -16,13 +16,13 @@ cd /path/to/your/repo
 npx @vectorize-io/hindsight-coding-agents install claude-code --import-conversations
 ```
 
-只有两项内容迁移，其他设置不会迁移。
+只有两项内容会迁移，其余设置均不会迁移。
 
-**服务器配置自动迁移。** `install` 读取 `~/.hindsight/claude-code.json`，保留相同的 `apiUrl` 和令牌；空 URL 仍代表本地守护进程，不会在未告知的情况下切换到 Hindsight Cloud。需要更改时传入 `--server`。
+**服务器配置会自动迁移。** `install` 读取 `~/.hindsight/claude-code.json`，并保留原有的 `apiUrl` 和令牌。URL 为空仍表示使用本地守护进程，因此不会在未告知的情况下切换到 Hindsight Cloud。要更改服务器时，请传入 `--server`。
 
-**对话通过 `--import-conversations` 从本地记录重新导入**为新文档，不会从旧记忆库复制。旧记忆库默认由所有项目共享，文档仅记录会话 ID，因此要确定哪些对话属于当前仓库，本来就需要读取本地记录。
+**对话会通过 `--import-conversations` 从本地记录重新导入**为新文档，不会从旧记忆库复制。旧记忆库默认由所有项目共享，文档只记录会话 ID；因此，要确定哪些对话属于当前仓库，本来就需要读取本地记录。
 
-**其他内容不会迁移。** 旧的 `recall*`、`retain*` 设置、任务目标和记忆库命名选项描述的是已被此软件包替换的流水线。记忆库命名也会变化：每个仓库一个记忆库，由所有智能体共享。参见[从独立智能体插件迁移](/sdks/integrations/coding-agents#migrating-from-the-per-agent-plugins)。
+**其他内容不会迁移。** 旧的 `recall*`、`retain*` 设置、任务说明和记忆库命名选项描述的是已被此软件包替换的流水线。记忆库命名也会变化：每个仓库一个记忆库，由所有智能体共享。参见[从独立智能体插件迁移](/sdks/integrations/coding-agents#migrating-from-the-per-agent-plugins)。
 :::
 
 
@@ -64,8 +64,8 @@ claude
 ## 功能 {#features}
 
 - **自动召回** — 每次用户提交提示词时，查询 Hindsight 并将相关记忆注入上下文（聊天记录中不可见，Claude 可见）
-- **自动存储** — 每次回答后（或每 N 轮）提取对话内容并存储到 Hindsight，长期保存
-- **知识工具** — Claude 通过 MCP 工具读写和搜索自己的记忆（知识页面、召回、导入）
+- **自动存入** — 每次回答后（或每 N 轮）提取对话内容并存入 Hindsight，供长期保存
+- **知识工具** — Claude 通过 MCP 工具读写和搜索自己的记忆（知识页、召回、摄取）
 - **子智能体技能** — `/hindsight-memory:create-agent` 创建由独立记忆库支持的子智能体
 - **动态记忆库 ID** — 按智能体、项目或会话隔离记忆（每个子智能体有自己的大脑）
 - **守护进程管理** — 自动启停本地 `hindsight-embed`，或连接外部 Hindsight 服务器
@@ -73,13 +73,13 @@ claude
 
 ## 架构 {#architecture}
 
-插件结合钩子（自动记忆召回/存储）、MCP 服务器（显式知识工具）和技能（创建子智能体）：
+插件结合钩子（自动召回/存入记忆）、MCP 服务器（显式知识工具）和技能（创建子智能体）：
 
 | 组件 | 触发方式 | 用途 |
 |-----------|---------|---------|
 | `session_start.py` | `SessionStart` 钩子 | 健康检查：确认 Hindsight 可访问 |
 | `recall.py` | `UserPromptSubmit` 钩子 | **自动召回**：查询记忆，以 `additionalContext` 注入 |
-| `retain.py` | `Stop` 钩子 | **自动存储**：提取对话记录，异步 POST 到 Hindsight |
+| `retain.py` | `Stop` 钩子 | **自动存入**：提取对话记录，异步 POST 到 Hindsight |
 | `session_end.py` | `SessionEnd` 钩子 | 清理：停止已启动的自动管理守护进程 |
 | `mcp_server.py` | MCP 服务器 | 提供 `agent_knowledge_*` 工具：列出/读取/创建/更新/删除页面、召回、导入 |
 | `create-agent` | 技能 | 在 `~/.claude/agents/` 创建子智能体文件，并初始化其记忆库 |
@@ -201,9 +201,9 @@ Hindsight API 自动选择模型。要覆盖默认值，请设置 `HINDSIGHT_LLM
 | 设置 | 环境变量 | 默认值 | 说明 |
 |---------|---------|---------|-------------|
 | `autoRecall` | `HINDSIGHT_AUTO_RECALL` | `true` | 自动召回总开关。设为 `false` 可完全禁用记忆检索。 |
-| `recallBudget` | `HINDSIGHT_RECALL_BUDGET` | `"mid"` | 控制 Hindsight 搜索记忆的深度。`"low"`：快速、策略较少；`"mid"`：均衡；`"high"`：全面、较慢。直接影响延迟。 |
+| `recallBudget` | `HINDSIGHT_RECALL_BUDGET` | `"mid"` | 控制 Hindsight 检索记忆的深度。`"low"`：速度快、采用的策略较少；`"mid"`：均衡；`"high"`：检索更全面，但速度较慢。该设置会直接影响延迟。 |
 | `recallMaxTokens` | `HINDSIGHT_RECALL_MAX_TOKENS` | `1024` | 召回记忆块的最大 token 数。较低值减少上下文占用，但可能截断相关记忆。 |
-| `recallTypes` | — | `["observation"]` | 要检索的记忆类型。`"world"`：一般事实；`"experience"`：个人经历；`"observation"`：由多个事实构建、经过整合和去重的信念。默认使用观察，避免多条原始记忆表达相同内容时反复呈现同一答案。 |
+| `recallTypes` | — | `["observation"]` | 要检索的记忆类型。`"world"`：世界事实；`"experience"`：经历事实；`"observation"`：由多个事实整合并去重后形成的认知判断。默认检索观测，避免许多原始记忆表达相同内容时反复出现同一答案。 |
 | `recallContextTurns` | `HINDSIGHT_RECALL_CONTEXT_TURNS` | `1` | 构造召回查询时包含的先前对话轮数。`1`：仅最新用户消息；较高值提供更多上下文，但可能稀释查询重点。 |
 | `recallMaxQueryChars` | `HINDSIGHT_RECALL_MAX_QUERY_CHARS` | `800` | 发送给 Hindsight 的查询最大字符数。超长查询会被截断。 |
 | `recallRoles` | — | `["user", "assistant"]` | 使用先前对话构造召回查询时包含的消息角色。 |
@@ -211,39 +211,39 @@ Hindsight API 自动选择模型。要覆盖默认值，请设置 `HINDSIGHT_LLM
 
 ---
 
-### 自动记忆存储 {#auto-retain}
+### 自动存入记忆 {#auto-retain}
 
-自动存储在 Claude 回答后执行，提取对话记录并发送给 Hindsight，进行长期存储和事实提取。
+自动存入会在 Claude 回答后执行：它提取对话记录并发送给 Hindsight，以便长期保存并提取事实。
 
 | 设置 | 环境变量 | 默认值 | 说明 |
 |---------|---------|---------|-------------|
-| `autoRetain` | `HINDSIGHT_AUTO_RETAIN` | `true` | 自动存储总开关。设为 `false` 可完全禁用记忆存储。 |
-| `retainMode` | `HINDSIGHT_RETAIN_MODE` | `"full-session"` | 存储策略。`"full-session"` 发送完整对话记录（会分块）。 |
-| `retainEveryNTurns` | — | `10` | 存储频率。`1`：每轮；`10`：每 10 轮。较高值减少 API 调用，但延迟记忆捕获。大于 1 时启用滑动窗口**分块存储**。 |
-| `retainOverlapTurns` | — | `2` | 分块存储触发时，为保持连续性，从前一块额外包含的轮数。窗口总大小 = `retainEveryNTurns + retainOverlapTurns`。 |
-| `retainRoles` | — | `["user", "assistant"]` | 存储的对话记录中包含的消息角色。 |
-| `retainToolCalls` | — | `true` | 是否在存储的对话记录中包含工具调用（函数调用及结果）。捕获文件读取、搜索和代码编辑等结构化操作。 |
-| `retainTags` | — | `["{session_id}"]` | 存储文档附带的标签。支持 `{session_id}` 占位符，运行时替换为当前会话 ID。 |
-| `retainMetadata` | — | `{}` | 存储文档附带的任意键值元数据。 |
-| `retainContext` | — | `"claude-code"` | 存储记忆附带的来源标签。多个集成写入同一记忆库时很有用。 |
+| `autoRetain` | `HINDSIGHT_AUTO_RETAIN` | `true` | 自动存入总开关。设为 `false` 可完全禁用记忆存入。 |
+| `retainMode` | `HINDSIGHT_RETAIN_MODE` | `"full-session"` | 存入策略。`"full-session"` 会发送完整对话记录（并进行分块）。 |
+| `retainEveryNTurns` | — | `10` | 存入频率。`1`：每轮；`10`：每 10 轮。较高值会减少 API 调用，但会延迟捕获记忆。值大于 1 时，会启用带滑动窗口的**分块存入**。 |
+| `retainOverlapTurns` | — | `2` | 触发分块存入时，为保持连续性，从前一个分块额外纳入的轮数。窗口总大小 = `retainEveryNTurns + retainOverlapTurns`。 |
+| `retainRoles` | — | `["user", "assistant"]` | 要纳入存入的对话记录中的消息角色。 |
+| `retainToolCalls` | — | `true` | 是否将工具调用（函数调用及其结果）纳入存入的对话记录。这样可以捕获文件读取、搜索和代码编辑等结构化操作。 |
+| `retainTags` | — | `["{session_id}"]` | 附加到存入文档的标签。支持 `{session_id}` 占位符，运行时会将其替换为当前会话 ID。 |
+| `retainMetadata` | — | `{}` | 附加到存入文档的任意键值元数据。 |
+| `retainContext` | — | `"claude-code"` | 附加到存入记忆的来源标签。多个集成写入同一记忆库时很有用。 |
 
 ---
 
 ### 知识工具 {#knowledge-tools}
 
-插件运行 MCP 服务器，提供 `agent_knowledge_*` 工具，让 Claude 显式读写和搜索记忆库；钩子驱动的召回/存储则完全自动执行。这些工具都不接受 `bank_id` 参数。服务器使用与钩子相同的配置解析当前记忆库，确保工具和钩子始终操作同一个库。
+插件运行 MCP 服务器并提供 `agent_knowledge_*` 工具，让 Claude 显式读写和搜索记忆库；钩子驱动的召回和存入则完全自动执行。这些工具都不接受 `bank_id` 参数。服务器使用与钩子相同的配置来解析当前记忆库，确保工具和钩子始终操作同一个记忆库。
 
 | 工具 | 用途 |
 |------|---------|
 | `agent_knowledge_get_current_bank` | 报告当前会话绑定的记忆库 ID。 |
-| `agent_knowledge_list_pages` | 列出所有知识页面（心智模型）的 ID 和名称。 |
-| `agent_knowledge_get_page` | 读取指定页面的完整综合内容。 |
-| `agent_knowledge_create_page` | 创建包含 `source_query` 的知识页面，每次整合后重新综合内容。 |
-| `agent_knowledge_update_page` | 更新页面名称或 `source_query`。 |
-| `agent_knowledge_delete_page` | 永久删除知识页面。 |
+| `agent_knowledge_list_pages` | 列出所有知识页（心智模型）的 ID 和名称。 |
+| `agent_knowledge_get_page` | 读取指定知识页的完整综合生成内容。 |
+| `agent_knowledge_create_page` | 创建包含 `source_query` 的知识页；每次整合后都会重新综合生成内容。 |
+| `agent_knowledge_update_page` | 更新知识页名称或 `source_query`。 |
+| `agent_knowledge_delete_page` | 永久删除知识页。 |
 | `agent_knowledge_recall` | 在已存储对话和文档中搜索特定事实。 |
-| `agent_knowledge_ingest` | 将原始文本内容作为文档上传到记忆库。 |
-| `agent_knowledge_ingest_file` | 读取磁盘文件并导入其完整内容。 |
+| `agent_knowledge_ingest` | 将原始文本内容作为文档摄取到记忆库。 |
+| `agent_knowledge_ingest_file` | 读取磁盘文件并摄取其完整内容。 |
 
 | 设置 | 环境变量 | 默认值 | 说明 |
 |---------|---------|---------|-------------|
@@ -253,12 +253,12 @@ Hindsight API 自动选择模型。要覆盖默认值，请设置 `HINDSIGHT_LLM
 
 ### 带记忆的子智能体 {#subagents-with-memory}
 
-`/hindsight-memory:create-agent` 技能创建拥有独立 Hindsight 记忆库的 Claude Code 子智能体。每个子智能体的提示词都指示它使用上述知识工具进行召回和导入，使 Claude 将持久记忆视为该智能体的核心能力。
+`/hindsight-memory:create-agent` 技能会创建一个拥有独立 Hindsight 记忆库的 Claude Code 子智能体。每个子智能体的提示词都会指示它使用上述知识工具进行召回和摄取，使 Claude 将持久记忆视为该智能体的一项基本能力。
 
 两种模式：
 
-- **从目录创建** — `/hindsight-memory:create-agent <name> from <path>` 导入 `<path>` 下的所有文本文件（`.md`、`.txt`、`.html`、`.json`、`.csv`、`.xml`），创建初始知识页面集，并将子智能体文件写入 `~/.claude/agents/<name>.md`。如果目录包含列出明确 `mental_models` 的 `bank-template.json`，则原样使用这些模型，不自动生成。
-- **交互式创建** — `/hindsight-memory:create-agent`（不带参数）询问智能体名称和用途，然后写入子智能体文件，不导入内容。
+- **从目录创建** — `/hindsight-memory:create-agent <name> from <path>` 摄取 `<path>` 下的所有文本文件（`.md`、`.txt`、`.html`、`.json`、`.csv`、`.xml`），创建一组初始知识页，并将子智能体文件写入 `~/.claude/agents/<name>.md`。如果目录中有 `bank-template.json`，其中列出了确切的 `mental_models`，就会原样采用这些模型，而不自动生成。
+- **交互式创建** — `/hindsight-memory:create-agent`（不带参数）询问智能体名称和用途，然后写入子智能体文件，不摄取内容。
 
 要按子智能体隔离记忆，请启用动态记忆库 ID：
 
@@ -282,7 +282,7 @@ Hindsight API 自动选择模型。要覆盖默认值，请设置 `HINDSIGHT_LLM
 
 ## Claude Code Channels {#claude-code-channels}
 
-通过 [Claude Code Channels](https://docs.anthropic.com/en/docs/claude-code)，Claude Code 可以作为持久后台智能体，连接 Telegram、Discord、Slack 等消息平台。此插件为基于渠道的智能体提供长期记忆，能力与 `hindsight-openclaw` 为 Openclaw 智能体提供的记忆相同。
+借助 [Claude Code Channels](https://docs.anthropic.com/en/docs/claude-code)，Claude Code 可以作为持久运行的后台智能体，连接 Telegram、Discord、Slack 等消息平台。此插件为基于渠道的智能体提供长期记忆，其能力与 `hindsight-openclaw` 为 Openclaw 智能体提供的能力相同。
 
 对于渠道智能体，启用动态记忆库 ID，以按渠道/用户隔离记忆：
 
@@ -304,7 +304,7 @@ export HINDSIGHT_USER_ID="user-67890"
 
 **插件未启用**：检查 Claude Code 日志中的 `[Hindsight]` 消息。在 `~/.hindsight/claude-code.json` 启用 `"debug": true`。
 
-**召回未返回记忆**：确认 Hindsight 服务器可访问（`curl http://localhost:9077/health`）。记忆至少需要经过一次存储周期才可使用。
+**召回未返回记忆**：确认 Hindsight 服务器可访问（`curl http://localhost:9077/health`）。记忆至少经过一个存入周期后才可用。
 
 **守护进程未启动**：确认已设置 LLM API 密钥（或使用 `HINDSIGHT_LLM_PROVIDER=claude-code`）。查看 `~/.hindsight/profiles/claude-code.log` 中的守护进程日志。
 

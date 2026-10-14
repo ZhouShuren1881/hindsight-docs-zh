@@ -11,16 +11,16 @@ sidebar_position: 4
 :::
 
 
-本笔记本演示使用 `hindsight-litellm` 为任意 LLM 应用添加持久记忆。LiteLLM 回调自动存储和注入记忆，无需手动管理。
+本笔记本演示如何使用 `hindsight-litellm` 包为任意 LLM 应用添加持久记忆。记忆存储和注入通过 LiteLLM 回调自动完成，无需手动管理记忆！
 
 **演示的核心功能：**
 1. `configure()` + `enable()`：设置自动记忆集成
-2. 自动存储：每次 LLM 调用后保存对话
+2. 自动存储：每次 LLM 调用后存储对话
 3. 自动注入：向提示词注入相关记忆
 
-`hindsight-litellm` 接入 LiteLLM 回调系统：
-- LLM 成功响应后存储对话
-- LLM 调用前向系统提示词注入相关记忆
+`hindsight-litellm` 包接入 LiteLLM 的回调系统，以便：
+- 在成功收到 LLM 响应后存储每段对话
+- 在调用 LLM 前向系统提示词注入相关记忆
 
 ## 前置条件 {#prerequisites}
 
@@ -36,8 +36,8 @@ docker run --rm -it --pull always -p 8888:8888 -p 9999:9999 \
   ghcr.io/vectorize-io/hindsight:latest
 ```
 
-- API：http://localhost:8888
-- 界面：http://localhost:9999
+- API: http://localhost:8888
+- UI: http://localhost:9999
 
 ## 安装 {#installation}
 
@@ -57,7 +57,7 @@ import logging
 import nest_asyncio
 from dotenv import load_dotenv
 
-# 应用 nest_asyncio，兼容 Jupyter
+# 应用 nest_asyncio，以兼容 Jupyter
 nest_asyncio.apply()
 
 # 加载环境变量
@@ -77,20 +77,20 @@ HINDSIGHT_API_URL = os.getenv("HINDSIGHT_API_URL", "http://localhost:8888")
 
 # 检查 API 密钥
 if not os.getenv("OPENAI_API_KEY"):
-    print("警告：未设置 OPENAI_API_KEY")
+    print("Warning: OPENAI_API_KEY not set")
 ```
 
 ## 配置并启用自动记忆 {#configure-and-enable-automatic-memory}
 
-只需这些设置，之后每次 LiteLLM 调用都会：
-- 向提示词注入相关记忆
-- 响应后将对话存入 Hindsight
+只需完成这些设置，之后所有 LiteLLM 调用都会自动：
+- 在提示词中注入相关记忆
+- 在响应后将对话存储到 Hindsight
 
 
 ```python
-# 为本次演示生成唯一 bank_id
+# 为本次演示生成唯一的 bank_id
 bank_id = f"demo-{uuid.uuid4().hex[:8]}"
-print(f"使用记忆库 ID：{bank_id}")
+print(f"Using bank_id: {bank_id}")
 
 # 配置并启用 Hindsight
 hindsight_litellm.configure(
@@ -98,80 +98,80 @@ hindsight_litellm.configure(
     bank_id=bank_id,
     store_conversations=True,  # 自动存储对话
     inject_memories=True,       # 自动注入相关记忆
-    verbose=True,               # 启用记忆调试日志
+    verbose=True,               # 启用日志以调试记忆操作
 )
 hindsight_litellm.enable()
 
-print("已启用 Hindsight 记忆集成！")
+print("Hindsight memory integration enabled!")
 ```
 
 ## 对话一：用户介绍自己 {#conversation-1-user-introduces-themselves}
 
-第一次对话中用户分享自身信息，将自动存入记忆。
+在第一次对话中，用户会分享一些个人信息。这些信息会自动存入 Hindsight 记忆。
 
 
 ```python
-user_message_1 = "你好！我是 Alex，在 Google 担任软件工程师。我喜欢 Python 和机器学习。"
-print(f"用户：{user_message_1}\n")
+user_message_1 = "Hi! I'm Alex and I work at Google as a software engineer. I love Python and machine learning."
+print(f"User: {user_message_1}\n")
 
 # 直接使用 hindsight_litellm.completion()
 response_1 = hindsight_litellm.completion(
     model="gpt-4o-mini",
     messages=[
-        {"role": "system", "content": "你是有帮助的助手。"},
+        {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": user_message_1}
     ],
 )
 
 assistant_response_1 = response_1.choices[0].message.content
-print(f"助手：{assistant_response_1}")
-print("\n（对话自动存入 Hindsight）")
+print(f"Assistant: {assistant_response_1}")
+print("\n(Conversation automatically stored to Hindsight)")
 ```
 
 ## 等待记忆处理 {#wait-for-memory-processing}
 
-Hindsight 需要几秒处理对话并提取事实。
+Hindsight 需要几秒钟来处理对话并提取事实。
 
 
 ```python
-print("等待 12 秒处理记忆……")
+print("Waiting 12 seconds for memory processing...")
 time.sleep(12)
-print("完成！")
+print("Done!")
 ```
 
 ## 对话二：测试记忆增强回答 {#conversation-2-test-memory-augmented-response}
 
-开始全新对话，询问助手记住什么。前一次的记忆会自动注入提示词。
+现在开始一段全新的对话，并询问助手记得哪些信息。前一段对话中的记忆会自动注入提示词！
 
 
 ```python
-user_message_2 = "你了解我什么？下一个项目应该用什么编程语言？"
-print(f"用户：{user_message_2}\n")
+user_message_2 = "What do you know about me? What programming language should I use for my next project?"
+print(f"User: {user_message_2}\n")
 
-# 调用前自动注入记忆
+# 此次调用前会自动注入记忆！
 response_2 = hindsight_litellm.completion(
     model="gpt-4o-mini",
     messages=[
-        {"role": "system", "content": "你是有帮助的助手。"},
+        {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": user_message_2}
     ],
 )
 
-print(f"助手：{response_2.choices[0].message.content}")
+print(f"Assistant: {response_2.choices[0].message.content}")
 ```
 
 ## 结果说明 {#summary}
 
-助手应记住 Alex：
+助手应该记得 Alex：
 - 在 Google 担任软件工程师
 - 喜欢 Python 和机器学习
 
-并根据这些知识推荐 Python。
+并且应该根据这些信息推荐 Python！
 
 
 ```python
-print(f"记忆存储在库中：{bank_id}")
-print(f"在界面查看：http://localhost:9999/banks/{bank_id}")
+print(f"Memories stored in bank: {bank_id}")
+print(f"View in UI: http://localhost:9999/banks/{bank_id}")
 ```
 
 ## 清理 {#cleanup}
@@ -183,5 +183,5 @@ hindsight_litellm.cleanup()
 # 可选：删除记忆库
 import requests
 response = requests.delete(f"{HINDSIGHT_API_URL}/v1/default/banks/{bank_id}")
-print(f"已删除记忆库：{response.json()}")
+print(f"Deleted bank: {response.json()}")
 ```

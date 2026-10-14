@@ -2,30 +2,30 @@
 sidebar_position: 9
 ---
 
-# 拥有 Hindsight 记忆的个人 AI 助手 {#personal-ai-assistant-with-hindsight-memory}
+# 借助 Hindsight 记忆的个人 AI 助手 {#personal-ai-assistant-with-hindsight-memory}
 
 
 :::tip 运行此笔记本
-此教程提供交互式 Jupyter 笔记本。
-[**在 GitHub 打开 →**](https://github.com/vectorize-io/hindsight-cookbook/blob/main/notebooks/personal_assistant.ipynb)
+本示例配有可交互运行的 Jupyter 笔记本。
+[**在 GitHub 中打开 →**](https://github.com/vectorize-io/hindsight-cookbook/blob/main/notebooks/personal_assistant.ipynb)
 :::
 
 
-通用个人助手，记住偏好、日程、家人、工作上下文和过去对话。
+一款通用型个人助手，可以记住你的偏好、日程、家庭和工作背景，以及过去的对话。
 
 ## 功能 {#features}
 - 记住家庭、工作和个人信息
-- 跟踪偏好和习惯
-- 帮助安排日程与提醒
-- 跨对话保持上下文
+- 跟踪偏好与习惯
+- 协助安排日程和提醒
+- 在不同对话之间延续上下文
 
 ## 前置条件 {#prerequisites}
 - OpenAI API 密钥
-- 通过 Docker 在本地运行 Hindsight，配置见下文
+- 通过 Docker 在本地运行的 Hindsight（设置方法见下文）
 
-## 本地启动 Hindsight {#start-hindsight-locally}
+## 在本地启动 Hindsight {#start-hindsight-locally}
 
-运行笔记本前，在终端启动 Hindsight：
+运行此笔记本前，请先在终端中启动 Hindsight：
 
 ```bash
 export OPENAI_API_KEY="your-openai-api-key"
@@ -46,18 +46,18 @@ docker run --rm -it --pull always -p 8888:8888 -p 9999:9999 \
 
 ## 2. 配置 OpenAI API 密钥 {#2-configure-openai-api-key}
 
-按提示输入 OpenAI API 密钥，Hindsight 和演示共同使用。
+按提示输入 OpenAI API 密钥，Hindsight 和本演示都会使用该密钥。
 
 
 ```python
 import getpass
 import os
 
-# 设置 Hindsight 与演示共同使用的 OpenAI API 密钥
+# 设置 Hindsight 与演示共用的 OpenAI API 密钥
 if not os.getenv("OPENAI_API_KEY"):
-    os.environ["OPENAI_API_KEY"] = getpass.getpass("请输入 OpenAI API 密钥：")
+    os.environ["OPENAI_API_KEY"] = getpass.getpass("Enter your OpenAI API key: ")
 
-print("API 密钥配置完成！")
+print("API key configured!")
 ```
 
 ## 3. 初始化客户端 {#3-initialize-clients}
@@ -80,7 +80,7 @@ openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 USER_ID = "assistant-user-demo"
 
-print("客户端初始化完成！")
+print("Clients initialized!")
 ```
 
 ## 4. 定义辅助函数 {#4-define-helper-functions}
@@ -88,7 +88,7 @@ print("客户端初始化完成！")
 
 ```python
 def remember(info: str, category: str = "general") -> str:
-    """存储需要记住的信息。"""
+    """Store information to remember."""
     today = datetime.now().strftime("%B %d, %Y")
 
     hindsight.retain(
@@ -97,11 +97,11 @@ def remember(info: str, category: str = "general") -> str:
         metadata={"category": category, "date": today},
     )
 
-    return f"我会记住：{info}"
+    return f"I'll remember: {info}"
 
 
 def recall_context(query: str) -> str:
-    """召回相关上下文。"""
+    """Recall relevant memories for context."""
     memories = hindsight.recall(
         bank_id=USER_ID,
         query=query,
@@ -114,23 +114,23 @@ def recall_context(query: str) -> str:
 
 
 def chat(user_message: str) -> str:
-    """与个人助手对话。"""
+    """Chat with the personal assistant."""
     context = recall_context(user_message)
 
-    system_prompt = f"""你是具有长期记忆的个人 AI 助手。
-记住用户偏好、日程、家人、工作上下文和过去对话。
+    system_prompt = f"""You are a helpful personal AI assistant with long-term memory.
+You remember the user's preferences, schedule, family, work context, and past conversations.
 
-你记得的用户信息：
-{context if context else "尚无记忆。"}
+What you remember about this user:
+{context if context else "No memories recorded yet."}
 
-你的能力：
-- 用户要求时记住信息，例如“记住”“别忘了”
-- 召回过去信息，例如“我告诉过你什么”“什么时候”
-- 根据已知偏好提供个性化建议
-- 帮助安排日程与提醒
-- 自然对话并保持上下文
+Your capabilities:
+- Remember things when asked ("Remember that...", "Don't forget...")
+- Recall past information ("What did I tell you about...", "When is...")
+- Provide personalized suggestions based on known preferences
+- Help with scheduling and reminders
+- Have natural conversations while maintaining context
 
-主动提供帮助，自然引用相关记忆。"""
+Be helpful, proactive, and reference relevant memories naturally."""
 
     response = openai_client.chat.completions.create(
         model="gpt-4o-mini",
@@ -144,19 +144,19 @@ def chat(user_message: str) -> str:
 
     answer = response.choices[0].message.content
 
-    # 检查用户是否要求记住内容
+    # 检查用户是否要求记住某件事
     lower_msg = user_message.lower()
-    if any(phrase in lower_msg for phrase in ["remember that", "don't forget", "remind me", "note that", "记住", "别忘了", "提醒我", "记录"]):
+    if any(phrase in lower_msg for phrase in ["remember that", "don't forget", "remind me", "note that"]):
         hindsight.retain(
             bank_id=USER_ID,
-            content=f"用户要求记住：{user_message}",
+            content=f"User asked to remember: {user_message}",
             metadata={"category": "reminder"},
         )
 
-    # 存储交互
+    # 存储这次交互
     hindsight.retain(
         bank_id=USER_ID,
-        content=f"对话 - 用户：{user_message[:100]} | 助手：{answer[:100]}",
+        content=f"Conversation - User: {user_message[:100]} | Assistant: {answer[:100]}",
         metadata={"category": "conversation"},
     )
 
@@ -164,9 +164,9 @@ def chat(user_message: str) -> str:
 
 
 def get_summary(topic: str = None) -> str:
-    """生成记忆摘要。"""
-    query = f"总结你了解的{topic}" if topic else \
-            "总结你对用户的全部了解"
+    """Get a summary of memories."""
+    query = f"Summarize what you know about {topic}" if topic else \
+            "Summarize everything you know about this user"
 
     summary = hindsight.reflect(
         bank_id=USER_ID,
@@ -175,25 +175,25 @@ def get_summary(topic: str = None) -> str:
     )
     return summary.text if hasattr(summary, 'text') else str(summary)
 
-print("辅助函数定义完成！")
+print("Helper functions defined!")
 ```
 
 ## 5. 建立上下文 {#5-build-context}
 
 
 ```python
-print("正在建立上下文……")
+print("Building context...")
 
 initial_context = [
-    ("我是 Alex，在 TechCorp 担任产品经理", "personal"),
-    ("妻子叫 Sarah，有两个孩子：Emma 七岁，Jack 四岁", "family"),
-    ("偏好上午开会，下午留给深度工作", "preference"),
-    ("母亲生日是三月十五日", "event"),
-    ("希望增加阅读，正在读《原子习惯》", "hobby"),
-    ("每周一上午十点团队站会", "schedule"),
-    ("对猫过敏", "health"),
-    ("最喜欢燕麦奶馥芮白", "preference"),
-    ("正在为四月半程马拉松训练", "goal"),
+    ("My name is Alex and I work as a product manager at TechCorp", "personal"),
+    ("My wife's name is Sarah and we have two kids: Emma (7) and Jack (4)", "family"),
+    ("I prefer morning meetings and try to keep afternoons for deep work", "preference"),
+    ("My mom's birthday is March 15th", "event"),
+    ("I'm trying to read more - currently reading 'Atomic Habits'", "hobby"),
+    ("I have a weekly team standup every Monday at 10am", "schedule"),
+    ("I'm allergic to cats", "health"),
+    ("My favorite coffee is a flat white with oat milk", "preference"),
+    ("I'm training for a half marathon in April", "goal"),
 ]
 
 for info, category in initial_context:
@@ -208,23 +208,23 @@ for info, category in initial_context:
 import time
 
 print("=" * 60)
-print("  对话")
+print("  Conversation")
 print("=" * 60)
 
 conversations = [
-    "妻子叫什么来着？",
-    "记住，第一季度评审是下周四下午两点",
-    "母亲生日该送什么礼物？",
-    "周一站会几点？",
-    "推荐适合我的咖啡吧。",
-    "我正在读什么书？",
+    "Hey, what's my wife's name again?",
+    "Remember that my Q1 review is next Thursday at 2pm",
+    "I need a gift idea for my mom's birthday",
+    "What time is my Monday standup?",
+    "Can you recommend a coffee order for me?",
+    "What books am I reading?",
 ]
 
 for message in conversations:
     print(f"\nAlex: {message}")
     print("-" * 40)
     response = chat(message)
-    print(f"助手：{response}")
+    print(f"Assistant: {response}")
     time.sleep(1)
 ```
 
@@ -233,7 +233,7 @@ for message in conversations:
 
 ```python
 print("=" * 60)
-print("  我对你的了解")
+print("  What I Know About You")
 print("=" * 60)
 print(get_summary())
 ```
@@ -241,20 +241,20 @@ print(get_summary())
 
 ```python
 print("=" * 60)
-print("  你的家人")
+print("  Your Family")
 print("=" * 60)
-print(get_summary("家人"))
+print(get_summary("family"))
 ```
 
-## 8. 尝试自己的消息 {#8-try-your-own-message}
+## 8. 试着发送自己的消息 {#8-try-your-own-message}
 
 
 ```python
-your_message = "本月训练应重点关注什么？"  # 可修改此问题
+your_message = "What should I focus on this month with my training?"  # 修改这条消息！
 
-print(f"你：{your_message}")
+print(f"You: {your_message}")
 print("-" * 40)
-print(f"助手：{chat(your_message)}")
+print(f"Assistant: {chat(your_message)}")
 ```
 
 ## 9. 清理 {#9-cleanup}
@@ -262,5 +262,5 @@ print(f"助手：{chat(your_message)}")
 
 ```python
 hindsight.close()
-print("客户端连接已关闭。")
+print("Client connection closed.")
 ```

@@ -1,89 +1,89 @@
 ---
-title: "Hindsight Cloud 新功能：能读截图的记忆"
+title: "Hindsight Cloud 新功能：能够读取截图的记忆"
 authors: [benfrank241]
 slug: "2026/09/21/hindsight-cloud-0-10-0"
 date: 2026-09-21T15:00
 tags: [hindsight-cloud, release, multimodal, retain, prompts, recall]
-description: "Hindsight Cloud 已运行 0.10.0，图片和文件成为原生记忆，支持准确提示词预览，标签召回更不易遗漏。"
+description: "Hindsight Cloud 现已运行 0.10.0。图片和文件成为一等记忆；你可以预览操作将发送的准确提示词，召回也更不容易遗漏。"
 image: /img/blog/hindsight-cloud-0-10-0.webp
 hide_table_of_contents: true
 ---
 
-![Hindsight Cloud 新功能：图片与文件记忆、提示词预览和容错标签](/img/blog/hindsight-cloud-0-10-0.webp)
+![Hindsight Cloud 新功能：图片和文件作为记忆、提示词预览，以及容错标签](/img/blog/hindsight-cloud-0-10-0.webp)
 
-支持对话进入记忆库：两段文字、CLI 截图、另一句话。此前 Cloud 只读文字，忽略截图，而错误码只在图片中时就有问题。
+一段支持对话进入记忆库：两段文字、一张 CLI 输出截图，再加一句话。直到本周之前，Hindsight Cloud 会读取文字，却忽略截图；如果错误码只出现在截图中，这就成了问题。
 
-Cloud 现运行 0.10.0，情况改变了。以下介绍新能力，以及我们直接在 Cloud 验证的结果。
+Cloud 现已运行 0.10.0，情况因此改变。下面介绍你能获得什么，以及我们在 Cloud 上亲自运行并确认的结果。
 
 <!-- truncate -->
 
 ## 要点 {#tldr}
 
-- **图片和文件成为原生记忆。** 与文字交错存储，事实可返回其准确来源图片。
-- **消耗 token 前预览提示词。** 准确查看存储、整合或反思消息，不调用模型、不写入。
-- **召回容忍标签拼写错误**，实体标签无需固定词汇。
-- **知识库可迁移。** 整库导出携带知识页面和心智模型。
-- **两项行为变化**：突发同步存储可被 503 拒绝，心智模型列表默认返回元数据。
+- **图片和文件成为一等记忆。** 将它们与文字一同存入；召回的事实可以返回读取该事实时所依据的原始图片。
+- **消耗 token 前预览提示词。** 查看 Retain、整合或 Reflect 将发送的准确消息。不调用模型，也不写入任何内容。
+- **召回可以容忍标签中的拼写错误**，实体标签也不再需要预先定义固定词汇表。
+- **知识库可以随记忆库迁移。** 整库导出现在会一并携带知识页和心智模型。
+- **升级客户端前要了解两项行为变化：** 突发的同步 Retain 请求现在可能被 `503` 拒绝；列出心智模型时默认返回元数据。
 
-## 能读截图的记忆 {#memory-that-reads-screenshots}
+## 能读取截图的记忆 {#memory-that-reads-screenshots}
 
-retain 的 `content` 现在接受有序文本、图片和文件块。附件按实际位置读取，例如两段间的图表按其原位解读，而非当作附录。
+Retain 请求的 `content` 字段现在接受由文本、图片和文件块组成的有序列表，而不再只接受字符串。附件会按它在列表中的位置读取；因此，夹在两段文字之间的图表会按其所在位置作为这两段文字之间的图表来理解，而不是当作附录。
 
-我们用一个刻意刁钻的例子在 Cloud 测试：正文完全不提错误码，终端 PNG 却包含错误码。返回事实包含：
+我们在 Cloud 上用一个刻意不利于系统的例子进行了测试：一段简短的支持对话，文字中完全没有提到错误码，但附有一张包含错误码的终端 PNG。返回的事实中包括：
 
-> CLI 命令 `hindsight retain --file report.pdf` 触发错误 `VISIONCHECK_7781`，request_id 为 `req_c4f09ab2e7d15`。
+> CLI 命令 `hindsight retain --file report.pdf` 触发了错误 `VISIONCHECK_7781`，request_id 为 `req_c4f09ab2e7d15`。
 
-两个标识都不在发送的文字里，提取器从图片读出。
+这两个字符串在我们发送的任何文字中都没有出现。提取器是从图片中读出它们的。
 
-**来源按事实而非文档关联。** 该事实带有来源附件，其他来自文字的事实则不附图。只有不查看图片就无法陈述的事实才引用它。
+**来源按事实关联，而非按文档关联。** 同一条事实返回时带有提取它所依据的附件。对话中其他以文字陈述的事实则没有附件。只有不查看图片就无法陈述的事实才会引用图片。
 
-召回携带引用而非字节，包括 ID、媒体类型、大小、原始文件名和 URL。以相同凭据获取 URL，可按原 Content-Type 得到图片。ID 来自内容哈希，可永久缓存，足以展示答案引用缩略图，或在下一轮交给视觉模型。
+召回结果携带的是引用，而不是字节：包括 ID、媒体类型、大小、原始文件名和 URL。使用与召回相同的凭据获取该 URL，就能以你发送时使用的内容类型取回图片。由于 ID 根据内容哈希生成，图片可以永久缓存。这些信息足以将缩略图作为答案旁的引用展示，也足以在下一轮把原图交给视觉模型。
 
-为何丢弃无法解析的引用而不匹配最近图片等设计，见[把截图存入智能体记忆，需要做什么](https://hindsight.vectorize.io/blog/2026/09/16/screenshot-agent-memory)。
+关于这些设计决策的更多内容，包括为何会丢弃无法解析的引用，而不是将其就近匹配到某张图片，请参阅[将截图放入智能体记忆需要做些什么](https://hindsight.vectorize.io/blog/2026/09/16/screenshot-agent-memory)。
 
-## 发送前查看提示词 {#see-the-prompt-before-you-send-it}
+## 发送提示词前先查看内容 {#see-the-prompt-before-you-send-it}
 
-只有看到最终提示词，使命、性格倾向和策略才有意义。现在一次调用准确返回存储、整合或反思消息，按对应设置拆块。
+只有看到最终进入提示词的内容，记忆库的任务说明、性格倾向和策略才有意义。现在，你可以通过一次调用查看 Retain、整合或 Reflect 将发送的准确消息；结果按块拆分，每个块都会指出其对应的设置。
 
-它不调用模型也不写入，没有模型费用，我们也在 Cloud 上验证了这一点。
+这项操作不收费：它不会调用模型，也不会写入任何内容。我们也在 Cloud 上确认了这一点。
 
-两点常令人意外：存储和整合使命在**用户**消息，只看系统提示词会以为未配置；已关闭设置也会以非活动块返回，位于启用时本应出现的位置。
+有两点常让人意外。第一，Retain 或整合的任务说明会进入**用户**消息，而不是系统提示词；因此，如果只查看系统提示词，就会误以为已配置的任务说明缺失。第二，即使某项设置已被关闭，它仍会返回，只是标记为非活动状态，并保留在启用时本来会占据的位置。
 
-[完整详情](https://hindsight.vectorize.io/blog/2026/09/17/prompt-preview)也解释哪些设置会静默无效。
+[查看完整详情](https://hindsight.vectorize.io/blog/2026/09/17/prompt-preview)，其中也包括那些看起来已配置、实际却不会生效的设置。
 
-## 容忍拼写错误的召回 {#recall-that-forgives-typos}
+## 能容忍拼写错误的召回 {#recall-that-forgives-typos}
 
-过去标签是精确数组包含，`typsecript` 在排序前就排除了 `typescript`，更好排名无法修复匹配层的拼写错误。
+以前，标签筛选采用精确的数组包含匹配。因此，调用方用 `typsecript` 筛选时，在排序开始前，所有带有 `typescript` 标签的记忆就已被排除。更好的排序无法解决这个问题，因为匹配本身必须能够容忍拼写错误。
 
-标签分组现有可选 `resolve`。默认不变，设为 `fuzzy` 时按三元组相似度匹配，可将 `typescropt` 解析为 `typescript`，`user:alcie` 解析为 `user:alice`，有意不将 `mango` 解析为 `mongo`。
+现在，标签分组可以选择设置 `resolve` 字段。不设置时，行为保持不变；将其设为 `fuzzy` 后，该叶节点中的标签会按三元组相似度匹配，而不是逐字精确匹配。这样会把 `typescropt` 解析为 `typescript`，把 `user:alcie` 解析为 `user:alice`，但会有意避免把 `mango` 解析为 `mongo`。
 
-相似度受长度影响：短标签三元组少，一次拼写错误可能破坏大部分，`kakfa` 不匹配 `kafka`。模糊匹配对描述标签有效，对极短标签几乎无效，也因此避免无关短词混淆。
+有一个限制需要了解：相似度匹配受标签长度影响，因此短标签的三元组很少，拼错一个字符就会破坏其中大部分。`kakfa` 不会被解析为 `kafka`。模糊匹配对描述性标签很有用，对极短标签几乎不起作用；也正是这一特性让无关的短词保持区分。
 
-实体标签也无需预定义词汇，`multi-text` 按内容提取所需数量的值，每个成为实体，记忆库可从内容推导分类并在召回时筛选。
+此外，实体标签不再需要预先定义词汇表。`multi-text` 标签可以根据内容需要接收任意数量的值，每个值都会成为一个独立实体。这样，记忆库就可以根据自身内容推导分类，并在召回时按分类筛选。
 
-## 知识库可迁移 {#your-knowledge-base-travels}
+## 知识库可以随记忆库迁移 {#your-knowledge-base-travels}
 
-过去只迁移文档和观察这些原始层内容，耗费真实预算构建的知识页面和心智模型留在原处，另一端需重建。
+以前，迁移记忆库只会移动文档和观测，也就是原始层。记忆库耗费大量实际预算在其上构建的综合内容——知识页和心智模型——会留在原处，迁移到另一端后必须重新构建。
 
-整库导出传入 `include_knowledge_base` 即可携带它们。默认关闭，主动启用，只支持整库而非文档列表，因为全库页面不能代表任意子集。清单报告包含内容，导入前可确认是否有知识库。
+整库导出时传入 `include_knowledge_base`，归档文件现在也会携带这些内容。该选项需要显式启用，默认关闭；它仅适用于整库导出，不适用于文档列表，因为基于整个记忆库生成的页面放到任意子集旁边并没有意义。清单会报告随归档一同导出的内容，因此导入前就能确认归档是否包含知识库。
 
 ## 需要了解的两项行为变化 {#two-behaviour-changes-to-know-about}
 
-0.10.0 大多数功能为新增，两项变化可能影响已有代码。
+0.10.0 的大部分内容都是新增功能，但有两项变化可能影响你已有的代码。
 
-**突发同步存储可能被拒绝。** 三种操作都经过准入控制，满载时等待槽位至截止时间，再返回 `503` 和 `Retry-After`，不再无限排队。Python、TypeScript 自动遵循该头重试召回和反思，有意不重试存储，以免同步写入重复。突发同步存储应处理 503，或改用异步。
+**突发的同步 Retain 请求可能被拒绝。** Recall、Reflect 和 Retain 现在都会经过准入控制。容量满时，请求会等待槽位，直到达到截止时间；之后会以 `503` 和 `Retry-After` 响应头拒绝请求，而不会无限排队、让延迟悄悄升高。Python 和 TypeScript 客户端会遵循 `Retry-After`，自动重试 Recall 和 Reflect。它们有意不重试 Retain，因为重试同步 Retain 可能造成重复写入。如果你会突发发送同步 Retain 请求，请处理 `503`，或改用异步 Retain。
 
-**心智模型列表默认返回元数据。** `GET .../mental-models` 原来返回全部完整内容，造成上下文膨胀；现在默认元数据，需文本时传 `detail=content` 或 `detail=full`。
+**列出心智模型时默认返回元数据。** 以前，`GET .../mental-models` 会返回每个模型完整的综合内容，这会使调用方的上下文变得臃肿。现在默认只返回元数据。确实需要文本时，传入 `detail=content` 或 `detail=full`。
 
-## 对自托管意味着什么 {#what-this-means-if-you-self-host}
+## 对自托管部署的影响 {#what-this-means-if-you-self-host}
 
-这些都不专属于 Cloud。v0.10.0 自九月中旬可用于自托管，Cloud 现已跟进。区别是 Cloud 无需你升级，并预先配置图片存储所需视觉模型。
+这里介绍的功能并非 Cloud 专属。它们都已随 v0.10.0 发布；从 9 月中旬起，自托管部署就可以使用该版本，Cloud 现在也已跟上。区别在于，Cloud 用户无需升级任何内容，而且系统已为你配置好图片 Retain 所需的视觉模型。
 
-自托管需特别注意：Docker 不再有 `curl`，exec 健康探针应改成 HTTP；记忆库 profile 和 background 端点返回 `410 Gone`。[0.10.0 发布说明](https://hindsight.vectorize.io/blog/2026/09/14/version-0-10-0)有完整列表。
+如果你运行自己的部署，有两条升级说明对你尤其重要：Docker 镜像中不再包含 `curl`，因此基于 exec 的健康探针需要改为 HTTP 探针；记忆库 profile 和 background 端点现在会返回 `410 Gone`。[0.10.0 发布说明](https://hindsight.vectorize.io/blog/2026/09/14/version-0-10-0)列出了完整信息。
 
 ## 了解更多 {#learn-more}
 
-- [把截图存入智能体记忆，需要做什么](https://hindsight.vectorize.io/blog/2026/09/16/screenshot-agent-memory)：按事实关联来源。
-- [消耗 token 前，先看准确提示词](https://hindsight.vectorize.io/blog/2026/09/17/prompt-preview)：预览端点。
-- [这个夏天，Hindsight 学会了什么](https://hindsight.vectorize.io/blog/2026/09/18/what-hindsight-learned-this-summer)：近期版本全貌。
-- [Hindsight Cloud 6—8 月更新](https://hindsight.vectorize.io/blog/2026/09/01/hindsight-cloud-june-august-updates)：此前知识库和企业控制汇总。
+- [将截图放入智能体记忆需要做些什么](https://hindsight.vectorize.io/blog/2026/09/16/screenshot-agent-memory)：了解按事实关联来源的工作方式。
+- [消耗 token 前先查看准确的提示词](https://hindsight.vectorize.io/blog/2026/09/17/prompt-preview)：了解提示词预览端点。
+- [Hindsight 这个夏天学到了什么](https://hindsight.vectorize.io/blog/2026/09/18/what-hindsight-learned-this-summer)：了解最近几次发布的整体发展脉络。
+- [Hindsight Cloud 6 月至 8 月更新](https://hindsight.vectorize.io/blog/2026/09/01/hindsight-cloud-june-august-updates)：查看上一期汇总，涵盖知识库和企业控制功能。

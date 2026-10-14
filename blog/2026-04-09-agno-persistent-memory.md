@@ -1,77 +1,75 @@
 ---
-title: "Agno持久记忆：Agno智能体的长期记忆"
+title: "Agno 持久记忆：为 Agno 智能体提供长期记忆"
 authors: [benfrank241]
 date: 2026-04-09T09:00
 tags: [agno, integrations, agents, memory, persistent-memory, python, tutorial]
-description: "Agno 智能体每次运行都焕然一新。后见之明-agno 添加了后见之明工具和记忆指令，以便他们可以跨会话进行记忆存储、记忆召回和反思。"
+description: "Agno 智能体每次运行都会从头开始。hindsight-agno 添加了 HindsightTools 和 memory_instructions，让智能体能够跨会话存入、召回并反思记忆。"
 image: /img/blog/agno-persistent-memory.webp
 hide_table_of_contents: true
 ---
 
-![Agno持久记忆：Agno智能体的长期记忆](/img/blog/agno-persistent-memory.webp)
+![Agno 持久记忆：为 Agno 智能体提供长期记忆](/img/blog/agno-persistent-memory.webp)
 
-如果您使用[Agno](https://docs.agno.com/)构建了智能体，您就会知道该框架可以很好地处理多模式输入、团队协调和结构化输出。它不处理运行之间的记忆。每个`agent.run()`都以一个空的上下文窗口开始。智能体不知道用户上周说了些什么，他们分享了什么偏好，或者它已经研究过什么。
+如果你使用 [Agno](https://docs.agno.com/) 构建过智能体，就会知道这个框架能够很好地处理多模态输入、团队协作和结构化输出。但它无法处理多次运行之间的记忆。每次调用 `agent.run()` 时，上下文窗口都是空的。智能体不知道用户上周说过什么、分享过哪些偏好，也不知道自己已经研究过什么。
 
-​​添加持久记忆不需要构建自定义RAG管道或维护您自己的矢量存储。 `hindsight-agno`包扩展了Agno的原生`Toolkit`模式，为您的智能体提供长期记忆：记忆存储事实，通过语义搜索记忆召回它们，并从积累的知识中合成连贯的答案。
+添加持久记忆不需要自行构建 RAG 管道或维护向量存储。`hindsight-agno` 包扩展了 Agno 原生的 `Toolkit` 模式，为智能体提供长期记忆：存入事实，通过语义检索召回事实，并根据积累的知识综合生成连贯的答案。
 
 <!-- truncate -->
 
 ## 概览 {#tldr}
 
-- Agno没有内置的持久记忆。每个`agent.run()`都从零开始。
-- `hindsight-agno` 添加了 `HindsightTools`，一个原生的 Agno `Toolkit`，带有记忆存储、记忆召回和反思工具。
-- 三行设置：安装包，创建`HindsightTools`，将其传递给`Agent`。
-- `memory_instructions()`都会将相关记忆预加载到`Agent(instructions=[...])`中，因此智能体会根据上下文开始每次对话。
-- 每用户记忆库隔离通过`user_id`或自定义`bank_resolver`自动工作。
-- [Hindsight Cloud](https://ui.hindsight.vectorize.io) 完全跳过本地设置。两行配置即可运行。
+- Agno 没有内置的持久记忆。每次调用 `agent.run()` 都从头开始。
+- `hindsight-agno` 添加了 `HindsightTools`，这是一个原生 Agno `Toolkit`，包含存入、召回和反思工具。
+- 三步即可完成设置：安装软件包、创建 `HindsightTools`，再将其传给 `Agent`。
+- 每次运行时，`memory_instructions()` 都会将相关记忆预载入 `Agent(instructions=[...])`，让智能体在每次对话开始时就拥有上下文。
+- 通过 `user_id` 或自定义的 `bank_resolver`，系统会自动按用户隔离记忆库。
+- [Hindsight Cloud](https://ui.hindsight.vectorize.io) 无需本地设置。配置两行即可开始运行。
 
-## 问题：Agno没有持久记忆 {#the-problem-agno-has-no-persistent-memory}
+## 问题：Agno 没有持久记忆 {#the-problem-agno-has-no-persistent-memory}
 
-[Agno](https://docs.agno.com/)是一个强大的智能体框架。它的`Toolkit`模式可以轻松添加工具，团队协调原语可以处理多智能体工作流程，结构化输出和流式处理开箱即用。但是 Agno 没有记忆层。
+[Agno](https://docs.agno.com/) 是一个功能强大的智能体框架。它的 `Toolkit` 模式便于添加工具，团队协作原语能够处理多智能体工作流，结构化输出和流式处理也开箱即用。但 Agno 没有内置记忆层。
 
-每一个`agent.run()`都是从无开始。智能体不知道用户在上一次会话中提到了什么。它不知道他们的偏好、重复出现的问题或智能体本身已经研究过的内容。如果用户今天告诉你的智能体一些重要的事情，那么明天这个事实就会消失。
+每次调用 `agent.run()` 都从头开始。智能体不知道用户在上一次会话中提到过什么，也不知道用户的偏好、反复提出的问题，或智能体自己已经研究过什么。如果用户今天告诉智能体一件重要的事，到了明天，这条事实就不复存在。
 
-您可以通过`messages`在单次运行中继续对话。但这是会话历史，而不是记忆。会话历史记录不会提取结构化事实，随着每次轮流线性增长，不会概括或重复数据删除，并且在进程退出时完全消失。
+你可以传入 `messages`，在单次运行中延续对话。但那只是会话历史，不是记忆。会话历史不会提取结构化事实，会随着每轮对话线性增长，也不会归纳概括或去重；进程一退出，它就会完全消失。
 
-真正的智能体记忆是不同的：
+真正的智能体记忆有所不同，它会：
 
-- 从对话中提取离散事实并将其持久存储
-- 构建实体和关系的知识图谱
-- 通过语义搜索检索几天、几周和几个月的相关上下文
-- 从分散的、积累的知识中合成连贯的答案
+- 从对话中提取离散事实并持久存储
+- 构建包含实体及其关系的知识图谱
+- 通过语义检索，跨越数天、数周乃至数月找回相关上下文
+- 根据零散积累的知识综合生成连贯的答案
 
-这就是[Hindsight](https://hindsight.vectorize.io/)提供的。 `hindsight-agno` 包将其直接连接到 Agno 的 `Toolkit` 系统，因此您无需自己构建任何这些。
+[Hindsight](https://hindsight.vectorize.io/) 提供的正是这些能力。`hindsight-agno` 包将 Hindsight 直接接入 Agno 的 `Toolkit` 系统，因此你无需自行构建这些功能。
 
-## Agno持久记忆如何与Hindsight配合使用 {#how-agno-persistent-memory-works-with-hindsight}
+## Agno 持久记忆如何与 Hindsight 配合 {#how-agno-persistent-memory-works-with-hindsight}
 
-`hindsight-agno`集成在两个点连接到Agno：工具和指令。
+`hindsight-agno` 集成通过两个入口连接 Agno：工具和指令。
 
 ```text
-Agno 智能体
+Agno Agent
   |-- tools=[HindsightTools(...)]
-  |     |-- retain_memory      -> 将事实存储到长期记忆中
-  |     |-- recall_memory      -> 搜索相关记忆
-  |     |-- reflect_on_memory  -> 从记忆中综合生成答案
+  |     |-- retain_memory      -> store facts to long-term memory
+  |     |-- recall_memory      -> search memory for relevant facts
+  |     |-- reflect_on_memory  -> synthesize an answer from memories
   |
   |-- instructions=[memory_instructions(...)]
-        |-- 自动将相关记忆召回到系统提示中
+        |-- auto-recalls relevant memories into the system prompt
 ```
 
-*工具* 让智能体在对话期间显式存储和检索记忆。 *使用说明* 在智能体开始响应之前，将相关记忆注入到系统提示中。无需调用工具。
+*工具* 让智能体在对话过程中显式存入和检索记忆。*指令* 会在智能体开始响应前，将相关记忆注入系统提示。整个过程无需调用工具。
 
-`HindsightTools`直接扩展Agno的`Toolkit`基类，与Agno生态系统中`Mem0Tools`使用的模式相同。您可以像任何其他 Agno 工具包一样将其添加到 `tools=[...]` 中。
+`HindsightTools` 直接扩展 Agno 的 `Toolkit` 基类，采用的模式与 Agno 生态系统中的 `Mem0Tools` 相同。你可以像添加其他 Agno 工具包一样，将它添加到 `tools=[...]` 中。
 
-它有助于理解每个工具的作用以及智能体何时使用它：
-当智能体遇到值得保留的东西时，会调用
+了解每个工具的作用以及智能体何时会使用它们，会有所帮助：
 
-- **`retain_memory`**：明确的偏好、决定、有关用户或项目的事实。
-当智能体遇到值得保留的东西时，会调用
-- **`recall_memory`** 返回过去会话中匹配事实的列表。智能体在需要查找某些内容时会使用它。
-- **`reflect_on_memory`** 将这些事实综合成一个连贯的答案。其中 `recall_memory` 返回列表，`reflect_on_memory` 推理所有相关记忆以产生单个响应。最好回答诸如“你对我的工程风格了解多少？”之类的问题。比原始事实检索。
+- **`retain_memory`**：智能体遇到值得保留的信息时会调用此工具，例如用户明确表达的偏好、一项决定，或关于用户或项目的事实。
+- **`recall_memory`**：返回过去会话中匹配的事实列表。智能体需要查找信息时会使用它。
+- **`reflect_on_memory`**：将这些事实综合成连贯的答案。`recall_memory` 返回列表，而 `reflect_on_memory` 会结合所有相关记忆进行推理，生成单个答复。与直接检索事实相比，它更适合回答“你对我的工程风格了解多少？”之类的问题。
 
-## 设置Agno持久记忆 {#setting-up-agno-persistent-memory}
+## 设置 Agno 持久记忆 {#setting-up-agno-persistent-memory}
 
-### 第一步：开始Hindsight {#step-1-start-hindsight}
+### 第 1 步：启动 Hindsight {#step-1-start-hindsight}
 
 ```bash
 pip install hindsight-all
@@ -82,9 +80,9 @@ export HINDSIGHT_API_LLM_API_KEY=YOUR_OPENAI_KEY
 hindsight-api
 ```
 
-这在本地`http://localhost:8888` 开始Hindsight。唯一的外部依赖是用于实体提取的 LLM API 键。
+这会在本地 `http://localhost:8888` 启动 Hindsight。唯一的外部依赖是用于实体提取的 LLM API 密钥。
 
-不想自行托管？使用[Hindsight Cloud](https://ui.hindsight.vectorize.io)并完全跳过此步骤。
+不想自行托管？使用 [Hindsight Cloud](https://ui.hindsight.vectorize.io)，即可完全跳过这一步。
 
 ### 第 2 步：安装 Agno 集成 {#step-2-install-the-agno-integration}
 
@@ -92,7 +90,7 @@ hindsight-api
 pip install hindsight-agno agno
 ```
 
-### 第3步：将`HindsightTools`添加到您的智能体中 {#step-3-add-hindsighttools-to-your-agent}
+### 第 3 步：将 `HindsightTools` 添加到智能体 {#step-3-add-hindsighttools-to-your-agent}
 
 ```python
 from agno.agent import Agent
@@ -108,30 +106,30 @@ agent = Agent(
 )
 ```
 
-这就是完整的设置。智能体现在拥有三种工具：
+至此就完成了全部设置。现在，智能体拥有三个工具：
 
-- **`retain_memory`**：将信息存储到长期记忆中
-- **`recall_memory`**：搜索长期记忆中的相关事实
-- **`reflect_on_memory`**：从积累的记忆中综合出一个合理的答案
+- **`retain_memory`**：将信息存入长期记忆
+- **`recall_memory`**：在长期记忆中搜索相关事实
+- **`reflect_on_memory`**：根据积累的记忆综合生成有理有据的答案
 
-### 第四步：测试跨会话记忆 {#step-4-test-cross-session-memory}
+### 第 4 步：测试跨会话记忆 {#step-4-test-cross-session-memory}
 
 ```python
-#第一节：智能体存储上下文
+# 第一次会话：智能体存入上下文
 agent.print_response(
-    "记住我更喜欢函数式编程模式"
-    "我正在Python构建数据管道。"
+    "Remember that I prefer functional programming patterns "
+    "and I am building a data pipeline in Python."
 )
 
-#后续课程：智能体回忆上下文
-agent.print_response("我应该采取什么方法来处理错误？")
+# 后续会话：智能体召回上下文
+agent.print_response("What approach should I take for error handling?")
 ```
 
-重新启动进程并再次运行第二个调用。智能体仍然知道。 Agno持久记忆存储在Hindsight中，而不是智能体的上下文窗口中。
+重启进程，再次运行第二个调用。智能体依然记得这些信息。Agno 的持久记忆存储在 Hindsight 中，而非智能体的上下文窗口里。
 
-### 第5步：使用`memory_instructions`自动注入记忆 {#step-5-auto-inject-memories-with-memoryinstructions}
+### 第 5 步：使用 `memory_instructions` 自动注入记忆 {#step-5-auto-inject-memories-with-memoryinstructions}
 
-对于您希望在每次运行开始时自动注入记忆的情况，请使用`memory_instructions`：
+如果你希望在每次运行开始时自动注入记忆，请使用 `memory_instructions`：
 
 ```python
 from hindsight_agno import HindsightTools, memory_instructions
@@ -149,41 +147,41 @@ agent = Agent(
 )
 ```
 
-每到`agent.run()`，`memory_instructions`都会调用Hindsight的记忆召回API，并将相关记忆注入系统提示符中。智能体以上下文开始每次对话。无需调用工具。
+每次调用 `agent.run()` 时，`memory_instructions` 都会调用 Hindsight 的召回 API，并将相关记忆注入系统提示。智能体在每次对话开始时就能获得上下文，无需调用工具。
 
-您可以自定义记忆召回查询、结果计数和前缀：
+你可以自定义召回查询、结果数量和前缀：
 
 ```python
 memory_instructions(
     bank_id="user-123",
     hindsight_api_url="http://localhost:8888",
-    query="用户偏好、历史记录和上下文",
+    query="user preferences, history, and context",
     max_results=10,
-    prefix="以下是你已知的用户信息：\n",
+    prefix="Here is what you know about this user:\n",
 )
 ```
 
-如果记忆召回不返回任何内容或失败，`memory_instructions` 返回空字符串。智能体运行正常。
+如果 Recall 没有返回内容或调用失败，`memory_instructions` 会返回空字符串。智能体仍会照常运行。
 
-## 高级Agno记忆配置 {#advanced-agno-memory-configuration}
+## Agno 记忆高级配置 {#advanced-agno-memory-configuration}
 
-### 每用户记忆库隔离 {#per-user-bank-isolation}
+### 按用户隔离记忆库 {#per-user-bank-isolation}
 
-对于服务多个用户的智能体，`HindsightTools`动态解析记忆库ID。决议顺序：
+对于服务多个用户的智能体，`HindsightTools` 会动态解析记忆库 ID。解析顺序如下：
 
-1. `bank_resolver`，用于自定义逻辑的可调用`(RunContext) -> str`
-2. `bank_id`，传递给构造函数的静态记忆库ID
-3. `RunContext.user_id`，用于自动每用户记忆库
+1. `bank_resolver`：用于自定义逻辑的可调用对象 `(RunContext) -> str`
+2. `bank_id`：传给构造函数的静态记忆库 ID
+3. `RunContext.user_id`：用于自动创建按用户隔离的记忆库
 
 ```python
-#每个用户记忆库
+# 根据 RunContext 为每个用户创建记忆库
 agent = Agent(
     model=OpenAIChat(id="gpt-4o-mini"),
     tools=[HindsightTools(hindsight_api_url="http://localhost:8888")],
     user_id="user-123",
 )
 
-#基于团队的记忆库的自定义解析器
+# 按团队划分记忆库的自定义解析器
 def resolve_bank(ctx):
     return f"team-{ctx.user_id.split('-')[0]}"
 
@@ -196,10 +194,10 @@ agent = Agent(
 )
 ```
 
-### 选择要包含的记忆工具 {#selecting-which-memory-tools-to-include}
+### 选择要加入的记忆工具 {#selecting-which-memory-tools-to-include}
 
 ```python
-#只读智能体：记忆、回忆和反思，不存储
+# 只读智能体：可以召回和反思，但不存入记忆
 tools = HindsightTools(
     bank_id="user-123",
     hindsight_api_url="http://localhost:8888",
@@ -209,7 +207,7 @@ tools = HindsightTools(
 )
 ```
 
-在多智能体设置中有用：一个智能体积累知识，另一个智能体从中回答问题。
+这在多智能体设置中很有用：一个智能体积累知识，另一个智能体据此回答问题。
 
 ### 全局配置 {#global-configuration}
 
@@ -227,7 +225,7 @@ agent1_tools = HindsightTools(bank_id="user-alice")
 agent2_tools = HindsightTools(bank_id="user-bob")
 ```
 
-### Hindsight Cloud端配置 {#hindsight-cloud-configuration}
+### Hindsight Cloud 配置 {#hindsight-cloud-configuration}
 
 ```python
 from hindsight_agno import configure
@@ -238,9 +236,9 @@ configure(
 )
 ```
 
-无需管理守护进程。没有本地Postgres。云服务器处理提取、索引和检索。
+无需管理守护进程，也无需本地 Postgres。云端服务器会处理提取、索引和检索。
 
-## 完整工作示例 {#full-working-example}
+## 完整示例 {#full-working-example}
 
 ```python
 from agno.agent import Agent
@@ -262,54 +260,54 @@ agent = Agent(
     )],
 )
 
-print("--- 运行 1：教授智能体 ---")
+print("--- Run 1: Teaching the agent ---")
 agent.print_response(
-    "记住：我是一名后端工程师。我使用 Python 和 Rust。"
-    "与大型框架相比，我更喜欢小型、可组合的库。"
+    "Remember: I am a backend engineer. I use Python and Rust. "
+    "I prefer small, composable libraries over large frameworks."
 )
 
-print("\n--- 运行 2：智能体召回上下文 ---")
-agent.print_response("为我的下一个项目推荐一个网络框架。")
+print("\n--- Run 2: Agent recalls context ---")
+agent.print_response("Recommend a web framework for my next project.")
 
 print("\n--- Run 3: Agent synthesizes ---")
-agent.print_response("你对我的工程理念了解多少？")
+agent.print_response("What do you know about my engineering philosophy?")
 ```
 
-运行两次。智能体会记住第一次执行以来的所有事情。
+运行两遍。智能体会记住第一次执行以来的所有信息。
 
-## 何时不使用Agno持久记忆 {#when-not-to-use-agno-persistent-memory}
+## 何时不该使用 Agno 持久记忆 {#when-not-to-use-agno-persistent-memory}
 
-跳过记忆层，实现从不与同一用户交互两次的一次性智能体、每个请求完全独立的无状态API处理程序，或者您想要完全控制输入提示内容的智能体。在这些情况下，请直接使用 Hindsight Python 客户端，而不是 Agno 集成。
+对于只运行一次、不会与同一用户再次交互的智能体；每个请求都完全独立的无状态 API 处理程序；或需要完全控制哪些内容进入提示的智能体，可以跳过记忆层。在这些情况下，直接使用 Hindsight Python 客户端，而不是 Agno 集成。
 
-## 与替代品相比如何 {#how-it-compares-to-alternatives}
+## 与其他方案的比较 {#how-it-compares-to-alternatives}
 
-|方法|优势|弱点|最适合|
+| 方案 | 优势 | 劣势 | 适用场景 |
 |---|---|---|---|
-|**Hindsight + Agno**|多策略检索（语义+BM25+图+时态）、结构化事实提取、合成|需要Hindsight 服务器或云|需要深度记忆的多会话智能体|
-|**手动消息**|内置于Agno，无依赖|不持久，增长到上下文窗口限制|简短的单会话对话|
+| **Hindsight + Agno** | 多策略检索（语义 + BM25 + 图谱 + 时间）、结构化事实提取、综合生成 | 需要 Hindsight 服务器或云服务 | 需要深度记忆的多会话智能体 |
+| **手动传递消息** | Agno 内置，无依赖项 | 不具持久性，内容会增长至上下文窗口上限 | 简短的单会话对话 |
 
-## 陷阱 {#pitfalls}
+## 注意事项 {#pitfalls}
 
-**记忆库ID冲突。** 每个`bank_id` 都是一个单独的记忆存储。对每个用户、每个智能体或每个项目使用唯一的记忆库 ID，以防止不相关的智能体之间的记忆流失。
+**记忆库 ID 冲突。** 每个 `bank_id` 都对应一个独立的记忆存储。请为每位用户、每个智能体或每个项目使用唯一的记忆库 ID，避免无关智能体之间的记忆相互串扰。
 
-**记忆指令延迟。** `memory_instructions` 在每个 `agent.run()` 上调用记忆召回 API。对于延迟敏感的应用程序，请使用`budget="low"`和较小的`max_results`。 根据记忆库大小和网络条件，记忆召回会增加大约 50 到 200 毫秒。
+**记忆指令带来的延迟。** `memory_instructions` 会在每次调用 `agent.run()` 时请求召回 API。对于延迟敏感的应用，请使用 `budget="low"` 并设置较小的 `max_results`。根据记忆库大小和网络状况，召回大约会增加 50 到 200 ms 的延迟。
 
-**重复的记忆。**Hindsight在事实级别上进行重复数据删除，但在系统中提示智能体指导何时存储新事实会有所帮助。
+**重复记忆。** Hindsight 会在事实层面去重，但在系统提示中指导智能体何时存入新事实也会有所帮助。
 
 ## 回顾 {#recap}
 
-||Agno 默认|与 Hindsight|
+| | Agno 默认情况 | 使用 Hindsight |
 |---|---|---|
-|跨课程记忆|无|自动|
-|记忆设置|无|`pip install hindsight-agno`|
-|记忆召回机制|不可用|通过工具或指令进行语义搜索|
-|每用户隔离|否|通过 `user_id` 或 `bank_resolver`|
-|托管|不适用|本地或[Hindsight Cloud](https://ui.hindsight.vectorize.io)|
+| 跨会话记忆 | 无 | 自动提供 |
+| 记忆设置 | 无 | `pip install hindsight-agno` |
+| 召回机制 | 不可用 | 通过工具或指令进行语义检索 |
+| 按用户隔离 | 不支持 | 通过 `user_id` 或 `bank_resolver` 实现 |
+| 托管方式 | 不适用 | 本地或 [Hindsight Cloud](https://ui.hindsight.vectorize.io) |
 
 ## 后续步骤 {#next-steps}
 
 - **Hindsight Cloud**：[免费注册](https://ui.hindsight.vectorize.io)
-- **本地尝试**: `pip install hindsight-all hindsight-agno agno` 并运行上面的示例
-- **配置参考**：[Agno集成文档](/sdks/integrations/agno)
-- **探索其他集成**：[Pydantic AI](/sdks/integrations/pydantic-ai)、[LangGraph](/sdks/integrations/langgraph)、[CrewAI](/sdks/integrations/crewai)
-- **检查知识图谱**：使用[Hindsight Cloud端仪表板](https://ui.hindsight.vectorize.io)浏览提取的事实、实体和关系
+- **在本地试用**：运行上面的示例，或执行 `pip install hindsight-all hindsight-agno agno`
+- **配置参考**：[Agno 集成文档](/sdks/integrations/agno)
+- **了解其他集成**：[Pydantic AI](/sdks/integrations/pydantic-ai)、[LangGraph](/sdks/integrations/langgraph)、[CrewAI](/sdks/integrations/crewai)
+- **查看知识图谱**：使用 [Hindsight Cloud 控制面板](https://ui.hindsight.vectorize.io)浏览提取出的事实、实体及关系

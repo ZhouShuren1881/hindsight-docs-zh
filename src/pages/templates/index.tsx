@@ -89,7 +89,7 @@ function TemplateCard({template, onSelect}: {template: Template; onSelect: () =>
         <p className={styles.cardDescription}>{template.description}</p>
       </div>
       <div className={styles.cardFooter}>
-        <span className={styles.viewLabel}>查看清单 &rarr;</span>
+        <span className={styles.viewLabel}>查看模板清单 &rarr;</span>
       </div>
     </button>
   );
@@ -125,7 +125,7 @@ function ManifestModal({
         </div>
         <div className={styles.modalBody}>
           <div className={styles.manifestHeader}>
-            <span className={styles.manifestLabel}>模板清单</span>
+            <span className={styles.manifestLabel}>模板配置清单</span>
             <button className={styles.copyButton} onClick={handleCopy}>
               {copied ? '已复制！' : '复制 JSON'}
             </button>
@@ -162,19 +162,19 @@ export default function TemplateGallery(): React.ReactElement {
   }, [templates, search, selectedCategory]);
 
   return (
-    <Layout title="记忆库模板中心" description="适用于常见使用场景的预设记忆库模板">
+    <Layout title="记忆库模板中心" description="适用于常见场景的预设记忆库模板">
       <div className={clsx('hs-hero-band', styles.heroSection)}>
         <h1 className={styles.heroTitle}>记忆库模板中心</h1>
         <p className={styles.heroSubtitle}>
-          使用预设记忆库模板快速上手。浏览、预览并导入到你的 Hindsight 记忆库。
-          {' '}<Link to="/developer/api/bank-templates" className={styles.heroLink}>了解模板的工作原理 &rarr;</Link>
+          使用预设记忆库模板快速上手。浏览模板、预览配置，并将其导入 Hindsight 记忆库。
+          {' '}<Link to="/developer/api/bank-templates" className={styles.heroLink}>了解模板的工作方式 &rarr;</Link>
         </p>
 
         <div className={styles.hubSearchWrapper}>
           <input
             type="text"
             className={styles.hubSearchInput}
-            placeholder="搜索模板…"
+            placeholder="搜索模板..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             aria-label="搜索模板"
@@ -218,7 +218,7 @@ export default function TemplateGallery(): React.ReactElement {
 
         {filtered.length === 0 ? (
           <div className={styles.empty}>
-            <p>没有符合搜索条件的模板。</p>
+            <p>没有模板符合搜索条件。</p>
             <button
               className={styles.resetButton}
               onClick={() => {
@@ -238,9 +238,9 @@ export default function TemplateGallery(): React.ReactElement {
 
         <div className={styles.submitBanner}>
           <div className={styles.submitBannerContent}>
-            <h3 className={styles.submitBannerTitle}>有想分享的模板吗？</h3>
+            <h3 className={styles.submitBannerTitle}>你有模板想分享吗？</h3>
             <p className={styles.submitBannerText}>
-              与社区分享模板。提交包含模板的 issue，我们会将其加入记忆库模板列表。
+              欢迎与社区分享。请提交一个附有模板的 issue，我们会将其加入记忆库模板库。
             </p>
             <Link
               href={SUBMIT_TEMPLATE_URL}

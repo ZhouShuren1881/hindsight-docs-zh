@@ -1,150 +1,150 @@
 ---
-title: "指南：将 Hermes 从无状态聊天转为有状态智能体"
+title: "指南：将 Hermes 从无状态聊天转变为有状态智能体"
 authors: [benfrank241]
 date: 2026-06-02T15:00:00Z
 tags: [how-to, hermes, agents, memory]
-description: "为 Hermes 添加持久记忆，跨会话延续上下文、偏好和项目历史，而非每次从零开始。"
+description: "为 Hermes 添加持久记忆，让上下文、偏好和项目历史能够跨会话延续，而不是每次都从零开始。"
 image: /img/guides/guide-turn-hermes-from-stateless-chat-into-a-stateful-agent.svg
 hide_table_of_contents: true
 ---
 
-![指南：将 Hermes 从无状态聊天转为有状态智能体](/img/guides/guide-turn-hermes-from-stateless-chat-into-a-stateful-agent.svg)
+![指南：将 Hermes 从无状态聊天转变为有状态智能体](/img/guides/guide-turn-hermes-from-stateless-chat-into-a-stateful-agent.svg)
 
-聊天智能体默认通常**无状态**。窗口内推理出色，但会话结束关系重置，适合一次请求，却不足以支持真实助手流程。
+开箱即用的聊天智能体通常是**无状态**的。它可以在当前上下文窗口内很好地推理，但会话结束后，双方的协作关系就会重置。这对于一次性提示来说没问题，却难以胜任真实的助手工作流。
 
-成为**有状态智能体**缺的是持久记忆。Hindsight 长期层让事实跨边界保留、按需恢复。
+如果你希望 Hermes 更像一个**有状态智能体**，缺少的环节就是持久记忆。Hindsight 为 Hermes 提供长期记忆层，让相关事实能够跨越会话边界保存下来，并在之后需要时重新取回。
 
-这让良好聊天变成有用持续智能体。
+这就是从聊得不错到持续发挥作用的智能体之间的转变。
 
 <!-- truncate -->
 
 > **快速解答**
 >
-> 1. 连接 Hindsight。
-> 2. 稳定库策略。
-> 3. 跨会话保留重要内容。
-> 4. 新会话确认召回。
-> 5. 一次聊天扩展为可重用流程。
+> 1. 将 Hermes 连接到 Hindsight。
+> 2. 选择稳定的记忆库策略。
+> 3. 让记忆在跨会话使用时保存重要内容。
+> 4. 开启新会话，确认记忆仍能召回。
+> 5. 从一次性聊天扩展为可复用的工作流。
 
-## 无状态聊天擅长什么 {#what-stateless-chat-is-good-at}
+## 无状态聊天适合做什么 {#what-stateless-chat-is-good-at}
 
-当前会话上下文足够时，它很擅长局部推理。
+无状态聊天擅长局部推理。只要为 Hermes 提供足够的当前会话上下文，它就能出色地完成任务。
 
-问题是延续。
+问题在于连续性。
 
-再次打开不会自动知道：
+下次打开 Hermes 时，它不会自动知道：
 
-- 偏好。
-- 持续项目。
-- 上周决策。
-- 当前流程的重要人或账户。
+- 你的偏好；
+- 正在进行的项目；
+- 你上周做出的决定；
+- 当前工作流中哪些人或账户很重要。
 
-因此当下聪明，长期健忘。
+因此，许多智能体当下显得很聪明，时间一长却容易忘事。
 
-## 有状态行为是什么 {#what-stateful-behavior-looks-like}
+## 有状态行为是什么样的 {#what-stateful-behavior-looks-like}
 
-不只回答当前消息，还延续关系和工作。
+有状态智能体不只是回答当前消息，还会延续双方的协作关系和正在进行的工作。
 
-Hermes 因此可：
+这意味着 Hermes 可以：
 
-- 无需再告知就召回偏好。
-- 无需完整背景恢复项目。
-- 跨对话延续客户账户。
-- 重复会话积累运维知识。
+- 无需你再次告知，就召回你的偏好；
+- 无需完整背景介绍，就继续处理项目；
+- 在不同对话之间延续客户或账户的上下文；
+- 在多次会话中逐步积累运维知识。
 
-记忆使这成为可能。
+记忆让这一切成为可能。
 
 ## 步骤 1：添加记忆层 {#step-1-add-a-memory-layer}
 
-最短路径：
+最快的配置方式是：
 
 ~~~bash
 hermes plugins install hindsight
 hermes memory setup           # 选择 "hindsight"
 ~~~
 
-选择 **Hindsight**。连接后跨会话存储召回，而非每聊重启。
+选择 **Hindsight**。连接后，Hermes 就能跨会话存入并召回上下文，而不必把每次聊天都当作全新开始。
 
-## 步骤 2：选择策略 {#step-2-pick-a-bank-strategy}
+## 步骤 2：选择记忆库策略 {#step-2-pick-a-bank-strategy}
 
-范围合理才有状态。
+只有记忆范围设置合理，有状态行为才能发挥作用。
 
-好的默认：
+合适的默认策略：
 
-- 每用户助手一个库。
-- 每项目一个库。
-- 每客户或流程一个库。
+- 每个用户助手使用一个记忆库；
+- 每个项目使用一个记忆库；
+- 每个客户或工作流使用一个记忆库。
 
-不好的默认：
+不合适的默认策略：
 
-- 无关工作巨库。
+- 用一个庞大的记忆库存放彼此无关的工作。
 
-范围越清晰，召回越好。
+范围越清晰，召回效果越好。
 
-## 步骤 3：让真实工作产生记忆 {#step-3-let-real-work-create-the-memory}
+## 步骤 3：让实际工作产生记忆 {#step-3-let-real-work-create-the-memory}
 
-无需手动写每条。
+你不必手动编写每一条记忆。
 
-自然使用中，系统保存对话背后持久偏好、决策、项目细节、重复问题和关系上下文。
+你自然地使用 Hermes 时，系统可以存入对话背后值得长期保留的事实：偏好、决定、项目细节、反复出现的问题，以及关系上下文。
 
-正常使用变成不断积累的资产。
+这样，日常使用就能逐步积累价值。
 
-## 步骤 4：新会话验证 {#step-4-verify-statefulness-with-a-fresh-session}
+## 步骤 4：通过新会话验证有状态行为 {#step-4-verify-statefulness-with-a-fresh-session}
 
-简单测试：
+可以做一个简单测试：
 
-1. 提供之后重要的事实。
-2. 结束。
-3. 新会话。
-4. 不重复背景询问。
+1. 告诉 Hermes 一条之后可能有用的事实。
+2. 结束会话。
+3. 开启一个新会话。
+4. 不再重复提供背景，直接询问刚才那条事实。
 
-正确回答就从无状态转为有状态。
+如果 Hermes 能正确回答，这个工作流就从无状态转为有状态了。
 
-## 最重要场景 {#where-this-matters-most}
+## 这对哪些场景最重要 {#where-this-matters-most}
 
-### 个人助手 {#personal-assistant-workflows}
+### 个人助手工作流 {#personal-assistant-workflows}
 
-偏好计划无需每次重输。
+你不应该每次都重新输入自己的偏好和正在推进的计划。
 
-### 客户流程 {#customer-facing-workflows}
+### 面向客户的工作流 {#customer-facing-workflows}
 
-账户、相关人和此前对话延续。
+账户、相关人员和先前的对话内容应当能够延续下去。
 
-### 编码流程 {#coding-workflows}
+### 编码工作流 {#coding-workflows}
 
-代码库和此前调试下一会话可用。
+下次会话应当能继续使用代码库背景和之前的调试成果。
 
-## 为何优于更大窗口 {#why-this-is-better-than-bigger-context-windows}
+## 为什么这优于扩大上下文窗口 {#why-this-is-better-than-bigger-context-windows}
 
-更大窗口帮助当前运行，不能独自产生持久跨会话记忆。
+更大的上下文窗口有助于当前这次运行，但它本身无法提供持久的跨会话记忆。
 
-有状态不是更多 token，而是当前需要时找回过去正确上下文。
+有状态行为不只是增加 token 数量，而是在当前任务需要时取回过去恰当的上下文。
 
-因此大窗口模型仍需记忆。
+因此，即便模型拥有很大的上下文窗口，持久记忆仍然重要。
 
 ## 常见错误 {#common-mistakes}
 
-- 混淆聊天历史和长期记忆。
-- 无关流程超大库。
-- 不测新会话却期待有状态。
-- 仅粘贴更多上下文解决延续。
+- 把聊天历史和长期记忆混为一谈；
+- 用一个过大的记忆库存放彼此无关的工作流；
+- 不在新会话中测试召回，却期待系统具备有状态行为；
+- 试图只靠在每次聊天中粘贴更多上下文来解决连续性问题。
 
 ## 常见问题 {#faq}
 
-### 有状态只是聊天历史吗？ {#is-stateful-hermes-just-chat-history}
+### 有状态的 Hermes 只是聊天历史吗？ {#is-stateful-hermes-just-chat-history}
 
-不是，重点是跨会话可用记忆，而非长记录。
+不是。重点在于跨会话可用的记忆，而不只是延长同一份对话记录。
 
-### 需改模型吗？ {#do-i-need-to-change-the-model}
+### 我需要更换模型吗？ {#do-i-need-to-change-the-model}
 
-不用，是记忆层变更。
+不需要。这是对记忆层的调整，不是更换模型。
 
-### 有状态记忆可共享吗？ {#can-stateful-memory-be-shared}
+### 有状态记忆可以共享吗？ {#can-stateful-memory-be-shared}
 
-可以，流程受益时。
+可以，只要工作流适合使用共享记忆库。
 
 ## 后续步骤 {#next-steps}
 
-- 阅读[无状态与记忆驱动智能体](/guides/2026/04/23/guide-stateless-agents-vs-memory-powered-agents)。
-- 查阅 [Hermes 记忆模式](/guides/2026/04/14/guide-hermes-memory-modes-with-hindsight-hybrid-context-tools)。
-- 从 [Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)开始。
+- 阅读[无状态智能体与记忆驱动的智能体](/guides/2026/04/23/guide-stateless-agents-vs-memory-powered-agents)
+- 查看[Hermes 搭配 Hindsight 的记忆模式](/guides/2026/04/14/guide-hermes-memory-modes-with-hindsight-hybrid-context-tools)
+- 从 [Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)开始

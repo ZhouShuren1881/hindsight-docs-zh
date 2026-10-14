@@ -1,22 +1,22 @@
 ---
 sidebar_position: 6
-title: "Pydantic AI 持久记忆Hindsight |整合"
-description: "通过Hindsight为Pydantic AI智能体添加长期记忆。异步原生记忆存储、记忆召回和反思工具——在所有智能体运行中持久记忆，无需线程池黑客攻击。"
+title: "使用 Hindsight 为 Pydantic AI 添加持久记忆 | 集成"
+description: "通过 Hindsight 为 Pydantic AI 智能体添加长期记忆。原生异步的 Retain、Recall 和 Reflect 工具可在智能体的每次运行中保留持久记忆，无需线程池变通方案。"
 ---
 
 # Pydantic AI {#pydantic-ai}
 
-持久记忆工具[Pydantic AI](https://ai.pydantic.dev/) 智能体，通过 Hindsight 提供记忆。通过记忆存储、记忆召回和反思，为您的智能体提供长期记忆——所有这些都是异步原生的，没有线程池黑客。
+通过 Hindsight 为 [Pydantic AI](https://ai.pydantic.dev/) 智能体提供持久记忆工具。借助 Retain（存入）、Recall（召回）和 Reflect（反思），为智能体添加长期记忆；这些工具都原生支持异步，无需线程池变通方案。
 
 [查看更新日志 →](/changelog/integrations/pydantic-ai)
 
 ## 功能 {#features}
 
-- **原生异步工具** — 使用Pydantic AI的异步工具接口直接（`aretain`，`arecall`，`areflect`)
-- **记忆指令** — 自动将相关记忆注入到通过 运行的每个智能体中 `instructions=[...]`
-- **三种记忆工具** — 记忆存储（存储）、记忆召回（搜索）、反思（综合） — 包括任意组合
-- **简单配置** — 全局配置一次，或者直接传客户端
-- **轻量** — 取决于 `pydantic-ai-slim` 避免拉入所有模型提供商
+- **原生异步工具** — 直接使用 Pydantic AI 的异步工具接口（`aretain`、`arecall`、`areflect`）
+- **记忆指令** — 通过 `instructions=[...]` 自动将相关记忆注入智能体的每次运行
+- **三种记忆工具** — Retain（存入）、Recall（召回）、Reflect（反思）；可任选组合
+- **简单配置** — 一次性进行全局配置，也可以直接传入客户端
+- **轻量** — 依赖 `pydantic-ai-slim`，避免引入所有模型供应商
 
 ## 安装 {#installation}
 
@@ -24,10 +24,10 @@ description: "通过Hindsight为Pydantic AI智能体添加长期记忆。异步�
 pip install hindsight-pydantic-ai
 ```
 
-## 快速入门 {#quick-start}
+## 快速开始 {#quick-start}
 
 :::tip 推荐：Hindsight Cloud
-[免费注册](https://ui.hindsight.vectorize.io) 并获取一个 API 密钥 — 无需自托管。
+[免费注册](https://ui.hindsight.vectorize.io)并获取 API 密钥，无需自行托管。
 :::
 
 ```python
@@ -43,31 +43,31 @@ agent = Agent(
     instructions=[memory_instructions(client=client, bank_id="user-123")],
 )
 
-result = await agent.run("关于我的喜好，你还记得什么？")
+result = await agent.run("What do you remember about my preferences?")
 print(result.output)
 ```
 
-智能体现在可以调用三个工具：
+现在，智能体可以调用以下三个工具：
 
-- **`hindsight_retain`** — 将信息存储到长期记忆中
+- **`hindsight_retain`** — 将信息存入长期记忆
 - **`hindsight_recall`** — 在长期记忆中搜索相关事实
-- **`hindsight_reflect`** — 根据记忆合成一个合理的答案
+- **`hindsight_reflect`** — 根据记忆综合生成有理有据的答案
 
-`memory_instructions` callable 会在每次运行时自动调用相关记忆并将其注入系统提示符中。
+`memory_instructions` 可调用对象会在每次运行时自动召回相关记忆，并将其注入系统提示词。
 
-### 自托管（本地开发） {#self-hosting-local-development}
+### 自行托管（本地开发） {#self-hosting-local-development}
 
-如果你通过以下命令在本地运行 Hindsight：`./scripts/dev/start-api.sh`，替换服务地址：
+如果你使用 `./scripts/dev/start-api.sh` 在本地运行 Hindsight，请替换 URL：
 
 ```python
 client = Hindsight(base_url="http://localhost:8888")
 ```
 
-参见[安装指南](/developer/installation) 用于自托管设置。
+自托管设置请参阅[安装指南](/developer/installation)。
 
-## 仅工具（无自动注射） {#tools-only-no-auto-injection}
+## 仅使用工具（不自动注入） {#tools-only-no-auto-injection}
 
-如果你希望智能体决定何时使用记忆而不是总是注入上下文：
+如果你希望由智能体自行决定何时使用记忆，而不是每次都注入上下文：
 
 ```python
 agent = Agent(
@@ -76,9 +76,9 @@ agent = Agent(
 )
 ```
 
-## 仅说明（无工具） {#instructions-only-no-tools}
+## 仅使用指令（不使用工具） {#instructions-only-no-tools}
 
-如果您只想自动注入记忆而不提供智能体显式记忆工具：
+如果你只想自动注入记忆，而不向智能体提供显式的记忆工具：
 
 ```python
 agent = Agent(
@@ -89,7 +89,7 @@ agent = Agent(
 
 ## 选择工具 {#selecting-tools}
 
-仅包含您需要的工具：
+只包含你需要的工具：
 
 ```python
 tools = create_hindsight_tools(
@@ -97,106 +97,106 @@ tools = create_hindsight_tools(
     bank_id="user-123",
     include_retain=True,
     include_recall=True,
-    include_reflect=False,  #省略反思工具
+    include_reflect=False,  # 不包含 reflect
 )
 ```
 
 ## 全局配置 {#global-configuration}
 
-不要将客户端传递给每个调用，而是配置一次：
+你可以一次性配置，而不必在每次调用时都传入客户端：
 
 ```python
 from hindsight_pydantic_ai import configure, create_hindsight_tools
 
 configure(
-    hindsight_api_url="https://api.hindsight.vectorize.io",  #Hindsight Cloud（默认）
+    hindsight_api_url="https://api.hindsight.vectorize.io",  # Hindsight Cloud（默认值）
     api_key="your-api-key",       # 或设置 HINDSIGHT_API_KEY 环境变量
-    budget="mid",                  # 记忆召回预算：low/mid/high
-    max_tokens=4096,               #记忆结果的最大 token 数数
-    tags=["env:prod"],             #存储记忆的标签
-    recall_tags=["scope:global"],  #要过滤的标签 记忆召回
+    budget="mid",                  # Recall 预算：low/mid/high
+    max_tokens=4096,               # Recall 结果的最大 token 数
+    tags=["env:prod"],             # 应用于存入记忆的标签
+    recall_tags=["scope:global"],  # 用于筛选 Recall 结果的标签
     recall_tags_match="any",       # 标签匹配模式：any/all/any_strict/all_strict
 )
 
-#现在无需传递客户端即可创建工具 - 使用全局配置
+# 现在可以不传入客户端来创建工具，它们会使用全局配置
 tools = create_hindsight_tools(bank_id="user-123")
 ```
 
-## 每个工具覆盖 {#per-tool-overrides}
+## 单个工具的覆盖配置 {#per-tool-overrides}
 
-构造函数参数覆盖全局配置：
+构造函数参数会覆盖全局配置：
 
 ```python
 tools = create_hindsight_tools(
     bank_id="user-123",
-    budget="high",             #覆盖全局预算
-    max_tokens=8192,           #覆盖全局max_tokens
-    tags=["session:abc"],      #覆盖全局标签
+    budget="high",             # 覆盖全局预算
+    max_tokens=8192,           # 覆盖全局 max_tokens
+    tags=["session:abc"],      # 覆盖全局标签
 )
 ```
 
 ## 记忆指令选项 {#memory-instructions-options}
 
-自定义注入哪些记忆以及如何注入：
+自定义要注入哪些记忆，以及注入方式：
 
 ```python
 instructions_fn = memory_instructions(
     client=client,
     bank_id="user-123",
-    query="有关用户的相关上下文",  #搜索什么
-    budget="low",                              #保持快点
-    max_results=5,                             #限制注入记忆
-    max_tokens=4096,                           #最大记忆召回令牌
-    prefix="Relevant memories:\n",             #记忆列表之前的文字
-    tags=["scope:global"],                     #按标签过滤
-    tags_match="any",                          #标签匹配模式
+    query="relevant context about the user",  # 要搜索的内容
+    budget="low",                              # 加快检索
+    max_results=5,                             # 限制注入的记忆数量
+    max_tokens=4096,                           # Recall 结果的最大 token 数
+    prefix="Relevant memories:\n",             # 添加在记忆列表前的文本
+    tags=["scope:global"],                     # 按标签筛选
+    tags_match="any",                          # 标签匹配模式
 )
 ```
 
-## API参考 {#api-reference}
+## API 参考 {#api-reference}
 
-### `create_hindsight_tools()` {#createhindsighttools}
+### `create_hindsight_tools()` {#create_hindsight_tools}
 
-|参数|默认|说明|
+| 参数 | 默认值 | 说明 |
 |---|---|---|
-|`bank_id`|*必填*|Hindsight记忆库ID|
-|`client`|`None`|预配置Hindsight客户端|
-|`hindsight_api_url`|`None`|API URL（如果没有提供客户端则使用）|
-|`api_key`|`None`|API 密钥（如果没有提供客户端则使用）|
-|`budget`|`"mid"`|记忆召回与反思的预算级别 (low/mid/high)|
-|`max_tokens`|`4096`|记忆识别结果的最大 token 数|
-|`tags`|`None`|存储记忆时应用的标签|
-|`recall_tags`|`None`|搜索时要过滤的标签|
-|`recall_tags_match`|`"any"`|标签匹配模式|
-|`include_retain`|`True`|包括记忆存储（存储）工具|
-|`include_recall`|`True`|包括记忆召回（搜索）工具|
-|`include_reflect`|`True`|包括 反思（综合）工具|
+| `bank_id` | *必填* | Hindsight 记忆库 ID |
+| `client` | `None` | 预先配置的 Hindsight 客户端 |
+| `hindsight_api_url` | `None` | API URL（未提供客户端时使用） |
+| `api_key` | `None` | API 密钥（未提供客户端时使用） |
+| `budget` | `"mid"` | Recall/Reflect 预算级别（low/mid/high） |
+| `max_tokens` | `4096` | Recall 结果的最大 token 数 |
+| `tags` | `None` | 存入记忆时应用的标签 |
+| `recall_tags` | `None` | 搜索记忆时用于筛选的标签 |
+| `recall_tags_match` | `"any"` | 标签匹配模式 |
+| `include_retain` | `True` | 包含 Retain（存入）工具 |
+| `include_recall` | `True` | 包含 Recall（召回）工具 |
+| `include_reflect` | `True` | 包含 Reflect（反思）工具 |
 
-### `memory_instructions()` {#memoryinstructions}
+### `memory_instructions()` {#memory_instructions}
 
-|参数|默认|说明|
+| 参数 | 默认值 | 说明 |
 |---|---|---|
-|`bank_id`|*必填*|Hindsight记忆库ID|
-|`client`|`None`|预配置Hindsight客户端|
-|`hindsight_api_url`|`None`|API URL（如果没有提供客户端则使用）|
-|`api_key`|`None`|API 密钥（如果没有提供客户端则使用）|
-|`query`|`"relevant context about the user"`|记忆注入的记忆召回查询|
-|`budget`|`"low"`|记忆召回预算水平|
-|`max_results`|`5`|注入的最大记忆|
-|`max_tokens`|`4096`|记忆识别结果的最大 token 数|
-|`prefix`|`"Relevant memories:\n"`|记忆列表之前的文本|
-|`tags`|`None`|用于过滤记忆召回结果的标签|
-|`tags_match`|`"any"`|标签匹配模式|
+| `bank_id` | *必填* | Hindsight 记忆库 ID |
+| `client` | `None` | 预先配置的 Hindsight 客户端 |
+| `hindsight_api_url` | `None` | API URL（未提供客户端时使用） |
+| `api_key` | `None` | API 密钥（未提供客户端时使用） |
+| `query` | `"relevant context about the user"` | 用于注入记忆的 Recall 查询 |
+| `budget` | `"low"` | Recall 预算级别 |
+| `max_results` | `5` | 注入记忆的最大数量 |
+| `max_tokens` | `4096` | Recall 结果的最大 token 数 |
+| `prefix` | `"Relevant memories:\n"` | 添加在记忆列表前的文本 |
+| `tags` | `None` | 用于筛选 Recall 结果的标签 |
+| `tags_match` | `"any"` | 标签匹配模式 |
 
 ### `configure()` {#configure}
 
-|参数|默认|说明|
+| 参数 | 默认值 | 说明 |
 |---|---|---|
-|`hindsight_api_url`|Hindsight Cloud (`https://api.hindsight.vectorize.io`)|Hindsight API 网址|
-|`api_key`|`HINDSIGHT_API_KEY`环境|API 用于身份验证的密钥|
-|`budget`|`"mid"`|默认记忆召回预算水平|
-|`max_tokens`|`4096`|记忆召回的默认最大 token 数|
-|`tags`|`None`|记忆存储操作的默认标签|
-|`recall_tags`|`None`|要过滤的默认标签 记忆召回|
-|`recall_tags_match`|`"any"`|默认标签匹配模式|
-|`verbose`|`False`|启用详细日志记录|
+| `hindsight_api_url` | Hindsight Cloud（`https://api.hindsight.vectorize.io`） | Hindsight API URL |
+| `api_key` | `HINDSIGHT_API_KEY` 环境变量 | 用于身份验证的 API 密钥 |
+| `budget` | `"mid"` | 默认 Recall 预算级别 |
+| `max_tokens` | `4096` | Recall 的默认最大 token 数 |
+| `tags` | `None` | Retain 操作的默认标签 |
+| `recall_tags` | `None` | 用于筛选 Recall 结果的默认标签 |
+| `recall_tags_match` | `"any"` | 默认标签匹配模式 |
+| `verbose` | `False` | 启用详细日志记录 |

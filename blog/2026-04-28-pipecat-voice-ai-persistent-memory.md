@@ -1,86 +1,86 @@
 ---
-title: "Pipecat语音AI持久记忆：将记忆添加到您的语音管道中"
+title: "Pipecat 语音 AI 持久记忆：为语音管道添加记忆"
 authors: [benfrank241]
 date: 2026-04-28
 tags: [memory, voice, ai, pipecat, python, agent, real-time, streaming, context, knowledge-graph, tutorial]
-description: "为Pipecat语音AI管道添加持久的长期记忆。 记忆召回过去的相关对话，并通过用户聚合器和 LLM 服务之间的单个 FrameProcessor 记忆存储新的交换。"
+description: "为 Pipecat 语音 AI 管道添加持久的长期记忆。在用户聚合器和 LLM 服务之间加入一个 FrameProcessor，即可召回相关的过往对话，并存入新的对话内容。"
 image: /img/blog/pipecat-voice-ai-persistent-memory.webp
 ---
 
-![Pipecat语音AI持久记忆](/img/blog/pipecat-voice-ai-persistent-memory.webp)
+![Pipecat 语音 AI 持久记忆](/img/blog/pipecat-voice-ai-persistent-memory.webp)
 
-如果您使用[Pipecat](https://github.com/pipecat-ai/pipecat)构建语音AI管道，您就会知道它可以完美地处理实时语音处理、LLM集成和流合成。但有一件重要的事情它没有做：记住通话之间的任何事情。每一次语音对话都是全新的。你的语音智能体不知道用户在昨天的通话中说了些什么，他们的偏好是什么，或者它已经研究过什么。
+如果你使用 [Pipecat](https://github.com/pipecat-ai/pipecat) 构建语音 AI 管道，就会知道它在实时语音处理、LLM 集成和流式语音合成方面表现出色。但它缺少一项关键能力：无法记住不同通话之间发生的事情。每次语音对话都从头开始。语音智能体不知道用户昨天在通话中说了什么、用户有什么偏好，也不知道它已经研究过哪些内容。
 
-添加**Pipecat持久记忆**不需要构建自定义RAG系统或管理单独的矢量数据库。通过 `hindsight-pipecat` 集成，您可以使用单个 `FrameProcessor` 将长期记忆连接到任何语音管道中，该`FrameProcessor` 在响应之前回忆上下文并在每次转动后保留对话内容。
+为 Pipecat 添加持久记忆，不需要构建自定义 RAG 系统，也不需要管理单独的向量数据库。借助 `hindsight-pipecat` 集成，只需在任意语音管道中加入一个 `FrameProcessor`，即可接入长期记忆：它会在回复前召回上下文，并在每轮对话后存入对话内容。
 
 <!-- truncate -->
 
-## 概览 {#tldr}
+## 概要 {#tldr}
 
-- Pipecat语音管道没有内置记忆；每次对话都从头开始。
-- `hindsight-pipecat` 添加自动记忆召回（LLM之前）和存储记忆（每轮之后），无需对管道进行代码更改。
-- 单线设置：在用户聚合器和LLM服务之间添加`HindsightMemoryService`。
-- 每回合，Hindsight都会回忆起过去的相关对话并将其作为系统消息注入。
-- 可与任何Pipecat传输（Daily、Deepgram、OpenAI、Cartesia等）和任何LLM提供商配合使用。
+- Pipecat 语音管道没有内置记忆；每次对话都从头开始。
+- `hindsight-pipecat` 会在 LLM 调用前自动召回记忆，并在每轮对话后自动存入新内容，无需更改管道代码。
+- 一行即可完成设置：在用户聚合器和 LLM 服务之间添加 `HindsightMemoryService`。
+- 每轮对话中，Hindsight 都会召回相关的过往对话，并将其作为系统消息注入。
+- 兼容任何 Pipecat 传输方式（Daily、Deepgram、OpenAI、Cartesia 等）和任何 LLM 服务提供方。
 
 ---
 
-## 问题：Pipecat语音智能体没有持久记忆 {#the-problem-pipecat-voice-agents-have-no-persistent-memory}
+## 问题：Pipecat 语音智能体没有持久记忆 {#the-problem-pipecat-voice-agents-have-no-persistent-memory}
 
-[Pipecat](https://github.com/pipecat-ai/pipecat)是构建语音AI智能体的坚实框架。实时语音转文本、流式文本转语音、LLM集成以及基于干净框架的管道架构使其成为语音应用程序的流行选择。但它没有存储层。
+[Pipecat](https://github.com/pipecat-ai/pipecat) 是一个可靠的语音 AI 智能体构建框架。它支持实时语音转文本、流式文本转语音、LLM 集成，并采用清晰的帧式管道架构，因此成为构建语音应用的热门选择。但它没有内置记忆层。
 
-每一次语音对话都从零开始。智能体不知道用户上周说了些什么。它不知道他们的偏好、历史记录或哪些上下文可能与当前通话相关。因此，通过多个会话与用户交互的语音智能体必须在每次对话中重新建立所有上下文。
+每次语音对话都从零开始。智能体不知道用户上周说了什么，也不了解用户的偏好、过往经历，或哪些上下文可能与当前通话有关。因此，跨多个会话与用户互动的语音智能体必须在每次对话中重新建立所有上下文。
 
-您可以将对话历史记录传递到LLM上下文。但这只是聊天历史记录——它不会整合重复的信息，不会构建实体和关系的知识图，并且会线性增长，直到超出您的上下文窗口。
+你可以把对话历史传给 LLM，但那只是聊天记录：它不会整合重复信息，不会构建包含实体及其关系的知识图谱，而且会线性增长，直到超出上下文窗口。
 
-真人语音智能体记忆不同：
+真正的语音智能体记忆还包括：
 
 - 从对话中提取结构化事实（姓名、偏好、过去的请求）
 - 建立实体之间的关系（用户、主题、决策）
-- 从过去几天、几周或几个月的对话中检索相关上下文
-- 从多个通话中分散的记忆中合成连贯的答案
+- 从数天、数周或数月前的对话中检索相关上下文
+- 综合多次通话中零散的记忆，生成连贯的答案
 
-这就是[Hindsight](https://hindsight.vectorize.io/)提供的。通过 `hindsight-pipecat`，您无需重建管道即可获得此功能。
-
----
-
-## Pipecat持久记忆如何运作 {#how-pipecat-persistent-memory-works}
-
-Hindsight是一个在本地或云端运行的记忆引擎。它不仅仅存储原始对话文本。相反，它提取结构化实体和关系，构建知识图，并为多策略检索的所有内容建立索引。语义搜索、BM25关键词匹配、图遍历和时间排序一起工作，以显示最相关的记忆。
-
-`hindsight-pipecat` 集成通过位于用户上下文聚合器和LLM 服务之间的`FrameProcessor` 将此引擎连接到您的Pipecat 管道。
-
-```
-Voice Input
-  ↓ (STT)
-User Aggregator
-  ↓ (OpenAILLMContextFrame arrives)
-HindsightMemoryService ← Memory goes here
-  ├─ Retain previous turn (async, non-blocking)
-  └─ Recall relevant past conversations
-       ↓ (inject as system message)
-LLM Service
-  ↓ (generates response with memory context)
-Response ↓
-Assistant Aggregator
-  ↓ (TTS)
-Voice Output
-```
-
-这是每回合发生的事情：
-
-1. **新回合开始。** 用户消息传入，用户聚合器创建`OpenAILLMContextFrame`。
-2. **记忆再现。** HindsightMemoryService 提取最新的用户消息并在 Hindsight 中搜索相关的过去对话。在 LLM 查看上下文之前，结果将作为系统消息注入。
-3. **记忆存储。** 任何新的完整用户+助理交换都会异步（非阻塞）发送到 Hindsight，因此管道保持响应。
-4. **前进。** 丰富的上下文帧向下游传递到LLM 服务，该服务现在可以访问相关记忆。
-
-记忆在通话中积累。通过第三次或第四次对话，记忆召回开始呈现管道不必在当前通话中重新建立的有用上下文。
+这正是 [Hindsight](https://hindsight.vectorize.io/) 所提供的能力。借助 `hindsight-pipecat`，你无需重建管道即可获得这些能力。
 
 ---
 
-## 设置Pipecat持久记忆 {#setting-up-pipecat-persistent-memory}
+## Pipecat 持久记忆的工作方式 {#how-pipecat-persistent-memory-works}
 
-设置过程非常简单。安装集成，选择您的 Hindsight 部署，并向管道添加一行。
+Hindsight 是一个可在本地或云端运行的记忆引擎。它不只是存储原始对话文本，而是会提取结构化实体和关系、构建知识图谱，并为所有内容建立索引，以支持多策略检索。语义检索、BM25 关键词匹配、图遍历和时间排序会协同工作，找出最相关的记忆。
+
+`hindsight-pipecat` 集成通过一个 `FrameProcessor` 将 Hindsight 接入 Pipecat 管道。这个处理器位于用户上下文聚合器和 LLM 服务之间。
+
+```
+语音输入
+  ↓（STT）
+用户聚合器
+  ↓（收到 OpenAILLMContextFrame）
+HindsightMemoryService ← 在此接入记忆
+  ├─ 存入上一轮对话（异步、非阻塞）
+  └─ 召回相关的过往对话
+       ↓（作为系统消息注入）
+LLM 服务
+  ↓（结合记忆上下文生成回复）
+回复 ↓
+助手聚合器
+  ↓（TTS）
+语音输出
+```
+
+每轮对话中会发生以下事情：
+
+1. **新一轮开始。** 用户发来消息，用户聚合器随即创建一个 `OpenAILLMContextFrame`。
+2. **Recall（召回）。** `HindsightMemoryService` 提取用户最新的消息，并在 Hindsight 中搜索相关的过往对话。结果会作为系统消息注入，在 LLM 读取上下文之前提供给它。
+3. **Retain（存入）。** 任何新完成的用户与助手对话都会以异步、非阻塞方式发送到 Hindsight，因此管道仍能及时响应。
+4. **继续传递。** 增补了记忆的上下文帧会传给下游的 LLM 服务，使其能够使用相关记忆。
+
+记忆会在多次通话中不断积累。到第三或第四次对话时，召回就能提供一些有用的上下文，而管道在当前通话中无需重新询问这些信息。
+
+---
+
+## 设置 Pipecat 持久记忆 {#setting-up-pipecat-persistent-memory}
+
+设置过程很简单：安装集成、选择 Hindsight 部署方式，然后在管道中添加一行。
 
 ### 第 1 步：安装 Pipecat 集成 {#step-1-install-the-pipecat-integration}
 
@@ -88,17 +88,17 @@ Voice Output
 pip install hindsight-pipecat
 ```
 
-### 第 2 步：选择您的 Hindsight 部署 {#step-2-choose-your-hindsight-deployment}
+### 第 2 步：选择 Hindsight 部署方式 {#step-2-choose-your-hindsight-deployment}
 
-选择**Hindsight Cloud**（推荐，无自托管）或**本地**（运行您自己的守护进程）。
+选择 **Hindsight Cloud**（推荐，无需自托管）或**本地部署**（运行自己的守护进程）。
 
 #### 选项 2a：Hindsight Cloud（推荐） {#option-2a-hindsight-cloud-recommended}
 
-[免费注册](https://ui.hindsight.vectorize.io) 适用于 Hindsight Cloud — 托管基础架构，无需运行守护程序，记忆在您的设备之间同步。
+[免费注册](https://ui.hindsight.vectorize.io)即可使用 Hindsight Cloud。它采用托管基础设施，无需运行守护进程，并可在你的各台设备之间同步记忆。
 
-#### 选项 2b：本地 Hindsight {#option-2b-local-hindsight}
+#### 选项 2b：本地运行 Hindsight {#option-2b-local-hindsight}
 
-本地运行Hindsight：
+在本地运行 Hindsight：
 
 ```bash
 pip install hindsight-all
@@ -106,13 +106,13 @@ export HINDSIGHT_API_LLM_API_KEY=YOUR_OPENAI_KEY
 hindsight-api
 ```
 
-它在`http://localhost:8888`运行，带有嵌入式Postgres、本地嵌入和本地重排序。
+服务会在 `http://localhost:8888` 上运行，并使用内置 Postgres、本地嵌入模型和本地重排序。
 
-### 第 3 步：将记忆添加到您的管道中 {#step-3-add-memory-to-your-pipeline}
+### 第 3 步：将记忆接入管道 {#step-3-add-memory-to-your-pipeline}
 
-创建Hindsight记忆服务并将其添加到您的管道中：
+创建 Hindsight 记忆服务并将其加入管道：
 
-**对于Hindsight Cloud：**
+**使用 Hindsight Cloud：**
 
 ```python
 from pipecat.pipeline.pipeline import Pipeline
@@ -128,7 +128,7 @@ pipeline = Pipeline([
     transport.input(),
     stt_service,
     user_aggregator,
-    memory,           #← 在 user_aggregator 和 LLM 之间添加
+    memory,           # ← 添加在 user_aggregator 和 LLM 之间
     llm_service,
     assistant_aggregator,
     tts_service,
@@ -136,7 +136,7 @@ pipeline = Pipeline([
 ])
 ```
 
-**本地Hindsight：**
+**使用本地 Hindsight：**
 
 ```python
 memory = HindsightMemoryService(
@@ -145,53 +145,54 @@ memory = HindsightMemoryService(
 )
 ```
 
-记忆服务现在：
-- 每次LLM通话前回忆过去的相关对话
-- 每回合后自动保留新的交换
-- 异步运行，以便您的管道保持响应
+现在，记忆服务会：
+
+- 在每次调用 LLM 之前召回相关的过往对话
+- 在每轮对话后自动存入新的对话内容
+- 异步运行，让管道保持及时响应
 
 ---
 
-## 配置和调整 {#configuration-and-tuning}
+## 配置与调整 {#configuration-and-tuning}
 
-`HindsightMemoryService`接受几个参数来控制记忆行为：
+`HindsightMemoryService` 接受多个参数，用于控制记忆行为：
 
 ```python
 HindsightMemoryService(
-    bank_id="user-123",              #必填：记忆库使用
-    hindsight_api_url="...",         #Hindsight API 网址
-    api_key="hsk_...",               #API 密钥（Hindsight Cloud）
-    recall_budget="mid",             # "low", "mid", or "high"
-    recall_max_tokens=4096,          #记忆结果的最大标记数
-    enable_recall=True,              #在LLM之前注入记忆
-    enable_retain=True,              #每次交换后存储轮换
-    memory_prefix="此前对话中的相关记忆：\n",
+    bank_id="user-123",              # 必填：要使用的记忆库
+    hindsight_api_url="...",         # Hindsight API URL
+    api_key="hsk_...",               # API 密钥（Hindsight Cloud）
+    recall_budget="mid",             # "low"、"mid" 或 "high"
+    recall_max_tokens=4096,          # 召回结果的最大 token 数
+    enable_recall=True,              # 在调用 LLM 前注入记忆
+    enable_retain=True,              # 每轮对话后存储对话内容
+    memory_prefix="Relevant memories from past conversations:\n",
 )
 ```
 
-### 记忆召回预算 {#recall-budget}
+### 召回预算 {#recall-budget}
 
-`recall_budget`参数控制在LLM之前注入多少记忆数据：
+`recall_budget` 参数控制在调用 LLM 前注入多少记忆数据：
 
-- **“低”**：召回速度快，结果较少。适合延迟敏感的应用程序或紧张的上下文窗口。
-- **“中”**（默认）：平衡权衡。 50-200 毫秒延迟，中等结果计数。
-- **“高”**：详尽的回忆。最大结果，最高延迟。适合上下文最重要的复杂对话。
+- **`"low"`：** 召回速度快，结果较少。适合对延迟敏感的应用，或上下文窗口较小的场景。
+- **`"mid"`（默认值）：** 在速度和结果数量之间取得平衡，延迟为 50–200 毫秒，结果数量适中。
+- **`"high"`：** 尽可能全面地召回，结果最多，延迟也最高。适合上下文最为重要的复杂对话。
 
-对于实时语音，“低”或“中”通常是最好的。您希望记忆在 100-300 毫秒内发生，以便语音智能体快速响应。
+对于实时语音应用，通常最好选择 `"low"` 或 `"mid"`。你会希望记忆能在 100–300 毫秒内召回，以便语音智能体快速响应。
 
-### 选择性启用/禁用 {#selective-enabledisable}
+### 按需启用或禁用 {#selective-enabledisable}
 
-您可以单独禁用记忆召回或记忆存储：
+你可以分别禁用记忆召回或存入：
 
 ```python
-#仅记忆召回：搜索过去的对话，但不存储新的对话
+# 仅召回：搜索过往对话，但不存储新对话
 memory = HindsightMemoryService(
     bank_id="user-123",
     enable_retain=False,
     enable_recall=True,
 )
 
-#仅记忆存储：存储对话，但不记忆它们
+# 仅存入：存储对话，但不召回记忆
 memory = HindsightMemoryService(
     bank_id="user-123",
     enable_retain=True,
@@ -199,11 +200,11 @@ memory = HindsightMemoryService(
 )
 ```
 
-这对于多智能体架构非常有用，其中一个管道收集信息，而另一个智能体仅使用回忆的记忆来回答问题。
+这对多智能体架构很有用：一个管道负责收集信息，另一个智能体则只使用召回的记忆来回答问题。
 
 ### 全局配置 {#global-configuration}
 
-如果您有多个管道共享同一个Hindsight实例，请使用全局配置：
+如果多个管道共用同一个 Hindsight 实例，可以使用全局配置：
 
 ```python
 from hindsight_pipecat import configure
@@ -214,15 +215,15 @@ configure(
     recall_budget="mid",
 )
 
-#现在创建服务而无需重复连接详细信息
+# 现在创建服务时，无需重复填写连接信息
 memory = HindsightMemoryService(bank_id="user-123")
 ```
 
 ---
 
-## 真实示例：客户支持语音智能体 {#real-world-example-customer-support-voice-agent}
+## 实例：客户支持语音智能体 {#real-world-example-customer-support-voice-agent}
 
-这是具有持久记忆的客户支持语音智能体的完整示例：
+下面是一个使用持久记忆的客户支持语音智能体完整示例：
 
 ```python
 import os
@@ -233,7 +234,7 @@ from pipecat.transports.daily import DailyTransport
 from pipecat.pipeline.pipeline import Pipeline
 from hindsight_pipecat import HindsightMemoryService
 
-#设置Hindsight以客户ID作为bank_id记忆
+# 设置 Hindsight 记忆，并以客户 ID 作为 bank_id
 customer_id = "customer-abc-123"
 memory = HindsightMemoryService(
     bank_id=customer_id,
@@ -242,18 +243,18 @@ memory = HindsightMemoryService(
     recall_budget="mid",
 )
 
-#设置服务
+# 设置各项服务
 llm = OpenAILLMService(model="gpt-4o-mini")
 stt = DeepgramSTTService(model="nova-2")
 tts = CartesiaTTSService(model="sonic-english")
 transport = DailyTransport(room_url="https://...", token="...")
 
-#用记忆构建管道
+# 构建包含记忆的管道
 pipeline = Pipeline([
     transport.input(),
     stt,
     transport.user_aggregator,
-    memory,  #← 记忆服务在这里
+    memory,  # ← 在此加入记忆服务
     llm,
     transport.assistant_aggregator,
     tts,
@@ -261,41 +262,42 @@ pipeline = Pipeline([
 ])
 ```
 
-在第一次通话时，智能体对客户一无所知。通过第三次或第四次调用，Hindsight提取了：
-- 客户姓名、账户状态、过去的问题
-- 沟通方式偏好
-- 之前故障排除的技术细节
-- 解决历史记录（哪些有效，哪些无效）
+第一次通话时，智能体对客户一无所知。到第三或第四次通话时，Hindsight 已提取出：
 
-每个新调用都会自动注入相关上下文，因此智能体可以准确地从上次中断的地方继续进行并更智能地响应。
+- 客户姓名、账户状态和过往问题
+- 客户对沟通方式的偏好
+- 先前排查故障时得到的技术细节
+- 解决问题的历史记录（哪些方法有效，哪些无效）
+
+每次新通话都会自动注入相关上下文，因此智能体可以准确衔接上次对话，并作出更贴合情况的回应。
 
 ---
 
-## 具有持久记忆的语音用例AI {#use-cases-for-voice-ai-with-persistent-memory}
+## 持久记忆在语音 AI 中的应用场景 {#use-cases-for-voice-ai-with-persistent-memory}
 
 ### 客户支持 {#customer-support}
 
-支持智能体记住客户历史记录、以前的问题以及有效的解决方案。更快的解决速度、更少的重复问题、更好的客户体验。
+支持智能体可以记住客户历史、先前遇到的问题，以及哪些解决方案有效。这有助于更快解决问题、减少重复提问，并改善客户体验。
 
-### 私人助理 {#personal-assistant}
+### 个人助理 {#personal-assistant}
 
-助手会记住用户偏好、日历、习惯和上下文。多会话对话感觉很自然，而不是每次都从头开始。
+助理可以记住用户的偏好、日历、习惯和上下文。跨多个会话的对话会显得自然，不必每次都从头开始。
 
 ### 销售与预订 {#sales-and-booking}
 
-智能体记住客户需求、预算、偏好和过去的互动。更有针对性的推荐、更好的成交率、更少的上下文构建。
+智能体可以记住客户的需求、预算、偏好和过往互动，从而提供更有针对性的建议、提高成交率，并减少建立上下文所需的工作。
 
-### 医疗保健和健康 {#healthcare-and-wellness}
+### 医疗保健与健康管理 {#healthcare-and-wellness}
 
-语音健康助理会记住过去对话中的患者病史、用药情况和症状。无需人工笔记审核即可连续护理。
+语音健康助理可以记住患者的病史、用药情况，以及过往对话中提到的症状，无需人工查阅笔记即可保持护理的连续性。
 
-### 辅助功能 {#accessibility}
+### 无障碍辅助 {#accessibility}
 
-为有视觉障碍的用户提供的语音优先界面可以从持续的上下文中受益匪浅。智能体会记住您在流程中的位置、您上次在做什么，并且可以帮助您继续操作而无需重复。
+对于有视力障碍的用户，语音优先的界面能从持久上下文中受益匪浅。智能体可以记住用户在流程中进行到哪一步、上次在做什么，帮助用户接着完成操作，无需重复说明。
 
 ### 多会话研究 {#multi-session-research}
 
-通过多个对话收集研究的语音智能体可以整合发现、发现模式并从积累的数据中综合见解。
+在多次对话中收集研究信息的语音智能体，可以整合发现、识别模式，并基于积累的数据综合生成见解。
 
 ---
 
@@ -303,7 +305,7 @@ pipeline = Pipeline([
 
 ### 多用户管道 {#multi-user-pipelines}
 
-如果单个管道处理多个用户（例如，共享机器人），请使用bank_id中的用户ID：
+如果一个管道要处理多个用户（例如，共享机器人），请在 `bank_id` 中使用用户 ID：
 
 ```python
 user_id = extract_user_from_request()
@@ -314,116 +316,117 @@ memory = HindsightMemoryService(
 )
 ```
 
-每个用户都有独立的记忆。无交叉污染。
+每位用户都会有独立的记忆，彼此之间不会交叉污染。
 
-### 范围记忆库 {#scoped-memory-banks}
+### 按范围划分记忆库 {#scoped-memory-banks}
 
-对于复杂的应用，针对不同的范围使用单独的记忆库：
+对于复杂应用，可以为不同范围使用不同的记忆库：
 
 ```python
-#支持每个客户的智能体
+# 每位客户使用一个客户支持智能体记忆库
 support_memory = HindsightMemoryService(bank_id=f"support-{customer_id}")
 
-#每个项目的研究智能体
+# 每个项目使用一个研究智能体记忆库
 research_memory = HindsightMemoryService(bank_id=f"research-{project_id}")
 
-#智能体特定上下文
+# 智能体专属上下文
 agent_memory = HindsightMemoryService(bank_id=f"agent-{agent_role}")
 ```
 
-隔离确保记忆不会在上下文之间泄漏。
+通过隔离，记忆不会泄漏到其他上下文中。
 
 ### 测试与开发 {#testing-and-development}
 
-为了测试，使用临时记忆库并禁用保留：
+测试时可以使用临时记忆库，并禁用记忆存入：
 
 ```python
 memory = HindsightMemoryService(
     bank_id="test-session",
-    enable_retain=False,  #不要污染持久的记忆
-    enable_recall=True,   #但是要测试记忆力
+    enable_retain=False,  # 不污染持久记忆
+    enable_recall=True,   # 仍然测试记忆召回
 )
 ```
 
-或者切换到与生产分离的本地测试Hindsight实例。
+也可以切换到与生产环境分开的本地测试 Hindsight 实例。
 
 ---
 
-## 边缘情况和故障排除 {#edge-cases-and-troubleshooting}
+## 边缘情况与故障排查 {#edge-cases-and-troubleshooting}
 
 ### 延迟 {#latency}
 
-记忆召回查找会增加 50-300 毫秒，具体取决于 `recall_budget` 和记忆大小。对于响应时间很重要的语音应用程序，请使用“低”预算并监控延迟。
+记忆召回会增加 50–300 毫秒的延迟，具体取决于 `recall_budget` 和记忆量。对于响应时间很重要的语音应用，请使用 `"low"` 预算并监控延迟。
 
 ```python
 memory = HindsightMemoryService(
     bank_id="user-123",
     recall_budget="low",
-    recall_max_tokens=2048,  #限制令牌以减少延迟
+    recall_max_tokens=2048,  # 限制 token 数以降低延迟
 )
 ```
 
-### 隐私和数据保留 {#privacy-and-data-retention}
+### 隐私与数据保留 {#privacy-and-data-retention}
 
-如果您需要删除用户的所有记忆（GDPR，用户请求），请使用Hindsight Cloud仪表板或API清除记忆库：
+如果需要删除某位用户的所有记忆（例如，因 GDPR 要求或用户请求），可以使用 Hindsight Cloud 控制台或 API 清空该记忆库：
 
 ```bash
-#经API
+# 通过 API 删除
 curl -X DELETE https://api.hindsight.vectorize.io/banks/user-123 \
-  -H "授权：不记名HSK_..."
+  -H "Authorization: Bearer hsk_..."
 ```
 
 ### 异步帧处理 {#async-frame-handling}
 
-HindsightMemoryService 异步处理帧。如果需要同步行为（很少见），则必须等待记忆存储操作。在实践中，异步更好——它可以让你的管道保持响应。
+`HindsightMemoryService` 会异步处理帧。如果需要同步行为（这种情况很少见），必须等待记忆存入操作完成。实际使用中，异步方式更好，因为它能让管道保持及时响应。
 
 ---
 
-## Pipecat 记忆：权衡和替代方案 {#pipecat-memory-tradeoffs-and-alternatives}
+## Pipecat 记忆：权衡与替代方案 {#pipecat-memory-tradeoffs-and-alternatives}
 
-### 当Pipecat持久记忆有意义时 {#when-pipecat-persistent-memory-makes-sense}
+### 适合使用 Pipecat 持久记忆的场景 {#when-pipecat-persistent-memory-makes-sense}
 
-Pipecat 持久记忆最适合在数天、数周或数月的多个会话中与用户交互的语音智能体。良好的用例包括客户支持机器人、个人助理、辅助功能界面以及任何记住过去交互可以提高质量的语音智能体。
+Pipecat 持久记忆最适合在数天、数周或数月内跨多个会话与用户互动的语音智能体。适用场景包括客户支持机器人、个人助理、无障碍辅助界面，以及任何能够通过记住过往互动来提高质量的语音智能体。
 
-### 何时不使用它 {#when-not-to-use-it}
+### 不适合使用的场景 {#when-not-to-use-it}
 
-跳过无状态 API 或一次性语音事务的持久记忆，其中上下文不会随着时间的推移而复合。如果您的管道纯粹是事务性的（例如订单确认调用），不需要学习，也可以跳过。
+对于无状态 API，或上下文不会随时间累积的一次性语音事务，可以跳过持久记忆。如果管道只处理事务（例如订单确认电话），不需要从互动中积累信息，也可以不使用持久记忆。
 
-### 与替代品相比如何 {#how-it-compares-to-alternatives}
+### 与其他方案的比较 {#how-it-compares-to-alternatives}
 
-|方法|优势|弱点|最适合|
+| 方案 | 优势 | 劣势 | 适用场景 |
 |---|---|---|---|
-|**Hindsight + Pipecat**|多策略检索（语义+BM25+图+时间）、结构化实体提取、低延迟记忆召回|需要Hindsight 服务器或云帐户|具有多会话上下文需求的语音智能体|
-|**手册LLM上下文**|简单，无依赖，完全控制|随着会话长度线性增长，无实体提取|短的单会话语音通话|
-|**自定义矢量存储**|完全控制检索|您自己构建分块、索引和重排序|拥有现有矢量基础设施的团队|
-|**仅限转录本存储**|简单的审计跟踪|无结构化检索，无合成|注重合规性的录音|
+| **Hindsight + Pipecat** | 多策略检索（语义检索 + BM25 + 图检索 + 时间检索）、结构化实体提取、低延迟召回 | 需要运行 Hindsight 服务器或拥有云账户 | 需要跨多个会话使用上下文的语音智能体 |
+| **手动管理 LLM 上下文** | 简单、无依赖、完全可控 | 随对话长度线性增长，不提取实体 | 时间较短、仅单会话的语音通话 |
+| **自定义向量存储** | 对检索拥有完全控制权 | 分块、索引和重排序都要自行构建 | 已有向量基础设施的团队 |
+| **仅存储转录文本** | 审计记录简单 | 不支持结构化检索或综合生成 | 注重合规的语音录制场景 |
 
-对于大多数需要在会话之间保持持久记忆且变化最小的语音管道，Hindsight集成是最快的生产路径。
+对于大多数希望以最少改动实现跨会话持久记忆的语音管道，Hindsight 集成是最快的生产落地方式。
 
 ---
 
-## 回顾：Pipecat 持久记忆整合 {#recap-pipecat-persistent-memory-integration}
+## 回顾：将持久记忆集成到 Pipecat {#recap-pipecat-persistent-memory-integration}
 
-将持久记忆添加到Pipecat语音管道不需要重建您的架构。 `hindsight-pipecat` 集成提供了一个 `FrameProcessor`：
+为 Pipecat 语音管道添加持久记忆，无需重建架构。`hindsight-pipecat` 集成提供了一个 `FrameProcessor`，用于：
 
-- **召回
-每次 LLM 通话之前** 相关的过去对话
-- **保留** 每回合后异步进行新交换
-- **保持响应** 具有可配置的记忆召回预算，适用于延迟敏感的语音应用
+- 在每次调用 LLM 之前**召回**相关的过往对话
+- 在每轮对话后以异步方式**存入**新对话内容
+- 通过可配置的召回预算，在对延迟敏感的语音应用中**保持响应及时**
 
-只需将其放入用户聚合器和LLM服务之间的管道中即可。 随着您的语音智能体更多地了解每个用户，记忆会随着通话而积累，并增加价值。
+只需将它放在管道中的用户聚合器和 LLM 服务之间即可。记忆会随着多次通话不断积累；语音智能体对每位用户了解越多，记忆就越有价值。
 
-对于构建需要持久记忆的Pipecat语音智能体的Python开发人员来说，这是从无状态到有状态的最简单路径。
+对于构建 Pipecat 语音智能体的 Python 开发者来说，如果需要持久记忆，这就是从无状态转向有状态的最简单途径。
 
 ---
 
 ## 后续步骤 {#next-steps}
 
-- **本地尝试**: `pip install hindsight-all hindsight-pipecat` 并使用交互式聊天示例进行测试
-- **使用Hindsight Cloud**：使用 [免费帐户](https://ui.hindsight.vectorize.io) 跳过自托管
-- **运行基本示例**: `python examples/basic_pipeline.py` 通过记忆查看完整的语音管道
-- **测试交互式记忆召回**: `python examples/interactive_chat.py --bank demo-user` 查看记忆召回的实际效果
-- **配置记忆召回预算**：根据您的延迟要求调整“低”、“中”或“高”
-- **检查记忆**：使用Hindsight Cloud仪表板浏览从对话中提取的事实和实体
-- **探索其他集成**：通过[MCP](/blog/2026/03/04/mcp-agent-memory)将记忆添加到[Pydantic AI智能体](/blog/2026/03/09/pydantic-ai-persistent-memory)、[CrewAI智能体](/blog/2026/03/02/crewai)或任何框架
-- **阅读Pipecat文档**：了解有关[Pipecat管道和服务](https://github.com/pipecat-ai/pipecat)的更多信息，进一步扩展您的语音智能体
+- **在本地试用：** `pip install hindsight-all hindsight-pipecat`，并使用交互式聊天示例进行测试
+- **使用 Hindsight Cloud：** 通过[免费账户](https://ui.hindsight.vectorize.io)免去自托管
+- **运行基础示例：** 执行 `python examples/basic_pipeline.py`，查看包含记忆的完整语音管道
+- **测试交互式召回：** 执行 `python examples/interactive_chat.py --bank demo-user`，观察召回如何工作
+- **配置召回预算：** 根据延迟要求调整 `"low"`、`"mid"` 或 `"high"`
+- **查看记忆：** 使用 Hindsight Cloud 控制台浏览从对话中提取的事实和实体
+- **探索其他集成：** 为 [Pydantic AI 智能体](/blog/2026/03/09/pydantic-ai-persistent-memory)、[CrewAI 智能体](/blog/2026/03/02/crewai)或任何支持 [MCP](/blog/2026/03/04/mcp-agent-memory) 的框架添加记忆
+- **阅读 Pipecat 文档：** 进一步了解 [Pipecat 管道和服务](https://github.com/pipecat-ai/pipecat)，扩展你的语音智能体
+
+---

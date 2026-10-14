@@ -32,7 +32,7 @@ export default function BlogLayout({sidebar: _sidebar, toc, children, ...layoutP
           <aside className={`col col--2 ${styles.rail}`}>
             <div className={styles.stickyBottom}>
               <button type="button" className={styles.backToTop} onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
-                回到顶部 ↑
+                返回顶部 ↑
               </button>
             </div>
           </aside>

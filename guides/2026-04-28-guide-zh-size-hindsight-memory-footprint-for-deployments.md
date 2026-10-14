@@ -1,91 +1,91 @@
 ---
-title: "为实际部署调整 Hindsight 内存占用空间"
+title: "为实际部署规划 Hindsight 的内存占用"
 authors: [benfrank241]
 date: 2026-04-28T14:00:00Z
 tags: [deployment, hardware, memory, guide]
-description: "使用完整和精简映像、workers、控制平面和 PostgreSQL 容量规划的新内存占用空间指导来调整 Hindsight 部署。"
+description: "根据完整和精简镜像、工作进程、控制平面及 PostgreSQL 的容量规划指南，为 Hindsight 部署估算内存需求。"
 image: /img/guides/guide-size-hindsight-memory-footprint-for-deployments.webp
 hide_table_of_contents: true
 ---
 
-![为实际部署调整 Hindsight 内存占用空间](/img/guides/guide-size-hindsight-memory-footprint-for-deployments.webp)
+![为实际部署规划 Hindsight 的内存占用](/img/guides/guide-size-hindsight-memory-footprint-for-deployments.webp)
 
-如果您正在尝试**为部署调整 Hindsight 的内存占用空间**，文档现在好得多，因为安装指南最终按组件列出了现实的 RAM 范围。这很有用，因为合适的盒子大小取决于一个简单的问题：您运行带有本地模型的完整映像，还是带有外部提供者的精简映像？在规划时，请保持打开 [安装指南](/developer/installation)、[配置指南](/developer/configuration)、[服务指南](/developer/services) 和 [快速入门指南](/developer/api/quickstart)。
+如果你想**为部署规划 Hindsight 的内存占用**，现在的文档更有帮助了，因为安装指南终于按组件列出了实际的 RAM 范围。这很有用，因为合适的机器规格主要取决于一个简单的问题：你运行的是带本地模型的完整镜像，还是使用外部服务提供方的精简镜像？规划时，请同时打开[安装指南](/developer/installation)、[配置指南](/developer/configuration)、[服务指南](/developer/services)和[快速入门指南](/developer/api/quickstart)。
 
 <!-- truncate -->
 
-## 快速答案
+## 快速结论 {#the-quick-answer}
 
-- 完整 API 映像需要约 1.5 GB 最小和 2 GB 推荐，因为它加载本地嵌入和重新排列器模型。
-- 精简 API 映像可以运行约 512 MB 最小和 1 GB 推荐，但仅当嵌入和重新排列被卸载时。
-- 控制平面很轻，workers 镜像 API 映像占用空间，PostgreSQL 仍需要自己的余量。
+- 完整版 API 镜像至少需要约 1.5 GB，建议配置 2 GB，因为它会加载本地嵌入模型和重排模型。
+- 精简版 API 镜像至少约需 512 MB，建议配置 1 GB；前提是将嵌入和重排任务交由外部服务处理。
+- 控制平面占用较少；工作进程的内存需求与对应 API 镜像相当；PostgreSQL 也需要预留自己的余量。
 
-## 从当前基线数字开始
+## 先了解当前基准值 {#start-with-the-current-baseline-numbers}
 
-新的安装指导提供了一个实际的基线：
+新版安装指南给出了实用的基准值：
 
-| 组件 | 最小 RAM | 推荐 RAM |
+| 组件 | 最低 RAM | 建议 RAM |
 |---|---:|---:|
-| API, 完整映像 | 1.5 GB | 2 GB |
-| API, 精简映像 | 512 MB | 1 GB |
+| API，完整版镜像 | 1.5 GB | 2 GB |
+| API，精简版镜像 | 512 MB | 1 GB |
 | 控制平面 | 128 MB | 256 MB |
-| Worker | 与 API 变体相同 | 与 API 变体相同 |
+| 工作进程 | 与 API 镜像类型相同 | 与 API 镜像类型相同 |
 | PostgreSQL | 512 MB | 1 GB+ |
 
-这些不是理论楼层值。它们是反映本地模型成本、运行时开销以及 PostgreSQL 和 workers 仍需要呼吸空间的规划数字。
+这些数值不是理论上的最低值，而是规划用的参考值，考虑了本地模型的开销、运行时开销，以及 PostgreSQL 和工作进程也需要充足资源这一点。
 
-## 在选择机器之前选择完整或精简
+## 选择机器前，先决定用完整版还是精简版 {#pick-full-vs-slim-before-you-pick-a-machine}
 
-道路上最大的分支是您是否想要本地嵌入和重新排列打包到 API 进程中。
+最关键的选择是：是否要把本地嵌入和重排功能一并装进 API 进程。
 
-- 当您想要更简单的一体式部署并且可以负担额外的 RAM 时，选择**完整**。
-- 当您想要较小的主机并且乐意从 [配置指南](/developer/configuration) 中连接外部提供者时，选择**精简**。
+- 如果你希望部署更简单的一体化方案，并且能承担额外的 RAM 开销，请选择**完整版**。
+- 如果你希望使用配置较低的主机，并且愿意按照[配置指南](/developer/configuration)接入外部服务提供方，请选择**精简版**。
 
-这个决定通常比争论小 VM 家族更重要。完整映像购买便利性。精简映像购买了更小的占用空间。
+这个决定通常比纠结小型 VM 的具体规格更重要。完整版镜像更方便；精简版镜像占用的资源少得多。
 
-## 使用实用的部署食谱
+## 参考实用的部署方案 {#use-practical-deployment-recipes}
 
-一些起点效果很好：
+以下几种配置可以作为起点：
 
-- **笔记本电脑或个人开发盒**：完整映像、嵌入式数据库、2 vCPU、2 GB 到 4 GB RAM。
-- **小型云 VM**：精简映像、外部嵌入和重新排列器、1 GB 到 2 GB RAM 加一个单独的数据库。
-- **更重的生产设置**：API 和 worker 分离、PostgreSQL 独立调整大小、如果回忆延迟重要，重新排列器离开盒子。
+- **笔记本电脑或个人开发机**：完整版镜像、嵌入式数据库、2 个 vCPU、2 GB 到 4 GB RAM。
+- **小型云 VM**：精简版镜像、使用外部嵌入和重排服务、1 GB 到 2 GB RAM，另配独立数据库。
+- **负载较重的生产环境**：将 API 和工作进程分开部署，为 PostgreSQL 单独规划资源；如果召回延迟很重要，可将重排器部署到其他主机上。
 
-这就是为什么文档现在将 API、worker、UI 和数据库指导分开。Hindsight 是一个产品，但不是一个内存占用空间。
+因此，文档现在分别说明 API、工作进程、UI 和数据库的配置建议。Hindsight 是一个产品，但各组件的内存占用并不相同。
 
-## 知道压力真正来自哪里
+## 找出资源压力的真正来源 {#know-where-the-pressure-really-comes-from}
 
-对于生产流量，重新排列器通常是第一个使主机感觉昂贵的东西。在仅 CPU 的盒子上，它可能成为主要的延迟和内存压力点。这就是为什么安装文档现在说 CPU 对开发和基本工作负载很好，但生产流量经常受益于 GPU 支持的重新排列或外部重新排列服务。
+在生产流量下，重排器通常最先让主机显得资源吃紧。在仅使用 CPU 的机器上，它可能成为延迟和内存压力的主要来源。因此，安装文档现在指出：CPU 适合开发和基础工作负载；但生产流量通常能从 GPU 加速的重排或外部重排服务中受益。
 
-换句话说，如果部署感觉比预期更大，罪魁祸首通常是模型位置，而不是控制平面或简单的文档页面计数。
+换句话说，如果部署所需的资源比预期更多，问题往往出在模型运行位置，而不是控制平面或文档页面数量。
 
-## 排除内存压力而不猜测
+## 有条理地排查内存压力 {#troubleshoot-memory-pressure-without-guessing}
 
-如果一个节点运行得很热，请按顺序完成堆栈：
+如果节点负载过高，可以按以下顺序检查各部分：
 
-1. 确认您是在完整还是精简映像上。
-2. 检查 workers 是否与同一主机共享并加倍预期的模型占用空间。
-3. 验证 PostgreSQL 在同一盒子上没有被饿死。
-4. 查看 [配置指南](/developer/configuration) 中的外部提供者设置。
-5. 根据 [服务指南](/developer/services) 比较部署形状（如果您拆分 API 和 worker 角色）。
+1. 确认使用的是完整版还是精简版镜像。
+2. 检查工作进程是否与 API 共用同一台主机，导致模型的预期内存占用翻倍。
+3. 确认 PostgreSQL 没有因部署在同一台机器而资源不足。
+4. 查看[配置指南](/developer/configuration)中的外部服务提供方设置。
+5. 如果你把 API 和工作进程拆开部署，请参照[服务指南](/developer/services)检查部署方式。
 
-新文档不会删除调整工作，但它确实使第一个估计变得更加不含糊。
+新文档不能替代后续的调优工作，但能让你更可靠地估算初始配置。
 
-## 常见问题
+## 常见问题 {#faq}
 
-### 我可以在 1 GB RAM 中运行 Hindsight 吗？
+### Hindsight 能在 1 GB RAM 的机器上运行吗？ {#can-i-run-hindsight-in-1-gb-of-ram}
 
-是的，但通常只有使用精简映像和外部提供者。完整映像不是该信封的正确选择。
+可以，但通常需要使用精简版镜像和外部服务提供方。在这种内存条件下，完整版镜像并不合适。
 
-### Workers 需要单独的调整大小吗？
+### 工作进程需要单独规划资源吗？ {#do-workers-need-separate-sizing}
 
-是的。Workers 加载与 API 映像变体相同的模型堆栈，因此应该像另一个 API 进程一样进行预算。
+需要。工作进程加载的模型栈与对应类型的 API 镜像相同，因此应按再运行一个 API 进程来规划资源。
 
-### 控制平面是昂贵的部分吗？
+### 控制平面是资源开销最大的部分吗？ {#is-the-control-plane-the-expensive-part}
 
-不。控制平面相对较轻。本地嵌入和重新排列主导占用空间。
+不是。控制平面的资源占用相对较少，主导内存占用的是本地嵌入和重排功能。
 
-## 后续步骤
+## 后续步骤 {#next-steps}
 
 - [Hindsight Cloud](https://hindsight.vectorize.io)
 - [安装指南](/developer/installation)

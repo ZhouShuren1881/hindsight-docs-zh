@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-label="Comparison: Hermes Built-In Memory vs Hindsight at Scale">
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-label="对比：大规模场景下 Hermes 内置记忆与 Hindsight">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#0b1220"/>
@@ -13,9 +13,9 @@
   <circle cx="1320" cy="170" r="220" fill="#1d4ed8" opacity="0.22"/>
   <circle cx="1450" cy="740" r="300" fill="#7c3aed" opacity="0.18"/>
   <rect x="80" y="112" width="240" height="46" rx="23" fill="url(#accent)"/>
-  <text x="112" y="142" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="800" fill="#08111f">比较</text>
-  <text x="80" y="230" font-family="Inter, Arial, sans-serif" font-size="44" font-weight="700" fill="#ffffff">Hermes 内置记忆 vs</text><text x="80" y="294" font-family="Inter, Arial, sans-serif" font-size="44" font-weight="700" fill="#ffffff">Hindsight 规模化</text>
+  <text x="112" y="142" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="800" fill="#08111f">对比</text>
+  <text x="80" y="230" font-family="Inter, Arial, sans-serif" font-size="44" font-weight="700" fill="#ffffff">Hermes 内置记忆 vs</text><text x="80" y="294" font-family="Inter, Arial, sans-serif" font-size="44" font-weight="700" fill="#ffffff">大规模场景下的 Hindsight</text>
   <rect x="80" y="535" width="1060" height="4" rx="2" fill="url(#accent)"/>
-  <text x="80" y="620" font-family="Inter, Arial, sans-serif" font-size="28" fill="#bfdbfe">Hermes智能体+Hindsight</text>
+  <text x="80" y="620" font-family="Inter, Arial, sans-serif" font-size="28" fill="#bfdbfe">Hermes 智能体 + Hindsight</text>
   <text x="80" y="700" font-family="Inter, Arial, sans-serif" font-size="22" fill="#93c5fd">持久记忆指南</text>
 </svg>

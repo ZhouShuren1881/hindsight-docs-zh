@@ -89,7 +89,7 @@ config = json.loads(path.read_text())
 plugin = config['plugins']['entries']['hindsight-openclaw']['config']
 plugin['recallInjectionPosition'] = 'prepend'
 path.write_text(json.dumps(config, indent=2) + '\n')
-print(f'已更新 {path}')
+print(f'Updated {path}')
 PY
 ```
 
@@ -114,7 +114,7 @@ config = json.loads(path.read_text())
 plugin = config['plugins']['entries']['hindsight-openclaw']['config']
 plugin['recallInjectionPosition'] = 'append'
 path.write_text(json.dumps(config, indent=2) + '\n')
-print(f'已更新 {path}')
+print(f'Updated {path}')
 PY
 ```
 
@@ -140,7 +140,7 @@ config = json.loads(path.read_text())
 plugin = config['plugins']['entries']['hindsight-openclaw']['config']
 plugin['recallInjectionPosition'] = 'user'
 path.write_text(json.dumps(config, indent=2) + '\n')
-print(f'已更新 {path}')
+print(f'Updated {path}')
 PY
 ```
 
@@ -177,7 +177,7 @@ plugin['recallBudget'] = 'mid'
 plugin['recallMaxTokens'] = 1024
 plugin['recallContextTurns'] = 2
 path.write_text(json.dumps(config, indent=2) + '\n')
-print(f'已更新 {path}')
+print(f'Updated {path}')
 PY
 ```
 
@@ -195,9 +195,9 @@ openclaw gateway restart
 
 推荐的测试模式：
 
-1. 告诉智能体一条持久事实，例如：“预发布环境从 `develop` 部署，生产环境从 `main` 部署。”
+1. 告诉智能体一条持久事实，例如："We deploy staging from `develop` and production from `main`."
 2. 等待该轮结束，让记忆完成存储。
-3. 下一轮询问相关问题，例如：“预发布环境应该使用哪个分支？”
+3. 下一轮询问相关问题，例如："Which branch should I use for staging?"
 4. 比较修改注入位置前后的回复质量。
 
 ### 7. 如需更多信息，启用日志 {#7-turn-on-logs-if-you-need-to-see-more}
@@ -224,7 +224,7 @@ config = json.loads(path.read_text())
 plugin = config['plugins']['entries']['hindsight-openclaw']['config']
 plugin['debug'] = True
 path.write_text(json.dumps(config, indent=2) + '\n')
-print(f'已更新 {path}')
+print(f'Updated {path}')
 PY
 ```
 

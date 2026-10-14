@@ -1,22 +1,22 @@
 ---
 sidebar_position: 5
-title: "CrewAI 持久记忆Hindsight |集成指南"
-description: "为您的CrewAI智能体团队添加长期记忆。 Hindsight 提供事实提取、实体跟踪和时间感知——在所有机组运行中自动保持。"
+title: "使用 Hindsight 为 CrewAI 提供持久记忆 | 集成指南"
+description: "为 CrewAI 智能体团队添加长期记忆。Hindsight 提供事实提取、实体跟踪和时间感知，并让记忆自动跨团队运行持久保存。"
 ---
 
 # CrewAI {#crewai}
 
-持久记忆AI智能体团队来自 [CrewAI](https://github.com/crewAIInc/crewAI)。通过事实提取、实体跟踪和时间感知为您的工作人员提供长期记忆。
+通过 [CrewAI](https://github.com/crewAIInc/crewAI) 为 AI 智能体团队提供持久记忆。借助事实提取、实体跟踪和时间感知，为团队添加长期记忆。
 
 [查看更新日志 →](/changelog/integrations/crewai)
 
 ## 功能 {#features}
 
-- **可直接替换的存储后端** - 实施CrewAI的`Storage` 接口 `ExternalMemory`
-- **自动记忆流程** -CrewAI自动存储任务输出并检索相关记忆
-- **各智能体独立的记忆库** - 可选择为每个智能体提供其自己独立的记忆库
-- **反思工具** - 智能体可以通过处置感知合成明确地推理记忆
-- **简单配置** - 配置一次，随处使用
+- **可直接接入的存储后端**：实现 CrewAI 的 `Storage` 接口，供 `ExternalMemory` 使用。
+- **自动记忆流程**：CrewAI 会自动存储任务输出并检索相关记忆。
+- **每个智能体独立的记忆库**：可为每个智能体提供独立的记忆库。
+- **Reflect（反思）工具**：智能体可以通过受性格倾向影响的综合生成，明确地基于记忆进行推理。
+- **简单配置**：配置一次，即可在各处使用。
 
 ## 安装 {#installation}
 
@@ -27,7 +27,7 @@ pip install hindsight-crewai
 ## 快速入门 {#quick-start}
 
 :::tip 推荐：Hindsight Cloud
-[免费注册](https://ui.hindsight.vectorize.io) 并获取一个 API 密钥 — 无需自托管。
+[免费注册](https://ui.hindsight.vectorize.io) 并获取 API 密钥，无需自行托管。
 :::
 
 ```python
@@ -41,8 +41,8 @@ configure(
 )
 
 crew = Crew(
-    agents=[Agent(role="Researcher", goal="查找信息", backstory="...")],
-    tasks=[Task(description="研究AI趋势", expected_output="Report")],
+    agents=[Agent(role="Researcher", goal="Find information", backstory="...")],
+    tasks=[Task(description="Research AI trends", expected_output="Report")],
     external_memory=ExternalMemory(
         storage=HindsightStorage(bank_id="my-crew")
     ),
@@ -51,33 +51,34 @@ crew = Crew(
 crew.kickoff()
 ```
 
-就是这样。 CrewAI 将自动：
-- **查询记忆** 在每个任务开始时
-- **存储任务输出** 至Hindsight每个任务完成后
+完成。CrewAI 会自动执行以下操作：
 
-记忆会在船员运行过程中持续存在，因此你的船员会随着时间的推移而学习。
+- 在每项任务开始时**查询记忆**。
+- 在每项任务完成后**将任务输出存入 Hindsight**。
 
-### 自托管（本地开发） {#self-hosting-local-development}
+记忆会在多次团队运行之间持续保存，因此团队会随着时间推移不断积累信息。
 
-如果你通过以下命令在本地运行 Hindsight：`./scripts/dev/start-api.sh`，替换服务地址：
+### 自行托管（本地开发） {#self-hosting-local-development}
+
+如果你使用 `./scripts/dev/start-api.sh` 在本地运行 Hindsight，请替换服务 URL：
 
 ```python
 configure(hindsight_api_url="http://localhost:8888")
 ```
 
-参见[安装指南](/developer/installation) 用于自托管设置。
+自行托管的设置方法请参阅[安装指南](/developer/installation)。
 
 ## 工作原理 {#how-it-works}
 
-整合图CrewAI的3种方法`Storage` 接口Hindsight的API：
+此集成将 CrewAI 的三方法 `Storage` 接口映射到 Hindsight API：
 
-|CrewAI|Hindsight|发生了什么|
+| CrewAI | Hindsight | 作用 |
 |--------|-----------|--------------|
-|`save(value, metadata, agent)`|`retain(bank_id, content, ...)`|任务输出被存储。 Hindsight 从原始文本中提取事实、实体和关系。|
-|`search(query, limit)`|`recall(bank_id, query, ...)`|CrewAI 根据任务描述构造查询。 Hindsight 运行语义搜索、BM25、图遍历和重排序。|
-|`reset()`|`delete_bank(bank_id)`|擦除记忆库并可以选择使用其原始任务重新创建它。|
+| `save(value, metadata, agent)` | `retain(bank_id, content, ...)` | 存储任务输出。Hindsight 会从原始文本中提取事实、实体和关系。 |
+| `search(query, limit)` | `recall(bank_id, query, ...)` | CrewAI 根据任务描述构造查询。Hindsight 会执行语义检索、BM25、图遍历和重排序。 |
+| `reset()` | `delete_bank(bank_id)` | 清空记忆库，并可选择用其原始任务说明重新创建记忆库。 |
 
-CrewAI打电话 `search()` 在每个任务开始时自动并且 每个任务完成后 `save()`。
+CrewAI 会在每项任务开始时自动调用 `search()`，并在每项任务完成后调用 `save()`。
 
 ## 配置选项 {#configuration-options}
 
@@ -85,20 +86,20 @@ CrewAI打电话 `search()` 在每个任务开始时自动并且 每个任务完�
 from hindsight_crewai import configure
 
 configure(
-    hindsight_api_url="https://api.hindsight.vectorize.io",  #Hindsight Cloud（默认）
+    hindsight_api_url="https://api.hindsight.vectorize.io",  # Hindsight Cloud（默认值）
     api_key="your-api-key",                     # 或设置 HINDSIGHT_API_KEY 环境变量
-    budget="mid",                               #记忆召回预算：“低”、“中”、“高”
-    max_tokens=4096,                            #记忆结果的最大 token 数数
-    tags=["env:prod"],                          #存储记忆的标签
-    recall_tags=["scope:global"],               #要过滤的标签 记忆召回
-    recall_tags_match="any",                    # 标签匹配：any/all/any_strict/all_strict
-    verbose=True,                               #启用日志记录
+    budget="mid",                               # Recall（召回）预算："low"、"mid"、"high"
+    max_tokens=4096,                            # Recall 结果的最大 token 数
+    tags=["env:prod"],                          # 存储记忆时使用的标签
+    recall_tags=["scope:global"],               # 用于筛选 Recall 结果的标签
+    recall_tags_match="any",                    # 标签匹配模式：any/all/any_strict/all_strict
+    verbose=True,                               # 启用日志记录
 )
 ```
 
-### 每个存储覆盖 {#per-storage-overrides}
+### 单个存储实例的覆盖选项 {#per-storage-overrides}
 
-构造函数参数覆盖全局配置：
+构造函数参数会覆盖全局配置：
 
 ```python
 storage = HindsightStorage(
@@ -111,18 +112,18 @@ storage = HindsightStorage(
 
 ## 记忆库任务说明 {#bank-missions}
 
-设定一个任务来指导Hindsight如何处理和组织记忆：
+设置任务说明，指导 Hindsight 如何处理和组织记忆：
 
 ```python
 storage = HindsightStorage(
     bank_id="my-crew",
-    mission="跟踪软件架构决策、技术债务和团队偏好。",
+    mission="Track software architecture decisions, technical debt, and team preferences.",
 )
 ```
 
-## 每智能体记忆库 {#per-agent-memory-banks}
+## 每个智能体使用独立记忆库 {#per-agent-memory-banks}
 
-给每个智能体一个独立的记忆库：
+为每个智能体设置独立的记忆库：
 
 ```python
 storage = HindsightStorage(
@@ -133,7 +134,7 @@ storage = HindsightStorage(
 )
 ```
 
-或者使用自定义记忆库解析器进行完全控制：
+也可以使用自定义记忆库解析器，以便完全控制记忆库名称：
 
 ```python
 storage = HindsightStorage(
@@ -142,12 +143,13 @@ storage = HindsightStorage(
 )
 ```
 
-:::info 当`per_agent_banks=True`，自动`search()` 在任务开始时查询基础记忆库（共享上下文），因为CrewAI的`search()`方法不接收智能体参数。对于每个智能体搜索隔离，创建单独的 每个智能体 `HindsightStorage`实例。
+:::info
+当 `per_agent_banks=True` 时，任务开始时自动执行的 `search()` 会查询基础记忆库（共享上下文），因为 CrewAI 的 `search()` 方法不会接收智能体参数。若要隔离每个智能体的搜索，请为每个智能体分别创建 `HindsightStorage` 实例。
 :::
 
-## 反思工具 {#reflect-tool}
+## Reflect 工具 {#reflect-tool}
 
-CrewAI的存储接口仅支持save/search/reset。让智能体能够访问Hindsight的`reflect`（处置感知记忆合成），将其添加为工具：
+CrewAI 的存储接口仅支持 `save`、`search` 和 `reset`。若要让智能体使用 Hindsight 的 `reflect`（一种受性格倾向影响的记忆综合生成方式），请将它添加为工具：
 
 ```python
 from hindsight_crewai import HindsightReflectTool
@@ -155,22 +157,22 @@ from hindsight_crewai import HindsightReflectTool
 reflect_tool = HindsightReflectTool(
     bank_id="my-crew",
     budget="mid",
-    reflect_context="您正在帮助软件团队跟踪决策。",
+    reflect_context="You are helping a software team track decisions.",
 )
 
 agent = Agent(
     role="Analyst",
-    goal="分析项目历史",
+    goal="Analyze project history",
     backstory="...",
     tools=[reflect_tool],
 )
 ```
 
-当智能体调用此工具时，它会根据所有相关记忆而不是原始事实片段获得综合的上下文答案。
+智能体调用此工具时，会获得基于所有相关记忆生成的综合上下文答案，而不是原始事实片段。
 
 ## 完整示例 {#full-example}
 
-一个研究小组会记住运行中的发现：
+以下研究团队会记住多次运行中的研究发现：
 
 ```python
 from hindsight_crewai import configure, HindsightStorage, HindsightReflectTool
@@ -184,83 +186,81 @@ configure(
 
 storage = HindsightStorage(
     bank_id="research-crew",
-    mission="跟踪技术研究结果和比较。",
+    mission="Track technology research findings and comparisons.",
 )
 
 reflect_tool = HindsightReflectTool(bank_id="research-crew", budget="mid")
 
 researcher = Agent(
     role="Researcher",
-    goal="基于先验知识的研究主题。",
-    backstory="开始之前，使用hindsight_reflect检查您已经知道的内容。",
+    goal="Research topics, building on prior knowledge.",
+    backstory="Before starting, use hindsight_reflect to check what you already know.",
     tools=[reflect_tool],
 )
 
 writer = Agent(
     role="Writer",
-    goal="结合先前的发现撰写摘要。",
-    backstory="使用hindsight_reflect记忆先前的研究。",
+    goal="Write summaries incorporating prior findings.",
+    backstory="Use hindsight_reflect to recall prior research.",
     tools=[reflect_tool],
 )
 
 crew = Crew(
     agents=[researcher, writer],
     tasks=[
-        Task(description="研究 Rust 的好处", expected_output="Analysis", agent=researcher),
-        Task(description="写执行摘要", expected_output="Summary", agent=writer),
+        Task(description="Research the benefits of Rust", expected_output="Analysis", agent=researcher),
+        Task(description="Write an executive summary", expected_output="Summary", agent=writer),
     ],
     external_memory=ExternalMemory(storage=storage),
 )
 
-#运行 1：研究 Rust，存储发现
+# 第 1 次运行：研究 Rust 并存储发现
 crew.kickoff()
 
-#运行 2：与 Go 进行比较时回顾 Rust 研究
-crew.tasks[0].description = "比较 Rust 和 Go"
+# 第 2 次运行：比较 Rust 和 Go 时召回 Rust 研究内容
+crew.tasks[0].description = "Compare Rust with Go"
 crew.kickoff()
 ```
 
-## API参考 {#api-reference}
+## API 参考 {#api-reference}
 
 ### 配置 {#configuration}
 
-|功能|说明|
+| 函数 | 说明 |
 |----------|-------------|
-|`configure(...)`|设置全局连接和默认设置|
-|`get_config()`|获取当前配置|
-|`reset_config()`|将配置重置为无|
+| `configure(...)` | 设置全局连接和默认选项 |
+| `get_config()` | 获取当前配置 |
+| `reset_config()` | 将配置重置为 `None` |
 
 ### 存储 {#storage}
 
-|参数 
-需要|默认|说明|
+| 参数 | 默认值 | 说明 |
 |-----------|---------|-------------|
-|`bank_id`|required|Hindsight 记忆 记忆库 ID|
-|`hindsight_api_url`||覆盖API URL|
-|`api_key`||覆盖API 密钥|
-|`budget`|`"mid"`|记忆召回预算 (low/mid/high)|
-|`max_tokens`|`4096`|记忆结果的最大 token 数数|
-|`tags`|`None`|存储时应用的标签|
-|`recall_tags`|`None`|搜索时要过滤的标签|
-|`recall_tags_match`|`"any"`|标签匹配模式|
-|`per_agent_banks`|`False`|赋予每个智能体自己的记忆库|
-|`bank_resolver`|`None`|定制`(bank_id, agent) -> bank_id`|
-|`mission`|`None`|记忆组织的记忆库使命|
-|`verbose`|`False`|启用详细日志记录|
+| `bank_id` | 必填 | Hindsight 记忆库 ID |
+| `hindsight_api_url` | 来自配置 | 覆盖 API URL |
+| `api_key` | 来自配置 | 覆盖 API 密钥 |
+| `budget` | `"mid"` | Recall 预算（low/mid/high） |
+| `max_tokens` | `4096` | Recall 结果的最大 token 数 |
+| `tags` | `None` | 存储记忆时应用的标签 |
+| `recall_tags` | `None` | 搜索时用于筛选的标签 |
+| `recall_tags_match` | `"any"` | 标签匹配模式 |
+| `per_agent_banks` | `False` | 为每个智能体提供独立记忆库 |
+| `bank_resolver` | `None` | 自定义 `(bank_id, agent) -> bank_id` 解析器 |
+| `mission` | `None` | 用于组织记忆的记忆库任务说明 |
+| `verbose` | `False` | 启用详细日志记录 |
 
-### 反思工具 {#reflect-tool}
+### Reflect 工具 {#reflect-tool-1}
 
-|参数 
-需要|默认|说明|
+| 参数 | 默认值 | 说明 |
 |-----------|---------|-------------|
-|`bank_id`|required|Hindsight 记忆 记忆库 ID|
-|`budget`|`"mid"`|预计预算 (low/mid/high)|
-|`reflect_context`|`None`|推理的附加上下文|
-|`hindsight_api_url`||覆盖API URL|
-|`api_key`||覆盖API 密钥|
+| `bank_id` | 必填 | Hindsight 记忆库 ID |
+| `budget` | `"mid"` | Reflect 预算（low/mid/high） |
+| `reflect_context` | `None` | 用于推理的附加上下文 |
+| `hindsight_api_url` | 来自配置 | 覆盖 API URL |
+| `api_key` | 来自配置 | 覆盖 API 密钥 |
 
 ## 环境要求 {#requirements}
 
 - Python >= 3.10
 - crewai >= 0.86.0
-- 正在运行 Hindsight API 服务器
+- 正在运行的 Hindsight API 服务器

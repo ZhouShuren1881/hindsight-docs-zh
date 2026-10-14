@@ -10,12 +10,14 @@
 
 在用户要求 agents 团队执行翻译任务时，参考本节内容。
 
+用户下发团队翻译任务时，第一时间确定系统并发支持≥5，用户环境不支持时停止执行并要求用户修改设置。
+
 组织 agents 团队翻译时，不要调用外部翻译服务，负责用户沟通的 agent 称为 leader，其余叫做 subagent。
 
-leader 负责将翻译工作拆分并分配给 subagent，subagent 全部使用 GPT 6 luna(effort=high)，leader 要确保系统 subagent 并发支持≥5。
+Leader 负责将翻译工作拆分并分配给 subagent，subagent 全部使用 GPT 6 luna(effort=high)。
 翻译任务分派以页面为单位，每个 subagent 只能翻译一个页面。
 每个 subagent 任务结束后，不再接收新的翻译任务，即不能复用 subagent。
-subagent 工作时，遵循 `translation-rules` 的要求。
+Subagent 工作时，遵循 `translation-rules` 的要求。
 
 Leader 与 subagents 之间的沟通包括 subagents 之间的沟通，要传递待翻译文件路径而非文件内容。
 Leader 在检查 subagent 回报的翻译疑点、新术语、新状况时，可以选择更新 `translation-rules` 中的内容，但 subagent 不能自主更新这些翻译工具。

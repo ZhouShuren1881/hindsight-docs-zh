@@ -1,6 +1,6 @@
 ---
-title: "我们如何构建实际并行运行的 4 路混合搜索系统"
-description: "顺序异步查询正在消除我们的检索延迟。以下是我们如何使用 asyncio 和 RRF 融合构建真正的 4 路并行混合搜索系统，然后通过连接共享、跨编码器重排序和乘法提升评分进一步发展它。"
+title: "我们如何构建真正并行运行的四路混合搜索系统"
+description: "顺序执行的异步查询让检索延迟居高不下。本文介绍我们如何用 asyncio 和 RRF 融合构建真正四路并行的混合搜索系统，并进一步通过共享连接、交叉编码器重排序和乘法加权提升完善架构。"
 authors: [chrislatimer, nicoloboschi, benfrank241]
 date: 2026-03-27T12:00
 tags: [engineering, retrieval, search, python, asyncio, performance, deep-dive]
@@ -8,69 +8,69 @@ image: /img/blog/parallel-hybrid-search.webp
 hide_table_of_contents: true
 ---
 
-![我们如何构建实际并行运行的 4 路混合搜索系统](/img/blog/parallel-hybrid-search.webp)
+![我们如何构建真正并行运行的四路混合搜索系统](/img/blog/parallel-hybrid-search.webp)
 
-当我们设计Hindsight的记忆检索时，我们必须面对AI数据检索最困难的挑战之一。
+设计 Hindsight 的记忆检索时，我们必须面对 AI 数据检索中最棘手的挑战之一。
 
-“并行”异步代码实际上并不是并行的。您编写了四个漂亮的异步函数，加入了一些等待，最后一个接一个地执行所有内容。对于具有多种检索策略的混合搜索堆栈来说，这是不可接受的。
+异步代码看起来“并行”，实际却没有并行运行。写出四个漂亮的异步函数，再加上几处 await，结果所有操作还是一个接一个地执行。对于采用多种检索策略的混合搜索系统，这完全无法接受。
 
-以下是我们如何构建一个真正并行运行的 4 路混合搜索系统，我们如何改进它以共享连接并减少往返，以及重排序如何将它们联系在一起。剧透：事实证明，最大的瓶颈不是查询速度，而是连接池争用，这重塑了整个架构。
+下面介绍我们如何构建真正并行运行的四路混合搜索系统，如何逐步改进架构以共享连接、减少往返，以及如何通过重排序串起整个流程。先说结论：最大的瓶颈原来不是查询速度，而是连接池争用；这一发现重塑了整个架构。
 
 <!-- truncate -->
 
-## 为什么要多重检索？ {#why-multi-retrieval}
+## 为什么要采用多种检索方式？ {#why-multi-retrieval}
 
-大多数检索系统都从一种方法开始——通常是向量搜索——然后就到此为止了。它在演示中效果很好。然后真正的查询就会出现，裂缝很快就会出现。
+大多数检索系统从一种方法起步，通常是向量检索，然后就此打住。它在演示中效果很好；真正的查询一出现，问题很快就暴露出来。
 
-核心问题是语义相似性与相关性不同。矢量搜索查找嵌入空间中概念上接近的事物。但是“关闭”会做很多繁重的工作，并且它会根据用户实际的要求以可预测的方式分解。
+核心问题是，语义相似度不等于相关性。向量检索会找到嵌入空间中概念上相近的内容。但“相近”这个标准承担了太多工作，遇到用户实际提出的某些问题时，就会以可预见的方式失效。
 
-**语义搜索无法做到精确匹配。** 请求特定产品 SKU、错误代码、人员姓名或 API 端点，向量嵌入将很乐意返回主题相关的内容，而不是您要求的内容。当精度很重要时，使矢量搜索强大的语义“模糊性”就变成了一种负担。对 `HTTP 502 error` 的查询通常不需要有关 Web 服务器的文档 - 它需要显示“502”的文档。
+**语义检索无法精确匹配**。如果用户询问特定产品 SKU、错误代码、人名或 API 端点，向量嵌入很可能返回主题相关的内容，而不是用户要找的那一项。语义上的“模糊性”让向量检索变得强大，但在需要精确匹配时也会成为负担。查询 `HTTP 502 error` 时，用户通常不需要一篇泛谈 Web 服务器的文档，而是需要那篇提到“502”的文档。
 
-​​**关键词搜索不能做概念。** 翻转到BM25，你会得到相反的问题。它确定了精确的术语，但当用户的措辞与文档不同时就会失败。 “如何修复”与“故障排除”。 “汽车”与“汽车”。如果查询不与文档共享标记，BM25将永远找不到它，无论它有多相关。
+**关键词检索无法理解概念**。换成 BM25，就会遇到相反的问题。它擅长匹配精确术语，但用户措辞与文档不同时就难以奏效，例如“如何修复”和“故障排查”，或“car”和“automobile”。如果查询与文档没有共同词项，无论文档多相关，BM25 都找不到它。
 
-**两者都无法遵循关系。** 问“我们改变定价模型后发生了什么？” - 关于因果关系和顺序的问题 - 语义和关键字搜索都将返回提及定价变化的文档。他们不会做的是将定价变化与下游影响联系起来：支持票、客户流失高峰、三周后的董事会讨论。这些连接存在于记忆之间的关系中，而不是存在于任何单个文档的嵌入或标记集中。
+**两者都无法沿着关系追踪**。例如，用户问“我们调整定价模式后发生了什么？”这是一个关于因果关系和事件顺序的问题。语义检索和关键词检索都会返回提到定价调整的文档，却无法把这次调整与后续影响联系起来，例如支持工单、客户流失率骤升，以及三周后的董事会讨论。这些联系存在于记忆之间的关系中，而不在某一篇文档的嵌入向量或词项集合里。
 
-**都不懂时间。**“上周二我在做什么？”对于人类来说这是一个简单的问题。对于检索系统，它需要解析自然语言日期，将其解析为一个范围，然后找到受该范围限制的记忆。标准矢量搜索将所有文档视为同样永恒的。如果嵌入足够接近，它会很高兴地显示六个月前的内容。
+**两者都不理解时间**。“上周二我在做什么？”对人来说很简单。对检索系统而言，这需要解析自然语言日期，将其转换为时间范围，再找出该范围内的记忆。标准向量检索把所有文档都当作没有时间差别的内容；只要嵌入足够接近，它就可能返回六个月前的记忆。
 
-这些不是边缘情况。在智能体记忆系统中，它们是面包和黄油。智能体可能需要库的确切名称（关键字）、过去对话的概念要点（语义）、导致决策的事件链（图表）或特定时间范围内发生的事情（时间）——有时所有这些都在同一个会话中。
+这些都不是边缘情况。在智能体记忆系统中，这些需求非常常见：智能体可能需要某个库的准确名称（关键词）、过去对话的大意（语义）、促成某项决定的事件链（图），或特定时间范围内发生的事情（时间）；有时同一轮查询会同时需要这几种信息。
 
-一刀切的检索器迫使您选择您愿意出错的查询。混合系统让您不再选择。
+单一检索器会迫使你决定哪些查询可以答错。混合检索系统则让你不必做这种取舍。
 
 ## 问题：四种截然不同的检索模式 {#the-problem-four-very-different-retrieval-modes}
 
-Hindsight 的记忆系统依赖于四种不同的检索策略，因为不同的问题需要不同的工具：
+Hindsight 的记忆系统采用四种不同的检索策略，因为不同的问题需要不同的工具：
 
-- **语义搜索** — 概念匹配嵌入的向量相似度
-- **BM25关键词搜索** — 精确术语和短语的经典全文搜索
-- **图遍历** — 通过预先计算的链接信号进行扩展（实体共现、语义 kNN、因果链）
-- **时间搜索** — 具有时间限制的记忆召回，通过事件传播激活
+- **语义检索** — 在嵌入向量上计算相似度，以匹配概念相关内容
+- **BM25 关键词检索** — 用经典全文检索匹配精确术语和短语
+- **图遍历** — 沿预先计算的连接信号扩展检索范围，包括实体共现、语义 kNN 和因果链
+- **时间检索** — 在时间范围内召回记忆，并通过事件传播激活扩展相关内容
 
-每个都有自己的成本概况：
+每种策略都有不同的成本特征：
 
-- 语义搜索在 HNSW 索引上进行向量相似度
+- 语义检索在 HNSW 索引上计算向量相似度
 - BM25 使用 PostgreSQL 全文索引
-- 图遍历从种子扩展到预先计算的链接表
-- 临时搜索解析自然语言日期，然后运行范围查询和邻居遍历
+- 图遍历从种子节点出发，沿预先计算的连接表扩展
+- 时间检索解析自然语言日期，然后执行范围查询和邻居遍历
 
-简单的实现如下所示：
+最简单的实现大致如下：
 
 ```python
-#不要这样做——变相的顺序
+# 不要这样做——这只是伪装成并发的顺序执行
 semantic_results = await retrieve_semantic(...)
 bm25_results = await retrieve_bm25(...)
 graph_results = await retrieve_graph(...)
 temporal_results = await retrieve_temporal(...)
 ```
 
-这是“异步”但不是并发：一切都在开始下一步之前等待最慢的步骤。
+这段代码虽是“异步”的，却没有并发执行：每一步都要等最慢的操作完成后，下一步才会开始。
 
-## V1：真正独立的 asyncio.gather {#v1-asynciogather-with-real-independence}
+## V1：用 asyncio.gather 实现真正的独立并行 {#v1-asynciogather-with-real-independence}
 
-我们的第一个设计决策很简单：将每种检索方法视为完全独立的工作。除了连接池之外，它们不共享任何内容。这意味着我们可以而且应该并行运行它们：
+我们的第一个设计决策很简单：把每种检索方法视为完全独立的工作。它们除了连接池之外不共享任何资源，因此可以并且应该并行运行：
 
 ```python
 async def _retrieve_parallel_hybrid(...) -> ParallelRetrievalResult:
-    #所有方法独立并行运行
+    # 所有方法都独立并行运行
     semantic_result, bm25_result, graph_result, temporal_result = await asyncio.gather(
         run_semantic(),
         run_bm25(),
@@ -79,24 +79,24 @@ async def _retrieve_parallel_hybrid(...) -> ParallelRetrievalResult:
     )
 ```
 
-每个`run_*`功能负责：
-- 获取自己的DB连接
+每个 `run_*` 函数各自负责：
+- 获取自己的数据库连接
 - 执行查询
-- 塑造结果
-- 记录计时指标
+- 整理结果
+- 记录耗时指标
 
-这是一个坚实的改进——总延迟从所有分支的总和下降到最慢分支的最大值。但它有问题。每个分支从池中获取自己的连接（每个记忆召回有四个连接），即使查询没有时间组件，时间提取也会阻塞其分支，并且语义和BM25针对同一个表运行单独的查询。
+这是一次显著改进：总延迟从各分支耗时之和降到了最慢分支的耗时。不过，这种设计也有问题。每个分支都从连接池获取自己的连接（每次召回需要四个连接）；即使查询中没有时间条件，时间解析也会阻塞对应分支；语义检索和 BM25 还会分别查询同一张表。
 
-我们从那里迭代。
+我们继续迭代改进。
 
-## 演进1：连接共享和组合查询 {#evolution-1-connection-sharing-and-combined-queries}
+## 演进 1：共享连接并合并查询 {#evolution-1-connection-sharing-and-combined-queries}
 
-4 路并行方法会在每个记忆召回中烧毁四个连接。语义查询和BM25查询使用相同的过滤器访问同一个表——唯一的区别是评分函数。单独运行它们意味着两次往返，而本来可能是一次往返。
+四路并行方案每次召回都会占用四个连接。语义查询和 BM25 查询使用相同的过滤条件访问同一张表，唯一不同的是评分函数。分开执行就需要两次数据库往返，而原本一次就够了。
 
-我们使用每个事实类型`UNION ALL`臂将语义+BM25合并到单个查询中。每个臂都有自己的`ORDER BY ... LIMIT`，因此查询规划器可以使用每个事实类型的部分 HNSW 索引，而不是回退到顺序扫描：
+我们按事实类型使用多个 `UNION ALL` 分支，将语义检索和 BM25 合并到一个查询中。每个分支都有自己的 `ORDER BY ... LIMIT`，因此查询规划器可以使用各事实类型对应的部分 HNSW 索引，而不必退回顺序扫描：
 
 ```sql
--- Semantic arms: one per fact type, each hitting its partial HNSW index
+-- 语义检索分支：每种事实类型一个，分别使用对应的部分 HNSW 索引
 (SELECT id, text, context, fact_type,
         1 - (embedding <=> $1::vector) AS similarity,
         NULL::float AS bm25_score,
@@ -111,7 +111,7 @@ async def _retrieve_parallel_hybrid(...) -> ParallelRetrievalResult:
 
 UNION ALL
 
--- BM25 arms: one per fact type
+-- BM25 分支：每种事实类型一个
 (SELECT id, text, context, fact_type,
         NULL::float AS similarity,
         ts_rank_cd(search_vector, to_tsquery('english', $4)) AS bm25_score,
@@ -124,42 +124,41 @@ UNION ALL
  LIMIT $3)
 
 UNION ALL
--- ... more arms for each fact type ...
+-- ... 每种事实类型都还有其他分支 ...
 ```
 
-我们以惨痛的方式了解到这一点：早期版本在 CTE 中使用`ROW_NUMBER() OVER (PARTITION BY fact_type)`，它看起来更干净，但迫使规划器进行完整的顺序扫描 - 完全击败部分索引。问题在于 PostgreSQL 的规划器将 CTE 评估为单个单元：窗口函数需要查看所有事实类型的所有行，然后才能对它们进行分区和排名，因此无法将 `fact_type` 过滤器下推到索引扫描中。 `UNION ALL` 方法不太优雅，但可以让每只手臂独立击中食指。
+我们是吃了亏才学会这一点的：早期版本在 CTE 中使用 `ROW_NUMBER() OVER (PARTITION BY fact_type)`。这种写法看起来更简洁，却迫使规划器执行完整的顺序扫描，彻底失去了部分索引的优势。问题在于，PostgreSQL 规划器会把 CTE 作为一个整体来计算：窗口函数必须先看到所有事实类型的所有行，才能分组排名，因此无法把 `fact_type` 过滤条件下推到索引扫描中。`UNION ALL` 写法不那么优雅，却能让每个分支独立使用自己的索引。
 
-HNSW 是近似值，因此语义臂过度获取 5 倍（至少 100 个结果），并修剪到 Python 中请求的限制。我们还在初始化时在池连接上全局设置`ef_search=200`，以提高稀疏图的记忆能力。
+HNSW 是近似算法，因此语义检索分支会过量获取 5 倍结果（至少 100 条），再由 Python 裁剪到请求的数量。我们还会在初始化时为连接池中的连接统一设置 `ef_search=200`，以提高稀疏图上的召回率。
 
-然后我们更进一步：由于时间检索也查询同一个表并重用相同的连接，因此我们在单个连接上运行语义 + BM25 + 时间。首先提取时间约束（这是 CPU 工作，不需要 DB），如果检测到时间组件，则其查询将立即在同一连接上运行：
+我们还进一步合并了查询：时间检索也会查询同一张表，并能复用同一连接，因此语义检索、BM25 和时间检索都可以使用一个连接。先提取时间约束（这是 CPU 工作，不需要数据库）；如果检测到时间条件，就紧接着在同一连接上执行对应查询：
 
 ```python
 async def retrieve_all_fact_types_parallel(...) -> MultiFactTypeRetrievalResult:
-    #步骤 1：提取时间约束（CPU 工作，无 DB）
+    # 步骤 1：提取时间约束（CPU 工作，无需数据库）
     temporal_constraint = extract_temporal_constraint(query_text, ...)
 
-    #第 2 步：语义 + BM25 + 单个连接上的时间
+    # 步骤 2：在同一连接上执行语义检索、BM25 和时间检索
     async with acquire_with_retry(pool) as conn:
         semantic_bm25_results = await retrieve_semantic_bm25_combined(conn, ...)
 
         if temporal_constraint:
             temporal_results = await retrieve_temporal_combined(conn, ...)
 
-    #步骤 3：并行检索每个事实类型的图（单独的连接）
+    # 步骤 3：按事实类型并行执行图检索（使用独立连接）
     graph_tasks = [run_graph_for_fact_type(ft) for ft in fact_types]
     graph_results = await asyncio.gather(*graph_tasks)
 ```
+这样一来，每次召回的连接用量就从四个降到了一个共享连接，再加上每种事实类型各自用于图检索的 N 个连接；同时，最昂贵且彼此独立的策略——图遍历——仍然可以完全并行。
 
-这将每个记忆识别的连接使用量从四个减少到一个（共享）+ N（每个事实类型的图），同时保持图遍历（最昂贵且独立的策略）完全并行。
+## 演进 2：可靠地获取连接 {#evolution-2-reliable-connection-acquisition}
 
-## 进化2：可靠连接获取 {#evolution-2-reliable-connection-acquisition}
-
-并行运行检索策略非常好，直到连接池耗尽并且一切都停止。我们使用重试逻辑和指数退避来包装连接获取：
+并行运行检索策略效果很好，直到连接池耗尽、所有操作都停滞为止。为此，我们在获取连接时加入了重试逻辑和指数退避：
 
 ```python
 @asynccontextmanager
 async def acquire_with_retry(pool, max_retries: int = 3):
-    """获取具有针对瞬时失败的重试逻辑的连接。"""
+    """Acquire a connection with retry logic for transient failures."""
     start = time.time()
 
     async def acquire():
@@ -168,8 +167,8 @@ async def acquire_with_retry(pool, max_retries: int = 3):
     conn = await retry_with_backoff(acquire, max_retries=max_retries)
     acquire_time = time.time() - start
 
-    #记录缓慢的获取 — 表示池争用
-    if acquire_time > 0.05:  #50ms 阈值
+    # 记录耗时较长的连接获取，表明连接池可能存在争用
+    if acquire_time > 0.05:  # 50 ms 阈值
         pool_size = pool.get_size()
         pool_free = pool.get_idle_size()
         logger.warning(f"[DB POOL] Slow acquire: {acquire_time:.3f}s | size={pool_size}, idle={pool_free}")
@@ -180,46 +179,45 @@ async def acquire_with_retry(pool, max_retries: int = 3):
         await pool.release(conn)
 ```
 
-`retry_with_backoff` 以从 0.5 秒开始的指数退避处理瞬时连接错误（接口错误、连接过多、死锁）。事实证明，50 毫秒的缓慢采集日志记录是发现生产中池压力的最有用信号之一——当该指标达到峰值时，池需要调整大小。
+`retry_with_backoff` 会从 0.5 秒开始采用指数退避，以处理瞬时连接错误（接口错误、连接数过多、死锁）。我们发现，记录超过 50 毫秒的慢速连接获取耗时，是在生产环境中发现连接池压力最有用的信号之一；这项指标飙升时，通常说明需要扩大连接池。
 
-## 进化3：链路扩展——一个查询中的三个信号 {#evolution-3-link-expansion--three-signals-in-one-query}
+## 演进 3：连接扩展——一次查询利用三种信号 {#evolution-3-link-expansion--three-signals-in-one-query}
 
-早期的图检索使用多跳 BFS 遍历，这意味着每个遍历模式需要 O(hops) DB 查询。我们用链接扩展（Link Expansion）取代了它——一种单往返方法，利用了所有三个图信号（实体、语义、因果）在存储记忆时预先计算和限制的事实。
+早期的图检索使用多跳 BFS 遍历，因此每种遍历模式都需要执行 O(hops) 次数据库查询。后来我们用连接扩展（Link Expansion）取代了它：这种方法只需一次往返，并利用了一个事实——三种图信号（实体、语义、因果）都会在存入记忆时预先计算并限制数量。
 
-在记忆存储时，每个新事实都通过三种类型的预先计算的链接与相关事实链接：
-1. **实体链接** — 共现图（每个实体限制为 50 个链接）
-2. **语义链接** — kNN 图（前 5 个最相似的事实，相似度 >= 0.7）
-3. **因果关系** — 显式链（causes/caused_by/enables/prevents）
+存入记忆时，每条新事实都会通过以下三类预先计算的连接与相关事实建立联系：
+1. **实体连接** — 共现图（每个实体最多连接 50 条）
+2. **语义连接** — kNN 图（相似度最高的 5 条事实，相似度 >= 0.7）
+3. **因果连接** — 显式因果链（causes/caused_by/enables/prevents）
 
-因为这些链接在写入时受到限制，所以查询时扩展不需要扇出上限或预算跟踪。所有三个扩展都适合单个 CTE 查询：
+由于写入时已经限制了这些连接的数量，查询时扩展就不需要扇出上限或预算跟踪。三种扩展可以放进同一个 CTE 查询：
 
 ```python
 class LinkExpansionRetriever(GraphRetriever):
     async def retrieve(self, pool, query_embedding_str, bank_id, fact_type, budget, ...):
         async with acquire_with_retry(pool) as conn:
-            #查找语义种子（通过嵌入相似性排名前 20）
+            # 找出语义种子（按嵌入相似度排名前 20）
             all_seeds = await _find_semantic_seeds(conn, query_embedding_str, ...)
 
-            #单个 CTE 查询同时扩展所有三个信号
+            # 用一个 CTE 查询同时扩展三种信号
             entity_rows, semantic_rows, causal_rows = await self._expand_combined(
                 conn, seed_ids, fact_type, budget
             )
 
-        #与附加评分合并：实体 + 语义 + 因果 ∈ [0, 3]
-        #多个信号中出现的事实会累积更高的分数
+        # 将实体、语义和因果分数相加：实体 + 语义 + 因果 ∈ [0, 3]
+        # 同时出现在多种信号中的事实会累积更高分数
         for fid in all_ids:
             score_map[fid] = (
                 entity_scores.get(fid, 0.0)     # tanh(count * 0.5) → [0, 1]
-                + semantic_scores.get(fid, 0.0)  #相似度权重 → [0.7, 1.0]
-                + causal_scores.get(fid, 0.0)    #链接权重 → [0, 1]
+                + semantic_scores.get(fid, 0.0)  # 相似度权重 → [0.7, 1.0]
+                + causal_scores.get(fid, 0.0)    # 连接权重 → [0, 1]
             )
 ```
-
-CTE 查询在一次往返中使用 `source` 鉴别器列发出所有三个扩展：
+CTE 查询通过 `source` 鉴别列，在一次数据库往返中执行全部三种扩展：
 
 ```sql
 WITH entity_expanded AS (
-    -- Entity co-occurrence: seeds → their precomputed entity-link neighbors
+    -- 实体共现：种子 → 预先计算的实体连接邻居
     SELECT mu.id, mu.text, ...,
            COUNT(DISTINCT ml.entity_id)::float AS score,
            'entity'::text AS source
@@ -232,15 +230,15 @@ WITH entity_expanded AS (
     ORDER BY score DESC LIMIT $3
 ),
 semantic_expanded AS (
-    -- Semantic kNN: both outgoing and incoming directions
+    -- 语义 kNN：同时遍历出向和入向
     SELECT id, text, ..., MAX(weight) AS score, 'semantic'::text AS source
     FROM (
-        -- outgoing: seeds → their kNN at insert time
+        -- 出向：种子 → 插入时计算的 kNN
         SELECT mu.*, ml.weight FROM memory_links ml
         JOIN memory_units mu ON mu.id = ml.to_unit_id
         WHERE ml.from_unit_id = ANY($1::uuid[]) AND ml.link_type = 'semantic'
         UNION ALL
-        -- incoming: facts inserted after seeds that found seeds as kNN
+        -- 入向：种子之后插入、并将种子识别为 kNN 的事实
         SELECT mu.*, ml.weight FROM memory_links ml
         JOIN memory_units mu ON mu.id = ml.from_unit_id
         WHERE ml.to_unit_id = ANY($1::uuid[]) AND ml.link_type = 'semantic'
@@ -248,7 +246,7 @@ semantic_expanded AS (
     GROUP BY id, text, ... ORDER BY score DESC LIMIT $3
 ),
 causal_expanded AS (
-    -- Causal chains: explicit causes/enables/prevents links
+    -- 因果链：显式的 causes/enables/prevents 连接
     SELECT DISTINCT ON (mu.id) mu.*, ml.weight AS score, 'causal'::text AS source
     FROM memory_links ml
     JOIN memory_units mu ON ml.to_unit_id = mu.id
@@ -261,38 +259,37 @@ SELECT * FROM entity_expanded
 UNION ALL SELECT * FROM semantic_expanded
 UNION ALL SELECT * FROM causal_expanded
 ```
+这用每种事实类型一次查询取代了多跳遍历。关键在于：在写入时（存入记忆时）限制连接扇出，就能在读取时（召回记忆时）不设扩展上限，而无需担心查询量爆炸。
 
-这用每个事实类型的单个查询取代了多跳遍历。关键见解：通过在写入时限制链接扇出（记忆存储），我们可以在读取时进行无限制扩展（记忆召回），而不必担心查询爆炸。
+## 演进 4：让索引匹配实际查询方式 {#evolution-4-indexes-that-match-how-we-actually-query}
 
-## 进化 4：与我们实际查询方式相匹配的索引 {#evolution-4-indexes-that-match-how-we-actually-query}
-
-如果每个查询都猛烈地进行全表扫描，那么并行工作就没有意义。我们调整了模式以匹配我们的访问模式：
+如果每个查询都会触发全表扫描，并行处理就毫无意义。我们调整了数据库模式，使其符合实际访问模式：
 
 ```sql
--- Per-(bank, fact_type) partial HNSW indexes for vector similarity
--- Created per-bank at bank creation time
+-- 按（记忆库、事实类型）建立部分 HNSW 索引，用于向量相似度检索
+-- 创建记忆库时，为该记忆库建立索引
 CREATE INDEX idx_mu_emb_{bank}_{fact_type}
 ON memory_units USING hnsw (embedding vector_cosine_ops)
 WHERE bank_id = '{bank_id}' AND fact_type = '{fact_type}';
 
--- Full-text search
+-- 全文检索
 CREATE INDEX idx_memory_units_search_vector
 ON memory_units USING gin(search_vector);
 
--- Temporal range queries
+-- 时间范围查询
 CREATE INDEX idx_memory_units_temporal_brin
 ON memory_units USING brin (occurred_start, occurred_end);
 
--- Graph traversal fan-out
+-- 图遍历扇出查询
 CREATE INDEX idx_memory_links_from_type_weight
 ON memory_links (from_unit_id, link_type, weight DESC);
 ```
 
-每个（记忆库，事实类型）的部分 HNSW 索引是一个关键的演变。当您有许多具有不同事实类型分布的记忆库时，单个全局 HNSW 索引无法扩展 - 规划器无法通过我们需要的 `WHERE` 过滤器有效地使用它。每个记忆库部分让 `UNION ALL` 查询中的每个分支准确命中正确的索引。
+按（记忆库、事实类型）建立部分 HNSW 索引，是这次演进的关键之一。记忆库很多且事实类型分布各不相同时，单个全局 HNSW 索引难以扩展，规划器也无法有效地结合所需的 `WHERE` 过滤条件使用它。按记忆库建立部分索引后，`UNION ALL` 查询中的每个分支都能命中对应的索引。
 
-## 可观察性：使并行检索行为可见 {#observability-making-parallel-retrieval-behavior-visible}
+## 可观测性：让并行检索的行为清晰可见 {#observability-making-parallel-retrieval-behavior-visible}
 
-为了调试和调整它，我们构建了一个结构化结果对象，其中包含检索到的项目和计时：
+为了调试和调优，我们构建了一个结构化结果对象，同时记录检索到的项目和耗时：
 
 ```python
 @dataclass
@@ -305,23 +302,23 @@ class ParallelRetrievalResult:
     timings: dict[str, float]              #每个分支总计
     temporal_constraint: tuple | None      #提取的时间范围（如果有）
     mpfp_timings: list[MPFPTimings]        #详细的图检索指标（种子、边、查询时间）
-    max_conn_wait: float                   #跨分支机构的最差连接等待
+    max_conn_wait: float                   #各分支中的最长连接等待时间
 ```
 
-这让我们可以回答以下问题：
-- 是否有一个分支始终主导延迟？
-- 我们是否达到了连接池限制（`max_conn_wait`峰值）？
-- 时间提取是否比检索步骤做更多的工作？
+借助这些信息，我们可以回答以下问题：
+- 是否有某个分支总是主导整体延迟？
+- 是否触及连接池上限（例如 `max_conn_wait` 飙升）？
+- 时间解析是否比实际检索步骤耗费更多工作？
 
-如果没有这种故障，你就会盲目飞行。
+没有这种细分数据，就只能盲目排查。
 
-## Fusion：让检索策略投票 {#fusion-letting-the-retrieval-strategies-vote}
+## 融合：让不同检索策略共同投票 {#fusion-letting-the-retrieval-strategies-vote}
 
-一旦所有四种检索策略完成，我们就会融合它们的结果，以便智能体看到单个排名列表，而不是四个不相交的列表。我们使用倒数排名融合（RRF）作为合并机制：
+四种检索策略都完成后，我们会融合结果，让智能体看到一个统一的排序列表，而不是四个互不相干的列表。我们用倒数排名融合（Reciprocal Rank Fusion，RRF）合并结果：
 
 ```python
 def reciprocal_rank_fusion(result_lists: list[list[RetrievalResult]], k: int = 60) -> list[MergedCandidate]:
-    """使用RRF合并多个排名结果列表。
+    """Merge multiple ranked result lists using RRF.
 
     RRF formula: score(d) = sum_over_lists(1 / (k + rank(d)))
     """
@@ -353,28 +350,28 @@ def reciprocal_rank_fusion(result_lists: list[list[RetrievalResult]], k: int = 6
     ]
 ```
 
-我们选择RRF而不是替代方案有一个特定的原因：我们的四种检索策略产生了无与伦比的分数（余弦相似度，BM25tf-idf，图跳跃权重，时间衰减）。 RRF 是基于排名的，因此它完全回避了标准化。
+我们选择 RRF 而不是其他方法，原因很明确：四种检索策略产生的分数无法直接比较（余弦相似度、BM25 TF-IDF、图跳数权重、时间衰减）。RRF 只依据排名，因此完全不需要做分数归一化。
 
-|融合法|它是如何工作的|何时使用|
-|---|---|---|
-|**RRF**（我们的选择）|基于排名，无分数标准化|混合评分方案|
-|梳状求和|归一化分数总和|当分数具有可比性时|
-|加权平均|调整每个源的权重|当一种来源占主导地位时|
-|级联|顺序过滤|延迟优先架构|
+| 融合方法 | 工作方式 | 适用场景 |
+| --- | --- | --- |
+| **RRF**（本文采用） | 根据排名，不需要归一化分数 | 分数尺度混杂时 |
+| CombSUM | 对归一化后的分数求和 | 各路分数可以比较时 |
+| 加权平均 | 调整不同来源的权重 | 某个来源占主导时 |
+| 级联 | 按顺序筛选 | 延迟优先的架构 |
 
-但是RRF只是第一阶段。它为我们提供了一个有序列表 - 它没有告诉我们哪些结果实际上与查询相关。
+但 RRF 只是第一阶段。它会给出一份有序列表，却无法判断哪些结果真正与查询相关。
 
-## 重排序：具有乘法提升的交叉编码器评分 {#reranking-cross-encoder-scoring-with-multiplicative-boosts}
+## 重排序：用交叉编码器评分并乘法加权提升 {#reranking-cross-encoder-scoring-with-multiplicative-boosts}
 
-RRF 生成合并的候选列表，但基于排名的融合只能组合相对顺序 - 它无法评估结果是否实际上是一个好的答案。为此，我们对顶级候选者运行跨编码器神经重排序器。
+RRF 会生成合并后的候选列表，但基于排名的融合只能整合相对顺序，无法判断某条结果是否真能回答查询。为此，我们会用交叉编码器神经重排序模型处理排名靠前的候选项。
 
-RRF之后的管道：
+RRF 之后的处理流程：
 
-1. **预过滤器**：按RRF分数选取前300名候选者（重排序的成本很高；我们不需要对所有内容进行评分）
-2. **跨编码器评分**：通过交叉编码器模型运行每个（查询、文档）对，生成相关性分数
-3. **乘法提升得分**：使用最近度和时间接近度信号调整交叉编码器分数
+1. **预筛选**：按 RRF 分数选出前 300 个候选项（重排序成本高，不必给所有候选项评分）。
+2. **交叉编码器评分**：将每个（查询、文档）对输入交叉编码器模型，得到相关性分数。
+3. **乘法加权提升**：使用近期性和时间接近度信号调整交叉编码器分数。
 
-交叉编码器重排序器将日期信息添加到每个文档中，以便模型可以推断时间相关性：
+交叉编码器重排序器会在每篇文档前加入日期信息，以便模型判断时间相关性：
 
 ```python
 async def rerank(self, query: str, candidates: list[MergedCandidate]) -> list[ScoredResult]:
@@ -394,7 +391,7 @@ async def rerank(self, query: str, candidates: list[MergedCandidate]) -> list[Sc
     #...构建 ScoredResult 对象...
 ```
 
-跨编码器评分后，我们对新近度和时间接近度应用乘法提升：
+完成交叉编码器评分后，我们会对近期性和时间接近度应用乘法加权提升：
 
 ```python
 _RECENCY_ALPHA: float = 0.2
@@ -402,13 +399,13 @@ _TEMPORAL_ALPHA: float = 0.2
 
 def apply_combined_scoring(scored_results, now, recency_alpha=0.2, temporal_alpha=0.2):
     for sr in scored_results:
-        #新近度：365 天线性衰减 → [0.1, 1.0]；如果没有日期则为中性 0.5
+        # 近期性：在 365 天内线性衰减 → [0.1, 1.0]；没有日期时取中性值 0.5
         sr.recency = 0.5
         if sr.retrieval.occurred_start:
             days_ago = (now - sr.retrieval.occurred_start).total_seconds() / 86400
             sr.recency = max(0.1, min(1.0, 1.0 - (days_ago / 365)))
 
-        #时间邻近度：仅对时间查询有意义；否则中性
+        # 时间接近度：仅对时间查询有意义；其他查询取中性值
         sr.temporal = sr.retrieval.temporal_proximity if sr.retrieval.temporal_proximity is not None else 0.5
 
         recency_boost = 1.0 + recency_alpha * (sr.recency - 0.5)    # ∈ [0.9, 1.1]
@@ -416,42 +413,42 @@ def apply_combined_scoring(scored_results, now, recency_alpha=0.2, temporal_alph
         sr.combined_score = sr.cross_encoder_score_normalized * recency_boost * temporal_boost
 ```
 
-每个 0.2 的 alpha 都转化为围绕中性点 ±10% 的摆动：最坏的是`1 + 0.2 * (0 - 0.5) = 0.9`，最好的是`1 + 0.2 * (0.5) = 1.1`。结合起来，这两种提升最多可以将结果的最终分数改变 +21% 或 -19%。
+两个 alpha 都设为 0.2，意味着相对于中性值最多上下浮动 10%：最差情况下为 `1 + 0.2 * (0 - 0.5) = 0.9`，最好情况下为 `1 + 0.2 * (0.5) = 1.1`。两项提升叠加后，结果的最终分数最多增加 21%，或降低 19%。
 
-关键的设计选择是**乘法**而不是附加增强。这确保了新近度和时间信号始终与基本相关性成比例地缩放——高度相关的旧记忆仍然击败平庸的最近记忆，但在两个同等相关的结果之间，较新的记忆获胜。
+关键设计选择是采用**乘法加权**，而非加法提升。这样，近期性和时间信号始终按基本相关性成比例缩放：高度相关的旧记忆仍会胜过相关性一般的近期记忆；而两条相关性相同的结果中，较新的记忆会排在前面。
 
-为什么是 0.2 而不是更大的值？我们根据我们的基准套件进行了校准。在 0.1 时，提升是不可见的——即使对于明确的时间范围查询（例如“我上周做了什么”），新近度也没有什么区别。 0.5 时，新近度占据主导地位：昨天的平庸事实会超过一个月前高度相关的事实。 0.2 是最佳点，时间范围的查询获得了所需的新近度提升，而不会扭曲与时间无关的查询的结果。
+为什么选 0.2，而不是更大的值？我们用基准测试套件进行了校准。设为 0.1 时，加权提升几乎看不出来，即使查询明确指定了时间范围（例如“我上周做了什么”），近期性也几乎不起作用。设为 0.5 时，近期性又占比过高：昨天的一条普通事实会排在一个月前的高度相关事实之前。0.2 是合适的平衡点：既能让有明确时间范围的查询获得所需的近期性加权，又不会扭曲不依赖时间范围的查询结果。
 
-完整的记忆召回管道，端到端：
+完整的记忆召回流程如下：
 
-1. **检索**：共享连接上的语义 + BM25 + 时间；每个事实类型并行图
-2. **保险丝 (RRF)**：按排名合并四个结果列表，`k=60`
-3. **预过滤器**：RRF分数排名前300的候选人
-4. **重新排名**：跨编码器神经评分，S形归一化为`[0, 1]`
-5. **提升**：`combined_score = ce_normalized * recency_boost * temporal_boost`
-6. **返回**：最终结果按综合得分排序
+1. **检索**：在共享连接上执行语义检索、BM25 和时间检索；按事实类型并行执行图检索。
+2. **融合（RRF）**：按排名合并四个结果列表，`k=60`。
+3. **预筛选**：按 RRF 分数选取前 300 个候选项。
+4. **重排序**：用交叉编码器进行神经网络评分，并通过 sigmoid 归一化到 `[0, 1]`。
+5. **加权提升**：`combined_score = ce_normalized * recency_boost * temporal_boost`。
+6. **返回**：按综合分数对最终结果排序。
 
-## 令人惊讶的部分 {#the-surprising-part}
+## 出乎意料的发现 {#the-surprising-part}
 
-最让我们惊讶的不是任何单一的优化——而是最终架构中有多少是由**连接池压力**塑造的，而不是查询速度。
+最让我们意外的不是某一项优化，而是最终架构在很大程度上受**连接池压力**而非查询速度的影响。
 
-我们最初的4路`asyncio.gather`设计原则上是正确的：四种检索策略是独立的。但在实践中，每个分支抓住自己的连接意味着每个记忆召回同时保持四个连接。在负载下，这将连接池变成了瓶颈，延迟激增并不是因为查询速度慢，而是因为分支正在等待获取连接。我们添加的用于调试的 `max_conn_wait` 指标显示了 200 毫秒以上的采集时间 — 比某些查询本身还要长。
+最初采用四路 `asyncio.gather` 的设计从原理上说没有问题：四种检索策略彼此独立。但实际运行时，每个分支各自获取连接，意味着每次召回都会同时占用四个连接。负载上来后，瓶颈就变成了连接池；延迟上升并不是查询变慢，而是各分支都在等待获取连接。为排查问题而添加的 `max_conn_wait` 指标显示，获取连接要等 200 毫秒以上，有时比某些查询本身还久。
 
-这就是推动我们走向连接共享的原因：语义+BM25+单个连接上的时间，只有图检索独立运行。总查询时间略有增加（在共享连接内连续），但端到端延迟下降，因为我们停止与池竞争。该课程概括如下：在异步系统中，优化控制并发的共享资源比优化工作本身更重要。
+这促使我们改为共享连接：语义检索、BM25 和时间检索共用一个连接，只有图检索独立运行。由于共享连接内的查询改为顺序执行，总查询时间略有增加；但因为不再争抢连接池，端到端延迟反而降低了。由此得到的经验具有普遍意义：在异步系统中，优先优化限制并发的共享资源，往往比优化具体工作本身更重要。
 
-## 这就是力量Hindsight的记忆力 记忆力 {#this-is-what-powers-hindsights-memory-recall}
+## Hindsight 的记忆召回由此驱动 {#this-is-what-powers-hindsights-memory-recall}
 
-Hindsight中的每个`recall_memory`调用都会运行此堆栈：并行混合检索、RRF融合、跨编码器重排序和乘法提升评分。即使记忆库成长为数以万计的事实，该架构仍然成立。
+Hindsight 中每次调用 `recall_memory` 都会运行这套流程：并行混合检索、RRF 融合、交叉编码器重排序和乘法加权评分。即使记忆库增长到数万条事实，这种架构仍然适用。
 
-如果您想使用此检索架构而不自己构建它，[Hindsight Cloud](https://ui.hindsight.vectorize.io) 会为您运行它。 [记忆召回文档](https://hindsight.vectorize.io/developer/retrieval)涵盖了完整的技术参考，包括预算如何控制哪些策略运行以及如何应用重排序。
+如果你想使用这套检索架构，又不想自己构建，[Hindsight Cloud](https://ui.hindsight.vectorize.io) 可以代为运行。[记忆召回文档](https://hindsight.vectorize.io/developer/retrieval)介绍了完整的技术细节，包括 `budget` 如何决定运行哪些策略，以及如何应用重排序。
 
-## 构建在生产中经受住考验的并行混合搜索 {#building-parallel-hybrid-search-that-holds-up-in-production}
+## 构建能在生产环境稳定运行的并行混合搜索 {#building-parallel-hybrid-search-that-holds-up-in-production}
 
-一个好的并行混合搜索系统不仅仅是“我们有四种检索模式”。它是：
+一个优秀的并行混合搜索系统，不只是“我们有四种检索模式”，还需要做到：
 
-- 检索策略在重要的地方同时运行，在高效的地方共享连接
-- 每个策略都经过内部优化，以实现最少的往返次数
-- 由索引支持，相信真实的查询模式
-- 通过RRF融合、跨编码器重排序以及将相关性与新近度和时间信号相结合的评分公式结合在一起
+- 在真正需要并行的环节同时运行各检索策略，并在适合的地方共享连接
+- 优化每种策略，尽量减少数据库往返
+- 让索引与实际查询模式相匹配
+- 通过 RRF 融合、交叉编码器重排序和评分公式整合结果，并结合相关性、近期性和时间信号
 
-在Hindsight中，这种组合将纸上精美的设计变成了可以位于智能体记忆系统的热路径上而不会超出延迟预算的东西。
+在 Hindsight 中，这些设计让原本只在纸面上漂亮的方案成为现实：它可以放进智能体记忆系统的高频调用路径，同时不会突破延迟预算。

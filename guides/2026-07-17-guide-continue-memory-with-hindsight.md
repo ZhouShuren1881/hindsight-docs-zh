@@ -3,52 +3,52 @@ title: "指南：使用 Hindsight 为 Continue 添加记忆"
 authors: [benfrank241]
 date: 2026-07-17
 tags: [how-to, continue, coding-agents, memory]
-description: "使用 hindsight-continue 通过 @hindsight 召回项目记忆，可选智能体模式自动召回存储。"
+description: "使用 hindsight-continue 适配器将 Hindsight 项目记忆召回到 Continue 聊天中，并可选在智能体模式下自动召回和存入记忆。"
 image: /img/guides/guide-continue-memory-with-hindsight.svg
 hide_table_of_contents: true
 ---
 
 ![指南：使用 Hindsight 为 Continue 添加记忆](/img/guides/guide-continue-memory-with-hindsight.svg)
 
-适配器运行小型本地服务器，实现 HTTP 上下文提供商。在聊天输入 `@hindsight`，查询时召回项目记忆并注入。
+如果要在 Continue 中使用 Hindsight 记忆，最简便的配置是 `hindsight-continue` 适配器。它会运行一个小型本地服务器，在 Hindsight Recall（召回）的基础上实现 Continue 的 HTTP 上下文提供商协议。在 Continue 聊天中输入 `@hindsight`，相关项目记忆就会在查询时被召回并注入模型上下文。
 
-Continue 无消息前钩子，但提供 HTTP 和可选 MCP 两扩展点。HTTP 精确按需，MCP 加规则让智能体模式自动，取决于遵循规则。
+Continue 很适合采用这种方式，因为它没有在发送消息前运行的钩子，但支持该软件包使用的两个原生扩展点。HTTP 上下文提供商通过 `@hindsight` 实现精确的按需召回。可选的 MCP 服务器加规则文件，则能在智能体模式下自动召回和 Retain（存入）记忆，前提是智能体遵循该规则。
 
-本指南介绍安装、后端、配置和验证。参考[文档首页](/)和[快速入门](/developer/api/quickstart)。
+本指南将介绍如何安装适配器、将其指向 Hindsight 后端、在 Continue 配置中注册，以及如何快速验证记忆确实正在使用。操作时可以同时打开[文档首页](/)和[快速入门指南](/developer/api/quickstart)。
 
 <!-- truncate -->
 
 > **快速解答**
 >
-> 1. `pip install hindsight-continue`.
-> 2. Cloud 密钥或自托管 URL，加 `HINDSIGHT_CONTINUE_BANK_ID`。
-> 3. 运行适配器，监听 `127.0.0.1:8123`。
-> 4. config.yaml 注册 http 提供商。
-> 5. 输入 @hindsight 确认上下文。
+> 1. 运行 `pip install hindsight-continue`。
+> 2. 设置 `HINDSIGHT_API_KEY`（Cloud）或 `HINDSIGHT_API_URL`（自托管），并设置 `HINDSIGHT_CONTINUE_BANK_ID`。
+> 3. 运行 `hindsight-continue`；服务会监听 `127.0.0.1:8123`。
+> 4. 在 Continue 的 `config.yaml` 中将它注册为 `http` 上下文提供商。
+> 5. 在聊天中输入 `@hindsight`，确认召回的记忆出现在上下文中。
 
 ## 前提条件 {#prerequisites}
 
-开始前确认：
+开始前，请确认你已准备好：
 
-- VS Code 或 JetBrains 的 Continue。
-- Python 3.10+。
-- 可达 [Cloud](https://hindsight.vectorize.io)或自托管。
+- 已安装 Continue（VS Code 或 JetBrains 扩展）
+- 已安装 Python 3.10+，用于运行适配器
+- 可访问的 Hindsight 后端：[Hindsight Cloud](https://hindsight.vectorize.io) 或自托管服务器
 
 ## 步骤 1：安装适配器 {#step-1-install-the-adapter}
 
-用 pip 安装。
+使用 pip 安装适配器：
 
 ```bash
 pip install hindsight-continue
 ```
 
-本地服务器接收请求、召回、按 Continue 预期格式返回。
+`hindsight-continue` 是一个轻量的本地服务器。它接收 Continue 的上下文提供商请求，从 Hindsight 中召回记忆，并返回格式符合 Continue 预期的上下文项。
 
-## 步骤 2：连接 Hindsight {#step-2-point-the-adapter-at-hindsight}
+## 步骤 2：将适配器指向 Hindsight {#step-2-point-the-adapter-at-hindsight}
 
-设环境后运行。
+设置环境变量，然后运行适配器。
 
-Cloud：
+使用 Hindsight Cloud：
 
 ```bash
 export HINDSIGHT_API_KEY=hsk_...
@@ -57,7 +57,7 @@ export HINDSIGHT_CONTINUE_BANK_ID=my-project
 hindsight-continue            # 监听 127.0.0.1:8123
 ```
 
-自托管设置 URL、省略密钥：
+如果使用自托管的 Hindsight 服务器，请通过 `HINDSIGHT_API_URL` 指定服务器，并省略密钥：
 
 ```bash
 export HINDSIGHT_API_URL=http://localhost:8888
@@ -66,11 +66,11 @@ export HINDSIGHT_CONTINUE_BANK_ID=my-project
 hindsight-continue            # 监听 127.0.0.1:8123
 ```
 
-环境变量决定库，每项目一个，防止泄漏。
+`HINDSIGHT_CONTINUE_BANK_ID` 用于指定记忆库。每个项目使用一个记忆库，这样一个代码库的上下文就不会泄漏到另一个项目中。
 
-## 步骤 3：注册到 Continue {#step-3-register-it-in-continue}
+## 步骤 3：在 Continue 中注册适配器 {#step-3-register-it-in-continue}
 
-在 `~/.continue/config.yaml` 或工作区 `.continue` 配置为 http：
+在 Continue 的 `config.yaml`（`~/.continue/config.yaml` 或工作区的 `.continue` 配置块）中，将适配器添加为 `http` 上下文提供商：
 
 ```yaml
 context:
@@ -79,92 +79,92 @@ context:
       url: "http://127.0.0.1:8123/"
       title: hindsight
       displayTitle: Hindsight
-      description: 从 Hindsight 召回长期记忆
+      description: Recall long-term memory from Hindsight
 ```
 
-输入 `@hindsight`，可附查询，匹配记忆加入上下文。
+现在，在 Continue 聊天中输入 `@hindsight`，还可以接着输入想要召回的内容；匹配的记忆会加入模型上下文。
 
 ## 适配器如何使用记忆 {#how-the-adapter-uses-memory}
 
-通过可用扩展点工作：
+Continue 没有预提示钩子，因此适配器通过 Continue 提供的扩展点工作：
 
-- **HTTP 召回**：`@hindsight <query>` 或裸提及接收 `{query, fullInput, options, workspacePath}`，返回 `{name, description, content}`，查询时按需。
-- **可选 MCP 加规则召回存储**：智能体模式连接工具，规则要求任务开始召回并存持久事实。
+- **Recall（HTTP 上下文提供商）：** 输入 `@hindsight <query>`（或只输入 `@hindsight`），适配器就会收到 Continue 的请求（`{query, fullInput, options, workspacePath}`），从 Hindsight 中召回记忆，并返回格式为 `{name, description, content}` 的上下文项。召回在查询时按需进行。
+- **召回和存入（可选，MCP + 规则）：** 将 Continue 的智能体模式指向 Hindsight MCP 服务器，以使用 `retain`/`recall`/`reflect` 工具，并配置规则文件，要求智能体在每项任务开始时召回记忆，并存入值得长期保留的事实。
 
-底层见[召回 API](/developer/api/recall)和[存储 API](/developer/api/retain)。
+如需了解更底层的行为，请阅读 Hindsight 的[召回 API](/developer/api/recall)和[存入 API](/developer/api/retain)。
 
-## 智能体模式自动召回 {#automatic-recall-in-agent-mode}
+## 在智能体模式下自动召回 {#automatic-recall-in-agent-mode}
 
-按需提供商精确，自动则接 MCP 加“先召回”规则，示例见[`examples/.continue/`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/continue/examples/.continue)：
+`@hindsight` 提供商适合精确的按需召回。如果希望自动召回和存入记忆，可以将 Hindsight MCP 服务器接入 Continue 的智能体模式，并添加“先召回”规则。示例资源位于 [`examples/.continue/`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/continue/examples/.continue) 目录中：
 
-- 注册工具的 MCP 块。
-- 要求自动召回的规则文件。
+- 注册 Hindsight 工具的 MCP 服务器配置块
+- 要求智能体自动召回的规则文件
 
-自动取决于遵循规则，不如按需确定。
+自动召回取决于智能体是否遵循规则，因此其确定性不如 `@hindsight` 提供商。
 
-## 按项目记忆库 {#per-project-memory-banks}
+## 按项目划分记忆库 {#per-project-memory-banks}
 
-环境变量决定默认库。
+记忆按**记忆库**划分范围。你设置的 `HINDSIGHT_CONTINUE_BANK_ID` 是适配器默认进行召回的记忆库。
 
-请求可用 `options.bankId` 覆盖，各项目隔离、同项目其他集成共享。
+在提供商配置中发送 `options.bankId`，可以让单个请求改用其他记忆库，从而覆盖默认值。每个项目使用一个记忆库，既能隔离各代码库的记忆，也能让同一项目中使用 Hindsight 的其他编辑器集成共享记忆。
 
-## 验证记忆是否有效 {#verify-that-memory-is-working}
+## 验证记忆是否正常工作 {#verify-that-memory-is-working}
 
-推荐顺序：
+建议按以下顺序测试：
 
-1. 运行并注册。
-2. 项目库存决策约定。
-3. 聊天 @hindsight 相关查询。
-4. 确认上下文。
+1. 运行 `hindsight-continue`，并在 Continue 中注册它
+2. 在项目的记忆库中存入一条决策或约定
+3. 打开 Continue 聊天，输入 `@hindsight` 和相关查询
+4. 确认召回的记忆出现在模型上下文中
 
 例如：
 
-- 保存认证约定。
-- `@hindsight 认证约定` 查询。
+- 存入项目当前的身份验证约定
+- 使用 `@hindsight auth conventions` 查询这些约定
 
-呈现此前决策就有效。
+如果召回的上下文显示了先前存入的决策，说明配置正常工作。
 
 ## 常见错误 {#common-mistakes}
 
-### 忘记库 {#forgetting-to-set-the-bank}
+### 忘记设置记忆库 {#forgetting-to-set-the-bank}
 
-未设置环境就无默认，应每项目设置。
+召回会使用 `HINDSIGHT_CONTINUE_BANK_ID`。如果未设置该变量，适配器就没有默认记忆库可供召回；请为每个项目设置一个记忆库。
 
-### 期待每消息被动召回 {#expecting-passive-recall-on-every-message}
+### 期待每条消息都被动触发召回 {#expecting-passive-recall-on-every-message}
 
-无前钩子，仅提及时执行，自动用 MCP 加规则。
+Continue 没有预提示钩子，因此只有在调用 `@hindsight` 时，提供商才会执行召回。想要将记忆加入上下文时，请输入 `@hindsight`；也可以在智能体模式下使用 MCP + 规则配置。
 
-### URL 不匹配 {#mismatched-url-between-adapter-and-config}
+### 适配器和配置中的 URL 不匹配 {#mismatched-url-between-adapter-and-config}
 
-改主机端口后同步配置。
+适配器默认监听 `127.0.0.1:8123`。如果更改主机或端口，请同步更新 Continue 的 `config.yaml` 中的 `url`。
 
-### 假定全局 {#assuming-memory-is-global}
+### 误以为记忆是全局共享的 {#assuming-memory-is-global}
 
-按库隔离，不能期待其他项目。
+记忆按记忆库划分范围。这通常正是你需要的行为，但不要指望一个项目的记忆库能召回另一个项目的上下文。
 
 ## 常见问题 {#faq}
 
-### 必须 Cloud 吗？ {#do-i-need-hindsight-cloud}
+### 是否必须使用 Hindsight Cloud？ {#do-i-need-hindsight-cloud}
 
-不用，自托管环境 URL，省密钥。
+不需要。自托管的 Hindsight 服务器也可以使用：设置 `HINDSIGHT_API_URL`，并省略密钥。
 
-### @hindsight 自动吗？ {#does-hindsight-recall-automatically}
+### `@hindsight` 会自动召回吗？ {#does-hindsight-recall-automatically}
 
-按需，自动需可选 MCP 和规则。
+不会。只有调用 `@hindsight` 时，该提供商才会按需召回。要自动召回，请在智能体模式下使用可选的 MCP 服务器和规则文件。
 
-### 如何限定？ {#how-is-memory-scoped}
+### 记忆如何划分范围？ {#how-is-memory-scoped}
 
-环境 ID 按项目，必要时请求覆盖。
+范围按记忆库划分，由 `HINDSIGHT_CONTINUE_BANK_ID` 指定。每个项目使用一个记忆库；如有需要，可通过 `options.bankId` 按请求覆盖。
 
-### 可改地址端口吗？ {#can-i-change-the-adapters-host-or-port}
+### 可以更改适配器的主机或端口吗？ {#can-i-change-the-adapters-host-or-port}
 
-设 `HINDSIGHT_CONTINUE_HOST`、`HINDSIGHT_CONTINUE_PORT` 并同步 URL。
+可以。设置 `HINDSIGHT_CONTINUE_HOST` 和 `HINDSIGHT_CONTINUE_PORT`，然后更新 Continue 配置中的 `url` 以保持一致。
 
 ## 后续步骤 {#next-steps}
 
-- 如需托管后端，从 [Hindsight Cloud](https://hindsight.vectorize.io)开始。
-- 阅读[完整文档](/)。
-- 按[快速入门](/developer/api/quickstart)操作。
-- 查阅[召回 API](/developer/api/recall)。
-- 查阅[存储 API](/developer/api/retain)。
-- 阅读 [Continue 集成文档](/sdks/integrations/continue)。
+- 如果需要托管后端，可从 [Hindsight Cloud](https://hindsight.vectorize.io) 开始
+- 阅读 [Hindsight 完整文档](/)
+- 按照[快速入门指南](/developer/api/quickstart)操作
+- 查看 Hindsight 的[召回 API](/developer/api/recall)
+- 查看 Hindsight 的[存入 API](/developer/api/retain)
+- 阅读 [Continue 集成文档](/sdks/integrations/continue)

@@ -9,9 +9,9 @@ import PageHero from '@site/src/components/PageHero';
 <PageHero title="最佳实践" subtitle="面向将 Hindsight 记忆接入生产系统的智能体与开发者的实用指南。" />
 
 **目录**
-- [核心概念](#core-concepts)：记忆库、术语、记忆类型
-- [记忆库配置](#bank-configuration)：任务指令、性格倾向、实体标签
-- [存储数据](#retaining-data)：内容格式、context、document_id、[标签](#tags-naming-conventions)、观察范围
+- [核心概念](#core-concepts)：记忆库、分类体系、记忆类型
+- [记忆库配置](#bank-configuration)：任务说明、性格倾向、实体标签
+- [存储数据](#retaining-data)：内容格式、context、document_id、[标签](#tags-naming-conventions)、观测范围
 - [召回记忆](#recalling-memories)：预算、标签筛选、实体标签筛选、include 选项、query_timestamp
 - [反思](#reflecting)：召回与反思、response_schema、审计
 - [心智模型](#mental-models)：创建时机、标签策略、刷新
@@ -23,7 +23,7 @@ import PageHero from '@site/src/components/PageHero';
 
 ### 记忆库 {#memory-banks}
 
-**记忆库**是隔离的记忆存储，也是用户、智能体或上下文之间的隔离单位。所有操作（retain、recall、reflect）都针对单个记忆库。记忆库之间不共享数据。
+**记忆库**是隔离的记忆存储空间，也是用户、智能体或上下文之间的隔离单位。所有操作（Retain（存入）、Recall（召回）和 Reflect（反思））都针对单个记忆库。记忆库之间不共享数据。
 
 - 多用户应用最常见的模式是每位用户一个记忆库
 - 智能体专属长期记忆通常采用每个智能体一个记忆库
@@ -33,27 +33,27 @@ import PageHero from '@site/src/components/PageHero';
 
 ---
 
-### 术语 {#taxonomy}
+### 分类体系 {#taxonomy}
 
 | 操作 | 作用 | 调用时机 |
 |-----------|-------------|-----------------|
-| **记忆存储** | 导入原始内容（对话、文档、笔记）。LLM 提取事实、实体与关系，原始内容不会逐字存储。 | 每轮对话或会话结束后 |
-| **记忆召回** | 使用四种并行策略检索相关记忆：语义搜索、BM25、图遍历与时间排序。返回排序后的事实列表。 | 生成需要历史上下文的回答之前 |
-| **反思** | 自主推理循环：搜索记忆、综合答案并直接返回。按层级使用心智模型与观察。 | 希望 Hindsight 回答问题，而不只是检索事实时 |
-| **观察** | 从多条事实整合出的去重、有证据支撑的知识。每条观察通过精确引用与证据数量跟踪支持记忆。新证据支持、反驳或扩展观察时，会完善而非覆盖观察。 | 存储后自动触发，不属于存储调用本身 |
-| **心智模型** | 为常见查询保存的预计算反思回答，即时且一致地返回。 | 为重复的高频查询或缓慢变化的用户画像创建 |
+| **Retain（存入）** | 摄取原始内容（对话、文档、笔记）。LLM 提取事实、实体与关系，不会逐字存储原始内容。 | 每轮对话结束后或会话结束时 |
+| **Recall（召回）** | 使用 4 种并行策略检索相关记忆：语义搜索、BM25、图遍历和时间排序。返回按相关性排序的事实列表。 | 生成受益于历史上下文的回答之前 |
+| **Reflect（反思）** | 自主推理循环：搜索记忆、综合生成答案并直接返回。按层级使用心智模型和观测。 | 希望 Hindsight 回答问题，而不只是检索事实时 |
+| **观测** | 从多条事实中整合出的去重、有证据依据的知识。每条观测都会通过精确引文和支持事实数追踪支持它的记忆。有新证据支持、反驳或扩展观测时，会对其完善而非覆盖。 | 在 Retain 后自动触发，不属于 Retain 调用本身 |
+| **心智模型** | 为常见查询预先计算并保存的 Reflect 回答，可即时且一致地返回。 | 为重复的高频查询或缓慢变化的用户画像创建 |
 
 ---
 
 ### 记忆类型 {#memory-types}
 
-存储时提取的事实分为三类：
+Retain（存入）时提取的事实分为三类：
 
 | 类型 | 说明 | 示例 |
 |------|-------------|---------|
 | `world` | 通用知识、外部事实 | “埃菲尔铁塔位于巴黎” |
-| `experience` | 个人经历、用户特定事实 | “用户于 2024 年搬到柏林” |
-| `observation` | 基于多条支持事实整合的认识，随时间去重与完善，并跟踪证据 | “用户一贯偏好异步沟通（5 条支持记忆）” |
+| `experience` | 个人事件、与用户有关的事实 | “用户于 2024 年搬到柏林” |
+| `observation` | 以多条支持事实为依据整合出的认知判断；会随时间去重和完善，并追踪证据 | “用户一贯偏好异步沟通（5 条支持记忆）” |
 
 召回时使用 `types` 筛选特定记忆类型。
 
@@ -61,11 +61,11 @@ import PageHero from '@site/src/components/PageHero';
 
 ## 记忆库配置 {#bank-configuration}
 
-首次使用前配置记忆库，以引导记忆行为适应你的领域。任务指令配置不当是低质量记忆的最主要原因。
+首次使用前配置记忆库，以引导记忆行为适应你的领域。任务说明配置不当是造成记忆质量低下的最主要原因。
 
-### 编写有效的任务指令 {#writing-effective-missions}
+### 编写有效的任务说明 {#writing-effective-missions}
 
-三种任务指令都接受自然语言。应明确描述领域，模糊的指令会产生模糊的结果。
+三种任务说明都接受自然语言。应明确描述领域；说明含糊，结果也会含糊。
 
 #### `retain_mission`
 
@@ -73,28 +73,28 @@ import PageHero from '@site/src/components/PageHero';
 
 | 质量 | 示例 |
 |---------|---------|
-| **良好** | `始终提取技术决策、API 设计选择、架构权衡、阻碍与错误消息。忽略问候、闲聊与日程安排细节。` |
-| **良好** | `提取个人偏好、持续中的承诺、截止日期、健康信息与关系详情。忽略无实质内容与客套话。` |
-| **不佳** | `提取所有信息`：过于模糊，会提取噪声 |
-| **不佳** | `提供帮助`：不是提取指令 |
+| **良好** | `Always extract technical decisions, API design choices, architectural trade-offs, blockers, and error messages. Ignore greetings, small talk, and scheduling logistics.` |
+| **良好** | `Extract personal preferences, ongoing commitments, deadlines, health info, and relationship details. Ignore filler phrases and pleasantries.` |
+| **不佳** | `Extract all information`：过于模糊，会提取噪声 |
+| **不佳** | `Be helpful`：这不是提取指令 |
 
 **建议：**
 - 列出所需事实的*类型*（偏好、决策、错误、承诺）
 - 列出应*忽略*的内容，这与列出应包含的内容同样重要
-- 使任务指令与实际数据类型匹配（对话、文档或工单）
+- 使任务说明与实际数据类型匹配（对话、文档或工单）
 
 #### `observations_mission`
 
 引导整合时综合哪些模式，在存储后运行。
 
 ```
-识别变化的偏好、反复出现的模式、行为转变，以及与既往知识
-的矛盾。关注持久模式，而非短暂状态。
-突出用户行为与先前观察相矛盾的情况。
+Identify evolving preferences, recurring patterns, behavioral shifts, and contradictions
+with prior knowledge. Focus on durable patterns — not transient states. Highlight when
+user behavior contradicts previous observations.
 ```
 
 **建议：**
-- 强调“持久模式”，避免短暂观察带来的噪声
+- 强调“持久模式”，避免短暂观测带来的噪声
 - 需要历史跟踪时，应明确要求检测矛盾
 - 范围应与预期模式变化的频率匹配
 
@@ -102,12 +102,12 @@ import PageHero from '@site/src/components/PageHero';
 
 为 `reflect` 操作设置智能体角色与推理框架。
 
-| 使用场景 | 任务指令 |
+| 使用场景 | 任务说明 |
 |----------|---------|
-| 编程助手 | `你是一位帮助优化用户工作流的资深开发者。始终考虑过往技术决策、当前项目上下文与已陈述的偏好。表达直接，提出明确观点。` |
-| 客户支持 | `你是掌握客户完整历史上下文的客服智能体。在相关时引用过去的工单与解决方案。保持简洁，专注于解决问题。` |
-| 个人助手 | `你是记得用户所有重要事项的个人助手。根据已知的偏好、日程与进行中的项目，为每次回答提供个性化内容。` |
-| 医疗助手 | `你是健康助手。准确引用用户历史。涉及医疗决策时，始终建议咨询专业人士。不要猜测。` |
+| 编程助手 | `You are a senior developer helping optimize the user's workflow. Always factor in past technical decisions, current project context, and stated preferences. Be direct and opinionated.` |
+| 客户支持 | `You are a support agent with full context of this customer's history. Reference past tickets and resolutions where relevant. Be concise and solution-focused.` |
+| 个人助手 | `You are a personal assistant who remembers everything important to the user. Personalize every response using what you know about their preferences, schedule, and ongoing projects.` |
+| 医疗助手 | `You are a health assistant. Reference the user's history accurately. Always recommend consulting a professional for medical decisions. Do not speculate.` |
 
 ---
 
@@ -135,7 +135,7 @@ import PageHero from '@site/src/components/PageHero';
 
 ### 实体标签 {#entity-labels}
 
-为分类定义受控词汇，LLM 会提取值，并将其规范为你定义的集合。
+为分类定义受控词表。LLM 会提取值，并将其规范为你定义的集合。
 
 ```json
 {
@@ -144,9 +144,9 @@ import PageHero from '@site/src/components/PageHero';
       "key": "tech_stack",
       "type": "multi-values",
       "values": [
-        {"value": "python", "description": "Python 编程语言"},
+        {"value": "python", "description": "Python programming language"},
         {"value": "typescript", "description": "TypeScript / Node.js"},
-        {"value": "react", "description": "React 前端框架"}
+        {"value": "react", "description": "React frontend framework"}
       ]
     },
     {
@@ -154,8 +154,8 @@ import PageHero from '@site/src/components/PageHero';
       "type": "value",
       "tag": true,
       "values": [
-        {"value": "high", "description": "紧急或阻碍进度"},
-        {"value": "low", "description": "有则更好"}
+        {"value": "high", "description": "Urgent or blocking"},
+        {"value": "low", "description": "Nice to have"}
       ]
     }
   ]
@@ -187,9 +187,9 @@ import PageHero from '@site/src/components/PageHero';
 
 ```json
 [
-  {"role": "user",      "content": "我在前端使用 React。", "timestamp": "2025-06-01T10:30:00Z"},
-  {"role": "assistant", "content": "明白了。你使用什么状态管理方案？"},
-  {"role": "user",      "content": "Zustand。我们上个季度不再使用 Redux。"}
+  {"role": "user",      "content": "I'm using React for the frontend.", "timestamp": "2025-06-01T10:30:00Z"},
+  {"role": "assistant", "content": "Got it. What state management are you using?"},
+  {"role": "user",      "content": "Zustand. We moved away from Redux last quarter."}
 ]
 ```
 
@@ -203,14 +203,14 @@ import PageHero from '@site/src/components/PageHero';
 
 ```python
 # 良好：具体且有描述性
-context="用户 Alice 关于账单差异的客服工单 #12345"
-context="开发者针对支付服务的架构评审会话"
-context="用户入门表单：陈述的目标、当前工具与团队规模"
-context="每周站会笔记：阻碍、进度与即将进行的任务"
+context="Customer support ticket #12345 from user Alice about a billing discrepancy"
+context="Developer's architecture review session for the payments service"
+context="User's onboarding form: stated goals, current tools, and team size"
+context="Weekly standup notes: blockers, progress, and upcoming tasks"
 
 # 不佳：笼统，没有提供有效信息
-context="一些数据"
-context="对话"
+context="some data"
+context="conversation"
 # 完全省略：提取时没有上下文
 ```
 
@@ -297,21 +297,21 @@ metadata={"url": "https://...", "section": "pricing-faq", "version": "2025-Q1"}
 
 ---
 
-### 观察范围 {#observation-scopes}
+### 观测范围 {#observation-scopes}
 
-控制哪些标签组合独立进行观察处理。
+控制哪些标签组合会各自进行观测处理。
 
 | 值 | 行为 | 使用时机 |
 |-------|----------|------------|
-| `"combined"` | 所有标签一起处理一次 | 默认，适用于单用户记忆库及一般用途 |
-| `"per_tag"` | 每个标签独立处理一次 | 用户应具有隔离的行为观察时 |
+| `"combined"` | 所有标签合并处理一次 | 默认，适用于单用户记忆库及一般用途 |
+| `"per_tag"` | 每个标签分别处理一次 | 需要为用户隔离行为观测时 |
 | `"all_combinations"` | 所有可能的标签子集 | 复杂的多维分析（成本高） |
 | 自定义列表 | 显式的范围列表 | 精确控制多租户范围 |
 
 **自定义范围示例（推荐用于多租户）：**
 
 ```python
-# 观察范围：用户级、团队级及两者组合
+# 观测范围：用户级、团队级及两者组合
 observation_scopes=[
     ["user:alice"],
     ["team:engineering"],
@@ -388,7 +388,7 @@ recall(
 |--------|---------|-------------|
 | `include.entities` | 启用 | 保持启用，为图遍历提供实体上下文 |
 | `include.chunks` | 禁用 | 智能体需要精确措辞或来源引用时 |
-| `include.source_facts` | 禁用 | 为审计追溯观察来源时 |
+| `include.source_facts` | 禁用 | 为审计追溯观测来源时 |
 
 ---
 
@@ -398,7 +398,7 @@ recall(
 |-------|---------|
 | *未设置* | 所有类型 |
 | `["observation"]` | 仅整合模式，高层问题的响应更快 |
-| `["world", "experience"]` | 仅原始事实，适用于需要真实依据或重视引用的查询 |
+| `["world", "experience"]` | 仅原始事实，适用于需要核验依据或重视引用的查询 |
 
 ---
 
@@ -415,13 +415,13 @@ recall(
   "entity_labels": [
     {
       "key": "memory_type",
-      "description": "知识类型：'rule' 表示简洁的操作规则与标准指导，'procedure' 表示逐步技术指令与故障排查笔记",
+      "description": "The type of knowledge: 'rule' for concise operating rules and canonical guidance, 'procedure' for step-by-step technical instructions and troubleshooting notes",
       "type": "value",
       "optional": false,
       "tag": true,
       "values": [
-        { "value": "rule",      "description": "简洁的操作规则或标准指导" },
-        { "value": "procedure", "description": "逐步技术指令或故障排查笔记" }
+        { "value": "rule",      "description": "Concise operating rule or canonical guidance" },
+        { "value": "procedure", "description": "Step-by-step technical instruction or troubleshooting note" }
       ]
     }
   ]
@@ -436,7 +436,7 @@ recall(
 # 仅规则：在数据库层排除流程，而非事后筛选
 result = client.recall(
     bank_id="my-bank",
-    query="应该使用哪个入口点？",
+    query="which entrypoint should I use?",
     tags=["memory_type:rule"],
     tags_match="any_strict"
 )
@@ -452,10 +452,10 @@ result = client.recall(
 
 ```python
 # “团队在一月份做什么工作？”
-recall(query="团队优先事项", query_timestamp="2025-01-31T23:59:59Z")
+recall(query="team priorities", query_timestamp="2025-01-31T23:59:59Z")
 
 # 当前上下文（最常见）
-recall(query="用户偏好", query_timestamp=datetime.utcnow().isoformat() + "Z")
+recall(query="user preferences", query_timestamp=datetime.utcnow().isoformat() + "Z")
 ```
 
 ---
@@ -480,7 +480,7 @@ recall(query="用户偏好", query_timestamp=datetime.utcnow().isoformat() + "Z"
 
 ```python
 reflect(
-    query="用户最重要的 3 项技术偏好是什么？",
+    query="What are the user's top 3 technical preferences?",
     response_schema={
         "type": "object",
         "properties": {
@@ -512,7 +512,7 @@ reflect(
 
 ## 心智模型 {#mental-models}
 
-心智模型是为常见查询保存的预计算 `reflect` 回答，能够即时且一致地返回。
+心智模型是为常见查询预先计算并保存的 Reflect 回答，能够即时且一致地返回。
 
 ### 创建时机 {#when-to-create}
 
@@ -530,16 +530,16 @@ reflect(
 # 每用户心智模型：使用 Alice 的记忆（刷新时自动应用 all_strict）
 create_mental_model(
     bank_id="shared-bank",
-    name="Alice 的技术画像",
-    source_query="总结 Alice 的技术背景、偏好技术栈与当前项目",
+    name="Alice's Technical Profile",
+    source_query="Summarize Alice's technical background, preferred stack, and current projects",
     tags=["user:alice"],
 )
 
 # 全局心智模型：使用所有记忆，对所有人可见
 create_mental_model(
     bank_id="shared-bank",
-    name="团队工程标准",
-    source_query="团队约定的工程标准与规范是什么？",
+    name="Team Engineering Standards",
+    source_query="What are the team's agreed engineering standards and conventions?",
     # 无标签：读取所有记忆，对所有人可见
 )
 ```
@@ -549,7 +549,7 @@ create_mental_model(
 | 触发方式 | 使用时机 |
 |---------|------------|
 | 通过 API 手动触发 | 重要数据更新或审阅周期后 |
-| `trigger={"refresh_after_consolidation": True}` | 观察经常更新，模型应保持最新时 |
+| `trigger={"refresh_after_consolidation": True}` | 观测经常更新、模型应保持最新时 |
 
 创建范围明确的小型模型，每个知识维度一个。名为“关于用户的一切”的心智模型与没有模型一样没用。
 
@@ -569,7 +569,7 @@ create_mental_model(
 | 使用随机 UUID 作为 `document_id` | 每次存储都创建重复文档 | 使用稳定的会话、工单或文档 ID |
 | 省略 `context` 字段 | 明显降低提取质量 | 始终描述数据的类型 |
 | 使用 `metadata` 筛选 | 元数据不支持筛选 | 所有需要筛选的内容都使用 `tags` |
-| 模糊或笼统的任务指令 | 笼统提取产生嘈杂、低价值的记忆 | 明确描述领域、数据类型及应忽略的内容 |
+| 模糊或笼统的任务说明 | 笼统提取会产生嘈杂、低价值的记忆 | 明确描述领域、数据类型及应忽略的内容 |
 | 多租户记忆库使用 `tags_match="any"` | 用户间泄漏记忆 | 对按用户隔离的数据使用 `any_strict` 或 `all_strict` |
 | 在同一请求中存储并召回 | 存储的记忆尚未建立索引 | 每轮结束时存储，下一轮开始时召回 |
 | 一个心智模型涵盖所有内容 | 准确率低、刷新慢、难以限定范围 | 每个知识维度创建一个模型 |

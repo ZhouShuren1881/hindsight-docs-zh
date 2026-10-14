@@ -1,6 +1,6 @@
 ---
-title: "为LangGraph和LangChain智能体添加长期记忆"
-description: "学习如何使用三种集成模式（工具、节点和BaseStore）将长期记忆添加到LangGraph和LangChain智能体中，以及每用户记忆、记忆库和语义记忆召回。"
+title: "为 LangGraph 和 LangChain 智能体添加长期记忆"
+description: 了解如何通过工具、节点和 BaseStore 三种集成模式，为 LangGraph 和 LangChain 智能体添加长期记忆，并实现按用户划分的记忆库和语义召回。
 authors: [DK09876]
 date: 2026-03-24T12:00
 tags: [langgraph, langchain, integrations, agents, memory, tutorial]
@@ -8,34 +8,34 @@ image: /img/blog/langgraph-longterm-memory.webp
 hide_table_of_contents: true
 ---
 
-![为LangGraph和LangChain智能体添加长期记忆](/img/blog/langgraph-longterm-memory.webp)
+![为 LangGraph 和 LangChain 智能体添加长期记忆](/img/blog/langgraph-longterm-memory.webp)
 
-LangGraph 智能体在设计上是有状态的——检查点在步骤之间保存图形状态，而 Store API 跨线程保存数据。但这两者都不能给智能体带来真正的长期记忆：从对话中提取意义、随着时间的推移积累知识以及在相关时在语义上记忆的能力。
+LangGraph 智能体天生是有状态的：检查点保存器会在步骤之间保存图状态，Store API 则会跨线程持久化数据。但这两者都无法为智能体提供真正的长期记忆，也就是从对话中提取含义、随时间积累知识，并在相关时进行语义召回的能力。
 
-这就是Hindsight添加的内容。 Hindsight 是LLM 应用程序的记忆层，可自动从对话中提取事实、构建实体图并使用四种并行记忆召回策略检索相关上下文。 `hindsight-langgraph` 包将其带到了 LangGraph — 并且由于记忆工具是标准 LangChain `@tool` 功能，因此它们也可以与普通 LangChain 一起使用。
+Hindsight 正是为此而来。Hindsight 是面向 LLM 应用的记忆层，可以自动从对话中提取事实、构建实体图，并通过四种并行召回策略检索相关上下文。`hindsight-langgraph` 包将这套能力带入 LangGraph。由于记忆工具采用标准的 LangChain `@tool` 函数，它们也能用于普通 LangChain。
 
 <!-- truncate -->
 
 ## 问题 {#the-problem}
 
-LangGraph的内置持久性是为图状态设计的——检查点、中间值、跨线程键值存储。它擅长“这张图上次做了什么？”但不是“这个智能体对这个用户了解什么？”
+LangGraph 内置的持久化机制面向图状态设计，包括检查点、中间值以及跨线程键值存储。它擅长回答“这张图上次做了什么？”，却无法回答“这个智能体了解这个用户的哪些信息？”。
 
-考虑一个支持智能体，它可以在数十个会话中与同一客户交谈。仅使用检查指针，每个新线程都会冷启动。使用 `InMemoryStore` 或 `PostgresStore`，您可以手动存储和检索事实，但您负责：
+设想一个支持智能体，它会在数十次会话中与同一位客户交流。仅使用检查点保存器时，每个新线程都要从零开始。使用 `InMemoryStore` 或 `PostgresStore` 时，你可以手动存储和检索事实，但以下工作都得由你负责：
 
-- 决定存储什么（事实提取）
-- 决定相关内容（语义检索）
+- 决定存储哪些内容（事实提取）
+- 判断哪些内容相关（语义检索）
 - 处理矛盾和更新
-- 从原始对话构建知识图
+- 从原始对话中构建知识图谱
 
-Hindsight 自动完成所有这些。你记忆存储对话，它提取事实，构建实体图，并使用四种并行策略检索相关记忆：**语义**（嵌入相似性）、**BM25**（关键词重叠）、**图遍历**（实体关系）和**时间检索**（新近度加权）。每种策略捕捉不同的事物——语义记忆识别找到概念上相似的记忆，图遍历找到通过共享实体链接的记忆，时间加权在旧事实之前显示最近的上下文。它们一起大大优于单一策略检索。
+Hindsight 会自动完成这些工作。你存入对话后，它会提取事实、构建实体图，并通过四种并行策略检索相关记忆：**语义检索**（嵌入向量相似度）、**BM25**（关键词重合度）、**图遍历**（实体关系）和**时间检索**（近期性加权）。每种策略各有所长：语义检索能找到概念相近的记忆，图遍历能找到通过共享实体关联的记忆，时间加权则会优先呈现近期上下文，再呈现较早的事实。它们结合起来，效果显著优于单一策略的检索。
 
 ## 三种集成模式 {#three-integration-patterns}
 
-我们构建了三种方法，在不同的抽象级别将Hindsight记忆添加到LangGraph。
+我们提供了三种抽象层级不同的方式，可将 Hindsight 记忆集成到 LangGraph 中。
 
-### 1。工具——智能体决定（LangChain & LangGraph） {#1-tools--the-agent-decides-langchain--langgraph}
+### 1. 工具：由智能体决定（LangChain 和 LangGraph） {#1-tools--the-agent-decides-langchain--langgraph}
 
-给予智能体记忆存储/记忆召回/反思工具，让它决定何时使用记忆。这些是标准 LangChain `@tool` 函数，因此它们可以与 LangGraph（通过 `create_react_agent`）和普通 LangChain（通过 `bind_tools()`）配合使用。
+向智能体提供存入、召回和反思工具，让它自行决定何时使用记忆。这些工具采用标准的 LangChain `@tool` 函数，因此既适用于 LangGraph（通过 `create_react_agent`），也适用于普通 LangChain（通过 `bind_tools()`）。
 
 ```python
 from hindsight_client import Hindsight
@@ -46,26 +46,26 @@ from langgraph.prebuilt import create_react_agent
 client = Hindsight(base_url="http://localhost:8888")
 tools = create_hindsight_tools(client=client, bank_id="user-123")
 
-#与 LangGraph
+# 使用 LangGraph
 agent = create_react_agent(ChatOpenAI(model="gpt-4o"), tools=tools)
 
-#或使用普通 LangChain
+# 或使用普通 LangChain
 model = ChatOpenAI(model="gpt-4o").bind_tools(tools)
 ```
 
-智能体拥有三个工具：
+智能体会获得三个工具：
 
-- **`hindsight_retain`** — 存储对话并从中提取事实
+- **`hindsight_retain`** — 存储对话，并从中提取事实
 - **`hindsight_recall`** — 在记忆库中搜索相关上下文
-- **`hindsight_reflect`** — 综合多个记忆以生成摘要或回答有关智能体知道什么的问题（对于诸如“该用户告诉我有关他们的堆栈的什么？”之类的问题很有用）
+- **`hindsight_reflect`** — 综合多条记忆，生成摘要或回答有关智能体所知内容的问题（例如“这个用户告诉过我哪些关于其技术栈的信息？”）
 
-智能体根据对话上下文调用这些内容——当用户分享重要内容时存储事实，当被问及过去的上下文时回忆，并在需要综合积累的知识时进行反思。
+智能体会根据对话上下文调用这些工具：用户分享重要信息时存储事实，被问及过去的上下文时召回记忆，需要综合累积的知识时进行反思。
 
-**最适合**：ReAct 智能体，需要推理记忆何时相关。与 LangGraph 一起使用以实现自动工具执行循环，或者如果您自己管理循环，则与普通 LangChain 一起使用。
+**适用场景**：适合需要判断何时使用记忆的 ReAct 智能体。若使用 LangGraph，可自动执行工具调用循环；若使用普通 LangChain，则由你自行管理循环。
 
-### 2。节点——记忆为图形步骤 {#2-nodes--memory-as-graph-steps}
+### 2. 节点：将记忆作为图步骤 {#2-nodes--memory-as-graph-steps}
 
-将记忆召回和记忆存储添加为图中的自动节点。无需调用工具——记忆每回合都会运行。
+将召回和存入操作设为图中的自动节点。无需调用工具，记忆处理会在每一轮运行。
 
 ```python
 from hindsight_langgraph import create_recall_node, create_retain_node
@@ -84,13 +84,13 @@ builder.add_edge("agent", "retain")
 builder.add_edge("retain", END)
 ```
 
-记忆召回节点在LLM之前运行，在Hindsight中搜索与用户消息相关的记忆，并将它们作为`SystemMessage`注入。记忆存储节点随后运行，存储对话。两者都在运行时解析来自 `RunnableConfig` 的每个用户记忆库 ID。
+召回节点会在 LLM 运行前执行，在 Hindsight 中搜索与用户消息相关的记忆，并将其作为 `SystemMessage` 注入。随后，存入节点会存储这段对话。运行时，两者都会从 `RunnableConfig` 中解析每位用户对应的记忆库 ID。
 
-**最适合**：您始终希望自动注入记忆上下文的智能体，而不依赖于LLM来决定何时使用记忆工具。
+**适用场景**：适合希望始终自动注入记忆上下文，而不依赖 LLM 决定何时使用记忆工具的智能体。
 
-### ​​3。 BaseStore — 嵌入式后端 {#3-basestore--drop-in-backend}
+### 3. BaseStore：即插即用的后端 {#3-basestore--drop-in-backend}
 
-将LangGraph的`InMemoryStore`替换为Hindsight作为存储后端。如果您的团队已经使用LangGraph的存储模式，这是摩擦力最低的路径。
+以 Hindsight 作为存储后端，替换 LangGraph 的 `InMemoryStore`。如果团队已经采用 LangGraph 的 store 模式，这是迁移成本最低的方式。
 
 ```python
 from hindsight_langgraph import HindsightStore
@@ -99,27 +99,27 @@ store = HindsightStore(client=client)
 graph = builder.compile(checkpointer=checkpointer, store=store)
 ```
 
-命名空间元组映射到Hindsight记忆库ID（`("user", "123")`→记忆库`user.123`），记忆库是自动创建的，`search()`使用Hindsight的完整语义记忆召回而不是基本向量相似性。
+命名空间元组会映射到 Hindsight 记忆库 ID（`("user", "123")` → 记忆库 `user.123`），记忆库会自动创建；`search()` 使用 Hindsight 完整的语义召回能力，而非基础的向量相似度搜索。
 
-**最适合**：已经使用LangGraph的`store`模式的团队希望在不重构图表的情况下获得更好的检索效果。
+**适用场景**：适合已经使用 LangGraph `store` 模式、希望提升检索效果且不想重构图的团队。
 
 ---
 
-### 哪种模式适合您的用例？ {#which-pattern-fits-your-use-case}
+### 哪种模式适合你的用例？ {#which-pattern-fits-your-use-case}
 
-||工具|节点|基地存储|
+| | 工具 | 节点 | BaseStore |
 |---|---|---|---|
-|适用于普通 LangChain|是的|否|否|
-|记忆自动运行|否（LLM决定）|是的|是的|
-|使用现有的存储界面|否|否|是的|
-|LLM 控制何时记住|是的|否|否|
-|最低迁移成本|—|低|最低|
+| 适用于普通 LangChain | 是 | 否 | 否 |
+| 自动运行记忆处理 | 否（由 LLM 决定） | 是 | 是 |
+| 使用现有的存储接口 | 否 | 否 | 是 |
+| LLM 决定何时存入记忆 | 是 | 否 | 否 |
+| 最低迁移成本 | — | 低 | 最低 |
 
 ---
 
-## 完整的工作示例 {#complete-working-example}
+## 完整可运行示例 {#complete-working-example}
 
-这是一个完全支持的智能体，它使用节点模式记住跨会话的每个用户。这是可复制粘贴的，并且可在自托管 Hindsight 或 Hindsight Cloud上运行。
+下面是一个完整的支持智能体示例，采用节点模式，在多个会话之间记住每位用户的信息。你可以直接复制并运行，适用于自托管 Hindsight 或 Hindsight Cloud。
 
 ```python
 import asyncio
@@ -130,34 +130,34 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.graph import StateGraph, MessagesState, START, END
 from langgraph.checkpoint.memory import MemorySaver
 
-# --- Setup ---
+# --- 初始化 ---
 
 client = Hindsight(base_url="http://localhost:8888")
-#对于Hindsight Cloud：
+# 使用 Hindsight Cloud 时：
 # client = Hindsight(base_url="https://api.hindsight.vectorize.io", api_key="...")
 
 llm = ChatOpenAI(model="gpt-4o")
 checkpointer = MemorySaver()
 
-#--- 记忆节点 ---
-#bank_id_from_config 在运行时从 RunnableConfig 中获取用户 ID，
-#因此，一个图定义可以为所有用户提供独立的记忆库。
+# --- 记忆节点 ---
+# bank_id_from_config 会在运行时从 RunnableConfig 获取用户 ID，
+# 因此，一个图定义就能为所有用户提供相互隔离的记忆库。
 
 recall = create_recall_node(client=client, bank_id_from_config="user_id")
 retain = create_retain_node(client=client, bank_id_from_config="user_id")
 
-#--- 智能体节点 ---
+# --- 智能体节点 ---
 
 async def agent_node(state: MessagesState):
     system = SystemMessage(content=(
-        "你是一个有帮助的支持智能体。"
-        "上面已经注入了关于该用户的相关记忆。"
-        "使用它们来个性化您的回答。"
+        "You are a helpful support agent. "
+        "Relevant memories about this user have been injected above. "
+        "Use them to personalize your response."
     ))
     response = await llm.ainvoke([system] + state["messages"])
     return {"messages": [response]}
 
-# --- Graph ---
+# --- 图 ---
 
 builder = StateGraph(MessagesState)
 builder.add_node("recall", recall)
@@ -170,7 +170,7 @@ builder.add_edge("retain", END)
 
 graph = builder.compile(checkpointer=checkpointer)
 
-# --- Run ---
+# --- 运行 ---
 
 async def chat(user_id: str, thread_id: str, message: str):
     config = {
@@ -187,22 +187,22 @@ async def chat(user_id: str, thread_id: str, message: str):
 
 
 async def main():
-    #会话 1：用户共享上下文
+    # 会话 1：用户分享上下文
     print("Session 1")
-    print(await chat("user-42", "thread-1", "嗨！我的 Postgres 连接池遇到问题。我们使用的是 SQLAlchemy 2.0。"))
-    print(await chat("user-42", "thread-1", "我们正在使用 asyncpg 的异步会话。泳池在负载下不断耗尽。"))
+    print(await chat("user-42", "thread-1", "Hi! I'm running into issues with our Postgres connection pool. We're on SQLAlchemy 2.0."))
+    print(await chat("user-42", "thread-1", "We're using async sessions with asyncpg. The pool keeps exhausting under load."))
 
-    #第 2 节：新线程，同一用户 — 智能体记得
+    # 会话 2：新线程，同一用户，智能体能记住之前的信息
     print("\nSession 2 (new thread)")
-    print(await chat("user-42", "thread-2", "嘿，又回来了。仍在解决连接池问题。"))
-    #智能体回顾 SQLAlchemy 2.0、asyncpg 和池耗尽上下文
-    #，用户不必重复自己的话。
+    print(await chat("user-42", "thread-2", "Hey, back again. Still fighting the connection pool issue."))
+    # 智能体会回想起 SQLAlchemy 2.0、asyncpg 以及连接池耗尽的情况，
+    # 用户无需重新说明这些信息。
 
 
 asyncio.run(main())
 ```
 
-Hindsight从会话1中提取并存储在`user-42`记忆库中的内容：
+Hindsight 从会话 1 中提取并存入 `user-42` 记忆库的内容：
 
 ```
 - Uses SQLAlchemy 2.0 with async sessions
@@ -211,25 +211,25 @@ Hindsight从会话1中提取并存储在`user-42`记忆库中的内容：
 - Running Postgres
 ```
 
-当会话 2 在新线程上启动时，记忆召回节点会在记忆库中搜索与“仍在与连接池问题作斗争”相关的上下文，并在 LLM 响应之前将这些事实作为 `SystemMessage` 注入。智能体准确地拾取上次会话结束的位置。
+会话 2 在新线程中开始时，召回节点会在记忆库中搜索与“Still fighting the connection pool issue”相关的上下文，并在 LLM 回复前将这些事实作为 `SystemMessage` 注入。智能体就能从上次会话结束的地方接着交流。
 
 ---
 
-## 每用户一行记忆 {#per-user-memory-in-one-line}
+## 一行代码实现按用户划分记忆 {#per-user-memory-in-one-line}
 
-所有三种模式都支持动态记忆库ID。不要对记忆库进行硬编码，而是在运行时从图形的配置中解析它：
+三种模式都支持动态记忆库 ID。无需将记忆库 ID 写死，只需在运行时从图的配置中解析：
 
 ```python
 recall = create_recall_node(client=client, bank_id_from_config="user_id")
 
-#每次调用都有自己独立的记忆库
+# 每次调用都会使用各自隔离的记忆库
 await graph.ainvoke(
     {"messages": [...]},
     config={"configurable": {"user_id": "user-456"}},
 )
 ```
 
-一个图定义服务于所有用户。 记忆库是自动创建的，并保持完全隔离。
+一个图定义即可服务所有用户。记忆库会自动创建，并保持彼此完全隔离。
 
 ## 开始使用 {#getting-started}
 
@@ -237,23 +237,23 @@ await graph.ainvoke(
 pip install hindsight-langgraph
 ```
 
-可与自托管的Hindsight和[Hindsight Cloud](https://ui.hindsight.vectorize.io)配合使用。对于云，在创建客户端时传递您的 API 密钥：
+自托管 Hindsight 和 [Hindsight Cloud](https://ui.hindsight.vectorize.io) 均可使用此集成。使用云服务时，在创建客户端时传入 API 密钥：
 
 ```python
 client = Hindsight(base_url="https://api.hindsight.vectorize.io", api_key="your-key")
-# or
+# 或
 from hindsight_client import configure
-configure(api_key="your-key")  #默认为云端 URL
+configure(api_key="your-key")  # 默认使用云端 URL
 ```
 
-## 用这个构建什么 {#what-to-build-with-this}
+## 可以用它构建什么？ {#what-to-build-with-this}
 
-长期记忆解锁了不同类别的智能体行为。我们发现一些行之有效的模式：
+长期记忆让智能体能够实现另一类行为。以下是一些实践效果不错的模式：
 
-- **支持智能体** 记住每个客户的历史记录、偏好和跨会话的过去问题
-- **销售助理** 通过多个接触点积累有关潜在客户的背景信息
-- **个人生产力智能体** 建立用户工作方式、优先级和决策的模型
+- **支持智能体**：跨会话记住每位客户的历史、偏好和以往问题
+- **销售助理**：通过多次互动逐步积累潜在客户的上下文
+- **个人效率智能体**：逐步建立对用户工作方式、优先事项和决策的认知模型
 
-在所有这三种情况下，智能体运行的时间越长，性能就会变得越好——不仅仅是因为上下文窗口更长，还因为Hindsight将对话提炼成结构化知识，它可以在相关时精确检索。
+在这三种场景中，智能体运行得越久，表现就会越好。这不仅是因为上下文窗口更长，还因为 Hindsight 会将对话提炼为结构化知识，并在相关时准确检索。
 
-完整文档：[LangGraph集成](/sdks/integrations/langgraph) | [GitHub](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/langgraph)
+完整文档：[LangGraph 集成](/sdks/integrations/langgraph) | [GitHub](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/langgraph)

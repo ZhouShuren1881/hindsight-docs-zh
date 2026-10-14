@@ -1,15 +1,15 @@
 ---
 sidebar_position: 34
-title: "Haystack 持久记忆Hindsight |整合"
-description: "通过Hindsight为Haystack智能体添加持久的长期记忆。提供 retain/recall/reflect 工具以及 HindsightMemoryWrapper 以及可选的自动记忆召回和自动记忆存储。"
+title: "使用 Hindsight 为 Haystack 提供持久记忆 | 集成"
+description: "通过 Hindsight 为 Haystack 智能体添加持久的长期记忆。提供 retain/recall/reflect 工具，以及支持可选自动召回和自动存入的 HindsightMemoryWrapper。"
 ---
 
 # Haystack {#haystack}
 
-持久的长期记忆[Haystack](https://haystack.deepset.ai/)智能体，通过 Hindsight 提供记忆。 `hindsight-haystack` 包为您提供了两种互补的模式：
+借助 Hindsight，为 [Haystack](https://haystack.deepset.ai/) 智能体提供持久的长期记忆。`hindsight-haystack` 包提供两种互补的使用方式：
 
-- **`create_hindsight_tools(...)`** — 返回列表Haystack`Tool`s (`retain_memory`，`recall_memory`，`reflect_on_memory`) 模型可以在回合内直接调用。
-- **`HindsightMemoryWrapper`** — AHaystack`Toolset` 捆绑相同的工具并添加可选的 **自动记忆召回**（每回合前将相关记忆注入系统提示）和**自动记忆存储**（每回合后存储用户+助理消息）。
+- **`create_hindsight_tools(...)`** — 返回一个 Haystack `Tool` 列表（`retain_memory`、`recall_memory`、`reflect_on_memory`），模型可以在一次对话中直接调用这些工具。
+- **`HindsightMemoryWrapper`** — 一个 Haystack `Toolset`，封装相同的工具，并支持可选的**自动召回**（每轮对话开始前将相关记忆注入系统提示）和**自动存入**（每轮对话结束后存储用户和助手的消息）。
 
 [查看更新日志 →](/changelog/integrations/haystack)
 
@@ -33,26 +33,26 @@ client = Hindsight(base_url="http://localhost:8888")
 tools = create_hindsight_tools(
     client=client,
     bank_id="user-123",
-    mission="追踪用户偏好",
+    mission="Track user preferences",
 )
 
 agent = Agent(
     chat_generator=OpenAIChatGenerator(model="gpt-4o-mini"),
     tools=tools,
     system_prompt=(
-        "你是一个有长期记忆的得力助手。"
-        "使用retain_memory存储重要事实。"
-        "回答前使用recall_memory搜索记忆。"
+        "You are a helpful assistant with long-term memory. "
+        "Use retain_memory to store important facts. "
+        "Use recall_memory to search memory before answering."
     ),
 )
 
-result = agent.run(messages=[ChatMessage.from_user("记住我更喜欢深色模式")])
+result = agent.run(messages=[ChatMessage.from_user("Remember that I prefer dark mode")])
 print(result["messages"][-1].text)
 ```
 
-## 使用 HindsightMemoryWrapper 自动记忆 {#automatic-memory-with-hindsightmemorywrapper}
+## 使用 HindsightMemoryWrapper 自动管理记忆 {#automatic-memory-with-hindsightmemorywrapper}
 
-对于不依赖智能体调用工具的自动记忆召回和记忆存储：
+如果希望自动召回和存入记忆，而不依赖智能体主动调用工具，可以使用以下方式：
 
 ```python
 from hindsight_haystack import HindsightMemoryWrapper
@@ -60,25 +60,25 @@ from hindsight_haystack import HindsightMemoryWrapper
 toolset = HindsightMemoryWrapper(
     client=client,
     bank_id="user-123",
-    mission="追踪用户偏好",
-    auto_recall=True,   #每回合前将记忆注入系统提示
-    auto_retain=True,   #每回合后存储用户+助手消息
+    mission="Track user preferences",
+    auto_recall=True,   # 每轮对话开始前将记忆注入系统提示
+    auto_retain=True,   # 每轮对话结束后存储用户和助手的消息
 )
 
 agent = Agent(
     chat_generator=OpenAIChatGenerator(model="gpt-4o-mini"),
     tools=toolset,
-    system_prompt="你是一个有长期记忆力的得力助手。",
+    system_prompt="You are a helpful assistant with long-term memory.",
 )
 
-#使用toolset.run() 进行自动记忆行为
-result = toolset.run(agent, messages=[ChatMessage.from_user("我更喜欢深色模式")])
+# 使用 toolset.run() 启用自动记忆行为
+result = toolset.run(agent, messages=[ChatMessage.from_user("I prefer dark mode")])
 ```
 
-## 选择性工具 {#selective-tools}
+## 选择性使用工具 {#selective-tools}
 
 ```python
-#只有记忆召回 + 记忆召回（无回忆）
+# 仅使用 retain 和 recall（不使用 reflect）
 tools = create_hindsight_tools(
     client=client,
     bank_id="user-123",
@@ -88,7 +88,7 @@ tools = create_hindsight_tools(
 
 ## 配置 {#configuration}
 
-致电`configure()`一次设置连接默认值，这样你就可以省略每次通话时 `client=`/`hindsight_api_url=`：
+调用一次 `configure()` 即可设置连接默认值，之后每次调用都可以省略 `client=` 和 `hindsight_api_url=`：
 
 ```python
 from hindsight_haystack import configure
@@ -99,13 +99,13 @@ configure(
     budget="mid",
     tags=["source:haystack"],
     context="my-app",
-    mission="追踪用户偏好",
+    mission="Track user preferences",
 )
 
 tools = create_hindsight_tools(bank_id="user-123")
 ```
 
-TheAPIURL 默认为Hindsight Cloud (`https://api.hindsight.vectorize.io`），以及API 密钥回落至 `HINDSIGHT_API_KEY`环境变量。
+API URL 默认指向 Hindsight Cloud（`https://api.hindsight.vectorize.io`）；API 密钥则回退到 `HINDSIGHT_API_KEY` 环境变量。
 
 ## 环境要求 {#requirements}
 
@@ -115,9 +115,9 @@ TheAPIURL 默认为Hindsight Cloud (`https://api.hindsight.vectorize.io`），�
 
 ## 前置条件 {#prerequisites}
 
-正在运行的Hindsight实例：
+需要有一个正在运行的 Hindsight 实例：
 
-**Hindsight Cloud（推荐）：**[注册](https://ui.hindsight.vectorize.io) — 无需自托管。
+**Hindsight Cloud（推荐）：**[注册](https://ui.hindsight.vectorize.io)，无需自行托管。
 
 **自托管：**
 

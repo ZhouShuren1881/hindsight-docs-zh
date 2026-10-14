@@ -1,34 +1,34 @@
 ---
-title: "无需变通即可在 Linux ARM64 运行 Hindsight CLI"
+title: "无需变通即可在 Linux ARM64 上运行 Hindsight CLI"
 authors: [benfrank241]
 date: 2026-04-28T14:00:00Z
 tags: [cli, linux, arm64, guide]
-description: "使用新发布产物在 Linux ARM64 运行 Hindsight CLI，在树莓派或 ARM 主机配置档案、API 访问和日常记忆命令。"
+description: "使用新版发布产物在 Linux ARM64 上运行 Hindsight CLI，并在树莓派或 ARM 主机上配置档案、API 访问和日常记忆命令。"
 image: /img/guides/guide-run-hindsight-cli-on-linux-arm64.webp
 hide_table_of_contents: true
 ---
 
-![无需变通即可在 Linux ARM64 运行 Hindsight CLI](/img/guides/guide-run-hindsight-cli-on-linux-arm64.webp)
+![无需变通即可在 Linux ARM64 上运行 Hindsight CLI](/img/guides/guide-run-hindsight-cli-on-linux-arm64.webp)
 
-**在 Linux ARM64 运行 Hindsight CLI** 终于变得直接。发布流程现在提供正式的 `hindsight-linux-arm64` 产物，树莓派、Graviton 实例和小型 ARM 服务器不再需要本地重建或非官方复制步骤。可参考 [CLI 参考](/sdks/cli)、[安装指南](/developer/installation)、[快速入门指南](https://hindsight.vectorize.io/developer/api/quickstart)和[文档首页](https://hindsight.vectorize.io)。
+如果你想要**在 Linux ARM64 上运行 Hindsight CLI**，现在的配置过程终于简单直接了。最新的发布流程现在会提供正式的 `hindsight-linux-arm64` 产物，因此 Raspberry Pi 设备、Graviton 实例和小型 ARM 服务器不再需要为了运行 CLI 而在本地重新构建，也不必通过非官方方式复制二进制文件。如果你在操作时还需要查阅相关文档，可以同时打开 [CLI 参考](/sdks/cli)、[安装指南](/developer/installation)、[快速入门指南](https://hindsight.vectorize.io/developer/api/quickstart)和[文档首页](https://hindsight.vectorize.io)。
 
 <!-- truncate -->
 
 ## 快速解答 {#the-quick-answer}
 
-- 发布产物现在包含 Linux ARM64，以及已有 AMD64 和 macOS 二进制。
-- 最快方式是下载 `hindsight-linux-arm64`，赋予执行权限，再放入 PATH。
-- 安装后，普通 `configure`、`bank`、`retain`、`recall` 命令与其他平台一致。
+- 现在发布产物已包含 Linux ARM64，同时也提供原有的 AMD64 和 macOS 二进制文件。
+- 最快的方式是下载 `hindsight-linux-arm64`，将其设为可执行文件，再移到 PATH 中的目录。
+- 安装二进制文件后，常用的 `configure`、`bank`、`retain` 和 `recall` 命令与其他平台上的用法相同。
 
-## 为什么这次更新重要 {#why-this-update-matters}
+## 这次更新为何重要 {#why-this-update-matters}
 
-许多自托管 Hindsight 部署恰好使用 Linux ARM64 硬件。树莓派、便宜 ARM VPS 或 AWS Graviton 实例通常足以运行轻量记忆服务，尤其按[安装指导](/developer/installation)使用 slim 镜像或外部提供商时。
+Linux ARM64 支持很重要，因为许多自托管的 Hindsight 部署正好运行在这类硬件上。放在储物间里的 Raspberry Pi、价格低廉的 ARM VPS，或 AWS Graviton 实例，通常就足以运行轻量级记忆服务；尤其是按照新版[安装指南](/developer/installation)，采用精简镜像或外部服务提供方时。
 
-发布任务加入这个产物前，即使平台其他部分运行正常，CLI 仍可能缺失。新产物补齐了这一点。发布流程改动很小，却让 ARM64 成为真正支持的路径。
+在将这个发布产物接入发布任务之前，即使平台的其他部分运行正常，也很容易发现 CLI 还没有对应的版本。新增的产物补上了这一缺口。这只是发布流程中的一项小改动，却让 ARM64 成为真正受支持的部署方式，不再只是差一步就能用。
 
-## 安装 Linux ARM64 二进制 {#install-the-linux-arm64-binary}
+## 安装 Linux ARM64 二进制文件 {#install-the-linux-arm64-binary}
 
-直接使用发布产物：
+直接使用已发布的产物：
 
 ```bash
 curl -L   -o hindsight   https://github.com/vectorize-io/hindsight/releases/latest/download/hindsight-linux-arm64
@@ -38,21 +38,21 @@ sudo mv hindsight /usr/local/bin/hindsight
 hindsight --help
 ```
 
-如果偏好在主目录保存工具，将二进制移入 `~/.local/bin` 并确保该目录在 PATH。检查很简单：`hindsight --help` 应输出命令树，而非架构或权限错误。
+如果你更愿意把本地工具放在自己的主目录中，可以将二进制文件移到 `~/.local/bin`，并确保该目录位于 PATH 中。检查方法很简单：`hindsight --help` 应该会输出命令树，而不是报架构或权限错误。
 
-## 配置 CLI 访问云端或本地 API {#configure-the-cli-for-cloud-or-local-api-access}
+## 配置 CLI 以访问云端或本地 API {#configure-the-cli-for-cloud-or-local-api-access}
 
-安装后，让 CLI 指向实际需要的 API。
+安装后，将 CLI 指向你实际要使用的 API。
 
 ```bash
-# 托管云端 {#managed-cloud}
+# 托管云端
 hindsight configure   --api-url https://api.hindsight.vectorize.io   --api-key YOUR_API_KEY
 
-# 或本地部署 {#or-a-local-deployment}
+# 或者使用本地部署
 hindsight configure --api-url http://localhost:8888
 ```
 
-切换环境时，使用 [CLI 参考](/sdks/cli)中的命名档案，而非反复改写一个共享配置文件：
+如果你要在多个环境之间切换，可以使用 [CLI 参考](/sdks/cli)中介绍的命名配置档案，无需反复改写同一个共享配置文件：
 
 ```bash
 hindsight profile create prod   --api-url https://api.hindsight.vectorize.io   --api-key YOUR_API_KEY
@@ -60,44 +60,44 @@ hindsight profile create prod   --api-url https://api.hindsight.vectorize.io   -
 hindsight -p prod bank list
 ```
 
-环境变量仍优先于档案文件，CI 可导出 `HINDSIGHT_API_URL` 和 `HINDSIGHT_API_KEY`，不受本地默认值影响。
+环境变量的优先级仍高于配置档案文件，因此 CI 任务可以导出 `HINDSIGHT_API_URL` 和 `HINDSIGHT_API_KEY`，而不受本地默认值影响。
 
 ## 端到端验证核心工作流 {#verify-the-core-workflow-end-to-end}
 
-配置后，用小型记忆库和简单存储召回测试完整路径：
+配置好 CLI 后，用一个小型记忆库执行简单的记忆存入和召回往返，测试整条流程：
 
 ```bash
 hindsight bank list
-hindsight memory retain test-bank "Alice 喜欢异步更新"
-hindsight memory recall test-bank "应该如何向 Alice 更新进展？"
+hindsight memory retain test-bank "Alice prefers async updates"
+hindsight memory recall test-bank "How should I update Alice?"
 ```
 
-成功后，ARM64 配置就完成了。你使用的是[记忆存储 API 指南](/developer/api/retain)、[记忆召回 API 指南](/developer/api/recall)和[快速入门指南](https://hindsight.vectorize.io/developer/api/quickstart)中的相同记忆命令，只是运行在 Linux ARM64 主机。
+如果命令运行成功，Linux ARM64 的配置就完成了。你在 Linux ARM64 主机上使用的，正是[记忆存入 API 指南](/developer/api/retain)、[记忆召回 API 指南](/developer/api/recall)和[快速入门指南](https://hindsight.vectorize.io/developer/api/quickstart)中介绍的那些记忆命令。
 
 ## 排查 Linux ARM64 常见问题 {#troubleshooting-common-linux-arm64-misses}
 
-优先检查以下情况：
+遇到问题时，可以先检查以下几项：
 
-- **`Exec format error`** 通常表示下载错产物。确认名称为 `hindsight-linux-arm64`，而非 AMD64 版本。
-- **`Permission denied`** 表示缺少执行权限，重新运行 `chmod +x hindsight`。
-- **连接被拒绝**通常意味着本地 API 尚未启动，或 CLI 指向错误主机和端口。
-- **401 或 403 响应**通常意味着 API 密钥缺失、无效，或对应错误 Hindsight 环境。
+- **`Exec format error`** 通常表示下载了错误的产物。请确认文件名是 `hindsight-linux-arm64`，而不是 AMD64 版本。
+- **`Permission denied`** 表示二进制文件缺少执行权限。重新运行 `chmod +x hindsight` 即可。
+- **连接被拒绝**通常表示本地 API 尚未启动，或者 CLI 指向了错误的主机和端口。
+- **401 或 403 响应**通常表示 API 密钥缺失、无效，或密钥对应的 Hindsight 环境不正确。
 
-CLI 正常但召回慢或 RAM 紧张时，对照[安装文档的硬件指导](/developer/installation)。通常是部署容量问题，而非 CLI 问题。
+如果 CLI 本身运行正常，但召回速度很慢，或者主机的 RAM 显得吃紧，可以根据新版[安装文档中的硬件指南](/developer/installation)检查当前主机。这通常是部署资源配置问题，而不是 CLI 问题。
 
 ## 常见问题 {#faq}
 
-### 这替代安装脚本吗？ {#does-this-replace-the-install-script}
+### 这会取代安装脚本吗？ {#does-this-replace-the-install-script}
 
-不会。发布产物使 Linux ARM64 成为直接下载目标。已有安装流程封装发布产物时，此改动让 ARM64 顺利接入。
+不会。这个发布产物只是让 Linux ARM64 成为一个可以直接下载的目标。如果你的安装流程已经封装了已发布的产物，这项改动会让 ARM64 顺利纳入该流程。
 
-### CLI 可同时访问 Hindsight Cloud 和本地服务器吗？ {#can-i-use-the-cli-against-hindsight-cloud-and-a-local-server}
+### 我可以用 CLI 访问 Hindsight Cloud 和本地服务器吗？ {#can-i-use-the-cli-against-hindsight-cloud-and-a-local-server}
 
-可以。使用档案或环境变量，便于在云端、预发布和本地部署之间切换。
+可以。使用配置档案或环境变量即可。这是切换云端、预发布和本地部署最简便的方式。
 
-### ARM64 仅用于开发吗？ {#is-arm64-only-for-development}
+### ARM64 只能用于开发吗？ {#is-arm64-only-for-development}
 
-不是。对中小负载，它是合理生产目标，尤其按当前安装指导规划 API、Worker 和数据库时。
+不是。对于中小型工作负载，ARM64 是合理的生产环境目标，尤其是在你根据当前安装指南为 API、工作进程和数据库选择合适规格时。
 
 ## 后续步骤 {#next-steps}
 

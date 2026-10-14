@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>心智模型刷新：完整流程 — Hindsight</title>
-  <meta name="description" content="Hindsight心理模型刷新管道的逐步跟踪：每个分支、增量与完整，以及降价交叉到结构中的位置。">
+  <meta name="description" content="逐步追踪 Hindsight 心智模型刷新流程：每条分支、增量编辑与完整重建的区别，以及 Markdown 在何处转为结构。">
   <style>
     /* Minimal reset — the artifact host used to supply this. */
     *, *::before, *::after { box-sizing: border-box; }
@@ -310,34 +310,34 @@
 <div class="page">
 
   <header>
-    <div class="eyebrow">Hindsight·engine/reflect·知识页面</div>
+    <div class="eyebrow">Hindsight · engine/reflect · 知识页</div>
     <h1>心智模型如何刷新</h1>
     <hr class="masthead-rule">
   </header>
 
-  <p class="standfirst">Hindsight中的每一个知识页面都是一个自我重写的心智模型。这是整个流程——模式决策、七个阶段、每个分支以及四个结果中的每一个——根据今天的代码进行追踪。</p>
+  <p class="standfirst">Hindsight 中的每个知识页，都是一个会改写自身内容的心智模型。本文逐步对照当前代码，追踪整个流程：模式选择、七个阶段、每条分支，以及四种结果。</p>
 
-  <nav class="toc" aria-label="内容">
+  <nav class="toc" aria-label="目录">
     <ol>
-      <li><a href="#shape">一刷新的形状</a></li>
-      <li><a href="#gate">阶段 2 — 模式门</a></li>
-      <li><a href="#delta">阶段 5 — Delta 分支内部</a></li>
-      <li><a href="#guards">阶段 6 — 守卫</a></li>
-      <li><a href="#outcomes">阶段 7 — 实际写入的内容</a></li>
-      <li><a href="#crossings">Markdown 成为结构</a></li>
-      <li><a href="#inversion">反转，绘制</a></li>
+      <li><a href="#shape">一次刷新的整体流程</a></li>
+      <li><a href="#gate">阶段 2：模式门控</a></li>
+      <li><a href="#delta">阶段 5：增量编辑分支内部</a></li>
+      <li><a href="#guards">阶段 6：保护检查</a></li>
+      <li><a href="#outcomes">阶段 7：实际写入哪些内容</a></li>
+      <li><a href="#crossings">Markdown 在何处转为结构</a></li>
+      <li><a href="#inversion">用图展示主次反转方案</a></li>
     </ol>
   </nav>
 
-  <p>刷新被故意分成两部分。 <code>_execute_mental_model_refresh</code> 运行整个管道并 <b>什么也没写</b> —它返回一个 <code>_MentalModelRefreshRun</code> 记录它所做的每一个决定。 <code>refresh_mental_model</code> 坚持跑步； <code>dry_run_refresh_mental_model</code> 举报并扔掉。故意没有使执行器在预览中表现不同的标志，因为可以配置的预览将停止预测它存在的要预测的刷新。</p>
+  <p>刷新被有意拆分成两部分。<code>_execute_mental_model_refresh</code> 执行完整流程，<b>不写入任何内容</b>，而是返回一个 <code>_MentalModelRefreshRun</code>，记录它作出的每项决策。<code>refresh_mental_model</code> 将这次运行持久化；<code>dry_run_refresh_mental_model</code> 报告运行情况后将其丢弃。这里有意不提供任何让执行器在预览时采取不同行为的标志，因为如果预览可以另行配置，它就无法再预测自己本应预测的那次刷新。</p>
 
   <!-- ================================================================== -->
-  <h2 id="shape">1·一刷新的形状</h2>
+  <h2 id="shape">1 · 一次刷新的整体流程</h2>
 
-  <p>七个阶段，按顺序排列。阶段 1-4 是无条件的：即使是纯粹的全模式刷新也会解析范围、拍摄快照并调用“反思”。分支全部发生在 5 和 6 中。</p>
+  <p>七个阶段依次执行。阶段 1–4 无条件执行：即使是纯粹的完整重建刷新，也会确定范围、获取快照并调用 Reflect（反思）。所有分支都发生在阶段 5 和 6。</p>
 
   <figure class="bleed">
-    <svg viewBox="0 0 900 660" role="img" aria-label="刷新的七个阶段，从上到下运行，第 5 和第 6 阶段右侧有 3 个无写出口。">
+    <svg viewBox="0 0 900 660" role="img" aria-label="一次刷新的七个阶段从上到下依次执行，阶段 5 和 6 向右分出三个不写入内容的出口。">
       <defs>
         <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
           <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
@@ -355,39 +355,39 @@
         <rect class="d-box" x="40" y="14"  width="400" height="56" rx="4"/>
         <text class="d-num"  x="56" y="36">01</text>
         <text class="d-head" x="86" y="36">读取触发器</text>
-        <text class="d-m-sm" x="86" y="54">requested_mode = 触发模式或“完整”</text>
+        <text class="d-m-sm" x="86" y="54">requested_mode = trigger.mode or "full"</text>
 
         <rect class="d-struct" x="40" y="102" width="400" height="56" rx="4"/>
         <text class="d-num"  x="56" y="124">02</text>
-        <text class="d-head" x="86" y="124">模式门</text>
-        <text class="d-m-sm" x="86" y="142">解析use_delta·负载structured_content</text>
+        <text class="d-head" x="86" y="124">模式门控</text>
+        <text class="d-m-sm" x="86" y="142">确定 use_delta · 加载 structured_content</text>
 
         <rect class="d-box" x="40" y="190" width="400" height="56" rx="4"/>
         <text class="d-num"  x="56" y="212">03</text>
-        <text class="d-head" x="86" y="212">范围+快照</text>
-        <text class="d-m-sm" x="86" y="230">refresh_cutoff·processed_watermark</text>
+        <text class="d-head" x="86" y="212">范围 + 快照</text>
+        <text class="d-m-sm" x="86" y="230">refresh_cutoff · processed_watermark</text>
 
         <rect class="d-box" x="40" y="278" width="400" height="56" rx="4"/>
         <text class="d-num"  x="56" y="300">04</text>
         <text class="d-head" x="86" y="300">reflect_async</text>
-        <text class="d-m-sm" x="86" y="318">→ 候选降价 (reflect_result.text)</text>
+        <text class="d-m-sm" x="86" y="318">→ 候选 Markdown（reflect_result.text）</text>
 
         <rect class="d-struct" x="40" y="366" width="400" height="70" rx="4"/>
         <text class="d-num"  x="56" y="388">05</text>
-        <text class="d-head" x="86" y="388">达美运营</text>
-        <text class="d-m-sm" x="86" y="406">仅当use_delta时 — 否则跳过整个</text>
-        <text class="d-m-sm" x="86" y="424">组delta_applied、final_content、final_structured</text>
+        <text class="d-head" x="86" y="388">增量编辑操作</text>
+        <text class="d-m-sm" x="86" y="406">仅在 use_delta 时执行，否则整个阶段跳过</text>
+        <text class="d-m-sm" x="86" y="424">设置 delta_applied、final_content、final_structured</text>
 
         <rect class="d-box" x="40" y="468" width="400" height="70" rx="4"/>
         <text class="d-num"  x="56" y="490">06</text>
-        <text class="d-head" x="86" y="490">守卫</text>
-        <text class="d-m-sm" x="86" y="508">空渲染 · 增量窗口候选</text>
-        <text class="d-m-sm" x="86" y="526">然后parse_markdown(final_content)（如果需要）</text>
+        <text class="d-head" x="86" y="490">保护检查</text>
+        <text class="d-m-sm" x="86" y="508">空渲染结果 · 增量窗口候选内容</text>
+        <text class="d-m-sm" x="86" y="526">随后按需执行 parse_markdown(final_content)</text>
 
         <rect class="d-ok" x="40" y="570" width="400" height="56" rx="4"/>
         <text class="d-num"  x="56" y="592">07</text>
-        <text class="d-head" x="86" y="592">坚持</text>
-        <text class="d-m-sm" x="86" y="610">内容+structured_content+水印</text>
+        <text class="d-head" x="86" y="592">持久化</text>
+        <text class="d-m-sm" x="86" y="610">content + structured_content + 水位</text>
       </g>
 
       <!-- spine arrows -->
@@ -402,23 +402,23 @@
 
       <!-- full-mode bypass -->
       <path class="d-line d-dash" d="M 40 130 L 18 130 L 18 502 L 36 502" marker-end="url(#a1)"/>
-      <text class="d-m-sm" x="10" y="316" transform="rotate(-90 10 316)" text-anchor="middle">完整模式：跳过第 5 阶段</text>
+      <text class="d-m-sm" x="10" y="316" transform="rotate(-90 10 316)" text-anchor="middle">full 模式：跳过阶段 5</text>
 
       <!-- exits -->
       <g>
         <rect class="d-ok" x="560" y="366" width="310" height="46" rx="4"/>
         <text class="d-m-ok" x="576" y="384">content_preserved_no_new_facts</text>
-        <text class="d-t-sm" x="576" y="402">文档未受影响·水印进步</text>
+        <text class="d-t-sm" x="576" y="402">文档保持不变 · 水位推进</text>
         <path class="d-line-struct" d="M 440 389 L 556 389" marker-end="url(#a1g)"/>
 
         <rect class="d-lossy" x="560" y="452" width="310" height="46" rx="4"/>
         <text class="d-m-lossy" x="576" y="470">refresh_failed_empty_candidate</text>
-        <text class="d-t-sm" x="576" y="488">加注·持有水印</text>
+        <text class="d-t-sm" x="576" y="488">抛出异常 · 水位保持不变</text>
         <path class="d-line-lossy" d="M 440 475 L 556 475" marker-end="url(#a1r)"/>
 
         <rect class="d-lossy" x="560" y="512" width="310" height="46" rx="4"/>
         <text class="d-m-lossy" x="576" y="530">refresh_failed_delta_not_applied</text>
-        <text class="d-t-sm" x="576" y="548">加注·持有水印</text>
+        <text class="d-t-sm" x="576" y="548">抛出异常 · 水位保持不变</text>
         <path class="d-line-lossy" d="M 440 535 L 556 535" marker-end="url(#a1r)"/>
 
         <rect class="d-ok" x="560" y="580" width="310" height="36" rx="4"/>
@@ -426,16 +426,16 @@
         <path class="d-line" d="M 440 598 L 556 598" marker-end="url(#a1g)" stroke="var(--ok)"/>
       </g>
     </svg>
-    <figcaption><b>一次刷新，端到端。</b> 执行者什么也不写；它返回一个携带结果的运行对象。四个结果中的三个使存储的文档完全保持原样 - 只是 <code>content_written</code> 取代了它。请注意虚线旁路：在完整模式下，第 5 阶段根本不运行，这就是为什么完整模式页面永远不会表现出增量特定损坏的原因。</figcaption>
+    <figcaption><b>一次刷新的完整过程。</b>执行器不写入任何内容，而是返回一个携带结果的运行对象。四种结果中有三种会让已存文档保持原样，只有 <code>content_written</code> 会替换文档。注意虚线表示的绕行路径：在 full 模式下，阶段 5 完全不执行，因此 full 模式的页面不会出现增量编辑特有的损坏。</figcaption>
   </figure>
 
   <!-- ================================================================== -->
-  <h2 id="gate">2 · 第 2 阶段 — 模式门</h2>
+  <h2 id="gate">2 · 阶段 2：模式门控</h2>
 
-  <p>请求增量模式与获得它不同。 <code>requested_mode</code> 来自触发器—知识页面获取 <code>KNOWLEDGE_PAGE_DEFAULT_TRIGGER</code>，设置 <code>mode: "delta"</code>，所以 <b>delta 是每个页面的默认值</b>。然后三个门决定请求是否存活。</p>
+  <p>请求 delta 模式，并不意味着最终就会使用它。<code>requested_mode</code> 来自触发器：知识页使用 <code>KNOWLEDGE_PAGE_DEFAULT_TRIGGER</code>，其中设置了 <code>mode: "delta"</code>，因此<b>每个页面默认都请求增量编辑</b>。随后由三道门控决定是否继续使用请求的模式。</p>
 
   <figure class="bleed">
-    <svg viewBox="0 0 900 400" role="img" aria-label="模式门：增量请求通过基线检查和源查询检查成为use_delta，有两个后备原因分支到完整模式。">
+    <svg viewBox="0 0 900 400" role="img" aria-label="模式门控：增量编辑请求通过基线检查和来源查询检查后，设为 use_delta；另有两种回退原因，使流程转向 full 模式。">
       <defs>
         <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
           <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
@@ -446,26 +446,26 @@
       </defs>
 
       <rect class="d-fill" x="24" y="150" width="150" height="56" rx="4"/>
-      <text class="d-head" x="40" y="172">触发模式</text>
-      <text class="d-m-sm" x="40" y="190">“三角洲”| “满”</text>
+      <text class="d-head" x="40" y="172">trigger.mode</text>
+      <text class="d-m-sm" x="40" y="190">"delta" | "full"</text>
 
       <!-- gate 1 -->
       <rect class="d-box" x="228" y="140" width="180" height="76" rx="4"/>
-      <text class="d-head" x="244" y="164">门 1 — 基线</text>
-      <text class="d-m-sm" x="244" y="182">内容非空</text>
-      <text class="d-m-sm" x="244" y="198">（永不刷新=空）</text>
+      <text class="d-head" x="244" y="164">门控 1：基线</text>
+      <text class="d-m-sm" x="244" y="182">content 非空</text>
+      <text class="d-m-sm" x="244" y="198">（从未刷新 = 内容为空）</text>
 
       <!-- gate 2 -->
       <rect class="d-box" x="462" y="140" width="194" height="76" rx="4"/>
-      <text class="d-head" x="478" y="164">门 2 — 主题</text>
+      <text class="d-head" x="478" y="164">门控 2：主题</text>
       <text class="d-m-sm" x="478" y="182">last_refreshed_source_query</text>
-      <text class="d-m-sm" x="478" y="198">为 NULL 或未更改</text>
+      <text class="d-m-sm" x="478" y="198">为 NULL 或未发生变化</text>
 
       <!-- result -->
       <rect class="d-struct" x="700" y="140" width="176" height="76" rx="4"/>
-      <text class="d-head" x="716" y="164">use_delta = 真</text>
-      <text class="d-m-sm" x="716" y="182">负载structured_content</text>
-      <text class="d-m-sm" x="716" y="198">（可能为NULL）</text>
+      <text class="d-head" x="716" y="164">use_delta = True</text>
+      <text class="d-m-sm" x="716" y="182">加载 structured_content</text>
+      <text class="d-m-sm" x="716" y="198">（可能为 NULL）</text>
 
       <g class="d-line" marker-end="url(#a2)">
         <line x1="174" y1="178" x2="224" y2="178"/>
@@ -481,34 +481,34 @@
 
       <rect class="d-fill" x="462" y="290" width="194" height="46" rx="4"/>
       <text class="d-m" x="478" y="312">source_query_changed</text>
-      <text class="d-t-sm" x="478" y="328">话题转移</text>
+      <text class="d-t-sm" x="478" y="328">主题已改变</text>
       <path class="d-line" d="M 559 216 L 559 286" marker-end="url(#a2)"/>
 
       <rect class="d-fill" x="700" y="290" width="176" height="46" rx="4"/>
-      <text class="d-head" x="716" y="318">→满载运行</text>
+      <text class="d-head" x="716" y="318">→ 按 full 模式执行</text>
 
       <path class="d-line" d="M 408 313 L 458 313" marker-end="url(#a2)"/>
       <path class="d-line" d="M 656 313 L 696 313" marker-end="url(#a2)"/>
 
-      <text class="d-t-sm" x="24" y="60">稍后，在第 5 阶段，一旦 delta 已经运行，就会设置另外两个后备原因：</text>
-      <text class="d-m-sm" x="24" y="82">structured_doc_unreadable·delta_ops_failed·delta_ops_all_skipped</text>
+      <text class="d-t-sm" x="24" y="60">增量编辑开始后，还会在阶段 5 内部设置另外两种回退原因：</text>
+      <text class="d-m-sm" x="24" y="82">structured_doc_unreadable · delta_ops_failed · delta_ops_all_skipped</text>
       <line class="d-line d-dash" x1="24" y1="100" x2="876" y2="100"/>
     </svg>
-    <figcaption><b>Delta 被请求，然后获得。</b> Gate 1就是为什么全新页面第一次刷新总是满的——还没有内容可以编辑。 Gate 2 捕获更改的源查询，其中对有关旧主题的文档进行外科手术编辑将是错误的。 <code>use_delta</code> 为真仍然没有说明达美航空是否会这样做 <i>成功</i>；三个进一步的后退原因在第五阶段等待。</figcaption>
+    <figcaption><b>先请求增量编辑，再检查是否具备执行条件。</b>门控 1 解释了为什么新页面第一次刷新始终是完整重建：此时还没有可供编辑的内容。门控 2 检测来源查询是否改变，因为对仍围绕旧主题的文档做局部精细编辑会产生错误。<code>use_delta</code> 为真，仍然无法说明增量编辑是否会<i>成功</i>；阶段 5 内部还可能出现另外三种回退原因。</figcaption>
   </figure>
 
   <div class="note">
-    <span class="note-label">值得了解</span>
-    <p>2号门通过时 <code>last_refreshed_source_query</code> 是 <code>NULL</code>，不仅仅是匹配时。这是故意的：有人手写了一页，然后 <i>然后</i> 开启增量模式希望他们的散文成为起点，而不是被一次性完全重建所丢弃。</p>
+    <span class="note-label">补充说明</span>
+    <p>门控 2 不仅在 <code>last_refreshed_source_query</code> 与当前查询相同时通过，在它为 <code>NULL</code> 时也会通过。这是有意为之：先手写页面、<i>随后</i>再开启 delta 模式的人，期望自己的文字作为编辑起点，而不是被一次完整重建丢弃。</p>
   </div>
 
   <!-- ================================================================== -->
-  <h2 id="delta">3 · 第 5 阶段 — Delta 分支内部</h2>
+  <h2 id="delta">3 · 阶段 5：增量编辑分支内部</h2>
 
-  <p>这就是有趣的失败所在。该分支需要一个基线文档来编辑，并且在放弃之前会按顺序尝试两个源。</p>
+  <p>值得关注的失败情况发生在这里。此分支需要一份基线文档供其编辑，在放弃之前，会按顺序尝试两个来源。</p>
 
   <figure class="bleed">
-    <svg viewBox="0 0 900 620" role="img" aria-label="在 delta 分支内：基线从 structured_content 加载或从 markdown 重新解析，然后 LLM 发出应用的操作，有四种可能的退出。">
+    <svg viewBox="0 0 900 620" role="img" aria-label="增量编辑分支内部：从 structured_content 加载基线，或重新解析 Markdown 得到基线，然后由 LLM 生成操作并应用，可能从四个出口之一退出。">
       <defs>
         <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
           <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
@@ -521,65 +521,65 @@
         </marker>
       </defs>
 
-      <text class="d-head" x="24" y="24">步骤 A — 找到基线</text>
+      <text class="d-head" x="24" y="24">步骤 A：寻找基线</text>
 
       <rect class="d-struct" x="24" y="46" width="250" height="62" rx="4"/>
       <text class="d-m" x="40" y="68">structured_content</text>
-      <text class="d-t-sm" x="40" y="86">存储的结构化文档</text>
-      <text class="d-t-sm" x="40" y="100">经 Pydantic 验证</text>
+      <text class="d-t-sm" x="40" y="86">已存储的 StructuredDocument</text>
+      <text class="d-t-sm" x="40" y="100">通过 Pydantic 验证</text>
 
       <rect class="d-lossy" x="324" y="46" width="250" height="62" rx="4"/>
-      <text class="d-m" x="340" y="68">parse_markdown(内容)</text>
-      <text class="d-t-sm" x="340" y="86">fallback — 重新推导结构</text>
-      <text class="d-t-sm" x="340" y="100">来自存储的降价</text>
+      <text class="d-m" x="340" y="68">parse_markdown(content)</text>
+      <text class="d-t-sm" x="340" y="86">回退：重新推导结构</text>
+      <text class="d-t-sm" x="340" y="100">依据是已存储的 Markdown</text>
 
       <rect class="d-fill" x="624" y="46" width="252" height="62" rx="4"/>
       <text class="d-m" x="640" y="68">structured_doc_unreadable</text>
-      <text class="d-t-sm" x="640" y="86">根本没有基线</text>
-      <text class="d-t-sm" x="640" y="100">→ 三角洲废弃</text>
+      <text class="d-t-sm" x="640" y="86">完全没有可用基线</text>
+      <text class="d-t-sm" x="640" y="100">→ 放弃增量编辑</text>
 
       <path class="d-line-lossy" d="M 274 77 L 320 77" marker-end="url(#a3r)"/>
       <text class="d-m-sm" x="297" y="36" text-anchor="middle">NULL / 无效</text>
       <path class="d-line" d="M 574 77 L 620 77" marker-end="url(#a3)"/>
-      <text class="d-m-sm" x="597" y="36" text-anchor="middle">加注</text>
+      <text class="d-m-sm" x="597" y="36" text-anchor="middle">抛出异常</text>
 
       <line class="d-line d-dash" x1="24" y1="126" x2="876" y2="126"/>
 
-      <text class="d-head" x="24" y="156">步骤 B — 有什么新东西吗？</text>
+      <text class="d-head" x="24" y="156">步骤 B：是否有新内容？</text>
 
       <rect class="d-box" x="24" y="172" width="250" height="56" rx="4"/>
       <text class="d-m" x="40" y="194">supporting_facts</text>
-      <text class="d-t-sm" x="40" y="212">仅此一跑的遗憾</text>
+      <text class="d-t-sm" x="40" y="212">仅来自本次运行的 Reflect</text>
 
       <rect class="d-ok" x="324" y="172" width="310" height="56" rx="4"/>
       <text class="d-m-ok" x="340" y="194">content_preserved_no_new_facts</text>
-      <text class="d-t-sm" x="340" y="212">立即返回·无LLM调用</text>
+      <text class="d-t-sm" x="340" y="212">立即返回 · 不调用 LLM</text>
 
       <path class="d-line" d="M 274 200 L 320 200" marker-end="url(#a3g)" stroke="var(--ok)"/>
-      <text class="d-m-sm" x="277" y="191">空</text>
+      <text class="d-m-sm" x="277" y="191">为空</text>
 
       <line class="d-line d-dash" x1="24" y1="252" x2="876" y2="252"/>
 
-      <text class="d-head" x="24" y="282">步骤 C — 操作调用</text>
+      <text class="d-head" x="24" y="282">步骤 C：调用以生成操作</text>
 
       <rect class="d-struct" x="24" y="298" width="250" height="76" rx="4"/>
-      <text class="d-m" x="40" y="320">delta LLM 调用</text>
-      <text class="d-t-sm" x="40" y="338">将current_doc视为JSON，</text>
-      <text class="d-t-sm" x="40" y="352">永远不会像降价一样</text>
-      <text class="d-t-sm" x="40" y="366">文本模式，手工解析</text>
+      <text class="d-m" x="40" y="320">增量编辑 LLM 调用</text>
+      <text class="d-t-sm" x="40" y="338">看到的是 JSON 格式的 current_doc，</text>
+      <text class="d-t-sm" x="40" y="352">绝不是 Markdown</text>
+      <text class="d-t-sm" x="40" y="366">文本模式，自行解析</text>
 
       <rect class="d-box" x="324" y="298" width="250" height="76" rx="4"/>
       <text class="d-m" x="340" y="320">apply_operations</text>
-      <text class="d-t-sm" x="340" y="338">类型化块有效负载：</text>
-      <text class="d-t-sm" x="340" y="352">段落·bullet_list·</text>
-      <text class="d-t-sm" x="340" y="366">ordered_list·代码·表</text>
+      <text class="d-t-sm" x="340" y="338">带类型的 Block 载荷：</text>
+      <text class="d-t-sm" x="340" y="352">paragraph · bullet_list ·</text>
+      <text class="d-t-sm" x="340" y="366">ordered_list · code · table</text>
 
       <path class="d-line-struct" d="M 274 336 L 320 336" marker-end="url(#a3)" stroke="var(--struct)"/>
 
       <!-- three exits from step C -->
       <rect class="d-ok" x="624" y="290" width="252" height="46" rx="4"/>
-      <text class="d-m-ok" x="640" y="310">delta_applied = 真</text>
-      <text class="d-t-sm" x="640" y="327">render_document(文档) → 内容</text>
+      <text class="d-m-ok" x="640" y="310">delta_applied = True</text>
+      <text class="d-t-sm" x="640" y="327">render_document(doc) → content</text>
       <path class="d-line" d="M 574 313 L 620 313" marker-end="url(#a3g)" stroke="var(--ok)"/>
 
       <rect class="d-lossy" x="624" y="348" width="252" height="40" rx="4"/>
@@ -589,103 +589,103 @@
       <rect class="d-lossy" x="624" y="400" width="252" height="40" rx="4"/>
       <text class="d-m-lossy" x="640" y="424">delta_ops_failed</text>
       <path class="d-line-lossy" d="M 149 374 L 149 420 L 620 420" marker-end="url(#a3r)"/>
-      <text class="d-m-sm" x="160" y="414">任何例外</text>
+      <text class="d-m-sm" x="160" y="414">任何异常</text>
 
       <line class="d-line d-dash" x1="24" y1="462" x2="876" y2="462"/>
 
-      <text class="d-head" x="24" y="492">步骤 D — 调用者看到的内容</text>
-      <text class="d-t" x="24" y="516">effective_mode =“增量”如果delta_applied则“满”</text>
-      <text class="d-t-sm" x="24" y="540">页面可以请求增量，通过两个门，调用LLM - 并且仍然被记录为在完整模式下运行，</text>
-      <text class="d-t-sm" x="24" y="558">因为effective_mode报告文档发生了什么，而不是尝试了什么。</text>
-      <text class="d-m-sm" x="24" y="586">当 delta 不适用时，final_content 仍然是候选者——第 6 阶段拒绝写入。</text>
+      <text class="d-head" x="24" y="492">步骤 D：调用方看到的结果</text>
+      <text class="d-t" x="24" y="516">effective_mode = "delta" if delta_applied else "full"</text>
+      <text class="d-t-sm" x="24" y="540">页面可以请求增量编辑、通过两道门控并调用 LLM，最终却仍被记录为以 full 模式运行，</text>
+      <text class="d-t-sm" x="24" y="558">因为 effective_mode 报告的是文档实际发生的变化，而不是尝试过什么。</text>
+      <text class="d-m-sm" x="24" y="586">增量编辑未应用时，final_content 仍是 Reflect 候选内容，阶段 6 随后会拒绝写入它。</text>
     </svg>
-    <figcaption><b>delta分支有4个出口，只有其中一个编辑文档。</b> 注意步骤 A 的后备箭头：每当 <code>structured_content</code> 缺失或验证失败，基线是 <i>从存储的 markdown 中重新派生</i>。自从 <code>create_mental_model</code> 永远不会填充 <code>structured_content</code>，该回退保证在手工编写的页面的第一次增量刷新上运行。</figcaption>
+    <figcaption><b>增量编辑分支有四个出口，其中只有一个会编辑文档。</b>注意步骤 A 的回退箭头：只要 <code>structured_content</code> 缺失或未通过验证，就会<i>从已存储的 Markdown 重新推导基线</i>。由于 <code>create_mental_model</code> 从不填充 <code>structured_content</code>，手写页面第一次进行增量编辑刷新时，必定会执行这条回退路径。</figcaption>
   </figure>
 
   <!-- ================================================================== -->
-  <h2 id="guards">4 · 第 6 阶段 — 守卫</h2>
+  <h2 id="guards">4 · 阶段 6：保护检查</h2>
 
-  <p>两名警卫站在候选人和数据库之间，然后进行最后一次转换。</p>
+  <p>候选内容写入数据库之前，要先经过两项保护检查，最后再进行一次转换。</p>
 
   <ul>
-    <li><b>空渲染。</b> 如果 <code>final_content</code> 为空，刷新失败。小模型、耗尽的重试阶梯或过于急切的答案清理正则表达式都可能产生空答案，并且编写它会破坏工作文档。</li>
-    <li><b>Delta 窗候选。</b> 如果已请求 delta 但未申请， <code>final_content</code> 仍然是 灰色 候选者 - 并且该候选者是在 <code>created_after</code>，所以它只覆盖比上次刷新更新的记忆。写入它会默默地删除旧文档中该文档所知道的所有内容 <i>和</i> 将水印推进过去。防护是在窗口上而不是在每个失败分支上锁定的，因此任何未来的分支都会继承它。</li>
-    <li><b>基线播种。</b> 如果 <code>final_structured</code> 依然 <code>None</code> ——这是每次全模式刷新和每个失败的增量——候选降价被解析，以便下一次刷新有需要编辑的内容。</li>
+    <li><b>渲染结果为空。</b>如果 <code>final_content</code> 为空，刷新就会失败。较小的模型、各级重试均已耗尽，或者清理答案的正则表达式匹配过度，都可能产生空答案；将其写入会破坏原本可用的文档。</li>
+    <li><b>增量窗口候选内容。</b>如果请求了增量编辑却未能应用，<code>final_content</code> 仍是 Reflect 候选内容；该内容是在 <code>created_after</code> 限制下综合生成的，因此只涵盖上次刷新之后的新记忆。写入它会悄然删除文档从较早记忆中获得的全部知识，<i>同时</i>将水位推进到这些记忆之后。这项保护以窗口为判断依据，而不是分别针对各条失败分支，因此未来新增的分支也会受到它的保护。</li>
+    <li><b>初始化基线。</b>如果 <code>final_structured</code> 仍为 <code>None</code>——每次完整重建刷新以及每次失败的增量编辑都是如此——就会解析候选 Markdown，为下次刷新提供可编辑的内容。</li>
   </ul>
 
   <div class="note warn">
-    <span class="note-label">桌虫居住的地方</span>
-    <p>最后一步是有损的。它在每次全模式刷新时运行，直到最近，它无法识别的降价表格变成了用空格连接的段落——整个表格焊接到一行上。因为该连接是幂等的，所以下一次刷新会将残骸重新解析为散文并重新发出它，因此该页面永远无法恢复。</p>
+    <span class="note-label">表格缺陷曾出现的位置</span>
+    <p>最后这一步会丢失信息。它在每次完整重建刷新时执行；直到最近，对于无法识别的 Markdown 表格，它仍会把内容用空格拼成一个段落，整张表格被挤在同一行上。由于这种拼接是幂等的，下次刷新会把这份损坏内容重新当作普通文本解析，再次输出，页面因而始终无法恢复。</p>
   </div>
 
   <!-- ================================================================== -->
-  <h2 id="outcomes">5 · 第 7 阶段 — 实际写入的内容</h2>
+  <h2 id="outcomes">5 · 阶段 7：实际写入哪些内容</h2>
 
-  <p>结果文字决定了关于持久性的一切。四人中的两人加注 <code>MentalModelRefreshError</code> 记录审核失败后。</p>
+  <p>结果的字面值决定了持久化的全部行为。四种结果中有两种会先记录失败供审计，再抛出 <code>MentalModelRefreshError</code>。</p>
 
   <div class="table-wrap bleed">
     <table>
       <thead>
         <tr>
           <th>结果</th>
-          <th>内容</th>
+          <th>content</th>
           <th>structured_content</th>
-          <th>水印</th>
-          <th>加注</th>
-          <th>为什么</th>
+          <th>水位</th>
+          <th>抛出异常</th>
+          <th>原因</th>
         </tr>
       </thead>
       <tbody>
         <tr>
           <td><code>content_written</code></td>
-          <td class="yes">书面</td>
-          <td class="yes">书面</td>
-          <td class="yes">进步</td>
-          <td class="no">无</td>
-          <td>正常路径，适用于完整路径和增量路径。</td>
+          <td class="yes">写入</td>
+          <td class="yes">写入</td>
+          <td class="yes">推进</td>
+          <td class="no">否</td>
+          <td>正常路径，full 和 delta 模式均适用。</td>
         </tr>
         <tr>
           <td><code>content_preserved_no_new_facts</code></td>
-          <td class="no">未受影响</td>
-          <td class="no">未受影响</td>
-          <td class="yes">进步</td>
-          <td class="no">无</td>
-          <td>窗口中没有任何新内容。水印仍然会移动，因此不会重新读取空窗口。</td>
+          <td class="no">不变</td>
+          <td class="no">不变</td>
+          <td class="yes">推进</td>
+          <td class="no">否</td>
+          <td>窗口内没有新内容。水位仍会推进，避免再次读取这个空窗口。</td>
         </tr>
         <tr>
           <td><code>refresh_failed_empty_candidate</code></td>
-          <td class="no">未受影响</td>
-          <td class="no">未受影响</td>
-          <td class="raise">举行</td>
-          <td class="raise">是的</td>
-          <td>几乎总是上游LLM 故障。保留水印意味着重试会重新读取同一窗口。</td>
+          <td class="no">不变</td>
+          <td class="no">不变</td>
+          <td class="raise">保持不变</td>
+          <td class="raise">是</td>
+          <td>几乎总是上游 LLM 失败所致。保持水位不变，意味着重试时会重新读取同一窗口。</td>
         </tr>
         <tr>
           <td><code>refresh_failed_delta_not_applied</code></td>
-          <td class="no">未受影响</td>
-          <td class="no">未受影响</td>
-          <td class="raise">举行</td>
-          <td class="raise">是的</td>
-          <td>候选仅覆盖增量窗口，因此它不是文档。</td>
+          <td class="no">不变</td>
+          <td class="no">不变</td>
+          <td class="raise">保持不变</td>
+          <td class="raise">是</td>
+          <td>候选内容只涵盖增量窗口，因此不能作为一份完整文档。</td>
         </tr>
       </tbody>
     </table>
   </div>
 
-  <p>在持久性本身期间可能会发生第五种故障：当触发器携带 <code>response_schema</code>，存储的内容被投影到 <code>structured_output</code>，如果提取失败，则整个刷新都会失败，而不是保留内容并在其旁边保留陈旧的机器可读视图。</p>
+  <p>持久化本身还可能发生第五种失败：触发器携带 <code>response_schema</code> 时，已存内容会被映射为 <code>structured_output</code>。如果提取失败，整个刷新都会判为失败，避免在持久化内容的同时，保留一份落后于它的机器可读视图。</p>
 
   <div class="note">
-    <span class="note-label">边缘案例</span>
-    <p>三角窗防护罩仅在以下情况下才会触发 <code>created_after</code> 已设置。一个模型没有 <code>last_refreshed_at</code> 会失败并将候选人写成一份完整的文件——合法，因为候选人阅读了完整的历史 <i>是</i> 文档。实际上该列是 <code>NOT NULL</code> 并且默认为创建时间，因此增量刷新始终有一个窗口。</p>
+    <span class="note-label">边界情况</span>
+    <p>只有设置了 <code>created_after</code>，增量窗口保护才会生效。没有 <code>last_refreshed_at</code> 的心智模型会直接继续执行，将候选内容作为完整文档写入；这是合理的，因为基于完整历史读取而生成的候选内容<i>就是</i>一份文档。实际上，该列设有 <code>NOT NULL</code> 约束，默认值为创建时间，因此增量编辑刷新始终带有窗口。</p>
   </div>
 
   <!-- ================================================================== -->
-  <h2 id="crossings">6 · Markdown 成为结构</h2>
+  <h2 id="crossings">6 · Markdown 在何处转为结构</h2>
 
-  <p>这是对设计决策至关重要的图表。 Delta LLM 永远不会看到降价——它是被传递的 <code>current_doc.model_dump_json()</code> 并在打字块中给出答案。 Markdown 正好在三个点进入结构化世界，其中两个点处于刷新热路径上。</p>
+  <p>这张图是作出设计决策的关键。增量编辑 LLM 从不接触 Markdown；传入的是 <code>current_doc.model_dump_json()</code>，它则以带类型的内容块作答。Markdown 进入结构化表示的入口恰好有三处，其中两处位于刷新的常规执行路径上。</p>
 
   <figure class="bleed">
-    <svg viewBox="0 0 900 470" role="img" aria-label="将 Markdown 解析为结构的三个位置：页面创建、增量基线回退以及完全刷新后的基线播种，最后两个形成一个循环，在每次刷新时重新解析存储的 Markdown。">
+    <svg viewBox="0 0 900 470" role="img" aria-label="三处将 Markdown 解析为结构的位置：页面创建、增量编辑基线回退，以及完整重建刷新后的基线初始化。后两者形成循环，每次刷新都重新解析已存储的 Markdown。">
       <defs>
         <marker id="a4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
           <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
@@ -700,66 +700,66 @@
 
       <!-- storage lane -->
       <rect class="d-fill" x="300" y="196" width="300" height="86" rx="4"/>
-      <text class="d-head" x="450" y="222" text-anchor="middle">mental_models行</text>
-      <text class="d-m" x="450" y="244" text-anchor="middle">content — markdown，权威</text>
-      <text class="d-m-sm" x="450" y="264" text-anchor="middle">structured_content — 可为空缓存</text>
+      <text class="d-head" x="450" y="222" text-anchor="middle">mental_models 记录</text>
+      <text class="d-m" x="450" y="244" text-anchor="middle">content — Markdown，作为依据</text>
+      <text class="d-m-sm" x="450" y="264" text-anchor="middle">structured_content — 可为 NULL 的缓存</text>
 
       <!-- 1 create -->
       <rect class="d-box" x="24" y="28" width="240" height="66" rx="4"/>
-      <text class="d-head" x="40" y="50">①create_knowledge_page</text>
-      <text class="d-t-sm" x="40" y="68">客户端帖子降价</text>
+      <text class="d-head" x="40" y="50">① create_knowledge_page</text>
+      <text class="d-t-sm" x="40" y="68">客户端通过 POST 提交 Markdown</text>
       <text class="d-m-sm" x="40" y="85">structured_content 保持 NULL</text>
       <path class="d-line" d="M 264 61 L 282 61 L 282 239 L 296 239" marker-end="url(#a4)"/>
 
       <!-- 2 baseline fallback -->
       <rect class="d-lossy" x="636" y="28" width="240" height="66" rx="4"/>
-      <text class="d-head" x="652" y="50">② 增量基线</text>
+      <text class="d-head" x="652" y="50">② 增量编辑基线</text>
       <text class="d-m-sm" x="652" y="68">parse_markdown(current_content)</text>
-      <text class="d-t-sm" x="652" y="85">当缓存为NULL/invalid时</text>
+      <text class="d-t-sm" x="652" y="85">缓存为 NULL / 无效时</text>
       <path class="d-line-lossy" d="M 600 239 L 618 239 L 618 61 L 632 61" marker-end="url(#a4r)"/>
 
       <!-- 3 seeding -->
       <rect class="d-lossy" x="636" y="376" width="240" height="66" rx="4"/>
-      <text class="d-head" x="652" y="398">③ 基线播种</text>
+      <text class="d-head" x="652" y="398">③ 初始化基线</text>
       <text class="d-m-sm" x="652" y="416">parse_markdown(final_content)</text>
-      <text class="d-t-sm" x="652" y="433">每次全模式刷新</text>
+      <text class="d-t-sm" x="652" y="433">每次完整重建刷新</text>
 
       <!-- reflect -->
       <rect class="d-box" x="24" y="376" width="240" height="66" rx="4"/>
-      <text class="d-head" x="40" y="398">反思候选人</text>
-      <text class="d-t-sm" x="40" y="416">自由格式 Markdown 散文</text>
-      <text class="d-m-sm" x="40" y="433">reflect_result.文本</text>
+      <text class="d-head" x="40" y="398">Reflect 候选内容</text>
+      <text class="d-t-sm" x="40" y="416">自由形式的 Markdown 文本</text>
+      <text class="d-m-sm" x="40" y="433">reflect_result.text</text>
       <path class="d-line" d="M 264 409 L 632 409" marker-end="url(#a4r)" stroke="var(--lossy)"/>
 
       <!-- delta engine -->
       <rect class="d-struct" x="300" y="102" width="300" height="56" rx="4"/>
-      <text class="d-head" x="450" y="124" text-anchor="middle">delta LLM — 仅类型化块</text>
-      <text class="d-m-sm" x="450" y="143" text-anchor="middle">model_dump_json() 输入 · 输出操作</text>
+      <text class="d-head" x="450" y="124" text-anchor="middle">增量编辑 LLM：只处理带类型的内容块</text>
+      <text class="d-m-sm" x="450" y="143" text-anchor="middle">输入 model_dump_json() · 输出操作</text>
 
       <!-- render back -->
       <path class="d-line-struct" d="M 340 196 L 340 162" marker-end="url(#a4s)"/>
-      <text class="d-m-sm" x="350" y="182">结构</text>
+      <text class="d-m-sm" x="350" y="182">输入结构</text>
       <path class="d-line-struct" d="M 470 162 L 470 192" marker-end="url(#a4s)"/>
       <text class="d-m-sm" x="480" y="182">render_document</text>
 
       <!-- the loop -->
       <path class="d-line-lossy d-dash" d="M 876 376 L 890 376 L 890 100 L 876 100"/>
-      <text class="d-m-sm" x="876" y="330" text-anchor="end" fill="var(--lossy)">伤害写在这里……</text>
-      <text class="d-m-sm" x="876" y="348" text-anchor="end" fill="var(--lossy)">…被读回作为下一个基线</text>
+      <text class="d-m-sm" x="876" y="330" text-anchor="end" fill="var(--lossy)">这里写入的损坏内容……</text>
+      <text class="d-m-sm" x="876" y="348" text-anchor="end" fill="var(--lossy)">……会被读回，作为下一次的基线</text>
 
-      <text class="d-t-sm" x="24" y="326">蓝色 = 永远不会离开结构化表示。</text>
-      <text class="d-t-sm" x="24" y="344">红色=降价→结构转换，模式无法表达的任何内容都会丢失。</text>
+      <text class="d-t-sm" x="24" y="326">蓝色 = 始终使用结构化表示。</text>
+      <text class="d-t-sm" x="24" y="344">红色 = Markdown → 结构转换；模式无法表达的内容都会丢失。</text>
     </svg>
-    <figcaption><b>三个转换中有两个位于热路径上。</b> ② 和 ③ 在刷新期间重复且静默地运行，并且它们相互馈送：全模式刷新通过解析其自己的 Markdown 输出来为缓存提供种子，下一个增量刷新将编辑解析生成的任何内容。中间的结构化脊柱（LLM实际工作的地方）已经是无损的。</figcaption>
+    <figcaption><b>三处转换中，有两处位于常规执行路径上。</b>② 和 ③ 会在刷新时反复、静默地执行，而且互相影响：完整重建刷新解析自己输出的 Markdown 来初始化缓存，下次增量编辑刷新则编辑这次解析得到的内容。图中间的结构化主干，也就是 LLM 实际工作的部分，已经不会丢失信息。</figcaption>
   </figure>
 
   <!-- ================================================================== -->
-  <h2 id="inversion">7 · 反转，绘制</h2>
+  <h2 id="inversion">7 · 用图展示主次反转方案</h2>
 
-  <p>悬而未决的问题是是否 <code>structured_content</code> 应该成为事实的来源，并在阅读时呈现 Markdown。这就是区别，它比最初出现的要窄——因为在增量路径 Hindsight 上已经以这种方式工作。</p>
+  <p>尚待决定的问题是：是否应让 <code>structured_content</code> 成为权威数据源，在读取时再渲染 Markdown。下图展示两者的区别。差异比乍看时更小，因为 Hindsight 在增量编辑路径上已经是这样工作的。</p>
 
   <figure class="bleed">
-    <svg viewBox="0 0 900 430" role="img" aria-label="并排比较：今天markdown是权威的，每次刷新都会重新解析，而在反转结构下是权威的，markdown是渲染的投影，重新解析箭头消失。">
+    <svg viewBox="0 0 900 430" role="img" aria-label="并列对比：当前以 Markdown 为依据，每次刷新都重新解析；主次反转方案则以结构为依据，Markdown 是渲染后的映射结果，重新解析的箭头随之消失。">
       <defs>
         <marker id="a5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
           <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
@@ -775,75 +775,75 @@
       <line class="d-line d-dash" x1="450" y1="14" x2="450" y2="416"/>
 
       <!-- TODAY -->
-      <text class="d-head" x="24" y="30">今天</text>
-      <text class="d-t-sm" x="24" y="48">markdown权威·结构是缓存</text>
+      <text class="d-head" x="24" y="30">当前</text>
+      <text class="d-t-sm" x="24" y="48">以 Markdown 为依据 · 结构是缓存</text>
 
       <rect class="d-fill" x="24" y="70" width="180" height="52" rx="4"/>
-      <text class="d-m" x="114" y="92" text-anchor="middle">内容</text>
-      <text class="d-t-sm" x="114" y="110" text-anchor="middle">降价·索引</text>
+      <text class="d-m" x="114" y="92" text-anchor="middle">content</text>
+      <text class="d-t-sm" x="114" y="110" text-anchor="middle">Markdown · 已建立索引</text>
 
       <rect class="d-box" x="234" y="70" width="180" height="52" rx="4"/>
       <text class="d-m" x="324" y="92" text-anchor="middle">structured_content</text>
-      <text class="d-t-sm" x="324" y="110" text-anchor="middle">可为空</text>
+      <text class="d-t-sm" x="324" y="110" text-anchor="middle">可为 NULL</text>
 
       <path class="d-line-lossy" d="M 204 88 L 230 88" marker-end="url(#a5r)"/>
       <text class="d-m-sm" x="217" y="62" text-anchor="middle" fill="var(--lossy)">解析</text>
 
       <rect class="d-struct" x="234" y="170" width="180" height="46" rx="4"/>
-      <text class="d-m" x="324" y="198" text-anchor="middle">三角洲行动</text>
+      <text class="d-m" x="324" y="198" text-anchor="middle">增量操作</text>
       <path class="d-line-struct" d="M 324 122 L 324 166" marker-end="url(#a5s)"/>
 
       <rect class="d-fill" x="24" y="170" width="180" height="46" rx="4"/>
-      <text class="d-m" x="114" y="198" text-anchor="middle">反思候选人</text>
+      <text class="d-m" x="114" y="198" text-anchor="middle">Reflect 候选内容</text>
 
       <path class="d-line-lossy" d="M 114 216 L 114 264 L 324 264 L 324 220" marker-end="url(#a5r)"/>
-      <text class="d-m-sm" x="219" y="280" text-anchor="middle" fill="var(--lossy)">重新解析每次完全刷新</text>
+      <text class="d-m-sm" x="219" y="280" text-anchor="middle" fill="var(--lossy)">每次完整重建刷新都重新解析</text>
 
       <rect class="d-fill" x="24" y="310" width="390" height="80" rx="4"/>
-      <text class="d-t-sm" x="40" y="332">• 解析在热路径上运行，默默地，永远</text>
-      <text class="d-t-sm" x="40" y="352">• 架构上限仅有时适用 - 取决于模式</text>
-      <text class="d-t-sm" x="40" y="372">• 错误的解析会在以后每次刷新时重新签名</text>
+      <text class="d-t-sm" x="40" y="332">• 解析在常规执行路径上始终静默运行</text>
+      <text class="d-t-sm" x="40" y="352">• 模式的表达上限仅有时生效，取决于刷新模式</text>
+      <text class="d-t-sm" x="40" y="372">• 每次后续刷新都会再次认可错误的解析结果</text>
 
       <!-- INVERTED -->
-      <text class="d-head" x="486" y="30">倒立</text>
-      <text class="d-t-sm" x="486" y="48">结构权威·markdown是投影</text>
+      <text class="d-head" x="486" y="30">主次反转后</text>
+      <text class="d-t-sm" x="486" y="48">以结构为依据 · Markdown 是映射结果</text>
 
       <rect class="d-struct" x="486" y="70" width="180" height="52" rx="4"/>
       <text class="d-m" x="576" y="92" text-anchor="middle">structured_content</text>
-      <text class="d-t-sm" x="576" y="110" text-anchor="middle">真相来源</text>
+      <text class="d-t-sm" x="576" y="110" text-anchor="middle">权威数据源</text>
 
       <rect class="d-fill" x="696" y="70" width="180" height="52" rx="4"/>
-      <text class="d-m" x="786" y="92" text-anchor="middle">内容</text>
-      <text class="d-t-sm" x="786" y="110" text-anchor="middle">已渲染·仍在索引中</text>
+      <text class="d-m" x="786" y="92" text-anchor="middle">content</text>
+      <text class="d-t-sm" x="786" y="110" text-anchor="middle">已渲染 · 仍建立索引</text>
 
       <path class="d-line-struct" d="M 666 88 L 692 88" marker-end="url(#a5s)"/>
       <text class="d-m-sm" x="681" y="62" text-anchor="middle" fill="var(--struct)">渲染</text>
 
       <rect class="d-struct" x="486" y="170" width="180" height="46" rx="4"/>
-      <text class="d-m" x="576" y="198" text-anchor="middle">三角洲行动</text>
+      <text class="d-m" x="576" y="198" text-anchor="middle">增量操作</text>
       <path class="d-line-struct" d="M 576 122 L 576 166" marker-end="url(#a5s)"/>
 
       <rect class="d-box" x="696" y="170" width="180" height="46" rx="4"/>
-      <text class="d-m" x="786" y="192" text-anchor="middle">摄取解析</text>
-      <text class="d-t-sm" x="786" y="209" text-anchor="middle">创建·仅导入</text>
+      <text class="d-m" x="786" y="192" text-anchor="middle">摄取时解析</text>
+      <text class="d-t-sm" x="786" y="209" text-anchor="middle">仅创建 · 导入时</text>
       <path class="d-line" d="M 696 193 L 670 193" marker-end="url(#a5s)" stroke="var(--struct)"/>
 
       <rect class="d-fill" x="486" y="310" width="390" height="80" rx="4"/>
-      <text class="d-t-sm" x="502" y="332">• 解析发生一次，在边缘，失败是可见的</text>
-      <text class="d-t-sm" x="502" y="352">• 模式上限始终适用 - 一致，而不是间歇性的</text>
-      <text class="d-t-sm" x="502" y="372">• 新成本：内容必须与读取模型保持同步</text>
+      <text class="d-t-sm" x="502" y="332">• 只在边界处解析一次，失败时可见</text>
+      <text class="d-t-sm" x="502" y="352">• 模式的表达上限始终生效，一致而非时有时无</text>
+      <text class="d-t-sm" x="502" y="372">• 新成本：须将 content 作为读取模型保持同步</text>
     </svg>
-    <figcaption><b>消失的边缘是重新解析。</b> 在反转下，解析器幸存下来，从刷新循环降级到摄取边界（页面创建、导入、传输），其中发生一次故障并且有人可以看到它。两列中的 delta 脊柱都没有变化，因为它已经是结构原生的。</figcaption>
+    <figcaption><b>消失的是重新解析这条边。</b>主次反转方案仍保留解析器，但将它从刷新循环移到摄取边界，即页面创建、导入和转移之时。在那里，失败只发生一次，而且有人能看到。两栏中的增量编辑主干没有变化，因为它已经直接使用结构化表示。</figcaption>
   </figure>
 
-  <h3>反转没有删除的内容</h3>
+  <h3>主次反转方案仍需保留什么</h3>
   <ul>
-    <li><b>The <code>content</code> 列。</b> <code>search_knowledge_pages</code> 在页面名称和内容上融合BM25，并返回内容片段。渲染的形式必须保持具体化，因此解析器问题被替换为投影同步问题。</li>
-    <li><b>解析器。</b> <code>create_knowledge_page</code> 接受客户端的降价，并导入恢复降价主体。两者都还是需要markdown → 结构。</li>
-    <li><b>模式上限。</b> 五种块类型，其中图像和原始 HTML 明确超出范围。在反转的情况下，任何未建模的东西在摄取时都变得无法表示，而不是后来退化——可以说更好，因为它在有人可以对其采取行动的地方失败了。</li>
+    <li><b><code>content</code> 列。</b><code>search_knowledge_pages</code> 对页面名称和内容上的 BM25 检索结果进行融合，并返回内容片段。必须持续保存渲染后的形式，因此，解析器问题会转变为映射结果的同步问题。</li>
+    <li><b>解析器。</b><code>create_knowledge_page</code> 接受客户端提交的 Markdown，导入也会恢复 Markdown 正文。这两者仍需要 Markdown → 结构转换。</li>
+    <li><b>模式的表达上限。</b>只有五种内容块类型，图像和原始 HTML 明确不在支持范围内。在主次反转方案下，未建模的内容在摄取时就无法表示，而不是稍后才降级。这或许更好，因为失败发生在有人能够处理它的环节。</li>
   </ul>
 
-  <p>这两种方法都无法修复已损坏的页面：折叠的表格是单个物理行，识别表格至少需要两个。无论哪个方向获胜，回填都是它自己的工作。</p>
+  <p>两种方案都无法修复已经损坏的页面：被压成一行的表格只有一个物理行，而识别表格至少需要两行。无论最终选择哪个方向，回填修复都需要另行处理。</p>
 
 </div>
 

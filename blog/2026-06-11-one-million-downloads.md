@@ -1,6 +1,6 @@
 ---
-title: "30 天内下载 763,365 次：Hindsight 突破 1M"
-description: "后见之明客户端软件包在 PyPI 上的下载量刚刚突破 100 万次，其中 763,365 次下载是在过去 30 天内完成的，约占历史安装量的四分之三。关于里程碑和安装曲线的简要说明。"
+title: "30 天内下载 763,365 次：Hindsight 下载量突破 100 万"
+description: "hindsight-client 软件包在 PyPI 上的下载量刚刚突破 100 万次，其中 763,365 次发生在最近 30 天，约占其历史安装量的四分之三。简述这一里程碑，以及安装曲线所反映的情况。"
 slug: "2026/06/11/one-million-downloads"
 date: 2026-06-11T12:00
 image: "/img/blog/hindsight-one-million-downloads.webp"
@@ -10,42 +10,42 @@ hide_table_of_contents: true
 
 ![Hindsight 下载量突破 1,000,000 次](/img/blog/hindsight-one-million-downloads.webp)
 
-在最后一天的某个时候，[`hindsight-client`](https://pypi.org/project/hindsight-client/)包裹独自穿越了**PyPI 上的下载量为 1,000,000 次**——不包括家里的其他人。
+就在过去一天中的某个时刻，[`hindsight-client`](https://pypi.org/project/hindsight-client/) 软件包在 PyPI 上的下载量突破了 **1,000,000 次**。这是它自己的下载量，不包括 Hindsight 产品系列中的其他软件包。
 
-第一个版本于 2025 年 12 月 12 日上线。所以**不到六个月** 的安装量达到一百万。
+第一个版本于 2025 年 12 月 12 日发布。也就是说，不到六个月就达成了百万次安装。
 
 <!-- truncate -->
 
 ---
 
-## 数字 {#the-numbers}
+## 下载数据 {#the-numbers}
 
-Hindsight 是[增长最快的开源AI有史以来的记忆项目](/blog/2026/06/09/fastest-growing-oss-ai-memory)，通过恒星速度测量。下载从不同的角度讲述了同一个故事——这些人实际上安装并运行它，而不仅仅是为存储库添加书签。
+按 Star 增长速度衡量，Hindsight 是[迄今增长最快的开源 AI 记忆项目](/blog/2026/06/09/fastest-growing-oss-ai-memory)。下载量从另一个角度讲述了同一个故事：这些人确实在安装并运行它，而不只是把代码仓库加入收藏。
 
-|套餐|注册表|下载|
-|---|---|---:|
-|`hindsight-client`|PyPI|**1,016,771**|
-|`hindsight-api`|PyPI|~175,000|
-|`@vectorize-io/hindsight-client`|npm|~90,000|
+| 软件包 | 软件包仓库 | 下载量 |
+| --- | --- | ---: |
+| `hindsight-client` | PyPI | **1,016,771** |
+| `hindsight-api` | PyPI | ~175,000 |
+| `@vectorize-io/hindsight-client` | npm | ~90,000 |
 
-添加API软件包和npm客户端，并且Hindsight远远超过了**120万**跨注册表的总安装量。
+再加上 API 软件包和 npm 客户端，Hindsight 在各软件包仓库的总安装量已远超 **120 万次**。
 
-仔细观察该客户数量，曲线就说明了一切：在这 1,016,771 次终生下载中，**过去 30 天内发生了 763,365 起事件**。每次安装的 Hindsight 有四分之三是在上个月登陆的。客户端现在大约以 **每周 178,000 次下载** 运行 — 不是“增长”，而是加速。
+仔细看看客户端的下载数据，增长曲线就说明了一切：累计下载的 1,016,771 次中，**763,365 次发生在最近 30 天**。Hindsight 有史以来的安装量中，四分之三都集中在上个月。如今，客户端每周的下载量约为 **178,000 次**，这不只是“在增长”，而是在加速增长。
 
-## 为什么客户数量最重要 {#why-the-client-number-matters-most}
+## 为什么客户端的下载量最重要 {#why-the-client-number-matters-most}
 
-`hindsight-client` 是精简的 SDK — 这是您通过智能体与 Hindsight 服务器进行通信的 `pip install`。这是我们对“有人正在 Hindsight 上构建”最接近的代理，因为您安装它不是为了尝试；您安装它是因为下游的某些东西会导入它。
+`hindsight-client` 是一个精简的 SDK；要让智能体连接 Hindsight 服务器，你需要用 `pip install` 安装的就是它。它是我们判断“是否有人基于 Hindsight 构建应用”最接近实际情况的指标，因为人们安装它，不是为了随便试用一下，而是因为下游的某个项目会导入它。
 
-它突破 100 万的速度比我们从 10k 到 15k 星的速度还要快，这表明采用不仅仅是关注。这是整合。
+它突破百万次下载所用的时间，比我们从 10k 星增长到 15k 星所用的时间还短。这说明采用 Hindsight 的人不只是关注它，也在把它集成进自己的项目。
 
 ## 谢谢 {#thank-you}
 
-致所有运行`pip install hindsight-client`、将其连接到智能体、在其出现故障时提出问题或将其投入生产的人 — 谢谢。你就是曲线看起来如此的原因。
+感谢所有运行过 `pip install hindsight-client`、将它接入智能体、在它出问题时提交 issue，或将它部署到生产环境的人。正是因为你们，下载曲线才有了现在的走势。
 
-如果你还没有：
+如果你还没有安装：
 
 ```bash
 pip install hindsight-client -U
 ```
 
-[Hindsight GitHub](https://github.com/vectorize-io/hindsight)或[使用单个Docker命令进行自托管](https://hindsight.vectorize.io/developer/installation)。
+[在 GitHub 上给 Hindsight 点 Star](https://github.com/vectorize-io/hindsight)，或[只用一条 Docker 命令自托管](https://hindsight.vectorize.io/developer/installation)。

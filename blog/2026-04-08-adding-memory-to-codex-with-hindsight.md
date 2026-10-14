@@ -1,56 +1,56 @@
 ---
-title: "将持久记忆添加到OpenAICodex和Hindsight"
+title: "使用 Hindsight 为 OpenAI Codex 添加持久记忆"
 authors: [benfrank241]
 date: 2026-04-08T09:00
 tags: [codex, openai, memory, persistent-memory, hindsight, tutorial, coding-agents, python]
 image: /img/blog/adding-memory-to-codex-with-hindsight.webp
-description: "在Hindsight的会话中给予OpenAICodex持久记忆。自动记忆在每个提示之前注入上下文。自动记忆存储在会话结束时提取事实。"
+description: "借助 Hindsight，让 OpenAI Codex 在不同会话间保留记忆。自动召回会在每次提示前注入上下文；自动存入会在会话结束时提取事实。"
 hide_table_of_contents: true
 ---
 
-![将持久记忆添加到OpenAICodex和Hindsight](/img/blog/adding-memory-to-codex-with-hindsight.webp)
+![使用 Hindsight 为 OpenAI Codex 添加持久记忆](/img/blog/adding-memory-to-codex-with-hindsight.webp)
 
-## 概览 {#tldr}
+## 概要 {#tldr}
 
 <!-- truncate -->
 
-- Codex 没有内置持久记忆。每个会话都是全新的 - 不记得过去的决定、偏好或代码库上下文。
-- Hindsight插件通过三个Python脚本挂钩到Codex，需要零个`pip install`。一个 curl 命令即可让您运行。
-- 自动记忆召回在每次提示之前都会查询您的记忆库，并将相关事实作为不可见的上下文注入。 Codex看到他们；你不必重复它们。
-- 自动记忆存储在每次会话结束时触发，从记录中提取事实，并将其存储以供将来记忆召回。
-- 对于团队，将每个人的配置指向具有固定`bankId`的共享Hindsight服务器。参见[AI编码智能体的共享记忆](/blog/2026/07/10/shared-memory-across-ai-tools)。
-- Hindsight Cloud将您的记忆库存储在服务器端 — 无需本地守护进程，记忆会跨机器跟随您。 [免费注册。](https://ui.hindsight.vectorize.io)
+- Codex 没有内置持久记忆。每次会话都会从头开始，不记得过去的决策、偏好或代码库上下文。
+- Hindsight 插件通过三个 Python 脚本接入 Codex，无需执行 `pip install`。运行一条 `curl` 命令即可完成设置。
+- 自动召回会在每次提示前查询记忆库，并将相关事实作为不可见上下文注入。Codex 能看到这些内容，你无需重复说明。
+- 自动存入会在每次会话结束时触发，从会话记录中提取事实并保存，以供日后召回。
+- 团队可以将每个人的配置指向同一个 Hindsight 服务器，并使用固定的 `bankId`。请参阅[面向 AI 编程智能体的共享记忆](https://hindsight.vectorize.io/blog/2026/03/31/team-shared-memory-ai-coding-agents)。
+- Hindsight Cloud 会在服务器端存储记忆库，无需本地守护进程，记忆也会随你在不同机器间使用。[免费注册。](https://ui.hindsight.vectorize.io)
 
-## 问题：Codex没有持久记忆 {#the-problem-codex-has-no-persistent-memory}
+## 问题：Codex 没有持久记忆 {#the-problem-codex-has-no-persistent-memory}
 
-[Codex](https://github.com/openai/codex)是OpenAI的开源编码智能体CLI。你给它一个任务，它读取你的文件，运行命令，并迭代直到完成。它能力强、速度快，但没有记忆。
+[Codex](https://github.com/openai/codex) 是 OpenAI 的开源编程智能体 CLI。你交给它一项任务，它会读取文件、运行命令并反复迭代，直到完成。它能力强、速度快，但没有记忆。
 
-每一次训练都是从零开始。 Codex 不知道您的项目使用了哪些库，您标准化了哪些模式，代码库的哪些区域是脆弱的，或者您昨天在做什么。您可以在每次会话开始时通过直接解释或指向您手动维护的 `AGENTS.md` 文件来重新建立此上下文。
+每次会话都从零开始。Codex 不知道项目使用了哪些库、采用了哪些约定模式、代码库的哪些部分比较脆弱，也不知道你昨天在做什么。每次会话开始时，你都得重新交代这些背景：要么直接说明，要么让它查看你手动维护的 `AGENTS.md` 文件。
 
-`AGENTS.md` 有帮助——它是一个静态 Markdown 文件，可以在启动时告诉 Codex 有关项目的基线事实。但它捕捉的是你记得写下的内容，而不是你实际遇到的内容。您在周二下午 3 点注意到的 Redis TTL 差异、代码审查期间出现的 JWT 边缘情况、您停止使用 SQLAlchemy 的原因 — 这些实时会话记录在窗口关闭时消失。没有人更新`AGENTS.md`。下一次会议，这些知识就消失了。
+`AGENTS.md` 确实有帮助——它是一个静态 Markdown 文件，会在启动时告诉 Codex 项目的基本情况。但它记录的是你记得写下的内容，而不是你实际遇到的情况。比如你周二下午 3 点发现的 Redis TTL 差异、代码审查中暴露的 JWT 边缘情况，以及你不再使用 SQLAlchemy 的原因——这些都留在会话记录里，窗口关闭后便消失了。没人更新 `AGENTS.md`，下次会话时这些知识就不复存在。
 
-## Hindsight如何为Codex添加持久记忆 {#how-hindsight-adds-persistent-memory-to-codex}
+## Hindsight 如何为 Codex 添加持久记忆 {#how-hindsight-adds-persistent-memory-to-codex}
 
-[Hindsight](https://github.com/vectorize-io/hindsight) 通过在两个点挂钩其生命周期，为 Codex 添加持久记忆层：每个提示之前和每个会话之后。
+[Hindsight](https://github.com/vectorize-io/hindsight) 会在 Codex 生命周期中的两个时点接入，为它添加持久记忆层：每次提示之前，以及每次会话之后。
 
-**自动记忆召回。** 在每个用户提示上，记忆召回挂钩都会查询 Hindsight 来查找与您要询问的内容相关的记忆。结果将作为 `additionalContext` 注入到 Codex 中——在模型看到它之前添加到对话中，但在终端输出中不可见。 Codex 有上下文；你不必重复它。
+**自动召回。** 每当用户提交提示，召回钩子都会查询 Hindsight，寻找与接下来要问的问题相关的记忆。结果会作为 `additionalContext` 注入 Codex：在模型看到对话之前添加到对话开头，但不会显示在终端输出中。Codex 因此获得了上下文，无需你重复说明。
 
-**自动记忆存储。** 当 Codex 会话结束时（`Stop` 钩子触发），记忆存储钩子获取会话记录，剥离任何注入的记忆标签以防止反馈循环，并将其发送到 Hindsight。提取模型读取它并提取离散的事实——做出的决策、观察到的模式、发现的错误。这些内容会存储在您的记忆库中，供以后的每个会话使用。
+**自动存入。** Codex 会话结束时（触发 `Stop` 钩子），存入钩子会获取会话记录，移除其中注入的记忆标签以避免反馈循环，然后将记录发送给 Hindsight。提取模型会读取记录并提取离散事实，例如做出的决策、观察到的模式和发现的错误。这些内容会存入记忆库，供之后的每次会话使用。
 
-**完整会话更新插入。** 使用会话 ID 作为文档密钥来存储记录。如果会话被保留多次（在分块模式下），则内容将被更新插入而不是重复。没有积累几乎相同的条目。
+**完整会话更新插入。** 系统使用会话 ID 作为文档键来存储会话记录。如果同一会话被存入多次（分块模式下会发生这种情况），内容会通过更新插入来覆盖或补充，而不会重复创建，因此不会积累近似重复的条目。
 
-**最小依赖性。** 挂钩脚本仅使用 Python stdlib — 无需安装 pip，无 virtualenv，无版本冲突。本地守护进程模式需要[`uvx`](https://docs.astral.sh/uv/)才能运行`hindsight-embed`；云模式根本没有本地先决条件。
+**依赖精简。** 钩子脚本只使用 Python 标准库，无需安装 pip 包、无需 virtualenv，也不会遇到版本冲突。本地守护进程模式需要 [`uvx`](https://docs.astral.sh/uv/) 来运行 `hindsight-embed`；Cloud 模式则完全不需要本地依赖。
 
 ```
 ┌──────────────┐     UserPromptSubmit      ┌─────────────────────────┐
 │    Codex     │ ─────────────────────────▶ │  recall.py              │
-│    CLI       │ ◀───────────────────────── │  queries Hindsight,     │
-│              │   additionalContext inject  │  injects as context     │
+│    CLI       │ ◀───────────────────────── │  查询 Hindsight，       │
+│              │   注入 additionalContext   │  注入上下文             │
 │              │                            └─────────────────────────┘
 │              │     Stop                  ┌─────────────────────────┐
 │              │ ─────────────────────────▶ │  retain.py              │
-└──────────────┘                            │  strips tags, sends     │
-                                            │  transcript to Hindsight│
+└──────────────┘                            │  移除标签，将           │
+                                            │  会话记录发送给 Hindsight│
                                             └─────────────────────────┘
 ```
 
@@ -60,11 +60,11 @@ hide_table_of_contents: true
 curl -fsSL https://hindsight.vectorize.io/get-codex | bash
 ```
 
-安装程序将引导您选择本地或云模式，并将挂钩脚本写入`~/.hindsight/codex/`。它还会自动在您的 `~/.codex/config.toml` 中启用 `codex_hooks = true`。
+安装程序会引导你选择本地模式或云模式，并将钩子脚本写入 `~/.hindsight/codex/`。它还会自动在 `~/.codex/config.toml` 中启用 `codex_hooks = true`。
 
-如果您在安装过程中选择Hindsight Cloud，则无需安装任何其他内容 - 无需本地守护程序，也无需`uvx`。
+如果在设置过程中选择 Hindsight Cloud，就无需安装其他内容：不需要本地守护进程，也不需要 `uvx`。
 
-开始新的Codex会话——记忆立即生效。前几次课程会建立您的记忆库。到了第三或第四，记忆召回开始浮现有用的上下文，你不必重新解释。
+启动新的 Codex 会话后，记忆会立即生效。前几次会话会逐步积累记忆库。到第三或第四次会话时，召回就会开始提供有用的上下文，你不必再重新解释。
 
 卸载：
 
@@ -74,7 +74,7 @@ curl -fsSL https://hindsight.vectorize.io/get-codex | bash -s -- --uninstall
 
 ## Hindsight Cloud（推荐） {#hindsight-cloud-recommended}
 
-对于大多数用户来说，Hindsight Cloud是更简单的选择：无需管理守护进程，记忆在机器之间同步，并且设置是JSON的两行。默认设置运行本地 `hindsight-embed` 守护进程，但切换到云意味着您不必再考虑它。编辑`~/.hindsight/codex.json`：
+对大多数用户来说，Hindsight Cloud 更简单：无需管理守护进程，记忆会在不同机器间同步，设置只需两行 JSON。默认设置会运行本地 `hindsight-embed` 守护进程；切换到 Cloud 后，你就无需再操心它。编辑 `~/.hindsight/codex.json`：
 
 ```json
 {
@@ -83,11 +83,11 @@ curl -fsSL https://hindsight.vectorize.io/get-codex | bash -s -- --uninstall
 }
 ```
 
-创建一个帐户并在[hindsight.vectorize.io](https://ui.hindsight.vectorize.io)处创建API密钥。无需管理守护进程——云服务器处理提取。
+在 [hindsight.vectorize.io](https://ui.hindsight.vectorize.io) 创建账户和 API 密钥。无需管理守护进程，云服务器会负责提取。
 
-## 什么被召回 {#what-gets-recalled}
+## 召回的内容 {#what-gets-recalled}
 
-记忆召回钩子在每个`UserPromptSubmit`事件上触发。它需要您的提示（以及可选的上一轮上下文），查询Hindsight，并将最相关的记忆作为对话顶部的块注入：
+召回钩子会在每个 `UserPromptSubmit` 事件上触发。它会获取你的提示（也可以一并获取上一轮内容作为上下文），查询 Hindsight，然后将最相关的记忆作为一个内容块注入对话开头：
 
 ```
 <hindsight_memories>
@@ -100,19 +100,19 @@ Current time - 2026-03-28 09:14
 </hindsight_memories>
 ```
 
-Codex看到这个块；它不会出现在您的终端输出中。结果：Codex 使用过去会话的相关上下文开始每个响应，而无需您提供。
+Codex 能看到这个内容块，但它不会出现在终端输出中。因此，Codex 每次生成回复时都会获得过去会话中的相关上下文，无需你提供这些信息。
 
-您可以使用`recallBudget`（`"low"`、`"mid"`、`"high"`）和`recallMaxTokens`调整注入量。
+你可以通过 `recallBudget`（`"low"`、`"mid"`、`"high"`）和 `recallMaxTokens` 调整注入内容的多少。
 
-### 之前和之后 {#before-and-after}
+### 使用前后对比 {#before-and-after}
 
-如果没有持久记忆，您打开一个会话并输入：“继续处理支付模块。” Codex 没有上下文。它会读取文件，做出合理的猜测，并可能会询问您之前回答过的澄清问题，或更糟糕的是，与您上周做出的决定相矛盾。
+没有持久记忆时，你打开会话并输入：“继续处理支付模块。”Codex 没有上下文。它会读取文件、做出合理猜测，还可能问你之前已经回答过的澄清问题；更糟时，它可能会推翻你上周做出的决定。
 
-使用Hindsight，同一个会话将打开，并包含上下文中已回忆的事实：您正在使用哪个支付提供商、您决定反对 Webhook 而支持轮询，以及暂存环境存在幂等性密钥的已知问题。 Codex 从你离开的地方开始，而不是从零开始。
+使用 Hindsight 后，同一个会话一开始就有已召回的事实：你使用的是哪家支付服务商、你决定不用 Webhook 而改用轮询，以及暂存环境中幂等键存在一个已知问题。Codex 会从你上次停下的地方继续，而不是从零开始。
 
-## 每个项目记忆 {#per-project-memory}
+## 按项目隔离记忆 {#per-project-memory}
 
-默认情况下，所有Codex会话共享一个记忆库。为每个项目提供自己独立的记忆：
+默认情况下，所有 Codex 会话共用一个记忆库。要为每个项目分别使用独立记忆：
 
 ```json
 {
@@ -121,15 +121,15 @@ Codex看到这个块；它不会出现在您的终端输出中。结果：Codex 
 }
 ```
 
-使用此配置，在`~/projects/api`和`~/projects/frontend`中运行Codex维护单独的记忆库。 记忆库 ID 源自工作目录路径 - 切换项目会自动切换记忆上下文。每个项目的隔离与Hindsight Cloud的工作方式与在本地的方式相同——记忆库ID只是路由到云API而不是本地守护进程。
+使用此配置后，在 `~/projects/api` 和 `~/projects/frontend` 中运行 Codex 会分别维护独立的记忆库。记忆库 ID 根据工作目录路径生成；切换项目时，记忆上下文也会自动切换。Hindsight Cloud 同样支持按项目隔离；无论本地还是云端，差别只在于记忆库 ID 会被路由到 Cloud API，而不是本地守护进程。
 
 ## 团队共享记忆 {#team-shared-memory}
 
-个人持久记忆是有用的。整个团队共享记忆具有变革性。
+个人持久记忆很有用。团队共享记忆则能带来显著改变。
 
-当团队中的每个人都将他们的Codex配置指向同一个Hindsight记忆库时，一个开发人员积累的上下文将可供所有人使用。周一发现的错误会在周二的记忆召回中浮现出来，无论是谁提出的。在一个会话中做出的架构决策可以为下一个会话提供信息，而无需任何人更新共享文档。
+当团队中的每个人都将 Codex 配置指向同一个 Hindsight 记忆库时，一位开发者积累的上下文就能供所有人使用。周一发现的错误会在周二的召回中出现，无论是谁提出查询。一个会话中做出的架构决策，也能为下一次会话提供依据，无需任何人更新共享文档。
 
-要配置团队共享记忆，请在每个开发人员的配置中设置固定的`bankId`，并将它们指向相同的Hindsight Cloud端点：
+要配置团队共享记忆，请在每位开发者的配置中设置固定的 `bankId`，并将配置指向同一个 Hindsight Cloud 端点：
 
 ```json
 {
@@ -139,41 +139,41 @@ Codex看到这个块；它不会出现在您的终端输出中。结果：Codex 
 }
 ```
 
-请参阅[AI编码智能体的共享记忆](/blog/2026/07/10/shared-memory-across-ai-tools)，了解完整的团队设置指南，包括记忆库播种、每个项目的隔离和入职模式。
+请参阅[面向 AI 编程智能体的共享记忆](https://hindsight.vectorize.io/blog/2026/03/31/team-shared-memory-ai-coding-agents)，了解完整的团队设置指南，其中包括记忆库播种、按项目隔离和成员入门流程。
 
 ## 关键配置选项 {#key-configuration-options}
 
-设置位于`~/.hindsight/codex.json`。每个设置也可以通过环境变量进行设置。
+设置保存在 `~/.hindsight/codex.json` 中。每项设置也可以通过环境变量指定。
 
-|设置|默认|它的作用|
+| 设置 | 默认值 | 作用 |
 |---------|---------|--------------|
-|`retainMission`|通用|引导事实提取——告诉它要关注什么|
-|`retainEveryNTurns`|`10`|在分块模式下会话中期记忆存储的频率|
-|`recallBudget`|`"mid"`|搜索深度：`"low"`（快速）/`"mid"` / `"high"`（彻底）|
-|`autoRecall`|`true`|记忆召回总开关|
-|`autoRetain`|`true`|保持总开关|
-|`dynamicBankId`|`false`|启用每个项目记忆库隔离|
-|`debug`|`false`|将所有 Hindsight 活动记录到 stderr|
+| `retainMission` | generic | 引导事实提取，指定需要关注的内容 |
+| `retainEveryNTurns` | `10` | 分块模式下，每隔多少轮在会话中途存入一次 |
+| `recallBudget` | `"mid"` | 检索深度：`"low"`（快速）/ `"mid"` / `"high"`（全面） |
+| `autoRecall` | `true` | 召回总开关 |
+| `autoRetain` | `true` | 存入总开关 |
+| `dynamicBankId` | `false` | 启用按项目隔离记忆库 |
+| `debug` | `false` | 将所有 Hindsight 活动记录到 stderr |
 
-示例 `retainMission` 重点记忆库：
+面向特定关注重点的记忆库，其 `retainMission` 示例：
 
 ```json
 {
-  "retainMission": "提取技术决策、已知错误及其解决方法、架构选择和编码约定。不要记忆存储一次性调试步骤或编辑器首选项。"
+  "retainMission": "Extract technical decisions, known bugs and their workarounds, architecture choices, and coding conventions. Do not retain one-off debugging steps or editor preferences."
 }
 ```
 
-## 陷阱 {#pitfalls}
+## 常见问题 {#pitfalls}
 
-**钩子不发射。** 安装程序会自动将 `codex_hooks = true` 设置为 `~/.codex/config.toml`，但如果您手动安装或该文件已存在，则可能会丢失此功能。检查文件并在 `[features]` 下添加设置（如果丢失）。
+**钩子没有触发。** 安装程序会自动在 `~/.codex/config.toml` 中设置 `codex_hooks = true`；但如果你手动安装，或该文件原本已存在，这项设置可能会遗漏。检查文件，并在缺少该设置时将其添加到 `[features]` 下。
 
-**第一节课中没有回忆起任何记忆。** 记忆召回仅在保留某些内容后才会返回结果。首先完成一个会话，或者使用 [食谱示例](https://github.com/vectorize-io/hindsight-cookbook/tree/main/applications/codex-memory) 手动播种您的记忆库。
+**第一次会话没有召回任何记忆。** 只有在已有内容存入后，召回才会返回结果。先完成一次会话，或者使用[食谱示例](https://github.com/vectorize-io/hindsight-cookbook/tree/main/applications/codex-memory)手动为记忆库播种。
 
-**记忆力似乎被延迟了。**`retainEveryNTurns`在分块模式下默认为`10`——存储记忆每 10 回合触发一次。在完整会话模式（默认）下，保留在会话结束时触发一次。如果您正在测试，请将 `"retainEveryNTurns": 1` 添加到您的配置中。
+**存入似乎有延迟。** 分块模式下，`retainEveryNTurns` 的默认值为 `10`，也就是每 10 轮触发一次存入。完整会话模式（默认模式）则在会话结束时存入一次。如果正在测试，可在配置中添加 `"retainEveryNTurns": 1`。
 
-**​​什么也没发生？** 首先检查`~/.hindsight/codex/error.log` — 钩子失败记录在那里。要完整跟踪每个钩子正在执行的操作，请启用调试日志记录：
+**什么都没有发生？** 先检查 `~/.hindsight/codex/error.log`，钩子失败记录会写在那里。若要完整追踪每个钩子的操作，请启用调试日志：
 
-**调试模式。** 将 `"debug": true` 添加到 `~/.hindsight/codex.json` 以将详细活动记录到 `~/.hindsight/codex/debug.log`：
+**调试模式。** 在 `~/.hindsight/codex.json` 中添加 `"debug": true`，即可将详细活动记录到 `~/.hindsight/codex/debug.log`：
 
 ```
 [Hindsight] Recalling from bank 'codex', query length: 42
@@ -183,28 +183,28 @@ Codex看到这个块；它不会出现在您的终端输出中。结果：Codex 
 
 ## 权衡 {#tradeoffs}
 
-在承诺之前值得了解的一些事情。
+在决定使用前，有几点值得了解。
 
-**记忆召回增加了延迟。** 每个提示都会在 Codex 看到之前触发 Hindsight 查询。实际上，使用 Hindsight Cloud快速连接时，该时间为 100–300 毫秒。对于交互式会话，它是难以察觉的；对于自动化脚本来说这可能很重要。如果需要跳过它，请使用`"recallBudget": "low"`或`"autoRecall": false`。
+**召回会增加延迟。** 每次提示都会在 Codex 看到提示前触发一次 Hindsight 查询。在网络连接良好的情况下，使用 Hindsight Cloud 通常需要 100–300 ms。交互式会话中这几乎察觉不到，但自动化脚本可能会受到影响。如果需要跳过查询，可以设置 `"recallBudget": "low"` 或 `"autoRecall": false`。
 
-**保留是异步的。** `retain.py` 钩子异步触发，因此它不会阻止会话退出。事实通常在保留完成后几秒钟内可用，但时间取决于服务器负载 - 它们可能会比下一个会话早或晚出现。
+**存入是异步的。** `retain.py` 钩子会异步触发，因此不会阻止会话退出。存入完成后，事实通常会在几秒内可用；但具体时间取决于服务器负载，可能早于或晚于下一次会话才出现。
 
-**提取质量取决于对话质量。** Hindsight 从文字记录中实际提取事实。如果您完全在文件编辑中解决问题而没有说明您正在做什么，则提取模型可能无法处理。提示中的简短解释会有所帮助。
+**提取质量取决于对话质量。** Hindsight 会从实际会话记录中提取事实。如果你只通过编辑文件解决问题，却没有说明自己在做什么，提取模型可能几乎没有信息可用。在提示中简要说明情况会有所帮助。
 
 ## 回顾 {#recap}
 
-||Codex 默认|与 Hindsight|
+| | Codex 默认行为 | 使用 Hindsight 后 |
 |---|---|---|
-|跨课程记忆|无|自动|
-|记忆设置|说明书`AGENTS.md`|摘自成绩单|
-|记忆召回机制|启动时的文件内容|语义搜索，根据提示注入|
-|每个项目的隔离|否|可选通过`dynamicBankId`|
-|团队共享记忆|否|通过Hindsight Cloud端共享记忆库|
+| 跨会话记忆 | 无 | 自动提供 |
+| 记忆设置 | 手动维护 `AGENTS.md` | 从会话记录中提取 |
+| 召回机制 | 启动时读取文件内容 | 语义检索，并在每次提示时注入 |
+| 按项目隔离 | 不支持 | 可通过 `dynamicBankId` 启用 |
+| 团队共享记忆 | 不支持 | 通过 Hindsight Cloud 共用记忆库 |
 
 ## 后续步骤 {#next-steps}
 
 - **Hindsight Cloud**：[ui.hindsight.vectorize.io](https://ui.hindsight.vectorize.io)
 - **安装**：`curl -fsSL https://hindsight.vectorize.io/get-codex | bash`
-- **配置参考**：[Codex集成文档](/sdks/integrations/codex)
-- **团队记忆**：[AI编码智能体的共享记忆](/blog/2026/07/10/shared-memory-across-ai-tools)
-- **食谱**：[应用程序/codex-记忆](https://github.com/vectorize-io/hindsight-cookbook/tree/main/applications/codex-memory)
+- **配置参考**：[Codex 集成文档](/sdks/integrations/codex)
+- **团队记忆**：[面向 AI 编程智能体的共享记忆](https://hindsight.vectorize.io/blog/2026/03/31/team-shared-memory-ai-coding-agents)
+- **食谱**：[applications/codex-memory](https://github.com/vectorize-io/hindsight-cookbook/tree/main/applications/codex-memory)

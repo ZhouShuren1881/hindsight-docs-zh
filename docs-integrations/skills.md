@@ -1,29 +1,29 @@
 ---
 sidebar_position: 3
 title: "Hindsight 智能体记忆技能 | AI 编码助手集成"
-description: "通过Hindsight的智能体技能提供AI编码助手，如Claude Code和Codex跨会话持久记忆——一个可重复使用的提示模板，用于长期上下文保留。"
+description: "借助 Hindsight 智能体技能，让 Claude Code 和 Codex 等 AI 编码助手在不同会话间保留长期记忆。该技能是一种可重复使用的提示模板，用于保留长期上下文。"
 ---
 
 # 技能 {#skills}
 
-Hindsight 提供了一种智能体技能，可以让 AI 编码助理在整个会话中保持持久的记忆。技能是可重复使用的提示模板，智能体可以在需要时加载以获得专门的功能。
+Hindsight 提供智能体技能，让 AI 编码助手在不同会话间保留记忆。技能是可重复使用的提示模板，智能体可以按需加载，以获得特定能力。
 
 ## 支持的平台 {#supported-platforms}
 
-|平台|技能目录|
+| 平台 | 技能目录 |
 |----------|-----------------|
-|[Claude Code](https://docs.anthropic.com/en/docs/claude-code)|`~/.claude/skills/`|
-|[OpenCode](https://github.com/opencode-ai/opencode)|`~/.opencode/skills/`|
-|[Codex CLI](https://github.com/openai/codex)|`~/.codex/skills/`|
+| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | `~/.claude/skills/` |
+| [OpenCode](https://github.com/opencode-ai/opencode) | `~/.opencode/skills/` |
+| [Codex CLI](https://github.com/openai/codex) | `~/.codex/skills/` |
 
 ## 部署模式 {#deployment-modes}
 
 该技能支持两种部署模式：
 
-|模式|最适合|数据位置|
+| 模式 | 适用场景 | 数据位置 |
 |------|----------|---------------|
-|**本地**|个人开发者|您的机器 (`~/.pg0/`)|
-|**云端**|团队分享知识|Hindsight Cloud|
+| **本地** | 个人开发者 | 您的计算机（`~/.pg0/`） |
+| **云端** | 需要共享知识的团队 | Hindsight Cloud |
 
 ## 快速安装 {#quick-install}
 
@@ -33,79 +33,79 @@ Hindsight 提供了一种智能体技能，可以让 AI 编码助理在整个会
 curl -fsSL https://hindsight.vectorize.io/get-skill | bash
 ```
 
-安装程序将：
-1. 提示您选择AI编码助手
-2. 选择部署模式（本地或云端）
-3. 配置适当的设置
+安装程序会：
+1. 提示您选择 AI 编码助手
+2. 让您选择部署模式（本地或云端）
+3. 配置相应设置
 4. 将技能安装到相应目录
 
-### 针对特定平台安装 {#install-for-a-specific-platform}
+### 为指定平台安装 {#install-for-a-specific-platform}
 
 ```bash
-#Claude 代码（交互模式选择）
+# Claude Code（交互式选择模式）
 curl -fsSL https://hindsight.vectorize.io/get-skill | bash -s -- --app claude
 
 # OpenCode
 curl -fsSL https://hindsight.vectorize.io/get-skill | bash -s -- --app opencode
 
-#Codex CLI
+# Codex CLI
 curl -fsSL https://hindsight.vectorize.io/get-skill | bash -s -- --app codex
 ```
 
-### 云模式安装 {#install-with-cloud-mode}
+### 以云端模式安装 {#install-with-cloud-mode}
 
 ```bash
-#直接云设置（跳过模式交互提示）
+# 直接配置云端模式（跳过模式选择提示）
 curl -fsSL https://hindsight.vectorize.io/get-skill | bash -s -- --app claude --mode cloud
 ```
 
-### 选项2：使用附加技能 {#option-2-using-add-skill}
+### 选项 2：使用 add-skill {#option-2-using-add-skill}
 
-如果你使用[add-skill](https://add-skill.org/) 管理您的智能体技能：
+如果您使用 [add-skill](https://add-skill.org/) 管理智能体技能：
 
 ```bash
-#对于本地模式（个人开发者）
+# 本地模式（个人开发者）
 npx add-skill vectorize-io/hindsight --skill hindsight-local
 
-#对于Hindsight Cloud（团队）
+# Hindsight Cloud（团队）
 npx add-skill vectorize-io/hindsight --skill hindsight-cloud
 
-#对于自托管 Hindsight 服务器
+# 自托管的 Hindsight 服务器
 npx add-skill vectorize-io/hindsight --skill hindsight-self-hosted
 ```
 
-首次使用时，AI将指导您完成剩余的设置：
-- **本地**：运行`uvx hindsight-embed configure` 设置您的LLM提供商
-- **云端**：提供您的API密钥和记忆库ID
-- **自托管**：提供您的服务器 URL，API密钥和记忆库ID
+首次使用时，AI 会引导您完成后续设置：
+- **本地**：运行 `uvx hindsight-embed configure`，配置 LLM 提供商
+- **云端**：提供 API 密钥和记忆库 ID
+- **自托管**：提供服务器 URL、API 密钥和记忆库 ID
 
-## 技能提供什么 {#what-the-skill-provides}
+## 技能提供的能力 {#what-the-skill-provides}
 
-安装后，您的AI助手将能够：
+安装后，您的 AI 助手将能够：
 
-- **记忆存储** - 存储用户偏好、学习内容和程序结果
-- **记忆召回** - 在开始任务之前搜索相关上下文
-- **反思** - 将记忆合成上下文答案
+- **Retain（存入）** - 存储用户偏好、经验教训和流程执行结果
+- **Recall（召回）** - 在开始任务前检索相关上下文
+- **Reflect（反思）** - 综合记忆，生成结合上下文的回答
 
-该技能使用`hindsight-embed` CLI，运行带有嵌入式数据库的轻量级本地守护进程。
+该技能使用 `hindsight-embed` CLI；它会运行一个带嵌入式数据库的轻量级本地守护进程。
 
-## 技能如何发挥作用 {#how-skills-work}
+## 技能的工作方式 {#how-skills-work}
 
-技能是**由模型调用**，意思是AI助手会根据您的对话上下文自动决定何时使用它们。您不需要明确触发该技能。
+技能由模型调用：AI 助手会根据对话上下文自动判断何时使用技能。您无需明确触发技能。
 
-助理将：
-- **存储** 当您分享偏好时、当任务时succeed/fail，或者当学习出现时
-- **记忆召回** 在开始重要任务之前获取相关上下文
+助手会：
+- 在您分享偏好、任务成功或失败，或出现经验教训时**存入记忆**
+- 在开始较复杂的任务前**召回记忆**，获取相关上下文
 
-### 存储什么 {#what-gets-stored}
+### 存储哪些内容 {#what-gets-stored}
 
-技能优化存储：
+该技能针对以下内容进行了优化：
 
-|类别|示例|
+| 类别 | 示例 |
 |----------|----------|
-|**用户偏好**|编码风格、工具偏好、语言选择|
-|**操作结果**|有效的命令、解决问题的配置|
-|**经验总结**|Bug 解决方案、解决方法、架构决策|
+| **用户偏好** | 编码风格、工具偏好、语言选择 |
+| **流程结果** | 成功执行的命令、解决问题的配置 |
+| **经验教训** | Bug 修复方案、变通办法、架构决策 |
 
 ## 架构 {#architecture}
 
@@ -127,9 +127,9 @@ hindsight-embed CLI
 嵌入式 PostgreSQL（~/.pg0/hindsight-embed/）
 ```
 
-所有数据都保留在您的计算机上。该守护进程在需要时自动启动，并在不活动后关闭。
+所有数据都保留在您的计算机上。守护进程会在需要时自动启动，并在闲置一段时间后关闭。
 
-### 云模式 {#cloud-mode}
+### 云端模式 {#cloud-mode}
 
 ```
 AI 编码助手
@@ -147,13 +147,13 @@ Hindsight Cloud API (https://api.hindsight.vectorize.io)
 共享记忆库（团队可访问）
 ```
 
-数据存储在Hindsight Cloud中并在您的团队中共享。所有具有相同记忆库ID的团队成员都可以访问共享记忆。
+数据存储在 Hindsight Cloud 中，并在团队内共享。所有使用相同记忆库 ID 的团队成员都可以访问共享记忆。
 
 ---
 
 ## 本地模式设置 {#local-mode-setup}
 
-该技能使用存储在中的配置 `~/.hindsight/config.env`。随时重新配置：
+该技能使用保存在 `~/.hindsight/config.env` 中的配置。您可以随时重新配置：
 
 ```bash
 uvx hindsight-embed configure
@@ -161,119 +161,119 @@ uvx hindsight-embed configure
 
 ---
 
-## 云模式设置 {#cloud-mode-setup}
+## 云端模式设置 {#cloud-mode-setup}
 
-云模式连接[Hindsight Cloud](https://ui.hindsight.vectorize.io)，允许团队分享有关代码库的记忆。当一名团队成员学到一些东西时，每个人都会受益。
+云端模式会连接到 [Hindsight Cloud](https://ui.hindsight.vectorize.io)，让团队共享有关代码库的记忆。一位团队成员学到的信息，其他人也能受益。
 
 ### 前置条件 {#prerequisites}
 
-1. AHindsight Cloud账号（来自团队管理员的 [注册](https://ui.hindsight.vectorize.io))
-2. API 密钥
-3. 您项目的记忆库 ID（例如，`team-acme-frontend`)
+1. 一个 Hindsight Cloud 账户（[注册](https://ui.hindsight.vectorize.io)）
+2. 团队管理员提供的 API 密钥
+3. 项目对应的记忆库 ID（例如 `team-acme-frontend`）
 
 ### 安装 {#installation}
 
-以云模式运行安装程序：
+使用云端模式运行安装程序：
 
 ```bash
 curl -fsSL https://hindsight.vectorize.io/get-skill | bash -s -- --mode cloud
 ```
 
-系统将提示您：
+安装程序会提示您填写：
 
-|设置|说明|示例|
+| 设置 | 说明 | 示例 |
 |---------|-------------|---------|
-|**云端 API URL**|Hindsight Cloud端点|`https://api.hindsight.vectorize.io`|
-|**API 密钥**|您的身份验证密钥|`hs_xxx...`|
-|**记忆库 ID**|为您的团队共享记忆库|`team-acme-frontend`|
+| **Cloud API URL** | Hindsight Cloud 端点 | `https://api.hindsight.vectorize.io` |
+| **API Key** | 用于身份验证的密钥 | `hs_xxx...` |
+| **Bank ID** | 团队共享的记忆库 | `team-acme-frontend` |
 
 ### 配置文件 {#configuration-files}
 
-云模式创建两个文件：
+云端模式会创建两个文件：
 
-**`~/.hindsight/config`** —API连接设置（TOML 格式）：
+**`~/.hindsight/config`** — API 连接设置（TOML 格式）：
 ```toml
 api_url = "https://api.hindsight.vectorize.io"
 api_key = "hs_xxx..."
 ```
 
-**`~/.claude/skills/hindsight/SKILL.md`** — 内置记忆库 ID 的技能定义。
+**`~/.claude/skills/hindsight/SKILL.md`** — 技能定义文件，其中已写入您的记忆库 ID。
 
 ### 团队设置 {#team-setup}
 
-为您的团队设置云模式：
+为团队设置云端模式：
 
-1. **团队管理员** 创建一个记忆库Hindsight Cloud（例如，`team-acme-frontend`)
-2. **团队管理员** 生成API每个团队成员的钥匙
-3. **每位开发者** 使用其运行安装程序API密钥和共享记忆库ID
-4. 所有团队成员现在共享相同的记忆库
+1. **团队管理员**在 Hindsight Cloud 中创建记忆库（例如 `team-acme-frontend`）
+2. **团队管理员**为每位团队成员生成 API 密钥
+3. **每位开发者**使用自己的 API 密钥和共享记忆库 ID 运行安装程序
+4. 此后，所有团队成员都可以使用同一个记忆库
 
-### 团队记忆库中要存储什么 {#what-to-store-in-team-banks}
+### 团队记忆库中适合存储的内容 {#what-to-store-in-team-banks}
 
-云模式使用**团队共享记忆库**。仔细考虑其中的内容：
+云端模式使用**团队共享记忆库**。请谨慎选择要存入的内容：
 
-|类型|示例|如何储存|
+| 类型 | 示例 | 存储方式 |
 |------|----------|--------------|
-|**项目约定**|Linting 规则、测试要求、Node 版本|`"Project uses ESLint with Airbnb config"`|
-|**团队知识**|架构决策、常见陷阱、领域逻辑|`"Auth module requires Redis 7+"`|
-|**个人偏好**|个人编码风格、沟通偏好|`"Alice prefers verbose commit messages"`|
+| **项目约定** | 代码检查规则、测试要求、Node 版本 | `"Project uses ESLint with Airbnb config"` |
+| **团队知识** | 架构决策、常见问题、领域逻辑 | `"Auth module requires Redis 7+"` |
+| **个人偏好** | 个人编码风格、沟通偏好 | `"Alice prefers verbose commit messages"` |
 
-**关键区别**：项目惯例适用于所有人。个人偏好应包括该人的姓名，以便AI知道何时应用它们。
+**关键区别**：项目约定适用于所有人。个人偏好应注明所属人员的姓名，让 AI 知道何时应用这些偏好。
 
 ### 工作流程示例 {#example-workflow}
 
 ```
 第 1 天：Alice 发现一项要求
 ─────────────────────────────────────
-Alice 的 AI 助手存储：
-  "身份验证模块需要 Redis 7+"
-  "Alice 更喜欢显式错误处理而不是无声失败"
+Alice 的 AI 助手存入：
+  "The auth module requires Redis 7+ due to HEXPIRE command usage"
+  "Alice prefers explicit error handling over silent failures"
 
-第 2 天：Bob 开始开发身份验证功能
+第 2 天：Bob 开始处理身份验证模块
 ─────────────────────────────────
 Bob 的 AI 助手召回：
-  "身份验证模块需要 Redis 7+"
+  "The auth module requires Redis 7+ due to HEXPIRE command usage"
 
-Bob 避免了 Alice 遇到的问题！
-(Alice 的个人偏好已被存储，但不会应用到 Bob)
+Bob 避开了 Alice 遇到的同一个问题！
+(Alice 的个人偏好也已存入，但不会应用到 Bob 身上)
 ```
 
-### 测试云连接 {#testing-cloud-connection}
+### 测试云端连接 {#testing-cloud-connection}
 
-安装完成后，验证连接：
+安装后，验证连接：
 
 ```bash
-#存储测试记忆
-hindsight memory retain team-acme-frontend "Alice 在 Google 担任软件工程师"
+# 存入一条测试记忆
+hindsight memory retain team-acme-frontend "Alice works at Google as a software engineer"
 
-#记忆召回它
+# 召回这条记忆
 hindsight memory recall team-acme-frontend "Alice"
 ```
 
-### 记忆库切换 {#switching-between-banks}
+### 在不同记忆库之间切换 {#switching-between-banks}
 
-如果您同时处理多个项目，您可以为每个AI助手安装不同的技能，或者手动切换记忆库：
+如果您同时参与多个项目，可以为每个 AI 助手安装不同的技能，也可以手动切换记忆库：
 
 ```bash
-#环境变量覆盖（临时）
+# 临时覆盖环境变量
 HINDSIGHT_API_URL=https://api.hindsight.vectorize.io \
 HINDSIGHT_API_KEY=hs_xxx \
 hindsight memory recall different-bank "query"
 ```
 
-对于永久多记忆库设置，请使用不同的记忆库ID重新安装技能。
+如需长期使用多个记忆库，请使用不同的记忆库 ID 重新安装技能。
 
 ## 故障排查 {#troubleshooting}
 
 ### 技能未激活 {#skill-not-activating}
 
-技能根据符合您的请求的描述激活。尝试明确：
-- “记住...”触发存储
-- “你知道什么......”触发记忆召回
+技能会根据其描述与您的请求是否匹配来激活。请尝试使用明确的表达：
+- “Remember that...” 会触发存入
+- “What do you know about...” 会触发召回
 
 ### 本地模式问题 {#local-mode-issues}
 
-**守护进程无法启动：**
+**守护进程未启动：**
 ```bash
 uvx hindsight-embed daemon status
 uvx hindsight-embed daemon logs
@@ -284,42 +284,42 @@ uvx hindsight-embed daemon logs
 uvx hindsight-embed configure
 ```
 
-### 云模式问题 {#cloud-mode-issues}
+### 云端模式问题 {#cloud-mode-issues}
 
 **身份验证错误：**
 ```bash
-#验证您的配置
+# 检查配置
 cat ~/.hindsight/config
 
-#手动测试连接
+# 手动测试连接
 hindsight bank list
 ```
 
 **记忆库 ID 错误：**
 
-检查您的 SKILL.md 文件以查看配置了哪个记忆库 ID：
+检查您的 SKILL.md 文件，确认其中配置的记忆库 ID：
 ```bash
-cat ~/.claude/skills/hindsight/SKILL.md | grep "记忆 记忆存储"
+cat ~/.claude/skills/hindsight/SKILL.md | grep "memory retain"
 ```
 
-要更改记忆库ID，请重新安装技能：
+要更改记忆库 ID，请重新安装技能：
 ```bash
 curl -fsSL https://hindsight.vectorize.io/get-skill | bash -s -- --mode cloud
 ```
 
 **网络或防火墙问题：**
 ```bash
-#测试与云的连接API
+# 测试到云端 API 的连通性
 curl -I https://api.hindsight.vectorize.io/health
 ```
 
-## 环境要求 {#requirements}
+## 系统要求 {#requirements}
 
-### 本地模式 {#local-mode}
-- Python3.10+（对于`uvx`)
+### 本地模式 {#local-mode-1}
+- Python 3.10+（用于运行 `uvx`）
 - LLM API 密钥（OpenAI、Anthropic、Groq 等）
 
-### 云模式 {#cloud-mode}
-- Python3.10+（对于`uvx`)
-- Hindsight CloudAPI密钥
-- 网络访问`https://api.hindsight.vectorize.io`
+### 云端模式 {#cloud-mode-1}
+- Python 3.10+（用于运行 `uvx`）
+- Hindsight Cloud API 密钥
+- 可访问 `https://api.hindsight.vectorize.io` 的网络连接

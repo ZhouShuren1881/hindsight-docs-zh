@@ -1,113 +1,111 @@
 ---
-title: "给 Roo 代码一个记忆，这样每个任务都建立在最后一个任务的基础上"
+title: "为 Roo Code 配置记忆，让每个任务都能承接上一个任务"
 authors: [benfrank241]
 slug: "2026/07/23/roo-code-persistent-memory"
 date: 2026-07-23T12:00
 tags: [hindsight, roo-code, agent-memory, persistent-memory, coding-agent, mcp, tutorial]
-description: "Roo Code 运行自主编码任务，但每个任务都从零开始。添加Hindsight智能体记忆：在每个任务之前添加记忆召回上下文，在之后添加记忆存储摘要。"
+description: "Roo Code 可以自主执行编码任务，但每次都会从零开始。为它添加 Hindsight 智能体记忆：每个任务开始前召回上下文，结束后存入摘要。"
 image: /img/blog/roo-code-persistent-memory.webp
 hide_table_of_contents: true
 ---
 
-![Roo 代码与 Hindsight：每个任务之前的记忆召回上下文，之后的记忆存储摘要](/img/blog/roo-code-persistent-memory.webp)
+![Roo Code 与 Hindsight：每个任务开始前召回上下文，结束后存入摘要](/img/blog/roo-code-persistent-memory.webp)
 
-[Roo 代码](https://github.com/RooVetGit/Roo-Code) 是 VS Code 中增长最快的自主编码智能体之一。你给它一个任务，它会计划、编辑、运行命令，并自行完成这些步骤。它非常擅长完成眼前的任务。它在任务之间也是完全失忆的：它昨天学到的约定、你上周解释的架构决策、它已经调试过一次的错误模式，在你下次启动任务时都消失了。
+[Roo Code](https://github.com/RooVetGit/Roo-Code) 是 VS Code 中增长最快的自主编码智能体之一。你交给它一项任务，它会规划、编辑、运行命令，并自行逐步完成工作。它很擅长处理眼前的任务，但在不同任务之间完全没有记忆：昨天学到的约定、你上周解释过的架构决策、它曾经调试过的错误模式，等你下次启动任务时全都不复存在。
 
-Hindsight 解决了这个问题。安装一次后，Roo 就会回忆起每个任务之前的相关上下文，并保留之后学到的内容，因此每个任务都建立在最后一个任务的基础上，而不是从零开始。
+Hindsight 可以解决这个问题。只需安装一次，Roo 就会在每项任务开始前召回相关上下文，并在任务结束后存入学到的内容。这样，每项任务都能承接上一个任务，而不是从零开始。
 
 <!-- truncate -->
 
 ## 概览 {#tldr}
 
-- 一个命令将持久记忆安装到 Roo 代码中：`pip install hindsight-roo-code`，然后`hindsight-roo-code install`。
-- 它使用Roo扩展点的**两者**：Hindsight的**MCP工具**（`recall`，`retain`）加上告诉Roo何时调用它们的**自定义规则文件**。
-- **每项任务之前** Roo回忆起相关记忆； **每项任务之后** 它保留了摘要。它还可以在任务中记忆存储决策。
-- 每个项目（`.roo/`）或全球（`~/.roo/`）的范围记忆。
-- 与[Hindsight Cloud](https://ui.hindsight.vectorize.io)（推荐，免费启动）或自托管服务器配合使用。
+- 一条命令即可为 Roo Code 安装持久记忆：先运行 `pip install hindsight-roo-code`，再运行 `hindsight-roo-code install`。
+- 它会同时使用 Roo 的两个扩展点：Hindsight 的 **MCP 工具**（`recall`、`retain`），以及一份告诉 Roo 何时调用这些工具的**自定义规则文件**。
+- **每项任务开始前**，Roo 会召回相关记忆；**每项任务结束后**，它会存入摘要。它也可以在任务进行期间存入决策。
+- 记忆范围可以设为单个项目（`.roo/`）或全局（`~/.roo/`）。
+- 可搭配 [Hindsight Cloud](https://ui.hindsight.vectorize.io)（推荐，可免费开始使用）或自托管服务器。
 
-## 为什么基于任务的智能体最需要记忆 {#why-a-task-based-agent-needs-memory-most}
+## 为什么基于任务运行的智能体尤其需要记忆 {#why-a-task-based-agent-needs-memory-most}
 
-聊天助手至少可以让对话继续下去。像 Roo 这样的自主智能体可以处理离散的任务：你启动一个任务，它运行到完成，然后擦除。这种结构对于集中注意力很有帮助，但对于连续性却很糟糕。每个任务都会从头开始重新学习您的堆栈，重新发现相同的陷阱，并重新询问您已经回答的问题。
+聊天助手至少能延续一场对话。Roo 这样的自主智能体则按独立任务工作：你启动一项任务，它运行至完成，然后当前状态就被清空。这种结构有利于专注，却不利于保持连续性。每项任务都会从头了解你的技术栈，重新发现同样的注意事项，还会再次询问你已经回答过的问题。
 
-智能体记忆能够将一系列孤立的任务转变为真正了解您的项目的智能体。从任务一中学到的知识将成为任务五十的起始背景，因此智能体随着您使用时间的延长而变得更加有用，而不是更少。
+智能体记忆能把一连串彼此孤立的任务，变成真正了解你项目的智能体。第一个任务中学到的内容会成为第五十个任务的起点，因此你使用得越久，智能体就越有用。
 
 ## 设置 {#setup}
 
-首先，获取一个Hindsight实例。最简单的方法是[Hindsight Cloud](https://ui.hindsight.vectorize.io)：免费注册，获取API密钥，无需运行。 （如果您愿意，下面是自托管说明。）
+首先，准备一个 Hindsight 实例。最简单的方式是使用 [Hindsight Cloud](https://ui.hindsight.vectorize.io)：免费注册并获取 API 密钥，无需自行运行服务。（如果你更愿意自托管，下面也有相关说明。）
 
 然后安装集成：
 
 ```bash
-#安装 CLI
+# 安装 CLI
 pip install hindsight-roo-code
 
-#安装到您的项目中（默认为Hindsight Cloud）
+# 安装到当前项目（默认使用 Hindsight Cloud）
 hindsight-roo-code install
 
-#重启Roo Code，记忆激活
+# 重启 Roo Code，即可启用记忆
 ```
 
-这就是整个设置。重新启动 Roo Code 并启动任务。
+设置就完成了。重启 Roo Code，然后开始一项任务。
 
-## 工作原理：MCP工具加规则 {#how-it-works-mcp-tools-plus-rules}
+## 工作原理：MCP 工具与规则协同 {#how-it-works-mcp-tools-plus-rules}
 
-Roo Code 有两个扩展点，这种集成同时使用了这两个扩展点，这使得它感觉是自动的而不是手动的。
+Roo Code 提供两个扩展点；这个集成将它们结合使用，因此记忆会自动运作，而不需要你手动操作。
 
-**MCP服务器** 赋予 Roo 能力。安装程序编写`.roo/mcp.json`，注册Hindsight的内置`/mcp`端点并公开两个工具：
+**MCP 服务器**为 Roo 提供能力。安装程序会写入 `.roo/mcp.json`，注册 Hindsight 内置的 `/mcp` 端点，并公开两个工具：
 
-|工具|它的作用|
-|------|--------------|
-|`recall`|在记忆中搜索与当前任务相关的上下文|
-|`retain`|立即存储决定、发现或总结|
+| 工具 | 作用 |
+|------|------|
+| `recall` | 在记忆中搜索与当前任务相关的上下文 |
+| `retain` | 立即存入一项决策、发现或摘要 |
 
-两者都是自动批准的（`alwaysAllow`），因此 Roo 可以使用它们，而无需在每次通话时停下来请求许可。
+这两个工具都会自动获准调用（`alwaysAllow`），因此 Roo 可以使用它们，无需每次调用都停下来请求许可。
 
-**规则文件** 提供行为。安装程序还编写`.roo/rules/hindsight-memory.md`，它被注入到每个 Roo 系统提示符中，并告诉智能体何时使用这些工具：
+**规则文件**规定了行为。安装程序还会写入 `.roo/rules/hindsight-memory.md`。这份文件会注入每条 Roo 系统提示，并告诉智能体何时调用这些工具：
 
 ```
-New task starts
-  └─ Rules tell Roo to call recall
-       └─ Relevant memories injected into context
+新任务开始
+  └─ 规则要求 Roo 调用 recall
+       └─ 将相关记忆注入上下文
 
-Agent working…
-  └─ retain stores decisions and discoveries as they happen
+智能体正在工作……
+  └─ retain 随时存入决策和发现
 
-Task ends
-  └─ Rules tell Roo to call retain with a summary
-       └─ Summary stored for the next session
+任务结束
+  └─ 规则要求 Roo 调用 retain 存入摘要
+       └─ 为下一次会话保存摘要
 ```
 
-MCP就能为Roo提供它可能永远不会使用的记忆工具。仅靠规则无法存储或检索任何内容。功能和指令一起产生一个默认记住的智能体：它在任务开始时提取正确的上下文，并在结束时写回重要部分。
-仅
+只有 MCP，Roo 虽然拥有记忆工具，却可能从不使用；只有规则，则无法存储或检索任何内容。两者结合后，能力和指令让智能体默认记住重要信息：任务开始时提取合适的上下文，结束时写回重要内容。
 
 ## 项目记忆或全局记忆 {#project-memory-or-global-memory}
 
-默认情况下，安装程序会写入当前项目中的`.roo/`，因此记忆范围仅限于该代码库，这通常是您想要的编码智能体。一个项目的惯例不会渗透到另一个项目的惯例中。
+默认情况下，安装程序会将文件写入当前项目的 `.roo/` 目录，因此记忆仅限于该代码库。这通常更适合编码智能体，因为一个项目的约定不会影响另一个项目。
 
 ```bash
-hindsight-roo-code install                       #仅此项目
-hindsight-roo-code install --project-dir /path   #特定项目
-hindsight-roo-code install --global              # ~/.roo, applies everywhere
+hindsight-roo-code install                       # 仅用于当前项目
+hindsight-roo-code install --project-dir /path   # 指定项目
+hindsight-roo-code install --global              # ~/.roo，适用于所有项目
 ```
 
-使用全局安装来实现跨项目的习惯和偏好，并使用项目安装来实现仅在一个存储库中有意义的细节。如果您想了解记忆范围的完整情况，我们写了一个[记忆库策略实地指南](/blog/2026/07/16/bank-strategy-agent-memory)。
+全局安装适合跨项目通用的习惯和偏好；项目级安装适合只在某个代码库中有意义的细节。如果你想全面了解记忆范围的设置，可以阅读我们的[记忆库策略实用指南](/blog/2026/07/16/bank-strategy-agent-memory)。
 
-## 云或自托管 {#cloud-or-self-hosted}
+## 云端或自托管 {#cloud-or-self-hosted}
 
-对于**Hindsight Cloud**，安装程序默认为`https://api.hindsight.vectorize.io`，您只需要API密钥即可。
+对于 **Hindsight Cloud**，安装程序默认使用 `https://api.hindsight.vectorize.io`，你只需要 API 密钥。
 
-对于 **自托管** 服务器，首先启动 Hindsight 并将安装程序指向它：
+如果使用**自托管**服务器，先启动 Hindsight，再将安装程序指向该服务器：
 
 ```bash
 pip install hindsight-all
 export HINDSIGHT_API_LLM_API_KEY=your-openai-key
-hindsight-api                                   # serves http://localhost:8888
+hindsight-api                                   # 提供 http://localhost:8888 服务
 
 hindsight-roo-code install --api-url http://localhost:8888
 ```
 
-它写入的MCP条目看起来像这样，所以你可以随时检查或编辑它：
-它写入的
+安装程序写入的 MCP 配置如下，你可以随时查看或编辑：
 
 ```json
 {
@@ -122,39 +120,39 @@ hindsight-roo-code install --api-url http://localhost:8888
 }
 ```
 
-## 验证它是否有效 {#verifying-it-works}
+## 验证是否正常工作 {#verifying-it-works}
 
-1. 启动Hindsight（或使用云）并运行安装程序。
-2. 在您的项目中打开 Roo Code。
-3. 在 **设置→MCP服务器** 中，`hindsight` 应显示为已连接。
-4. 启动任务并查看工具调用日志。你应该在一开始就看到 `recall` 着火。
+1. 启动 Hindsight（或使用 Cloud），然后运行安装程序。
+2. 在项目中打开 Roo Code。
+3. 打开 **设置 → MCP 服务器**，确认 `hindsight` 显示为已连接。
+4. 启动一项任务并查看工具调用日志。你应该能看到任务开始时调用了 `recall`。
 
-在一个任务中教它一些东西（“这个存储库使用 pnpm，而不是 npm；在源旁边进行实时测试”），然后在第二天开始一项新任务并自行观看记忆。
+在一项任务中教它一些内容（“这个代码库使用 pnpm，而不是 npm；测试文件与源文件放在一起”），然后第二天开始一项新任务，看看它能否自行召回这条信息。
 
-## 记忆跟随你 {#the-memory-follows-you}
+## 记忆可以跨工具使用 {#the-memory-follows-you}
 
-因为记忆存在于Hindsight记忆库中而不是Roo代码中，所以它不被锁定到一种工具。将另一个Hindsight集成指向同一个记忆库，上下文就会延续。 Roo 保留的决策可供Claude Code、Cursor或从该记忆库读取的任何其他工具使用。 Roo 是任务运行的地方；记忆是它幸存下来的东西。
+记忆存放在 Hindsight 记忆库中，而不在 Roo Code 内部，因此不会被某个工具锁定。将另一个 Hindsight 集成指向同一个记忆库，上下文就能继续沿用。Roo 存入的决策也可以供 Claude Code、Cursor 或任何读取该记忆库的其他工具使用。Roo 负责运行任务；记忆则会留存下来。
 
 ## 常见问题 {#frequently-asked-questions}
 
 **这会取代 Roo Code 的上下文吗？**
-没有。 Roo 仍然为任务组装自己的工作环境。 Hindsight 添加了一个跨任务和会话持续存在的持久层，并在开始时注入相关切片。
+不会。Roo 仍会为每项任务组装自己的工作上下文。Hindsight 会增加一个可跨任务和会话留存的记忆层，并在任务开始时注入相关内容。
 
-**我必须批准每个记忆通话吗？**
-没有。 `recall` 和 `retain` 在 MCP 配置中自动批准，因此它们运行时不会中断任务。
+**每次调用记忆工具都需要我批准吗？**
+不需要。MCP 配置会自动批准 `recall` 和 `retain`，因此它们运行时不会中断任务。
 
-**我的记忆仅限于一个项目吗？**
-默认是。项目安装写入`.roo/`，因此每个存储库都有自己的记忆。如果您想在所有项目中共享记忆，请使用`--global`。
+**我的记忆会限制在一个项目内吗？**
+默认情况下会。项目级安装会写入 `.roo/`，因此每个代码库都有自己的记忆。如果希望所有项目共享记忆，请使用 `--global`。
 
-**可以离线使用吗？**
-是的。自托管 Hindsight，将安装程序指向 `http://localhost:8888`，一切都不会离开您的计算机。
+**离线时可以使用吗？**
+可以。自托管 Hindsight，将安装程序指向 `http://localhost:8888`，所有数据都不会离开你的计算机。
 
-## 尝试一下 {#try-it}
+## 试用 {#try-it}
 
-如果您已经使用 Roo Code，感受差异的最快方法是安装集成，完成几个任务，然后明天开始一个新的任务，看着它从您上次停下的地方继续。 [获取免费的Hindsight Cloud密钥](https://ui.hindsight.vectorize.io) 并运行`hindsight-roo-code install`。
+如果你已经在使用 Roo Code，最快的体验方式就是安装这个集成，完成几项任务，然后第二天开始一项新任务，看看它如何从上次停下的地方继续。[获取免费的 Hindsight Cloud 密钥](https://ui.hindsight.vectorize.io)，然后运行 `hindsight-roo-code install`。
 
-## 进一步阅读 {#further-reading}
+## 延伸阅读 {#further-reading}
 
-- [Roo 代码集成参考](/sdks/integrations/roo-code)：每个选项都在一处。
-- [记忆存储内部()](/blog/2026/07/13/inside-retain-agent-memory)：Roo 每次保留摘要时Hindsight 存储的内容。
-- [每个AI工具一个记忆](/blog/2026/04/07/one-memory-for-every-ai-tool)：为什么存储位于任何单一智能体之外。
+- [Roo Code 集成参考](/sdks/integrations/roo-code)：集中查看所有选项。
+- [深入了解 retain()](/blog/2026/07/13/inside-retain-agent-memory)：了解每次 Roo 存入摘要时，Hindsight 会保存什么。
+- [让所有 AI 工具共享一份记忆](/blog/2026/04/07/one-memory-for-every-ai-tool)：了解为什么记忆存储在任何单一智能体之外。

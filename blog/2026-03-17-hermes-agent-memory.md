@@ -1,41 +1,41 @@
 ---
-title: "给予唯一的自我提升AI智能体（Hermes）应得的记忆升级"
+title: "为唯一会自我改进的 AI 智能体 Hermes 升级它应得的记忆能力"
 authors: [benfrank241]
 date: 2026-03-17T12:00
 tags: [hermes, agents, python, memory, tutorial, plugin]
 image: /img/blog/hermes-agent-memory.webp
 ---
 
-![如何为Hermes智能体添加持久记忆](/img/blog/hermes-agent-memory.webp)
+![如何为 Hermes Agent 添加持久记忆](/img/blog/hermes-agent-memory.webp)
 
 :::warning 已弃用
-本文中描述的 `hindsight-hermes` pip 插件已弃用。 Hindsight 现在是从 Hermes 插件目录安装的 Hermes 记忆提供程序：`hermes plugins install hindsight`，然后是 `hermes memory setup`。有关当前设置指南，请参阅[Hindsight 成为Hermes 插件后有何变化](/blog/2026/10/01/hindsight-hermes-plugin-what-changed)。
+本文介绍的 `hindsight-hermes` pip 插件已弃用。现在，Hindsight 是从 Hermes 插件目录安装的记忆提供方：运行 `hermes plugins install hindsight`，然后运行 `hermes memory setup`。如需了解当前设置方法，请参阅[成为 Hermes 插件后，Hindsight 有哪些变化](/blog/2026/10/01/hindsight-hermes-plugin-what-changed)。
 :::
 
-[Hermes智能体](https://github.com/NousResearch/hermes-agent)是一个自我改进的AI智能体，拥有40多个工具和插件系统。其内置记忆保存到本地文件。 `hindsight-hermes` 通过一个 pip 安装和三个环境变量将其替换为结构化事实提取、实体解析和多策略检索。
+[Hermes Agent](https://github.com/NousResearch/hermes-agent) 是一款可自我改进的 AI 智能体，提供 40 多种工具和插件系统。它的内置记忆会保存到本地文件。`hindsight-hermes` 通过一次 pip 安装和三个环境变量，将内置记忆替换为结构化事实提取、实体解析和多策略检索。
 
 <!-- truncate -->
 
-**概览：**
-- Hermes智能体的内置记忆是基于本地文件的——没有结构，没有检索智能，没有跨机器同步
-- `hindsight-hermes` 是一个 pip 可安装插件，可将 Hindsight 存储记忆/记忆召回/反思注册为本机 Hermes 工具
-- 一个`pip install`，三个环境变量，禁用内置的`memory`工具，就完成了
-- 与[Hindsight Cloud](https://ui.hindsight.vectorize.io)（零基础设施）或自托管一起使用
+**概要：**
+- Hermes Agent 的内置记忆基于本地文件：没有结构化处理、智能检索或跨机器同步
+- `hindsight-hermes` 是可通过 pip 安装的插件，可将 Hindsight 的 Retain、Recall 和 Reflect 注册为 Hermes 原生工具
+- 只需运行一次 `pip install`、设置三个环境变量并停用内置 `memory` 工具即可
+- 可搭配 [Hindsight Cloud](https://ui.hindsight.vectorize.io)（无需自备基础设施）使用，也可自行托管
 
-## 问题：记忆力很好，但还可以更进一步 {#the-problem-good-memory-but-it-could-go-further}
+## 问题：记忆功能不错，但还可以更进一步 {#the-problem-good-memory-but-it-could-go-further}
 
-Hermes智能体内置记忆，设计合理。 `memory`工具将持久事实作为持久文件保存到`~/.hermes/`，而`session_search`工具让智能体回顾过去的对话。它有效——智能体可以存储偏好、记忆召回上下文，并跨会话携带知识。
+Hermes Agent 内置了记忆功能，设计也算合理。`memory` 工具会将持久事实保存为 `~/.hermes/` 中的文件，`session_search` 工具则能让智能体回顾过去的对话。这套功能确实可用：智能体可以保存偏好、召回上下文，并在不同会话之间延续已有知识。
 
-但是还有成长的空间：
+不过，仍有改进空间：
 
-- **结构。** 记忆以文本形式存储。没有实体解析（将“Alice”与“我的工程同事 Alice”连接起来），没有关系跟踪，也没有会话时间戳之外的时间感知。
-- **检索。** 搜索基于关键字。对于简单的查找来说，这很好，但它很难处理使用与存储的术语不同的术语的问题。
-- **地点。** 记忆存在于磁盘上。在笔记本电脑和服务器上运行Hermes——两个独立的大脑，无法共享上下文。
-- **​​合成。** 您可以存储和检索事实，但您不能询问“根据您对这位客户的了解，我们应该优先考虑什么？”并得到合理的答案。
+- **结构。** 记忆以文本形式存储。系统无法解析实体（例如，将“Alice”与“我在工程团队的同事 Alice”关联起来），也不会追踪关系；除了会话时间戳之外，它也没有时间感知能力。
+- **检索。** 搜索基于关键词。简单查找没有问题，但如果问题使用的措辞与已存内容不同，搜索就难以奏效。
+- **本地存储。** 记忆保存在磁盘上。如果你在笔记本电脑和服务器上分别运行 Hermes，就会得到两个彼此隔离、无法共享上下文的“大脑”。
+- **综合推理。** 你可以存入和检索事实，却无法询问“根据你对这位客户的了解，我们应该优先处理什么？”，并获得经过推理的答案。
 
-Hindsight在顶部添加了一层：结构化事实提取、实体解析、知识图、跨编码器重排序的多策略检索，以及综合所有存储记忆的`reflect`操作。
+Hindsight 在此基础上增加了一层能力：结构化事实提取、实体解析、知识图谱、结合交叉编码器重排序的多策略检索，以及能够综合所有已存记忆的 `reflect` 操作。
 
-## Architecture：注册三个工具的插件 {#architecture-a-plugin-that-registers-three-tools}
+## 架构：注册三个工具的插件 {#architecture-a-plugin-that-registers-three-tools}
 
 ```
 User  ──>  Hermes Agent
@@ -47,21 +47,21 @@ User  ──>  Hermes Agent
                                                    └──>           PostgreSQL + pgvector
 ```
 
-`hindsight-hermes` 钩入 Hermes 的 [插件系统](https://github.com/NousResearch/hermes-agent/blob/main/hermes_cli/plugins.py)。当Hermes启动时，它会扫描具有`hermes_agent.plugins`入口点的包，找到`hindsight-hermes`，并调用其`register()`函数。这会将三个工具注册到 Hermes 的工具注册表中。
+`hindsight-hermes` 接入 Hermes 的[插件系统](https://github.com/NousResearch/hermes-agent/blob/main/hermes_cli/plugins.py)。Hermes 启动时会扫描带有 `hermes_agent.plugins` 入口点的程序包，找到 `hindsight-hermes`，并调用它的 `register()` 函数。该函数会将三个工具注册到 Hermes 的工具注册表中。
 
-无分叉Hermes。没有修补配置文件。只是 `pip install` 和环境变量。
+无需分叉 Hermes，也无需修改配置文件。只要运行 `pip install` 并设置环境变量即可。
 
-## 设置Hindsight {#setting-up-hindsight}
+## 设置 Hindsight {#setting-up-hindsight}
 
-您有两个选择：Hindsight Cloud（无需设置）或自托管。
+你可以选择使用 Hindsight Cloud（无需自行设置），也可以自行托管。
 
-**选项A：Hindsight Cloud**
+**选项 A：Hindsight Cloud**
 
-1. [Hindsight Cloud报名](https://ui.hindsight.vectorize.io)
-2. 在仪表板中创建一个记忆库并复制您的API密钥
-3. 您的基本网址是`https://api.hindsight.vectorize.io`
+1. [注册 Hindsight Cloud 账号](https://ui.hindsight.vectorize.io)
+2. 在控制台中创建记忆库并复制 API 密钥
+3. 你的基础 URL 是 `https://api.hindsight.vectorize.io`
 
-**选项 B：使用 Docker 自托管**
+**选项 B：使用 Docker 自行托管**
 
 ```bash
 docker run --rm -it --pull always -p 8888:8888 -p 9999:9999 \
@@ -70,16 +70,16 @@ docker run --rm -it --pull always -p 8888:8888 -p 9999:9999 \
   ghcr.io/vectorize-io/hindsight:latest
 ```
 
-等待健康检查：
+等待健康检查通过：
 
 ```bash
 curl http://localhost:8888/health
 # {"status":"healthy","database":"connected"}
 ```
 
-`-v`标志在容器重新启动时保留数据。端口8888是API；端口 9999 是用于浏览记忆的管理 UI。
+`-v` 标志会在容器重启后保留数据。8888 端口用于 API；9999 端口是用于浏览记忆的管理界面。
 
-**选项 C：使用 pip 自托管**
+**选项 C：使用 pip 自行托管**
 
 ```bash
 pip install hindsight-all
@@ -87,17 +87,17 @@ export HINDSIGHT_API_LLM_API_KEY=YOUR_OPENAI_KEY
 hindsight-api
 ```
 
-## 安装后见之明-hermes {#install-hindsight-hermes}
+## 安装 hindsight-hermes {#install-hindsight-hermes}
 
-一个pip安装。该包通过 Python 入口点自动注册为 Hermes 插件 — 无需配置文件，无需手动插件设置。唯一的要求是它作为 Hermes 安装在 **相同Python环境** 中。
+只需通过 pip 安装一次。该程序包会通过 Python 入口点自动注册为 Hermes 插件，无需配置文件或手动设置插件。唯一的要求是：它必须安装在与 Hermes **相同的 Python 环境**中。
 
 ```bash
 uv pip install hindsight-hermes --python $HOME/.hermes/hermes-agent/venv/bin/python
 ```
 
-就是这样。当Hermes启动时，它会自动发现包并注册三个记忆工具。
+就这么简单。Hermes 启动时会自动发现该程序包，并注册三个记忆工具。
 
-您可以验证它是否已注册：
+你可以检查工具是否已注册：
 
 ```bash
 python -c "
@@ -111,44 +111,44 @@ for ep in eps:
 
 ## 配置 {#configuration}
 
-在启动Hermes之前设置这些环境变量：
+启动 Hermes 前，先设置以下环境变量：
 
 ```bash
-#必需 — Hindsight 正在运行
+# 必需 — Hindsight 的运行地址
 export HINDSIGHT_API_URL=http://localhost:8888
 
-#必需 — 记忆库（这个智能体的一个孤立的“大脑”）
+# 必需 — 此智能体使用的独立“记忆大脑”
 export HINDSIGHT_BANK_ID=my-agent
 
-# 可选，仅 Hindsight Cloud（https://api.hindsight.vectorize.io）需要
+# 可选 — 仅使用 Hindsight Cloud 时需要（https://api.hindsight.vectorize.io）
 export HINDSIGHT_API_KEY=hsk_your-key-here
 
-#可选 — 记忆召回预算：低（快）、中（默认）、高（彻底）
+# 可选 — Recall 预算：low（快速）、mid（默认）、high（全面）
 export HINDSIGHT_BUDGET=mid
 ```
 
-如果`HINDSIGHT_API_URL`和`HINDSIGHT_API_KEY`都没有设置，插件会默默地跳过注册——Hermes在没有Hindsight工具的情况下正常启动。
+如果既未设置 `HINDSIGHT_API_URL`，也未设置 `HINDSIGHT_API_KEY`，插件会静默跳过注册；Hermes 仍会正常启动，只是不会加载 Hindsight 工具。
 
-### 禁用Hermes的内置记忆 {#disable-hermess-built-in-memory}
+### 停用 Hermes 的内置记忆 {#disable-hermess-built-in-memory}
 
-这是人们错过的一步。 Hermes 有自己的记忆存储，保存到`~/.hermes/`。如果两者都处于活动状态，**LLM 默认为内置** — 它是它已经识别的单一工具。您的 Hindsight 工具将闲置。
+这一步最容易被遗漏。Hermes 有自己的记忆存储，数据保存在 `~/.hermes/` 中。如果两者同时启用，**LLM 默认会选择内置记忆**，因为它是 LLM 已熟悉的单个工具。这样一来，Hindsight 工具就不会被使用。
 
 ```bash
 hermes config set memory.memory_enabled false        # MEMORY.md
 hermes config set memory.user_profile_enabled false  # USER.md (optional)
 ```
 
-这在会话中持续存在。稍后通过将相同的标志设置回 `true` 来重新启用。
+这些设置会在不同会话间保留。之后如需重新启用，将相同标志的值改回 `true` 即可。
 
 ## 使用记忆工具 {#using-the-memory-tools}
 
-启动Hermes：
+启动 Hermes：
 
 ```bash
 hermes
 ```
 
-输入`/tools`进行验证。您应该看到 `[hindsight]` 工具集：
+输入 `/tools` 进行检查。你应该能看到 `[hindsight]` 工具集：
 
 ```
 [hindsight]
@@ -157,37 +157,37 @@ hermes
   * hindsight_retain     - Store information to long-term memory for later retrieval.
 ```
 
-### 记忆存储 — 存储记忆 {#retain--store-memories}
+### Retain（存入）— 存储记忆 {#retain--store-memories}
 
-告诉Hermes需要记住的事情：
+告诉 Hermes 一条需要记住的信息：
 
 ```
 ● Remember that my favourite programming language is Rust and I prefer dark mode.
 ```
 
-您应该在响应中看到 `⚡ hindsight` — 这证实了它称为 `hindsight_retain`，而不是内置的记忆工具。
+如果响应中出现 `⚡ hindsight`，就说明 Hermes 调用了 `hindsight_retain`，而不是内置记忆工具。
 
-在底层，Hindsight提取结构化事实（“用户最喜欢的编程语言是Rust”），解析实体，生成嵌入，并对所有内容建立索引。这些你都管不了。
+在底层，Hindsight 会提取结构化事实（“用户最喜欢的编程语言是 Rust”），解析实体、生成嵌入向量并为所有内容建立索引。这些工作都不需要你管理。
 
-### 记忆召回 — 搜索记忆 {#recall--search-memories}
+### Recall（召回）— 检索记忆 {#recall--search-memories}
 
 ```
 ● What do you know about my programming preferences?
 ```
 
-记忆召回并行运行四种检索策略——语义搜索、BM25关键字匹配、实体图遍历和时间过滤——然后使用交叉编码器对结果重新排序。这就是它比平面文件上的字符串匹配更好的原因。
+Recall 会并行运行四种检索策略：语义检索、BM25 关键词匹配、实体图遍历和时间过滤，然后使用交叉编码器对结果重排序。正因如此，它比在扁平文件中进行字符串匹配效果更好。
 
-### 反思 — 跨记忆合成 {#reflect--synthesize-across-memories}
+### Reflect（反思）— 综合多条记忆 {#reflect--synthesize-across-memories}
 
 ```
 ● Based on what you know about me, suggest a colour scheme for my IDE.
 ```
 
-反思不返回原始事实。它遍历知识图谱，对记忆库中的所有内容进行推理，并生成综合答案。比记忆召回慢，但对于开放式问题更有用。
+Reflect 不会返回原始事实。它会遍历知识图谱，基于记忆库中的全部内容进行推理，并生成综合后的答案。它比 Recall 慢，但更适合开放式问题。
 
-### 通过API验证 {#verify-via-the-api}
+### 通过 API 验证 {#verify-via-the-api}
 
-直接查询Hindsight确认记忆已存储：
+直接查询 Hindsight，确认记忆已存入：
 
 ```bash
 curl -s http://localhost:8888/v1/default/banks/my-agent/memories/recall \
@@ -199,12 +199,12 @@ curl -s http://localhost:8888/v1/default/banks/my-agent/memories/recall \
 {
   "results": [
     {
-      "text": "用户最喜欢的编程语言是 Rust。",
+      "text": "User's favourite programming language is Rust.",
       "type": "world",
       "entities": ["user"]
     },
     {
-      "text": "用户在所有编辑器中都喜欢深色模式。",
+      "text": "User prefers dark mode in all editors.",
       "type": "world",
       "entities": ["user"]
     }
@@ -212,46 +212,45 @@ curl -s http://localhost:8888/v1/default/banks/my-agent/memories/recall \
 }
 ```
 
-## 陷阱和边缘情况 {#pitfalls-and-edge-cases}
+## 常见问题和边缘情况 {#pitfalls-and-edge-cases}
 
-1. **插件不在`/tools`中。** 最常见的原因：`hindsight-hermes` 安装在与 Hermes 不同的 Python 环境中。入口点是每个环境的。从 Hermes venv 运行 `python -c "import importlib.metadata; print(list(importlib.metadata.entry_points(group='hermes_agent.plugins')))"` 进行验证。
+1. **插件未出现在 `/tools` 中。** 最常见的原因是 `hindsight-hermes` 与 Hermes 安装在不同的 Python 环境中。入口点按环境分别注册。请在 Hermes 的虚拟环境中运行以下命令进行检查：`python -c "import importlib.metadata; print(list(importlib.metadata.entry_points(group='hermes_agent.plugins')))"`。
 
-2. **LLM选择内置记忆。** 即使加载了插件，如果`memory`和`hindsight_retain`都存在，LLM会选择`memory`。运行`hermes config set memory.memory_enabled false`。
+2. **LLM 选择了内置记忆。** 即使插件已加载，只要 `memory` 和 `hindsight_retain` 同时存在，LLM 仍可能选择 `memory`。请运行 `hermes config set memory.memory_enabled false`。
 
-3. **记忆存储是异步的。** API立即返回；事实提取发生在后台。如果你同时记忆存储和立即记忆召回，新的事实可能还没有被索引。设计使记忆发生在随后的回合中。
+3. **Retain 是异步的。** API 会立即返回，事实提取则在后台进行。如果存入后马上在同一轮中调用 Recall，新事实可能尚未建立索引。请将流程设计为在后续轮次中召回。
 
-4. **环境变量在启动时读取一次。
-启动后**更改`HINDSIGHT_API_URL`或`HINDSIGHT_BANK_ID`无效。重新启动Hermes以获取更改。
+4. **环境变量只在启动时读取一次。** 启动后修改 `HINDSIGHT_API_URL` 或 `HINDSIGHT_BANK_ID` 不会生效。重启 Hermes 才能应用更改。
 
 
-## 权衡：Hindsight插件与替代方案 {#tradeoffs-hindsight-plugin-vs-alternatives}
+## 权衡：Hindsight 插件与其他方案 {#tradeoffs-hindsight-plugin-vs-alternatives}
 
-||**Hindsight插件**|**内置记忆**|
+| | **Hindsight 插件** | **内置记忆** |
 |---|---|---|
-|**存储**|PostgreSQL + pgvector|本地文件(~/.hermes/)|
-|**结构**|事实、实体、关系|原始文本|
-|**检索**|语义 + BM25 + 图，重新排名|基本搜索|
-|**合成**|反思工具|无|
-|**跨机**|是的|否|
-|**设置**|pip 安装 + 环境变量|内置|
+| **存储** | PostgreSQL + pgvector | 本地文件（~/.hermes/） |
+| **结构** | 事实、实体和关系 | 原始文本 |
+| **检索** | 语义检索 + BM25 + 图检索，并重排序 | 基本搜索 |
+| **综合推理** | `reflect` 工具 | 无 |
+| **跨机器同步** | 支持 | 不支持 |
+| **设置** | pip 安装 + 环境变量 | 内置 |
 
-**使用内置记忆** 当您想要零设置和基本持久性时。
+如果你希望免配置地使用基本持久化功能，可以选择内置记忆。
 
-**使用Hindsight插件** 当您想要结构化检索、实体解析和跨机器持久的记忆时。
+如果你需要结构化检索、实体解析以及可跨机器持久保存的记忆，可以选择 Hindsight 插件。
 
 ## 回顾 {#recap}
 
-`hindsight-hermes` 通过pip可安装插件为Hermes提供智能体持久、结构化的长期记忆。没有代码更改，没有配置补丁。
+通过可用 pip 安装的插件，`hindsight-hermes` 为 Hermes Agent 提供持久、结构化的长期记忆。无需修改代码或打补丁改配置。
 
-Hermes的插件系统使用标准的Python入口点，因此任何pip包都可以注册工具。 `hindsight-hermes`注入了记忆存储、记忆召回和反思——由Hindsight的多策略检索、实体解析和知识图谱支持。
+Hermes 的插件系统使用标准 Python 入口点，因此任何 pip 程序包都可以注册工具。`hindsight-hermes` 注入了 Retain、Recall 和 Reflect 功能，并由 Hindsight 的多策略检索、实体解析和知识图谱提供支持。
 
-关键实用细节：禁用Hermes内置`memory`工具。否则 LLM 更喜欢它，而你的 Hindsight 工具就不会被使用。
+实际使用中的关键一步是：停用 Hermes 内置的 `memory` 工具。否则 LLM 会优先使用它，Hindsight 工具就会闲置。
 
 ## 后续步骤 {#next-steps}
 
-- **随着时间的推移建立记忆。** 正常使用Hermes — 它将记忆重要的内容并在相关时记忆召回。
-- **尝试合成。** 提出开放式问题：“根据您对我的了解，我会喜欢什么样的项目？”
-- **使用每个用户的记忆库。** 为每个用户设置`HINDSIGHT_BANK_ID`，以实现每个人的独立记忆。
-- **探索MCP替代方案。** Hermes 原生支持 MCP 服务器。您可以直接连接Hindsight的MCP服务器（`http://localhost:8888/mcp`）而不是插件 - 不需要`hindsight-hermes`包。权衡是插件使用Hermes本机模式注册工具，而MCP工具需要发现。
-- ​​**使用手动注册进行更多控制。** 如果你想设置标签，记忆召回过滤器，或者跳过插件系统，`hindsight-hermes`暴露了`register_tools()`和`memory_instructions()`功能供直接使用。
-- **阅读文档。** [hindsight.vectorize.io/sdks/integrations/hermes](https://hindsight.vectorize.io/sdks/integrations/hermes) 的完整集成参考。
+- **逐步积累记忆。** 像平时一样使用 Hermes；它会存入重要信息，并在相关时召回。
+- **尝试 Reflect 进行综合推理。** 提出开放式问题，例如：“根据你对我的了解，我会喜欢什么类型的项目？”
+- **为每位用户使用独立记忆库。** 按用户设置 `HINDSIGHT_BANK_ID`，使每个人的记忆彼此隔离。
+- **探索 MCP 方案。** Hermes 原生支持 MCP 服务器。你可以直接连接 Hindsight 的 MCP 服务器（`http://localhost:8888/mcp`），而不使用插件，无需安装 `hindsight-hermes` 程序包。两种方式的差别在于：插件会使用 Hermes 原生模式注册工具，而 MCP 工具需要先发现。
+- **通过手动注册获得更多控制。** 如果你想设置标签、Recall 筛选条件，或跳过插件系统，可以直接使用 `hindsight-hermes` 提供的 `register_tools()` 和 `memory_instructions()` 函数。
+- **阅读文档。** 请参阅[完整集成参考](https://hindsight.vectorize.io/sdks/integrations/hermes)。

@@ -1,66 +1,65 @@
 ---
-title: "赋予您在Omnigent中运行的每一个智能体持久的记忆"
+title: "为你在 Omnigent 中运行的每个智能体配备持久记忆"
 authors: [benfrank241]
 slug: "2026/07/14/omnigent-persistent-memory"
 date: 2026-07-14T12:00
 tags: [hindsight, omnigent, agent-memory, persistent-memory, tutorial, mcp]
-description: "Omnigent 包装任何 AI 智能体：Claude Code、Codex、Cursor、Hermes 等。添加 Hindsight 一次，它编排的每个线束都可以从单个设置中获得记忆召回、记忆存储和反思。"
+description: "Omnigent 可以编排任意 AI 智能体，包括 Claude Code、Codex、Cursor、Hermes 等。只需添加一次 Hindsight，Omnigent 编排的每个智能体运行框架都能通过同一套配置使用 Retain（存入）、Recall（召回）和 Reflect（反思）。"
 image: /img/blog/omnigent-persistent-memory.webp
 hide_table_of_contents: true
 ---
 
-![Omnigent 与 Hindsight 持久记忆：记忆召回、记忆存储和每条安全带上的回忆](/img/blog/omnigent-persistent-memory.webp)
+![Omnigent 与 Hindsight 持久记忆：在每个智能体运行框架中召回、存入和反思](/img/blog/omnigent-persistent-memory.webp)
 
-大多数智能体记忆集成可以用一种工具解决一个问题。将Hindsight添加到Cursor，Cursor就记住了。将其添加到Aider，Aider会记住。每个都有自己的设置、自己的配置、自己的上限。
+大多数智能体记忆集成只为一种工具解决一个问题。把 Hindsight 添加到 Cursor，Cursor 就能记住信息；把它添加到 Aider，Aider 也能记住信息。每种工具都要单独设置和配置，而且各自都有能力上限。
 
-[Omnigent](https://github.com/omnigent-ai/omnigent)打破了这种模式。它是一个元框架：单个编排层，一次包装和协调多个AI智能体，包括Claude Code、Codex、Cursor、OpenCode、Hermes和Pi。当您将Hindsight添加到Omnigent时，您可以通过单个设置将持久记忆添加到**全部经过一处**，而不是单独连接每个工具的集成。对于任何没有本机 Hindsight 集成的线束（包括自定义线束），Omnigent 是记忆层。这座桥位于Omnigent，所以里面的智能体不需要自己携带它。
+[Omnigent](https://github.com/omnigent-ai/omnigent) 改变了这种模式。它是一个元编排框架，能够同时封装并协调多个 AI 智能体，包括 Claude Code、Codex、Cursor、OpenCode、Hermes 和 Pi。将 Hindsight 添加到 Omnigent 后，你只需在一个地方完成一次设置，就能为**所有这些智能体配备持久记忆**，无需逐一接入每种工具的集成。对于没有原生 Hindsight 集成的智能体运行框架（包括自定义框架），Omnigent 也可以充当记忆层。桥接逻辑由 Omnigent 承担，其中的智能体无需自行处理。
 
 <!-- truncate -->
 
 ## 概览 {#tldr}
 
-- Omnigent 附带三个内置记忆工具：`hindsight_recall`、`hindsight_retain` 和 `hindsight_reflect`。
-- Omnigent**在本地拦截并执行这些工具**，因此它包装的每个线束都可以从一个设置中获得相同的记忆，包括没有本地Hindsight集成的自定义线束。
-- ​​安装是一项可选附加功能：`pip install "omnigent[memory]"`。
-- 连接智能体YAML规范中的工具，设置`HINDSIGHT_API_KEY`，智能体决定何时进行记忆召回和记忆存储。
-- 记忆在各个会话中持续存在，并且范围仅限于每个智能体（或每个对话，作为后备）的记忆库。
+- Omnigent 内置了三个记忆工具：`hindsight_recall`、`hindsight_retain` 和 `hindsight_reflect`。
+- Omnigent **会在本地拦截并执行这些工具**，因此它封装的每种智能体运行框架都能通过一套配置使用相同的记忆，包括没有原生 Hindsight 集成的自定义框架。
+- 安装时只需添加一个可选扩展：`pip install "omnigent[memory]"`。
+- 在智能体的 YAML 规范中配置这些工具，设置 `HINDSIGHT_API_KEY`，之后由智能体决定何时召回和存入记忆。
+- 记忆会跨会话持久保存，并按智能体划分到不同记忆库；如果无法据此划分，则回退到按对话划分。
 
 ## 这与其他集成有何不同 {#what-makes-this-different-from-other-integrations}
 
-到目前为止，我们介绍的每个Hindsight集成都位于一个工具中：Cursor挂钩到VS Code的MCP层，Aider包装CLI，Zed使用其全局智能体规则。每个工具都适用于该工具，并且仅适用于该工具。
-到目前为止，我们所介绍的
+我们此前介绍的每种 Hindsight 集成都位于单个工具内部：Cursor 接入 VS Code 的 MCP 层，Aider 封装 CLI，Zed 使用全局智能体规则。每种集成都适用于对应的工具，也仅适用于该工具。
 
-Omnigent 是不同的，因为它位于 *以上* 工具中。它不关心下面的智能体调用哪个工具。当Omnigent中运行的智能体调用`hindsight_recall`时，Omnigent会在运行器级别拦截它，使用`hindsight-client`在本地执行它，并发送回结果。包裹的安全带，无论是Claude Code、Codex，还是定制的智能体，都不需要知道记忆是如何工作的。
+Omnigent 则位于这些工具之上。它不关心底层智能体调用的是哪种智能体运行框架。当在 Omnigent 中运行的智能体调用 `hindsight_recall` 时，Omnigent 会在运行器层拦截该调用，使用 `hindsight-client` 在本地执行，然后返回结果。无论被封装的是 Claude Code、Codex 还是自定义智能体，都不必了解记忆的工作方式。
 
-其中一些工具也有自己的本机Hindsight集成，当您单独运行该工具时，它们非常出色。 Omnigent 路径的要点是您配置记忆​​**一次，集中**，它适用于您编排的每个线束，以及根本没有本机选项的线束。一套 Hindsight 设置，任何安全带。那是通用记忆桥。
+其中一些智能体运行框架也有自己的原生 Hindsight 集成；单独运行相应工具时，这些集成都很出色。使用 Omnigent 的意义在于：只需**集中配置一次记忆**，就能应用到你编排的每种智能体运行框架，也能覆盖没有原生选项的框架。一套 Hindsight 配置，适用于任何智能体运行框架。这就是通用记忆桥接层。
 
 ## 安装 {#install}
 
-记忆工具是可选的额外功能，因此您只需提取您需要的内容：
+记忆工具属于可选扩展，因此只需安装所需的功能：
 
 ```bash
 pip install "omnigent[memory]"
 ```
 
-这将添加 `hindsight-client>=0.4.0` 作为唯一的依赖项。您还需要 [Hindsight Cloud](https://hindsight.vectorize.io) 仪表板中的 API 密钥（或指向自托管服务器）：
+这会添加唯一的依赖项 `hindsight-client>=0.4.0`。你还需要从 [Hindsight Cloud](https://hindsight.vectorize.io) 控制台获取 API 密钥（也可以将其指向自托管服务器）：
 
 ```bash
 export HINDSIGHT_API_KEY=hsk_...
 ```
 
-## 连接智能体规范中的工具 {#wire-up-the-tools-in-your-agent-spec}
+## 在智能体规范中配置工具 {#wire-up-the-tools-in-your-agent-spec}
 
-Omnigent智能体在YAML中定义。添加`tools.builtins`下的三个工具：
+Omnigent 智能体使用 YAML 定义。在 `tools.builtins` 下添加这三个工具：
 
 ```yaml
 name: my-agent
-#...你的智能体规格的其余部分
+# ...智能体规范的其余部分
 
 tools:
   builtins:
     - name: hindsight_recall
       api_key: ${HINDSIGHT_API_KEY}
-      bank_id: my-agent-memory      #可选；默认为agent_id
+      bank_id: my-agent-memory      # 可选；默认使用 agent_id
       budget: mid                   # low / mid / high
       max_tokens: 4096
 
@@ -73,11 +72,11 @@ tools:
       bank_id: my-agent-memory
 ```
 
-这就是整个设置。下次运行时，智能体的工具列表中将提供这三个工具。
+配置就完成了。下次运行时，这三个工具就会出现在智能体的工具列表中。
 
-## 工具如何工作 {#how-the-tools-work}
+## 工具的工作方式 {#how-the-tools-work}
 
-连接后，智能体会显式调用工具。这是经过深思熟虑的：Omnigent赋予智能体能力，由智能体决定何时使用它。标准模式是将其包含在您的智能体的系统指令中：
+配置完成后，智能体会显式调用这些工具。这是有意如此：Omnigent 为智能体提供能力，由智能体决定何时使用。常见做法是在智能体的系统指令中加入以下内容：
 
 ```
 - At the start of each task, call hindsight_recall with the user's request
@@ -87,37 +86,37 @@ tools:
 - Call hindsight_reflect to synthesize what you know about a topic across sessions.
 ```
 
-**`hindsight_recall`** 对您的记忆库运行语义搜索，并返回与当前消息最相关的记忆。 `budget`和`max_tokens`设置控制返回多少记忆令牌。
+**`hindsight_recall`** 会在记忆库中执行语义检索，并返回与当前消息最相关的记忆。`budget` 和 `max_tokens` 设置共同控制返回的记忆 token 数量。
 
-**`hindsight_retain`** 将一条信息存储到记忆库中。智能体决定什么值得保留；如果您稍后想要更细粒度的过滤，可以在配置中使用 `tags` 进行控制。
+**`hindsight_retain`** 会将一条信息存入记忆库。由智能体判断哪些内容值得保留；如果之后需要更精细地筛选，可以在配置中使用 `tags`。
 
-**`hindsight_reflect`**从记忆库中积累的观察中综合得出答案。对于“我们对 X 了解多少？”很有用。跨越许多过去会话的查询。
+**`hindsight_reflect`** 会根据记忆库中累积的观测综合生成答案。对于“我们对 X 了解多少？”这类需要综合多个过往会话的查询很有用。
 
-### 记忆库范围如何运作 {#how-bank-scoping-works}
+### 记忆库范围的划分方式 {#how-bank-scoping-works}
 
-记忆是根据记忆库隔离的。 Omnigent 解析按以下顺序使用哪个记忆库：
+记忆按记忆库隔离。Omnigent 会按以下顺序确定要使用的记忆库：
 
-1. 明确的`bank_id`在你的YAML配置（最可预测，推荐用于生产）。
-2. 智能体的`agent_id`：每个智能体一个记忆库，在智能体的所有对话中共享。
-3. `conversation_id`：每个对话一个记忆库。新的对话解析为新的记忆库，因此记忆不会跨对话进行（早期的记忆库仍然存在，只是不再被引用）。
+1. YAML 配置中显式指定的 `bank_id`（最明确，建议用于生产环境）。
+2. 智能体的 `agent_id`：每个智能体使用一个记忆库，该库由此智能体的所有对话共享。
+3. `conversation_id`：每个对话使用一个记忆库。新对话会对应一个新记忆库，因此记忆不会跨对话延续（早先的记忆库仍然存在，只是不再被引用）。
 
-如果您在Omnigent中运行多个智能体并希望它们共享一个记忆（例如共享项目记忆库），请将它们全部指向同一个`bank_id`。
+如果你在 Omnigent 中运行多个智能体，并希望它们共享记忆（例如共享项目记忆库），就将它们全部指向同一个 `bank_id`。
 
-## 一个工作示例：Remy 智能体 {#a-working-example-the-remy-agent}
+## 完整示例：Remy 智能体 {#a-working-example-the-remy-agent}
 
-Omnigent 在 `examples/remy/config.yaml` 提供了完整的工作示例。雷米（Remy）是一位对话助理，所有三个记忆工具都已连接，并提供有关何时呼叫每个工具的说明。针对 Hindsight Cloud 运行它是一个命令：
+Omnigent 在 `examples/remy/config.yaml` 中提供了一个完整可运行的示例。Remy 是一款对话助手，已配置好全部三个记忆工具，并附有何时调用各工具的指令。通过一条命令即可让它连接 Hindsight Cloud 运行：
 
 ```bash
 HINDSIGHT_API_KEY=hsk_... omnigent run examples/remy
 ```
 
-几次对话后，尝试向 Remy 询问它在上一次会话中学到的东西。它针对你的问题调用`hindsight_recall`，找到相关的记忆，并从上下文中找到答案，如果记忆不存在，它就会丢失。
+与 Remy 对话几次后，可以问问它还记得上一次会话中学到的什么。它会针对你的问题调用 `hindsight_recall`，找到相关记忆，再根据上下文作答；如果没有记忆，这些上下文早已丢失。
 
-## 云或自托管 {#cloud-or-self-hosted}
+## 云端或自托管 {#cloud-or-self-hosted}
 
-对于**Hindsight Cloud**，您的规格中的`api_key`加上您的仪表板记忆库就是您所需要的。 API URL 默认为 `https://api.hindsight.vectorize.io`。
+使用 **Hindsight Cloud** 时，只需在规范中配置 `api_key`，并在控制台中创建记忆库。API URL 默认为 `https://api.hindsight.vectorize.io`。
 
-对于**自托管**服务器，覆盖配置中的URL：
+对于**自托管**服务器，可以在配置中覆盖 URL：
 
 ```yaml
 - name: hindsight_recall
@@ -125,54 +124,54 @@ HINDSIGHT_API_KEY=hsk_... omnigent run examples/remy
   bank_id: local-memory
 ```
 
-开放的本地服务器不需要令牌。
+开放访问的本地服务器不需要令牌。
 
-## 哪个利用好处 {#which-harnesses-benefit}
+## 哪些智能体运行框架适用 {#which-harnesses-benefit}
 
-任何线束Omnigent包装都可以获得记忆工具，无论线束是否有自己的Hindsight集成：
+Omnigent 封装的任何智能体运行框架都能使用这些记忆工具，无论该框架是否有自己的 Hindsight 集成：
 
-|安全带|原生 Hindsight 集成|经Omnigent|
+| 智能体运行框架 | 原生 Hindsight 集成 | 通过 Omnigent 使用 |
 |---|---|---|
-|Claude Code|是（官方）|是|
-|Cursor|是（官方）|是|
-|Codex|是（官方）|是|
-|OpenCode|是（官方）|是|
-|Pi|是（社区，通过 Epimetheus）|是|
-|定制安全带|通常没有|是|
+| Claude Code | 有（官方） | 有 |
+| Cursor | 有（官方） | 有 |
+| Codex | 有（官方） | 有 |
+| OpenCode | 有（官方） | 有 |
+| Pi | 有（社区提供，通过 epimetheus） | 有 |
+| 自定义智能体运行框架 | 通常没有 | 有 |
 
-大多数工具已经具有本机Hindsight集成，当您独立运行该工具时，每个工具都是一个不错的选择。 Omnigent 添加的是一个单一的中央记忆设置，适用于您一次编排的每个线束，并覆盖没有本机选项的自定义或内部线束。您可以在一个地方配置记忆，而不是每个工具一次。
+其中大多数框架已经有原生 Hindsight 集成，单独运行对应工具时都是不错的选择。Omnigent 提供的是一套集中配置的记忆，能同时用于你编排的每种框架，也覆盖没有原生选项的自定义或内部框架。你只需在一个地方配置记忆，无须为每种工具分别配置。
 
-## Omnigent 的工具与本机集成 {#omnigents-tools-vs-a-native-integration}
+## Omnigent 工具与原生集成 {#omnigents-tools-vs-a-native-integration}
 
-如果安全带有两种选择，您应该使用哪一种？每个记忆库选择一条路径。不要在同一个记忆库中启用工具的本机Hindsight集成**和**点Omnigent的记忆工具，否则您将获得两个记忆召回和记忆存储路径，将同一对话写入两次。
+如果某个智能体运行框架同时支持这两种方式，该选哪一种？每个记忆库只选择一种接入方式。不要同时启用工具的原生 Hindsight 集成，**又**让 Omnigent 的记忆工具指向同一记忆库，否则两条召回和存入路径会把同一段对话写入两次。
 
-权衡：
+两种方式各有取舍：
 
-- **原生集成** 通常是自动的。它挂钩工具自己的生命周期，因此记忆召回和记忆存储的发生无需智能体考虑，但它的范围仅限于该工具并针对每个工具进行配置。
-- **Omnigent的记忆工具** 是一个中央设置，适用于您编排的每个线束，但它们是智能体驱动的：智能体在其系统指令的指导下显式调用它们。
+- **原生集成**通常是自动的。它接入工具自身的生命周期，因此无需智能体主动决定何时召回和存入记忆；但它只适用于该工具，并且需要逐个工具配置。
+- **Omnigent 的记忆工具**只需集中配置一次，就能用于你编排的每种框架；但它们由智能体驱动，需要智能体在系统指令的引导下显式调用。
 
-​​一个简单的规则：当您单独运行该工具时，请使用该工具的本机集成；当您通过Omnigent编排多个线束并希望它们通过一个设置共享一个记忆时，请使用Omnigent的记忆工具。
+简单来说：单独运行某个工具时，使用它的原生集成；通过 Omnigent 编排多个框架并希望它们通过一套配置共享记忆时，使用 Omnigent 的记忆工具。
 
 ## 常见问题 {#frequently-asked-questions}
 
-**Omnigent会自动调用记忆召回和记忆存储吗？**
-没有。当智能体的系统指令要求时，智能体就会调用这些工具。这使行为保持透明：您可以阅读智能体规范并准确查看记忆操作何时发生。
+**Omnigent 会自动调用召回和存入工具吗？**
+不会。只有在智能体的系统指令要求时，智能体才会调用这些工具。这样行为是透明的：你可以查看智能体规范，准确了解记忆操作何时发生。
 
-**两个智能体可以共享一个记忆库吗？**
-是的。在两个智能体工具配置上设置相同的`bank_id`，它们会从同一个存储中读取和写入。一个智能体保留的事实可以通过记忆召回提供给另一个智能体。
+**两个智能体可以共用一个记忆库吗？**
+可以。在两个智能体的工具配置中设置相同的 `bank_id`，它们就会从同一存储中读取和写入记忆。一个智能体存入的事实，另一个智能体召回时也能获取。
 
-**更换安全带后记忆还能保存吗？**
-是的。记忆库存在于Hindsight中，而不是在安全带中。如果您将Omnigent智能体从Codex切换到Claude Code，记忆库就在原来的位置。
+**切换智能体运行框架后，记忆还会保留吗？**
+会。记忆库存储在 Hindsight 中，而不是智能体运行框架中。如果你将 Omnigent 智能体从 Codex 切换到 Claude Code，记忆库仍在原处。
 
-**`hindsight_reflect` 能做什么而`hindsight_recall` 不能？**
-记忆召回检索与特定查询相关的记忆。 未来综合积累的观察来推理一个主题，当你想要总结智能体在多次会话中学到的东西，而不仅仅是匹配一个查询的事实时，这很有用。 期望还通过 `response_schema` 字段支持结构化输出，并可以返回用于生成答案的底层事实。
+**`hindsight_reflect` 能做什么，而 `hindsight_recall` 做不到？**
+Recall 会检索与特定查询相关的记忆。Reflect 会综合累积的观测，对某个主题进行推理；如果你想了解智能体在多个会话中学到了什么，而不只是查找与单个查询匹配的事实，这种方式就很有用。Reflect 还支持通过 `response_schema` 字段指定结构化输出，也可以返回生成答案时所依据的底层事实。
 
-**我可以过滤记忆召回到特定主题或用户吗？**
-是的。 `recall_tags` 和 `recall_tags_match` 配置字段过滤考虑哪些记忆。在 `hindsight_retain` 上设置 `tags` 来标记存储的内容，并在 `hindsight_recall` 上设置 `recall_tags` 仅拉回与这些标签匹配的记忆。当一个记忆库服务于多个用户或项目时，这非常有用。
+**我可以只召回特定主题或用户的记忆吗？**
+可以。`recall_tags` 和 `recall_tags_match` 配置字段可以筛选纳入考虑的记忆。在 `hindsight_retain` 中设置 `tags`，为存入的内容添加标签；在 `hindsight_recall` 中设置 `recall_tags`，只召回匹配这些标签的记忆。当一个记忆库供多个用户或项目共用时，这种方式很有用。
 
-## 进一步阅读 {#further-reading}
+## 延伸阅读 {#further-reading}
 
-- [什么是智能体记忆？](https://vectorize.io/what-is-agent-memory)：记忆召回和保留背后的概念。
-- [每个AI工具一个记忆](/blog/2026/04/07/one-memory-for-every-ai-tool)：将多个智能体指向同一个记忆库。
-- [记忆存储内部()](/blog/2026/07/13/inside-retain-agent-memory)：当智能体调用`hindsight_retain`时，幕后会发生什么。
-- [Claude Code持久记忆](/blog/2026/05/06/claude-code-subagents-shared-memory)：如果您在Omnigent内运行Claude Code。
+- [什么是智能体记忆？](https://vectorize.io/what-is-agent-memory)：了解召回和存入背后的概念。
+- [让每种 AI 工具都拥有记忆](/blog/2026/04/07/one-memory-for-every-ai-tool)：让多个智能体使用同一个记忆库。
+- [深入了解 retain()：智能体记住信息时实际发生了什么](/blog/2026/07/13/inside-retain-agent-memory)：了解智能体调用 `hindsight_retain` 时幕后发生的事情。
+- [Claude Code 持久记忆](/blog/2026/05/06/claude-code-subagents-shared-memory)：了解如何在 Omnigent 中运行 Claude Code。

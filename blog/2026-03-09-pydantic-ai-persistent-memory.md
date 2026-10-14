@@ -1,5 +1,5 @@
 ---
-title: "Pydantic AI持久记忆：用5行代码添加它"
+title: "Pydantic AI 持久记忆：用 5 行代码接入"
 authors: [benfrank241]
 date: 2026-03-09T12:00
 tags: [memory, openai, anthropic, gemini, python, rust, agents, rag, vector, pydantic-ai, knowledge-graph, tutorial]
@@ -7,49 +7,48 @@ image: /img/blog/pydantic-ai-persistent-memory.webp
 hide_table_of_contents: true
 ---
 
-如果您使用[Pydantic AI](https://ai.pydantic.dev/)构建了AI智能体，您已经知道它可以很好地处理类型化输出、依赖项注入和异步工作流程。但有一件事它没有做：记住运行之间的任何事情。每次对 `agent.run()` 的调用都是从一张白纸开始的。你的智能体不知道用户昨天说了些什么，他们分享了什么偏好，或者它已经研究过什么。
+如果你使用 [Pydantic AI](https://ai.pydantic.dev/) 构建过 AI 智能体，就会知道它擅长处理类型化输出、依赖注入和异步工作流。但它有一项缺失：无法在多次运行之间记住信息。每次调用 `agent.run()` 都从空白状态开始。智能体不知道用户昨天说过什么、分享了哪些偏好，也不知道自己已经研究过什么。
 
-添加**Pydantic AI持久记忆**不需要构建自定义RAG管道或管理您自己的矢量数据库。通过`hindsight-pydantic-ai`集成，您可以通过Python的五行将长期记忆连接到任何Pydantic AI智能体中​​。本指南介绍了从安装到生产就绪模式的完整设置。
+为 Pydantic AI 添加**持久记忆**，不需要构建自定义 RAG 管道，也不必自行管理向量数据库。借助 `hindsight-pydantic-ai` 集成，只需 5 行 Python 代码，就能为任意 Pydantic AI 智能体接入长期记忆。本指南将介绍从安装到生产环境实践的完整配置过程。
 
 <!-- truncate -->
 
 ## 概览 {#tldr}
 
-- Pydantic AI没有内置的持久记忆。每次跑步，您的智能体都会从头开始。
-- `hindsight-pydantic-ai` 添加了记忆存储、记忆召回和反思工具以及自动注入的记忆指令。
-- 五行设置：创建客户端，调用`create_hindsight_tools()`，并将它们传递给你的智能体。
-每次运行时，
-- `memory_instructions()`都会默默地将相关记忆预加载到系统提示符中，因此智能体会根据上下文开始每次对话。
-- 可与任何模型提供商合作，包括OpenAI、Anthropic和Gemini。
+- Pydantic AI 没有内置持久记忆，每次运行时智能体都会从头开始。
+- `hindsight-pydantic-ai` 会添加 Retain（存入）、Recall（召回）和 Reflect（反思）工具，并自动注入记忆指令。
+- 只需 5 行即可完成设置：创建客户端、调用 `create_hindsight_tools()`，再将工具传给 Agent。
+- `memory_instructions()` 会在每次运行时静默地将相关记忆预先载入系统提示，让智能体在每次对话开始时就获得上下文。
+- 支持 OpenAI、Anthropic 和 Gemini 等各种模型服务提供方。
 
 ---
 
-## 问题：Pydantic AI没有持久记忆 {#the-problem-pydantic-ai-has-no-persistent-memory}
+## 问题：Pydantic AI 没有持久记忆 {#the-problem-pydantic-ai-has-no-persistent-memory}
 
-[Pydantic AI](https://ai.pydantic.dev/)是一个坚实的框架。类型化输出、依赖注入、异步原生设计和干净的工具API使其成为构建基于Python的智能体的流行选择。然而，它根本没有记忆层。
+[Pydantic AI](https://ai.pydantic.dev/) 是一个可靠的框架。类型化输出、依赖注入、原生异步设计和简洁的工具 API，使它成为构建 Python 智能体的热门选择。不过，它完全没有内置记忆层。
 
-每个`agent.run()`都从零开始。智能体不知道用户昨天说了什么。它不知道他们的喜好。它不知道它已经研究了什么。因此，在多个会话中与用户交互的智能体会丢失运行之间所有积累的上下文。
+每次调用 `agent.run()` 都从零开始。智能体不知道用户昨天说过什么、有什么偏好，也不知道自己已经研究过什么。因此，与用户跨多个会话交互的智能体会在每次运行之间丢失积累的上下文。
 
-您可以通过`message_history`在单个会话中继续对话。但这是聊天记录，而不是记忆。聊天记录并不概括事实。它不会合并重复的信息。它会线性增长，直到超过您的上下文窗口和令牌限制。
+你可以通过 `message_history` 在单个会话中延续对话，但那只是聊天历史，不是记忆。聊天历史不会归纳事实，也不会整合重复信息；它还会线性增长，直到超出上下文窗口和 token 限额。
 
-真正的智能体记忆意味着不同的东西：
+真正的智能体记忆意味着：
 
 - 从对话中提取结构化事实
-- 构建实体和关系的知识图谱
-- 检索几天、几周和几个月的相关上下文
-- 从分散的记忆中合成连贯的答案
+- 构建包含实体及其关系的知识图谱
+- 跨越数天、数周和数月检索相关上下文
+- 从零散记忆中综合生成连贯的答案
 
-这就是[Hindsight](https://hindsight.vectorize.io/)提供的。如果您将 Hindsight 与其他框架（如 [CrewAI](/blog/2026/03/02/crewai) 或 [OpenAI](/blog/2026/03/05/add-memory-to-openai-application)）一起使用，概念是相同的。并且`hindsight-pydantic-ai`将其直接连接到Pydantic AI的工具和指令系统中，因此您不需要自己构建任何这些。
+这正是 [Hindsight](https://hindsight.vectorize.io/) 提供的能力。如果你用过 Hindsight 与 [CrewAI](/blog/2026/03/02/crewai) 或 [OpenAI](/blog/2026/03/05/add-memory-to-openai-application) 等其他框架集成，原理是相同的。`hindsight-pydantic-ai` 会将这些能力直接接入 Pydantic AI 的工具和指令系统，因此你无需自行构建这一切。
 
 ---
 
-## Pydantic AI持久记忆如何与Hindsight配合使用 {#how-pydantic-ai-persistent-memory-works-with-hindsight}
+## Hindsight 如何为 Pydantic AI 提供持久记忆 {#how-pydantic-ai-persistent-memory-works-with-hindsight}
 
-在深入研究代码之前，它有助于了解当您通过 Hindsight 集成添加 Pydantic AI 持久记忆时，幕后会发生什么。
+开始写代码前，先了解通过 Hindsight 集成添加 Pydantic AI 持久记忆时，底层会发生什么。
 
-Hindsight是一个在本地或云端运行的记忆引擎。当您的智能体存储事实时，Hindsight不仅仅保存原始文本。相反，它提取结构化实体和关系，构建知识图，并为多策略检索的所有内容建立索引。这意味着当你的智能体稍后搜索记忆时，它可以通过语义搜索、BM25关键字匹配、图遍历和时间排名等组合来找到相关信息。
+Hindsight 是一个可在本地或云端运行的记忆引擎。智能体存储事实时，Hindsight 不会只保存原始文本，而是会提取结构化实体和关系、构建知识图谱，并为所有内容建立索引，以支持多策略检索。这样，智能体日后搜索记忆时，就能结合语义检索、BM25 关键词匹配、图遍历和时间排序来查找相关信息。
 
-`hindsight-pydantic-ai`包通过两个集成点将该引擎连接到Pydantic AI：
+`hindsight-pydantic-ai` 通过两个集成点将这个引擎接入 Pydantic AI：
 
 ```
 Pydantic AI Agent
@@ -62,19 +61,19 @@ Pydantic AI Agent
         |-- auto-recalls relevant memories into the system prompt
 ```
 
-**工具** 让智能体在对话期间显式存储和检索记忆。 **使用说明**在智能体开始思考之前就默默地注入相关记忆。两者都是可选的。您可以根据您的用例使用其中之一，或同时使用两者。
+**工具**让智能体在对话过程中显式存储和检索记忆。**指令**则会在智能体开始思考之前静默注入相关记忆。两者都是可选的，你可以根据使用场景选择其中一个或同时使用。
 
-这些工具是直接调用Hindsight的API的异步函数。由于 Pydantic AI 是异步原生的，因此闭包使用 `aretain()`、`arecall()` 和 `areflect()`。不需要线程池黑客或兼容性层。如果您更喜欢基于协议的方法，也可以使用 [Hindsight的MCP记忆服务器](/blog/2026/03/04/mcp-agent-memory) 而不是直接工具集成。
+这些工具是直接调用 Hindsight API 的异步函数。由于 Pydantic AI 原生支持异步，闭包会使用 `aretain()`、`arecall()` 和 `areflect()`。无需使用线程池技巧或兼容层。如果你更倾向于基于协议的方式，也可以使用 [Hindsight 的 MCP 记忆服务器](/blog/2026/03/04/mcp-agent-memory)，而不是直接集成工具。
 
 ---
 
-## 设置Pydantic AI 5个步骤实现持久记忆 {#setting-up-pydantic-ai-persistent-memory-in-5-steps}
+## 5 步为 Pydantic AI 接入持久记忆 {#setting-up-pydantic-ai-persistent-memory-in-5-steps}
 
-设置过程大约需要五分钟。您将安装Hindsight，添加Pydantic AI记忆集成包，将工具连接到您的智能体中，并测试记忆在会话中是否持久。
+整个配置过程大约需要 5 分钟。你将安装 Hindsight 和 Pydantic AI 记忆集成包，把工具接入智能体，并测试记忆能否跨会话保留。
 
-### 第1步：安装并启动Hindsight {#step-1-install-and-start-hindsight}
+### 第 1 步：安装并启动 Hindsight {#step-1-install-and-start-hindsight}
 
-首先，安装Hindsight服务器并在本地启动：
+首先安装 Hindsight 服务器，并在本地启动：
 
 ```bash
 pip install hindsight-all
@@ -85,29 +84,29 @@ export HINDSIGHT_API_LLM_API_KEY=YOUR_OPENAI_KEY
 hindsight-api
 ```
 
-这在`http://localhost:8888`本地运行。它包括嵌入式Postgres、本地嵌入和本地重排序。除了用于实体提取的 LLM API 密钥之外，不需要任何外部服务。
+服务将在本地的 `http://localhost:8888` 运行，内含嵌入式 Postgres、本地嵌入模型和本地重排序。除用于实体提取的 LLM API 密钥外，无需依赖外部服务。
 
-> **注意：** 您还可以使用 [Hindsight Cloud](https://ui.hindsight.vectorize.io) 并完全跳过自托管设置。云版本提供相同的API以及托管基础设施。
+> **注意：** 你也可以使用 [Hindsight Cloud](https://ui.hindsight.vectorize.io)，完全跳过自托管配置。云版本提供相同的 API，并由托管基础设施支持。
 
-### 第2步：安装Pydantic AI记忆集成 {#step-2-install-the-pydantic-ai-memory-integration}
+### 第 2 步：安装 Pydantic AI 记忆集成 {#step-2-install-the-pydantic-ai-memory-integration}
 
-接下来，安装集成包：
+接下来安装集成包：
 
 ```bash
 pip install hindsight-pydantic-ai
 ```
 
-你还需要一个模型提供者。对于 OpenAI：
+你还需要一个模型服务提供方。若使用 OpenAI：
 
 ```bash
 pip install "pydantic-ai-slim[openai]"
 ```
 
-其他提供商的工作方式相同。根据需要交换 `[anthropic]` 或 `[google]`。 Pydantic AI 持久记忆集成与模型无关，因此无论您选择哪个 LLM，记忆层的工作方式都是相同的。 Hindsight支持[100+ LLM 通过 LiteLLM 提供者](/blog/2026/03/03/litellm)。
+其他服务提供方的配置方式相同，按需替换为 `[anthropic]` 或 `[google]`。Pydantic AI 持久记忆集成与模型无关，因此无论选择哪种 LLM，记忆层的工作方式都相同。Hindsight 通过 LiteLLM 支持 [100 多种 LLM 服务提供方](/blog/2026/03/03/litellm)。
 
-### 第 3 步：为您的 Pydantic AI 智能体添加持久记忆工具 {#step-3-add-persistent-memory-tools-to-your-pydantic-ai-agent}
+### 第 3 步：为 Pydantic AI 智能体添加持久记忆工具 {#step-3-add-persistent-memory-tools-to-your-pydantic-ai-agent}
 
-这里是五行的来源。创建一个Hindsight客户端，生成Pydantic AI持久记忆工具，并将它们传递给您的智能体：
+下面就是 5 行代码的部分：创建 Hindsight 客户端，生成 Pydantic AI 持久记忆工具，再将它们传给智能体：
 
 ```python
 from hindsight_client import Hindsight
@@ -122,45 +121,45 @@ agent = Agent(
 )
 ```
 
-这是完整的Pydantic AI持久记忆设置。智能体现在拥有三种工具：
+以上就是 Pydantic AI 持久记忆的完整配置。现在，智能体有了三个工具：
 
-- `hindsight_retain(content)` 将信息存储到长期记忆中
-- `hindsight_recall(query)` 搜索记忆并返回匹配的事实
-- `hindsight_reflect(query)` 从所有相关记忆中综合出一个合理的答案
+- `hindsight_retain(content)`：将信息存入长期记忆
+- `hindsight_recall(query)`：搜索记忆并返回匹配的事实
+- `hindsight_reflect(query)`：基于所有相关记忆进行推理，综合生成答案
 
-智能体根据对话上下文决定何时使用每个工具。您不需要手动调用它们。
+智能体会根据对话上下文决定何时使用各个工具，你不需要手动调用它们。
 
-### 第四步：测试跨会话记忆 {#step-4-test-cross-session-memory}
+### 第 4 步：测试跨会话记忆 {#step-4-test-cross-session-memory}
 
-运行两个单独的对话，以验证Pydantic AI智能体记忆在会话中持续存在：
+运行两次独立对话，验证 Pydantic AI 智能体能否跨会话保留记忆：
 
 ```python
 import asyncio
 
 async def main():
-    #第一次对话
+    # 第一次对话
     r1 = await agent.run(
-        "记住我更喜欢函数式编程模式"
-        "我正在Python构建数据管道。"
+        "Remember that I prefer functional programming patterns "
+        "and I'm building a data pipeline in Python."
     )
     print(r1.output)
 
-    #后来的对话——智能体回忆上下文
-    r2 = await agent.run("我应该采取什么方法来处理错误？")
+    # 稍后的对话——智能体召回上下文
+    r2 = await agent.run("What approach should I take for error handling?")
     print(r2.output)
 
 asyncio.run(main())
 ```
 
-在第一次运行中，智能体通过`hindsight_retain`存储偏好。在第二次运行中，智能体调用`hindsight_recall`来查找相关上下文。然后，它根据其所知提供建议：功能模式、Python、数据管道。
+第一次运行时，智能体会通过 `hindsight_retain` 存储这些偏好。第二次运行时，它会调用 `hindsight_recall` 查找相关上下文，然后根据已知信息给出建议：函数式编程模式、Python 和数据管道。
 
-这是Pydantic AI持久记忆的核心优势：它可以跨运行、跨天、跨进程重新启动。记忆存在于Hindsight的知识图中，而不是智能体的上下文窗口中。即使您完全重新启动Python进程，智能体也会从中断处继续。
+这就是 Pydantic AI 持久记忆的核心优势：记忆可以跨运行、跨天保留，即使进程重启也不会丢失。记忆存储在 Hindsight 的知识图谱中，而不是智能体的上下文窗口里。即使完全重启 Python 进程，智能体也能接续之前的状态。
 
-### 第5步：使用Pydantic AI指令自动注入记忆 {#step-5-auto-inject-memories-with-pydantic-ai-instructions}
+### 第 5 步：通过 Pydantic AI 指令自动注入记忆 {#step-5-auto-inject-memories-with-pydantic-ai-instructions}
 
-上述工具需要智能体自行决定搜索记忆。有时，您希望在智能体开始响应之前自动注入Pydantic AI持久记忆。
+上面的工具需要智能体自行决定是否搜索记忆。有时，你可能希望在智能体开始响应前自动注入持久记忆。
 
-Pydantic AI 的 `instructions` 参数支持在每个 `agent.run()` 上运行的异步可调用对象。这非常适合记忆注入：
+Pydantic AI 的 `instructions` 参数支持异步可调用对象，并会在每次 `agent.run()` 时运行。这正适合用于注入记忆：
 
 ```python
 from hindsight_pydantic_ai import create_hindsight_tools, memory_instructions
@@ -172,32 +171,32 @@ agent = Agent(
 )
 ```
 
-现在每次运行时，`memory_instructions`都会调用Hindsight的记忆召回API并将相关记忆注入系统提示符中。智能体开始与用户上下文的每次对话，而不需要工具调用。
+现在，每次运行时，`memory_instructions` 都会调用 Hindsight 的 Recall API，并把相关记忆注入系统提示。智能体在每次对话开始时就能获得用户相关上下文，无需调用工具。
 
-您可以自定义查询、结果计数和前缀来控制注入的内容：
+你可以自定义查询、结果数量和前缀，以控制注入的内容：
 
 ```python
 memory_instructions(
     client=client,
     bank_id="user-123",
-    query="用户偏好、历史记录和上下文",
+    query="user preferences, history, and context",
     max_results=10,
-    prefix="以下是你已知的用户信息：\n",
+    prefix="Here is what you know about this user:\n",
 )
 ```
 
-如果记忆召回失败或不返回任何内容，则指令函数返回空字符串。它永远不会阻止智能体做出响应。
+如果 Recall 失败或没有返回结果，指令函数就会返回空字符串，不会阻止智能体作答。
 
 ---
 
-## 高级Pydantic AI记忆配置 {#advanced-pydantic-ai-memory-configuration}
+## 高级 Pydantic AI 记忆配置 {#advanced-pydantic-ai-memory-configuration}
 
 ### 选择要包含的记忆工具 {#selecting-which-memory-tools-to-include}
 
-您并不总是需要所有三种持久记忆工具。 `create_hindsight_tools` 让您选择要包含的内容：
+你不一定需要全部三个持久记忆工具。`create_hindsight_tools` 可以让你选择要包含哪些工具：
 
 ```python
-#只读智能体：可以搜索记忆但不能写入
+# 只读智能体：可以搜索记忆，但不能写入
 tools = create_hindsight_tools(
     client=client,
     bank_id="user-123",
@@ -206,7 +205,7 @@ tools = create_hindsight_tools(
     include_reflect=True,
 )
 
-#只写智能体：存储数据但不查询
+# 只写智能体：可以存入数据，但不查询
 tools = create_hindsight_tools(
     client=client,
     bank_id="user-123",
@@ -216,29 +215,29 @@ tools = create_hindsight_tools(
 )
 ```
 
-这种灵活性在多智能体架构中非常有用。例如，您可能有一个Pydantic AI智能体，它收集信息并写入持久记忆，而另一个智能体则读取记忆来回答问题。拆分读取和写入访问权限可以使每个智能体专注于其角色，并防止只应消耗上下文的智能体进行意外的记忆写入。
+这种灵活性适用于多智能体架构。例如，一个 Pydantic AI 智能体可以负责收集信息并写入持久记忆，另一个智能体则读取记忆来回答问题。将读写权限分开，能让每个智能体专注于自己的职责，也能避免本应只读取上下文的智能体意外写入记忆。
 
-### 多种智能体的全局配置 {#global-configuration-for-multiple-agents}
+### 为多个智能体配置全局设置 {#global-configuration-for-multiple-agents}
 
-如果您有多个Pydantic AI智能体共享同一个Hindsight持久记忆实例，请使用全局配置而不是在各处传递`client`：
+如果多个 Pydantic AI 智能体共享同一个 Hindsight 持久记忆实例，可以使用全局配置，省去在各处传递 `client`：
 
 ```python
 from hindsight_pydantic_ai import configure, create_hindsight_tools
 
 configure(hindsight_api_url="http://localhost:8888", api_key="YOUR_KEY")
 
-#不需要客户端：工具使用全局配置
+# 无需客户端：工具使用全局配置
 agent1_tools = create_hindsight_tools(bank_id="agent-1")
 agent2_tools = create_hindsight_tools(bank_id="agent-2")
 ```
 
-显式`client=`参数始终优先于全局配置。这使您可以在需要时基于每个智能体进行覆盖。
+显式传入的 `client=` 始终优先于全局配置，因此你可以为单个智能体覆盖设置。
 
 ---
 
-## Pydantic AI持久记忆的完整工作示例 {#full-working-example-of-pydantic-ai-persistent-memory}
+## Pydantic AI 持久记忆完整示例 {#full-working-example-of-pydantic-ai-persistent-memory}
 
-将其另存为`memory_agent.py`并运行它以查看Pydantic AI持久记忆的作用：
+将以下代码保存为 `memory_agent.py` 并运行，即可体验 Pydantic AI 持久记忆：
 
 ```python
 import asyncio
@@ -252,7 +251,7 @@ BANK_ID = "demo-user"
 
 async def main():
     client = Hindsight(base_url="http://localhost:8888")
-    await client.acreate_bank(bank_id=BANK_ID, name="演示用户记忆")
+    await client.acreate_bank(bank_id=BANK_ID, name="Demo User Memory")
 
     agent = Agent(
         "openai:gpt-4o-mini",
@@ -260,90 +259,90 @@ async def main():
         instructions=[memory_instructions(client=client, bank_id=BANK_ID)],
     )
 
-    print("--- 运行 1：教授智能体 ---")
+    print("--- Run 1: Teaching the agent ---")
     r1 = await agent.run(
-        "记住：我是一名后端工程师。我使用 Python 和 Rust。"
-        "与大型框架相比，我更喜欢小型、可组合的库。"
+        "Remember: I'm a backend engineer. I use Python and Rust. "
+        "I prefer small, composable libraries over large frameworks."
     )
     print(f"Agent: {r1.output}\n")
 
-    print("--- 运行 2：智能体回忆上下文 ---")
-    r2 = await agent.run("为我的下一个项目推荐一个网络框架。")
+    print("--- Run 2: Agent recalls context ---")
+    r2 = await agent.run("Recommend a web framework for my next project.")
     print(f"Agent: {r2.output}\n")
 
-    print("--- 运行3：智能体合成---")
-    r3 = await agent.run("你对我的工程理念了解多少？")
+    print("--- Run 3: Agent synthesizes ---")
+    r3 = await agent.run("What do you know about my engineering philosophy?")
     print(f"Agent: {r3.output}")
 
 
 asyncio.run(main())
 ```
 
-运行它：
+运行代码：
 
 ```bash
 export OPENAI_API_KEY=YOUR_KEY
 python memory_agent.py
 ```
 
-第一次执行完成后再次运行。智能体会记住第一次会话中的所有内容，因为Pydantic AI持久记忆将事实存储在Hindsight中，而不是在过程中。
+第一次执行完成后，再运行一次。智能体会记住首次会话中的所有内容，因为 Pydantic AI 持久记忆把事实存储在 Hindsight 中，而不是当前进程中。
 
 ---
 
-## Pydantic AI 持久记忆：陷阱和边缘情况 {#pydantic-ai-persistent-memory-pitfalls-and-edge-cases}
+## Pydantic AI 持久记忆：注意事项与边缘情况 {#pydantic-ai-persistent-memory-pitfalls-and-edge-cases}
 
-**记忆库ID冲突。** 每个`bank_id` 都是一个单独的持久记忆存储。如果两个不相关的智能体共享一个记忆库，它们的记忆就会以意想不到的方式融合。每个用户、每个智能体或每个项目使用唯一的记忆库 ID。
+**记忆库 ID 冲突。** 每个 `bank_id` 都对应一个独立的持久记忆存储。如果两个互不相关的智能体共用一个记忆库，它们的记忆可能会以意料之外的方式混在一起。请为每个用户、智能体或项目使用不同的记忆库 ID。
 
-**指令延迟。** `memory_instructions` 在每个 `agent.run()` 上调用记忆召回 API。对于延迟敏感的应用程序，请使用`budget="low"`和较小的`max_results`。或者，完全跳过自动记忆注入，仅在需要时依靠智能体调用记忆召回工具。在大多数情况下，持久记忆查找会增加 50-200 毫秒的延迟，具体取决于记忆大小和网络条件。
+**指令导致的延迟。** `memory_instructions` 会在每次 `agent.run()` 时调用 Recall API。对延迟敏感的应用可以使用 `budget="low"` 并减少 `max_results`。也可以完全跳过自动注入记忆，只在需要时由智能体调用 Recall 工具。在大多数情况下，持久记忆查询会额外增加 50–200 ms 延迟，具体取决于记忆量和网络状况。
 
-**重复的记忆。** 如果智能体多次存储相同的信息，Hindsight 在事实级别进行重复数据删除。然而，最好在系统提示中向智能体提供关于何时存储新事实以及何时跳过的明确指导。
+**重复记忆。** 如果智能体多次存储同一信息，Hindsight 会在事实层面去重。不过，最好还是在系统提示中明确指导智能体何时存储新事实、何时跳过。
 
-**异步事件循环冲突。** 同步 `create_bank()` 方法在 `asyncio.run()` 中不起作用，因为它尝试创建嵌套事件循环。始终在异步代码中使用 `await client.acreate_bank()`。这是一个常见的 Python 异步陷阱，并非特定于 Hindsight 或 Pydantic AI 持久记忆。
-
----
-
-## Pydantic AI 记忆：权衡和替代方案 {#pydantic-ai-memory-tradeoffs-and-alternatives}
-
-### 当Pydantic AI持久记忆有意义时 {#when-pydantic-ai-persistent-memory-makes-sense}
-
-Pydantic AI Hindsight 的持久记忆最适合在多个会话中与同一用户或上下文交互的智能体。好的用例包括个人助理、支持机器人、积累知识的研究智能体，以及任何记住过去交互的Python智能体，随着时间的推移，可以提高质量。
-
-### 何时不使用它 {#when-not-to-use-it}
-
-跳过智能体持久记忆，以获得不再运行的一次性智能体、无状态API处理程序（其中每个请求都是独立的），或者您想要完全控制提示中的内容的智能体。在最后一种情况下，直接使用 Hindsight Python 客户端而不是 Pydantic AI 集成。
-
-### 与替代品相比如何 {#how-it-compares-to-alternatives}
-
-|方法|优势|弱点|最适合|
-|---|---|---|---|
-|**Hindsight + Pydantic AI**|多策略检索（语义+BM25+图+时态）、结构化事实提取、合成引擎|需要运行 Hindsight 服务器或使用云|需要深度记忆的多会话智能体|
-|**手动消息_历史记录**|内置于Pydantic AI，无额外依赖|不概括事实，增长直至上下文窗口限制|简短的单会话对话|
-|**自定义矢量存储+RAG**|完全控制嵌入和检索|您自己管理分块、索引和检索|具有现有矢量基础设施的团队|
-|**Mem0**|另一种外部记忆选项，简单API|较少的检索策略，没有基于图形的记忆召回|没有实体关系的更简单的记忆需求|
-
-正确的选择取决于您的要求。对于大多数需要以最少的设置跨会话保持记忆的Pydantic AI智能体来说，Hindsight集成提供了最快的生产路径。
+**异步事件循环冲突。** 同步方法 `create_bank()` 不能在 `asyncio.run()` 内使用，因为它会尝试创建嵌套事件循环。在异步代码中始终使用 `await client.acreate_bank()`。这是常见的 Python 异步编程陷阱，并非 Hindsight 或 Pydantic AI 持久记忆特有的问题。
 
 ---
 
-## 回顾：Pydantic AI 持久记忆整合 {#recap-pydantic-ai-persistent-memory-integration}
+## Pydantic AI 记忆：权衡与替代方案 {#pydantic-ai-memory-tradeoffs-and-alternatives}
 
-添加Pydantic AI持久记忆不需要复杂的基础设施或自定义检索管道。 `hindsight-pydantic-ai`集成提供了两个涵盖完整智能体记忆生命周期的功能：
+### 适合使用 Pydantic AI 持久记忆的场景 {#when-pydantic-ai-persistent-memory-makes-sense}
 
-- **`create_hindsight_tools()`** 返回智能体调用的异步工具，以跨会话存储和检索知识
-- **`memory_instructions()`** 在每次运行时自动注入相关记忆，因此智能体从上下文开始，无需调用工具
+对于需要跨多个会话与同一用户或同一上下文交互的智能体，Pydantic AI 与 Hindsight 的持久记忆最为适用。典型场景包括个人助理、客服机器人、需要积累知识的研究智能体，以及任何能通过记住过去交互来逐步提升质量的 Python 智能体。
 
-集成在设计上是最小的。两个函数，没有子类化，没有改变你的 deps 类型。只是连接到真正的记忆引擎的Pydantic AI工具和指令。
+### 不适合使用的场景 {#when-not-to-use-it}
 
-记忆会在流程重新启动后继续存在，随着时间的推移构建知识图，并随着您的智能体对每个用户的更多了解而增值。为了Python开发商大楼Pydantic AI需要持久记忆的智能体，这是从无状态到有状态的最简单路径。
+对于只运行一次的智能体、每个请求彼此独立的无状态 API 处理程序，或需要完全控制提示中包含哪些内容的智能体，不必使用持久记忆。最后一种情况下，可以直接使用 Hindsight Python 客户端，而不接入 Pydantic AI 集成。
+
+### 与替代方案的比较 {#how-it-compares-to-alternatives}
+
+| 方案 | 优势 | 不足 | 适用场景 |
+| --- | --- | --- | --- |
+| **Hindsight + Pydantic AI** | 多策略检索（语义检索、BM25、图检索和时间检索）、结构化事实提取、综合生成引擎 | 需要运行 Hindsight 服务器或使用云服务 | 需要深入记忆能力的多会话智能体 |
+| **手动使用 `message_history`** | Pydantic AI 内置，无需额外依赖 | 不会归纳事实，历史会不断增长，直至达到上下文窗口上限 | 简短的单会话对话 |
+| **自定义向量存储 + RAG** | 可完全控制嵌入和检索 | 需要自行管理分块、索引和检索 | 已有向量基础设施的团队 |
+| **Mem0** | 另一种外部记忆方案，API 简单 | 检索策略较少，不支持基于图的 Recall | 不需要实体关系的简单记忆场景 |
+
+应根据需求选择方案。对于大多数需要以最少配置实现跨会话持久记忆的 Pydantic AI 智能体，Hindsight 集成提供了最快的生产落地路径。
+
+---
+
+## 回顾：Pydantic AI 持久记忆集成 {#recap-pydantic-ai-persistent-memory-integration}
+
+为 Pydantic AI 添加持久记忆，不需要复杂的基础设施或自定义检索管道。`hindsight-pydantic-ai` 集成通过两个函数覆盖智能体记忆的完整生命周期：
+
+- **`create_hindsight_tools()`** 返回异步工具，供智能体调用，以便跨会话存储和检索知识。
+- **`memory_instructions()`** 会在每次运行时自动注入相关记忆，让智能体带着上下文开始工作，无需调用工具。
+
+该集成刻意保持轻量：只需两个函数，无须子类化，也不必修改 deps 类型。只需使用 Pydantic AI 工具和指令，即可连接到真正的记忆引擎。
+
+记忆不会因进程重启而丢失，并会随着时间推移构建知识图谱；智能体对每位用户了解得越多，记忆的价值也会不断累积。对于需要持久记忆的 Pydantic AI 智能体开发者来说，这是从无状态转向有状态的最简单路径。
 
 ---
 
 ## 后续步骤 {#next-steps}
 
-- **本地尝试**: `pip install hindsight-all hindsight-pydantic-ai "pydantic-ai-slim[openai]"` 并运行上面的示例
-- **使用Hindsight Cloud**：使用 [免费帐户](https://ui.hindsight.vectorize.io) 跳过自托管
-- **标记记忆以确定范围**：在记忆存储上使用`tags`，在搜索上使用`recall_tags`，按项目、环境或主题对记忆进行分区
-- **结合工具和说明**：使用`memory_instructions`作为自动上下文和在对话期间显式存储和检索的工具
-- **阅读Pydantic AI文档**：了解更多[Pydantic AI工具和说明](https://ai.pydantic.dev/tools/)，进一步拓展你的智能体
-- **探索其他集成**：通过[MCP](/blog/2026/03/04/mcp-agent-memory)将记忆添加到[CrewAI智能体](/blog/2026/03/02/crewai)、[OpenAI 应用程序](/blog/2026/03/05/add-memory-to-openai-application)或任何框架
-- **检查知识图谱**：运行Hindsight控制平面或使用[云仪表板](https://ui.hindsight.vectorize.io)浏览提取的事实、实体和关系
+- **本地试用**：运行 `pip install hindsight-all hindsight-pydantic-ai "pydantic-ai-slim[openai]"`，然后执行上面的示例。
+- **使用 Hindsight Cloud**：注册[免费账户](https://ui.hindsight.vectorize.io)，跳过自托管配置。
+- **通过标签划分记忆范围**：在 Retain 时使用 `tags`，在搜索时使用 `recall_tags`，按项目、环境或主题划分记忆。
+- **组合使用工具和指令**：使用 `memory_instructions` 自动注入上下文，并在对话过程中通过工具显式存入和检索记忆。
+- **阅读 Pydantic AI 文档**：深入了解 [Pydantic AI 工具和指令](https://ai.pydantic.dev/tools/)，进一步扩展智能体能力。
+- **探索其他集成**：为 [CrewAI 智能体](/blog/2026/03/02/crewai)、[OpenAI 应用](/blog/2026/03/05/add-memory-to-openai-application)，或通过 [MCP](/blog/2026/03/04/mcp-agent-memory) 为任意框架接入记忆。
+- **查看知识图谱**：运行 Hindsight 控制台，或使用[云端控制台](https://ui.hindsight.vectorize.io)，浏览提取出的事实、实体和关系。

@@ -1,84 +1,79 @@
 ---
-title: "Hindsight 现在是 Hermes 桌面应用程序中的一键记忆提供程序"
+title: "Hindsight 现已成为 Hermes 桌面应用中的一键式记忆提供方"
 authors: [benfrank241]
 slug: "2026/06/22/hermes-desktop-memory-provider"
 date: 2026-06-22T12:00
 tags: [hermes, memory, hindsight, desktop, integration, release]
-description: "Hermes智能体的桌面应用程序现在允许您选择Hindsight作为您的记忆提供程序并完全在应用程序内配置它 - 选择一种模式，粘贴API键，完成。没有配置文件，没有 .env 编辑。它是唯一拥有完整设置面板的记忆后端。"
+description: "Hermes 智能体的桌面应用现在支持选择 Hindsight 作为记忆提供方，并可完全在应用内完成配置：选择模式、粘贴 API 密钥，即可使用。无需配置文件，也无需编辑 .env。它还是唯一拥有完整设置面板的记忆后端。"
 image: /img/blog/hermes-desktop-memory-provider.webp
 hide_table_of_contents: true
 ---
 
-![Hindsight现在是Hermes桌面应用程序中的一键式记忆提供程序](/img/blog/hermes-desktop-memory-provider.webp)
+![Hindsight 现已成为 Hermes 桌面应用中的一键式记忆提供方](/img/blog/hermes-desktop-memory-provider.webp)
 
-:::info 自这篇文章以来设置已更改
-Hindsight 不再与 Hermes 捆绑在一起。 Nous Research 将所有记忆提供者从
-Hermes 核心树，因此新安装现在运行之前的 `hermes plugins install hindsight`
-`hermes memory setup`。现有设置会自行迁移。参见
-[Hindsight 成为Hermes 插件后有何变化](/blog/2026/10/01/hindsight-hermes-plugin-what-changed)。
+:::info 自本文发布后，设置方式已有变化
+Hindsight 不再与 Hermes 捆绑。Nous Research 已将所有记忆提供方移出 Hermes 核心代码库，因此新安装时需要先运行 `hermes plugins install hindsight`，再运行 `hermes memory setup`。已有安装会自动迁移。请参阅[Hindsight 成为 Hermes 插件后有何变化](/blog/2026/10/01/hindsight-hermes-plugin-what-changed)。
 :::
 
-[Hermes智能体](https://github.com/NousResearch/hermes-agent) 将Hindsight 作为[本地记忆提供者
-Nous Research 的](https://hindsight.vectorize.io/blog/2026/04/06/hermes-native-memory-provider) 一段时间了。到目前为止，配置它意味着编辑 `config.json` 或将密钥放入 `.env` 中。如果你住在终端里那就没问题了。如果你不这样做，那就是一堵墙。
+Nous Research 开发的 [Hermes Agent](https://github.com/NousResearch/hermes-agent) 已将 Hindsight 作为[原生记忆提供方](https://hindsight.vectorize.io/blog/2026/04/06/hermes-native-memory-provider)提供一段时间了。此前要配置它，需要编辑 `config.json`，或把密钥写进 `.env`。如果你习惯使用终端，这不成问题；否则，这就成了一道门槛。
 
-那堵墙不见了。 **Hermes桌面应用程序现在允许您选择Hindsight作为您的记忆提供者并在应用程序内配置整个内容** — 选择一种模式，粘贴API 键，保存。没有文件，没有环境变量，没有重新启动舞蹈。
+现在这道门槛消失了。**Hermes 桌面应用现在支持选择 Hindsight 作为记忆提供方，并直接在应用内完成全部配置**：选择模式、粘贴 API 密钥、保存。无需处理文件或环境变量，也不必折腾重启。
 
 ## 概览 {#tldr}
 
 <!-- truncate -->
 
-- Hermes桌面应用程序的**设置→记忆和上下文**部分现在将Hindsight列为记忆提供者。
-- 选择它会打开一个真正的配置面板：**模式、API键、API URL、记忆库ID、记忆召回预算** — 全部可在应用程序中编辑。
-- ​​API 密钥作为秘密存储（只写），其余作为配置文件配置。不再需要手动编辑文件。
-仅
-- Hindsight 是 Hermes 中的 **** 记忆提供者，它获得完整的应用内设置面板 - 其他面板不渲染任何内容。
-- 云模式是快速路径：[免费注册](https://ui.hindsight.vectorize.io)，粘贴密钥，Hermes会记住每个会话。
+- Hermes 桌面应用的**设置 → 记忆与上下文**部分现在列出了 Hindsight 这一记忆提供方。
+- 选择它后会打开完整的配置面板，包含**模式、API 密钥、API URL、记忆库 ID 和 Recall 预算**，都可以在应用内编辑。
+- API 密钥以机密信息的形式存储，只写入、不回读；其他设置则保存为配置文件配置。无需再手动编辑文件。
+- Hindsight 是 Hermes 中**唯一拥有完整应用内设置面板的记忆提供方**；其他提供方不会显示设置面板。
+- 云模式是最快的使用方式：[免费注册](https://ui.hindsight.vectorize.io)，粘贴密钥，Hermes 就能在每个会话中记住信息。
 
-## 改变了什么 {#what-changed}
+## 改动内容 {#what-changed}
 
-Hermes 支持可插拔记忆后端，并且桌面应用程序已经允许您通过下拉菜单在它们之间切换。但切换只是工作的一半——大多数提供商仍然需要您找到配置文件并手动填写凭据。
+Hermes 支持可插拔的记忆后端，桌面应用此前也已支持通过下拉菜单在不同后端之间切换。但切换只是完成了一半：大多数提供方仍要求你找到配置文件，再手动填写凭据。
 
-现在，当您在桌面应用程序中选择**Hindsight**时，Hermes会在那里呈现专用设置表单。你填写它，点击保存，智能体就会有长期记忆。这些值会自动落在正确的位置：您的 API 密钥将进入秘密存储（并且永远不会读回到表单中），其他所有内容都会写入您的个人资料配置中。
+现在，在桌面应用中选择 **Hindsight** 后，Hermes 会直接显示专用设置表单。填写表单并点击保存，智能体就能获得长期记忆。各项值会自动写入正确的位置：API 密钥会存入机密信息存储区（绝不会回读到表单中），其他内容则写入配置文件。
 
-![在Hermes桌面应用程序的设置→记忆和上下文中选择Hindsight作为记忆提供者](/img/blog/hermes-desktop-provider-dropdown.webp)
+![在 Hermes 桌面应用的“设置 → 记忆与上下文”中选择 Hindsight 作为记忆提供方](/img/blog/hermes-desktop-provider-dropdown.webp)
 
-这是“支持Hindsight”和“Hindsight 只需点击两下”之间的区别。
+这让“支持 Hindsight”变成了“只需点击两下即可使用 Hindsight”。
 
-## 您的配置 {#what-you-configure}
+## 可配置的内容 {#what-you-configure}
 
-应用程序内面板准确地显示了重要的设置：
+应用内面板提供了实际需要的全部设置：
 
-|设置|它的作用|默认|
-| ----------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------ |
-|**模式**|`Cloud`（只需要一个API密钥）或`Local External`（连接到现有的Hindsight实例）|`Cloud`|
-|**API键**|使用 Hindsight API 进行身份验证 — 存储为只写秘密|—|
-|**API 网址**|Hindsight 端点|`https://api.hindsight.vectorize.io`|
-|**记忆库ID**|此Hermes配置文件读取和写入哪个记忆库|`hermes`|
-|**记忆召回预算**|每回合记忆召回的工作强度：`low` / `mid` / `high`|`mid`|
+| 设置 | 作用 | 默认值 |
+| --- | --- | --- |
+| **模式** | `Cloud`（只需 API 密钥）或 `Local External`（连接到现有的 Hindsight 实例） | `Cloud` |
+| **API 密钥** | 用于向 Hindsight API 进行身份认证，以只写机密信息的形式存储 | — |
+| **API URL** | Hindsight 端点 | `https://api.hindsight.vectorize.io` |
+| **记忆库 ID** | 此 Hermes 配置文件读写的记忆库 | `hermes` |
+| **Recall 预算** | 每轮召回记忆时使用的力度：`low` / `mid` / `high` | `mid` |
 
-![Hermes桌面应用程序中的Hindsight记忆提供程序配置面板，显示模式、API键、API URL、记忆库ID和记忆召回预算字段](/img/blog/hermes-desktop-config-panel.webp)
+![Hermes 桌面应用中的 Hindsight 记忆提供方配置面板，显示模式、API 密钥、API URL、记忆库 ID 和 Recall 预算字段](/img/blog/hermes-desktop-config-panel.webp)
 
-选择**云**，粘贴[ui.hindsight.vectorize.io](https://ui.hindsight.vectorize.io)中的密钥，就完成了。更喜欢运行自己的后端？将模式切换到 **本地外部** 并将 API URL 指向您的实例。
+选择 **Cloud**，粘贴从 [ui.hindsight.vectorize.io](https://ui.hindsight.vectorize.io) 获取的密钥，就完成了。想运行自己的后端？将模式切换为 **Local External**，并将 API URL 指向你的实例。
 
-## 值得关注的部分 {#the-part-worth-noticing}
+## 值得注意之处 {#the-part-worth-noticing}
 
-Hermes 附带一整套记忆插件。在桌面应用程序的提供程序下拉列表中，您会看到一些选项 - 但**Hindsight是唯一具有实际配置面板的。**选择任何其他选项，设置区域保持空白；选择Hindsight，您将获得上面的完整表格。
+Hermes 自带一系列记忆插件。在桌面应用的提供方下拉菜单中，你会看到若干选项，但**Hindsight 是唯一拥有实际配置面板的提供方**。选择其他任何选项，设置区域都会保持空白；选择 Hindsight，则会显示上面的完整表单。
 
-这不是渲染的意外。桌面 UI 是通用的：它询问后端“该提供程序需要配置什么？”并绘制返回的任何内容。 Hindsight 是 Hermes 选择完整描述的提供程序 - 模式、秘密、默认值等 - 因此您无需离开应用程序即可进行设置。
+这并非界面渲染碰巧如此。桌面 UI 是通用的：它会询问后端“这个提供方需要配置什么？”，然后根据返回内容绘制界面。Hermes 选择由 Hindsight 完整描述所需配置，包括模式、机密信息和默认值等，因此你无需离开应用就能完成设置。
 
-## 为什么重要 {#why-it-matters}
+## 这为何重要 {#why-it-matters}
 
-记忆是你可以给予智能体的最大的单一升级，并且摩擦总是被设置的。在发布的桌面应用程序中使Hindsight成为点击式选择就消除了最后一个借口。从未打开过终端的Hermes用户现在可以在不到一分钟的时间内给予他们的智能体持久的、跨会话的记忆：
+记忆是能为智能体带来的最大单项升级，而设置过程一直是阻力。在正式发布的桌面应用中加入点选即可使用的 Hindsight，消除了最后一道障碍。即使从未打开过终端的 Hermes 用户，现在也能在不到一分钟内为智能体添加持久的跨会话记忆：
 
-1. 打开**设置→记忆和上下文**
-2. 将记忆提供者设置为**Hindsight**
-3. 选择**云**，粘贴API键，保存
+1. 打开**设置 → 记忆与上下文**。
+2. 将记忆提供方设为 **Hindsight**。
+3. 选择 **Cloud**，粘贴 API 密钥并保存。
 
-从那时起，Hermes 会记住 — 偏好、决策、项目背景 — 在每个会话中、在配置文件所遵循的每台机器上。
+从此以后，Hermes 就能在每个会话中记住偏好、决策和项目背景；在配置文件所使用的每台设备上，这些记忆都能跨会话继续可用。
 
-## 开始 {#get-started}
+## 开始使用 {#get-started}
 
-- **集成文档：**[在Hermes桌面应用程序中配置Hindsight](https://hindsight.vectorize.io/sdks/integrations/hermes-desktop)
-- **Hermes智能体：**[github.com/NousResearch/hermes-智能体](https://github.com/NousResearch/hermes-agent)
+- **集成文档：**[在 Hermes 桌面应用中配置 Hindsight](https://hindsight.vectorize.io/sdks/integrations/hermes-desktop)
+- **Hermes Agent：**[github.com/NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent)
 - **Hindsight Cloud（免费）：**[ui.hindsight.vectorize.io](https://ui.hindsight.vectorize.io)
-- **本地提供商的故事：**[Hindsight 现在是Hermes智能体的原生记忆提供者](https://hindsight.vectorize.io/blog/2026/04/06/hermes-native-memory-provider)
+- **关于原生提供方：**[Hindsight 现已成为 Hermes Agent 的原生记忆提供方](https://hindsight.vectorize.io/blog/2026/04/06/hermes-native-memory-provider)

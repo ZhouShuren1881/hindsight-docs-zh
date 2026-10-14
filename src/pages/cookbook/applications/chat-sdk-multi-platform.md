@@ -2,41 +2,41 @@
 sidebar_position: 4
 ---
 
-# 聊天SDK 多平台机器人 {#chat-sdk-multi-platform-bot}
+# Chat SDK 多平台机器人 {#chat-sdk-multi-platform-bot}
 
 
 :::info 完整应用
-这是一个完整的、可运行的应用程序，演示了Hindsight集成。
-[**在 GitHub 查看源码 →**](https://github.com/vectorize-io/hindsight-cookbook/tree/main/applications/chat-sdk-multi-platform)
+这是一个完整、可运行的应用，用于演示如何集成 Hindsight。
+[**在 GitHub 上查看源代码 →**](https://github.com/vectorize-io/hindsight-cookbook/tree/main/applications/chat-sdk-multi-platform)
 :::
 
 
-一个演示聊天机器人，同时在 Slack 和 Discord 上运行，共享一个 Hindsight 记忆库。在 Slack 中告诉机器人一些事情，在 Discord 中询问它，它就会记住。
+这是一个演示聊天机器人，可同时在 Slack 和 Discord 上运行，并共享同一个 Hindsight 记忆库。在 Slack 中告诉机器人一件事，再在 Discord 中询问它，它就会记得。
 
-内置[Vercel Chat SDK](https://github.com/vercel/chat)，[Hindsight](https://github.com/vectorize-io/hindsight)，和[Vercel AI SDK](https://sdk.vercel.ai)。
+此应用基于 [Vercel Chat SDK](https://github.com/vercel/chat)、[Hindsight](https://github.com/vectorize-io/hindsight) 和 [Vercel AI SDK](https://sdk.vercel.ai) 构建。
 
-## 特点 {#features}
+## 功能 {#features}
 
-- **跨平台记忆**：Slack 和 Discord 共享一个记忆库
-- **LLM 生成的回复**：用途OpenAI通过VercelAISDK
+- **跨平台记忆**：Slack 和 Discord 共享同一个记忆库
+- **LLM 生成回复**：通过 Vercel AI SDK 使用 OpenAI
 - **自动召回**：每次回复前都会检索记忆
-- **自动存储**：对话自动存储
-- **一个处理器支持所有平台**：`withHindsightChat()` 包含任何聊天SDK处理程序
+- **自动存入**：自动存储对话内容
+- **一个处理器适用于所有平台**：`withHindsightChat()` 可包装任意 Chat SDK 处理器
 
-## 建筑 {#architecture}
+## 架构 {#architecture}
 
 ```
-Slack message ─────┐
-                    ├─→ withHindsightChat() ─→ auto-recall ─→ LLM handler ─→ auto-retain
-Discord message ───┘                              │
+Slack 消息 ─────┐
+                  ├─→ withHindsightChat() ─→ 自动召回 ─→ LLM 处理器 ─→ 自动存入
+Discord 消息 ───┘                              │
                                                   ▼
                                            Hindsight API
-                                           (shared bank)
+                                           (共享记忆库)
 ```
 
 ## 设置 {#setup}
 
-### 1。开始 Hindsight API {#1-start-hindsight-api}
+### 1. 启动 Hindsight API {#1-start-hindsight-api}
 
 ```bash
 export OPENAI_API_KEY=your-key
@@ -49,32 +49,32 @@ docker run --rm -it --pull always -p 8888:8888 -p 9999:9999 \
 ```
 
 - API：http://localhost:8888
-- 用户界面：http://localhost:9999
+- 界面：http://localhost:9999
 
-### 2。设置松弛 {#2-set-up-slack}
+### 2. 设置 Slack {#2-set-up-slack}
 
-1. 前往[api.slack.com/apps](https://api.slack.com/apps) 并创建一个新应用程序
-2. 下**OAuth 与权限（OAuth & Permissions）**，添加范围：`app_mentions:read`，`chat:write`，`channels:history`
-3. 将应用程序安装到您的工作区
-4. 复制**机器人用户 OAuth 令牌（Bot User OAuth Token）** 和 **签名密钥（Signing Secret）**
+1. 前往 [api.slack.com/apps](https://api.slack.com/apps) 并创建一个新应用
+2. 在 **OAuth & Permissions** 中添加以下权限范围：`app_mentions:read`、`chat:write`、`channels:history`
+3. 将应用安装到你的工作区
+4. 复制 **Bot User OAuth Token** 和 **Signing Secret**
 
-### 3。设置不和谐 {#3-set-up-discord}
+### 3. 设置 Discord {#3-set-up-discord}
 
-1. 前往[discord.com/developers/applications](https://discord.com/developers/applications) 并创建一个新应用程序
-2. 下**机器人（Bot）**，点击**重置令牌（Reset Token）**并复制
-3. 启用特权网关意图下的 **消息内容权限（Message Content Intent）**
-4. 下**基本信息（General Information）**，复制**应用 ID（Application ID）** 和 **公钥（Public Key）**
-5. 下**OAuth2 > URL 生成器（OAuth2 > URL Generator）**，选择范围`bot` + `applications.commands`，权限：发送消息、读取消息历史记录
-6. 使用生成的 URL 邀请机器人到您的服务器
+1. 前往 [discord.com/developers/applications](https://discord.com/developers/applications) 并创建一个新应用
+2. 在 **Bot** 下点击 **Reset Token** 并复制令牌
+3. 在 Privileged Gateway Intents 下启用 **Message Content Intent**
+4. 在 **General Information** 下复制 **Application ID** 和 **Public Key**
+5. 在 **OAuth2 > URL Generator** 下选择范围 `bot` 和 `applications.commands`，并选择权限：发送消息、读取消息历史记录
+6. 使用生成的 URL 将机器人邀请到你的服务器
 
-### 4。配置环境 {#4-configure-environment}
+### 4. 配置环境 {#4-configure-environment}
 
 ```bash
 cp .env.example .env.local
-#使用您的令牌编辑 .env.local
+# 使用你的令牌编辑 .env.local
 ```
 
-或创建`.env.local` 手动：
+也可以手动创建 `.env.local`：
 
 ```bash
 # Slack
@@ -85,7 +85,7 @@ SLACK_SIGNING_SECRET=...
 DISCORD_BOT_TOKEN=...
 DISCORD_PUBLIC_KEY=...
 DISCORD_APPLICATION_ID=...
-DISCORD_MENTION_ROLE_IDS=...  #可选：以逗号分隔的角色 ID
+DISCORD_MENTION_ROLE_IDS=...  # 可选：以逗号分隔的角色 ID
 
 # Hindsight
 HINDSIGHT_API_URL=http://localhost:8888
@@ -94,73 +94,73 @@ HINDSIGHT_API_URL=http://localhost:8888
 OPENAI_API_KEY=sk-...
 ```
 
-### 5。公开您的本地服务器 {#5-expose-your-local-server}
+### 5. 暴露本地服务器 {#5-expose-your-local-server}
 
-Discord 和 Slack 需要到达您的 webhook 端点：
+Discord 和 Slack 需要能够访问你的 webhook 端点：
 
 ```bash
 ngrok http 3000
 ```
 
-- 设置 Slack 的 **事件订阅 > 请求 URL（Event Subscriptions > Request URL）**至`https://your-ngrok-url/api/webhooks/slack`
-- 设置 Discord **交互端点 URL（Interactions Endpoint URL）**至`https://your-ngrok-url/api/webhooks/discord`
+- 将 Slack 的 **Event Subscriptions > Request URL** 设为 `https://your-ngrok-url/api/webhooks/slack`
+- 将 Discord 的 **Interactions Endpoint URL** 设为 `https://your-ngrok-url/api/webhooks/discord`
 
-### 6。安装并运行 {#6-install-and-run}
+### 6. 安装并运行 {#6-install-and-run}
 
 ```bash
 npm install
 npm run dev
 ```
 
-### 7。启动 Discord 网关 {#7-start-the-discord-gateway}
+### 7. 启动 Discord Gateway {#7-start-the-discord-gateway}
 
-Discord 需要 WebSocket 连接来接收消息（与通过 HTTP 推送事件的 Slack 不同）。开发服务器启动后，在浏览器中打开此 URL：
+Discord 需要通过 WebSocket 连接来接收消息（Slack 则通过 HTTP 推送事件）。开发服务器启动后，在浏览器中打开以下 URL：
 
 ```
 http://localhost:3000/api/discord/gateway
 ```
 
-这可以使网关连接保持活动状态 10 分钟。在生产中，使用 cron 作业来重新启动它。
+这会让 Gateway 连接保持活动状态 10 分钟。在生产环境中，可以使用 cron 作业重新启动它。
 
-## 尝试一下 {#try-it}
+## 试试看 {#try-it}
 
-1. **Slack**：`@memory-bot 我正在构建面向 WebAssembly 的 Rust 编译器`
-2. 等待几秒钟Hindsight索引记忆
-3. **Discord**：`@memory-bot 我正在做什么？`
-4. 机器人从 Slack 中回忆起 Rust/WebAssembly 记忆
+1. **Slack**：`@memory-bot I'm building a Rust compiler that targets WebAssembly`
+2. 等待几秒钟，让 Hindsight 为这条记忆建立索引
+3. **Discord**：`@memory-bot what am I working on?`
+4. 机器人会从 Slack 中召回关于 Rust/WebAssembly 的记忆
 
-## 它是如何工作的 {#how-it-works}
+## 工作原理 {#how-it-works}
 
-密钥文件是`lib/bot.ts`。 Slack 和 Discord 适配器都注册到同一个 Chat 实例，并且两个处理程序都使用 `withHindsightChat()` 具有共享记忆库 ID：
+关键文件是 `lib/bot.ts`。Slack 和 Discord 适配器都注册到同一个 Chat 实例，两个处理器也都通过共享的记忆库 ID 使用 `withHindsightChat()`：
 
 ```typescript
 bot.onNewMention(
   withHindsightChat(
     {
       client: hindsight,
-      bankId: () => BANK_ID,    //所有平台都有相同的记忆库
+      bankId: () => BANK_ID,    // 所有平台使用同一个记忆库
       retain: { enabled: true },
     },
     async (thread, message, ctx) => {
       const system = ctx.memoriesAsSystemPrompt();
-      //... 使用记忆上下文生成 LLM 响应
+      // ... 使用记忆上下文生成 LLM 回复
     }
   )
 );
 ```
 
-- **`client`**：A`@vectorize-io/hindsight-client` 指向您的实例HindsightAPI
-- **`bankId`**：静态字符串或函数——共享记忆库=跨平台记忆
-- **`ctx.memoriesAsSystemPrompt()`**：格式化调用的记忆LLM系统提示
-- **`ctx.retain()`**：将对话内容存储回记忆库
+- **`client`**：指向你的 Hindsight API 的 `@vectorize-io/hindsight-client` 实例
+- **`bankId`**：静态字符串或函数；共享记忆库即可实现跨平台记忆
+- **`ctx.memoriesAsSystemPrompt()`**：将召回的记忆整理为 LLM 系统提示
+- **`ctx.retain()`**：将对话内容存回记忆库
 
 ## 记忆库 ID 策略 {#bank-id-strategies}
 
-|策略|示例|使用案例|
+| 策略 | 示例 | 用途 |
 |----------|---------|----------|
-|静态|`bankId: 'demo'`|共享团队记忆|
-|每个用户|`bankId: (msg) => msg.author.userId`|每个用户的独立记忆|
-|跨平台身份|将平台 ID 映射到规范用户|相同用户，相同记忆库，任何平台|
+| 静态 | `bankId: 'demo'` | 团队共享记忆 |
+| 按用户 | `bankId: (msg) => msg.author.userId` | 为每位用户隔离记忆 |
+| 跨平台身份 | 将平台 ID 映射到规范用户 | 同一用户在任何平台上使用同一个记忆库 |
 
 ## 许可证 {#license}
 

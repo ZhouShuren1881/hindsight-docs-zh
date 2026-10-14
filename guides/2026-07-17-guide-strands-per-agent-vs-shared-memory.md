@@ -1,55 +1,55 @@
 ---
-title: "指南：Strands智能体中的单独智能体与共享记忆库"
+title: "指南：Strands Agents 中的按智能体与共享记忆库"
 authors: [benfrank241]
 date: 2026-07-17
 tags: [how-to, strands, multi-agent, memory]
-description: "当多个智能体记忆库（隔离）和共享记忆库（机构记忆）之间做出决定Strands智能体协作，使用Hindsight本地人@tool 记忆存储、记忆召回和反思。"
+description: "了解多个 Strands Agents 协作时，如何使用 Hindsight 原生的 @tool 存入、召回和反思功能，在按智能体隔离的记忆库与承载团队共同记忆的共享记忆库之间做出选择。"
 image: /img/guides/guide-strands-per-agent-vs-shared-memory.svg
 hide_table_of_contents: true
 ---
 
-![指南：Strands 智能体按角色记忆库与共享记忆库](/img/guides/guide-strands-per-agent-vs-shared-memory.svg)
+![指南：Strands Agents 中的按智能体与共享记忆库](/img/guides/guide-strands-per-agent-vs-shared-memory.svg)
 
-当你用Strands智能体SDK，最大的记忆决定是**按智能体记忆与共享记忆**记忆库：每个智能体都保留一个私有记忆库，还是多个智能体写入一个共享记忆库？Hindsight将每个记忆操作的范围限定为`bank_id`，所以这个选择就是你传递给的值 `create_hindsight_tools(bank_id=...)` 对于每个智能体 - 但它决定你的智能体是保持孤立还是一起构建机构记忆。
+使用 Strands Agents SDK 构建多智能体系统时，最重要的记忆策略选择是使用**按智能体划分还是共享的记忆库**：每个智能体各自使用私有记忆库，还是由多个智能体写入同一个共享记忆库？Hindsight 的 Retain（存入）、Recall（召回）和 Reflect（反思）操作都会限定在一个 `bank_id` 上，因此只需为每个智能体选择传给 `create_hindsight_tools(bank_id=...)` 的值，就能决定它们彼此隔离，还是共同积累团队的机构记忆。
 
-单个Strands智能体很简单：一个用户，一个记忆库。当计划者交给研究人员，研究人员交给作家时，有趣的问题就出现了，你必须决定他们每个人都可以记住其他人的哪些信息。每个智能体记忆库为您提供清洁隔离，无交叉污染。共享的记忆库为整个团队提供了一个记忆，因此一个智能体学到的事实在下一次运行中可供所有人使用。
+单个 Strands 智能体很简单：一个用户，一个记忆库。真正需要考虑的是这样的协作流程：规划者把工作交给研究者，研究者再交给撰稿者；你必须决定每个智能体可以记住其他智能体的哪些信息。按智能体划分的记忆库能清晰隔离信息，避免相互污染。共享记忆库则让整个团队使用同一份记忆，因此一名智能体学到的事实，在下一次运行时也能被其他智能体使用。
 
-本指南是 **记忆库策略** 指南，而不是另一个安装演练 — [配置指南](https://hindsight.vectorize.io/guides/2026/05/04/guide-strands-memory-with-hindsight) 已经涵盖了工具接线。在这里，我们重点关注何时隔离、何时共享以及如何运行混合存储，其中智能体读取共享存储库但写入自己的存储库。
+本指南讨论的是**记忆库策略**，不是又一篇安装教程；[配置指南](https://hindsight.vectorize.io/guides/2026/05/04/guide-strands-memory-with-hindsight) 已经介绍了如何接入工具。这里将说明何时应该隔离、何时应该共享，以及如何设置混合模式，让智能体读取共享记忆库，同时只写入自己的记忆库。
 
 <!-- truncate -->
 
 > **快速解答**
 >
-> 1.给每个Strands智能体Hindsight带有 的工具 `create_hindsight_tools(bank_id=...)`。
-> 2.使用**按智能体记忆库** 当智能体不能污染彼此的环境时。
-> 3.使用**共享记忆库** 当船员应该建立一种机构记忆时。
-> 4.对于混合动力车，请点 `memory_instructions()`位于共享记忆库（读取），并为记忆存储工具提供私有记忆库（写入）。
-> 5.通过用一个智能体存储事实并检查谁可以记忆它来验证隔离。
+> 1. 为每个 Strands 智能体配置 Hindsight 工具：`create_hindsight_tools(bank_id=...)`。
+> 2. 如果必须避免智能体之间相互污染上下文，就为每个智能体使用独立记忆库。
+> 3. 如果团队需要共同积累一份机构记忆，就使用共享记忆库。
+> 4. 混合模式下，让 `memory_instructions()` 指向共享记忆库（读取），并为存入工具配置私有记忆库（写入）。
+> 5. 用一名智能体存入事实，再检查哪些智能体能召回它，以验证隔离是否生效。
 
-## 记忆库战略决策 {#the-bank-strategy-decision}
+## 记忆库策略的选择 {#the-bank-strategy-decision}
 
-每个Hindsight工具每次调用只在一个记忆库上运行，并且记忆库隔离严格——不存在跨记忆库泄漏。在Strands术语，`bank_id` 你传给`create_hindsight_tools()`（以及`memory_instructions()`）是整个策略。共享一个 的两个智能体 `bank_id` 分享记忆；两个不同的智能体 `bank_id` 值彼此不可见。
+Hindsight 的每个工具每次调用只会在一个记忆库上运行，而且记忆库之间严格隔离，不会发生跨库泄漏。用 Strands 的术语来说，传给 `create_hindsight_tools()`（以及 `memory_instructions()`）的 `bank_id` 就决定了整个策略。两个智能体使用相同的 `bank_id`，就会共享记忆；如果它们使用不同的 `bank_id`，彼此就看不到对方的记忆。
 
-因此，这个决定简化为你对每对协作智能体提出的一个问题：**一个智能体学到的内容应该对另一个可见吗？**
+因此，对每一对协作智能体来说，决策归结为一个问题：**一名智能体学到的内容，是否应该让另一名智能体看到？**
 
-- 如果是，他们共享一个记忆库。
-- 如果没有，他们每个人都有一个记忆库。
-- 如果“有时”——读取共享，写入私有——您可以使用下面的混合。
+- 如果应该，就让它们共享一个记忆库。
+- 如果不应该，就让它们各自拥有一个记忆库。
+- 如果答案是“有时”——读取共享内容，写入私有记忆——就采用下文介绍的混合模式。
 
-因为工具是传递给的普通函数 `Agent(tools=[...])`，你可以在一个系统内自由组合策略。一名规划人员可以拥有一个私人记忆库，而三名工人则共享一个公共记忆库。没有关于SDK强制进行单一全局选择。
+这些工具只是传给 `Agent(tools=[...])` 的普通函数，因此你可以在一个系统中自由组合不同策略。规划者可以拥有私有记忆库，同时由三名工作智能体共享一个记忆库。SDK 不会强制整个系统采用同一种策略。
 
-## 当每个智能体都应该拥有自己的记忆库时 {#when-each-agent-should-own-its-bank}
+## 何时应让每个智能体拥有自己的记忆库 {#when-each-agent-should-own-its-bank}
 
-赋予每个智能体自己的`bank_id`当智能体扮演真正不同的角色时，混合他们的记忆会弊大于利。
+如果智能体承担的角色确实不同，混合它们的记忆弊大于利，就应该为每个智能体分配自己的 `bank_id`。
 
-每个智能体记忆库的好案例：
+适合按智能体划分记忆库的情况：
 
-- **不同角色或倾向。** 持怀疑态度的审稿人智能体和乐观的头脑风暴者智能体不应该将他们所学到的背景模糊在一起。
-- **不同智能体服务不同用户。** 如果每个智能体面向不同的最终用户，则每个用户的记忆库将为您提供平台所保证的硬分离。
-- **产生大量噪声或一次性使用的 Worker。** 产生大量低价值观察的临时智能体不应该污染细心的智能体所依赖的记忆库。
-- **安全或租户边界。** 当一个智能体绝不能看到另一个智能体的数据时，单独的记忆库就是边界。
+- **角色或性格倾向不同。** 持怀疑态度的审阅智能体和乐观的头脑风暴智能体，不应该把各自学到的上下文混在一起。
+- **不同智能体服务不同用户。** 如果每个智能体面向不同的最终用户，按用户划分的记忆库能提供平台保证的硬隔离。
+- **工作智能体会产生大量噪声，或只会临时使用。** 临时智能体可能产生大量低价值观测，不应该污染谨慎的智能体所依赖的记忆库。
+- **安全或租户边界。** 如果一名智能体绝不能看到另一名智能体的数据，独立记忆库就构成了隔离边界。
 
-接线是每个智能体一个记忆库：
+接入方式是为每个智能体配置一个记忆库：
 
 ```python
 from strands import Agent
@@ -60,19 +60,19 @@ researcher = Agent(tools=create_hindsight_tools(bank_id="researcher"))
 writer = Agent(tools=create_hindsight_tools(bank_id="writer"))
 ```
 
-每个智能体都有自己的`hindsight_retain`, `hindsight_recall`，和`hindsight_reflect` 工具，全部适用于其记忆库。研究人员保留的内容作者永远不会回忆起。
+每个智能体都会获得自己的 `hindsight_retain`、`hindsight_recall` 和 `hindsight_reflect` 工具，并且这些工具都限定在该智能体的记忆库中。撰稿者永远不会召回研究者存入的内容。
 
-## 智能体何时应该共享记忆库 {#when-agents-should-share-a-bank}
+## 何时应让智能体共享记忆库 {#when-agents-should-share-a-bank}
 
-多个智能体确实属于同一团队、共同实现一个结果并应积累共享组织记忆时，使用相同 `bank_id`。
+如果多个智能体实际上属于同一个团队，共同完成一个目标，并且应该积累共享的机构记忆，就让它们使用同一个 `bank_id`。
 
-共享记忆库的好案例：
+适合使用共享记忆库的情况：
 
-- **围绕同一主题的流水线。** 当研究人员发现的事实被作者回忆起来时，计划者、研究人员和作家都在从事同一份报告的工作。
-- **项目或会话记忆。** 团队了解到的有关一个项目的所有内容都属于一个地方，以项目而不是智能体为关键。
-- **必须携带上下文的交接。** 当智能体 A 交给智能体 B 时，共享记忆库意味着 B 从 A 已经建立的内容开始，而无需您手动将其序列化。
+- **围绕同一主题开展的工作流。** 规划者、研究者和撰稿者共同撰写同一份报告时，研究者发现的事实可以被撰稿者召回，这会让整个流程受益。
+- **项目或会话记忆。** 团队对某个项目了解到的所有内容都应该集中存放，并以项目而不是智能体作为区分依据。
+- **必须携带上下文的交接。** 智能体 A 把工作交给智能体 B 时，共享记忆库能让 B 直接接续 A 已经建立的内容，无需你手动序列化并传递这些内容。
 
-每个智能体的接线都是相同的记忆库：
+为每个智能体配置同一个记忆库：
 
 ```python
 from strands import Agent
@@ -85,94 +85,94 @@ researcher = Agent(tools=create_hindsight_tools(bank_id=BANK))
 writer = Agent(tools=create_hindsight_tools(bank_id=BANK))
 ```
 
-现在任何智能体的 `hindsight_retain`写入`project-atlas`，和`hindsight_recall`从任何智能体读取整个团队的记忆。 `hindsight_reflect` 合成船员存储的所有内容，这正是您想要的，当多个智能体各自贡献图片的片段时。
+现在，任何智能体调用 `hindsight_retain` 都会把内容写入 `project-atlas`，任何智能体调用 `hindsight_recall` 都能读取整个团队的记忆。`hindsight_reflect` 会综合团队存入的所有内容；当多名智能体各自贡献了部分信息时，这正是你需要的效果。
 
-## 连接Strands至Hindsight {#connect-strands-to-hindsight}
+## 将 Strands 接入 Hindsight {#connect-strands-to-hindsight}
 
-本指南假设工具已经连接好。如果您还没有安装并连接`hindsight-strands` 然而，请按照[Strands 配置指南](https://hindsight.vectorize.io/guides/2026/05/04/guide-strands-memory-with-hindsight) — 它涵盖 `pip install hindsight-strands`，将工具指向Hindsight Cloud或具有 的本地服务器 `configure()`，以及原生`@tool`赋予每个智能体的模式 `hindsight_retain`, `hindsight_recall`，和`hindsight_reflect`。然后回到这里选择记忆库。
+本指南假设工具已经接好。如果你还没有安装并接入 `hindsight-strands`，请先阅读 [Strands 配置指南](https://hindsight.vectorize.io/guides/2026/05/04/guide-strands-memory-with-hindsight)。该指南介绍了如何运行 `pip install hindsight-strands`，通过 `configure()` 将工具指向 Hindsight Cloud 或本地服务器，以及如何使用原生 `@tool` 模式为每个智能体配置 `hindsight_retain`、`hindsight_recall` 和 `hindsight_reflect`。完成后再回到这里选择记忆库策略。
 
-## 混合：共享读，私有写 {#a-hybrid-shared-read-private-write}
+## 混合模式：共享读取，私有写入 {#a-hybrid-shared-read-private-write}
 
-您通常希望两者兼得：每个智能体都应该 **读取** 团队共享记忆但是**写入** 仅限其自己的记忆库，因此私人工作笔记不会泄漏到共享记录中，直到您升级它们。
+通常你会希望兼顾两者：每个智能体都能**读取**团队共享的记忆，但**只能写入**自己的记忆库。这样，私有工作笔记在被提升到共享记录之前，就不会泄漏进去。
 
-Hindsight使这变得很自然，因为阅读和写作是独立的工具，有自己的记忆库范围。通过注入共享记忆库 `memory_instructions()`（读），并给记忆存储工具一个私有记忆库（写）：
+Hindsight 可以自然地实现这种模式，因为读取和写入使用各自限定记忆库范围的独立工具。通过 `memory_instructions()` 注入共享记忆库的内容（读取），并为存入工具指定私有记忆库（写入）：
 
 ```python
 from strands import Agent
 from hindsight_strands import create_hindsight_tools, memory_instructions
 
-SHARED = "project-atlas"          #阅读：团队机构记忆
-PRIVATE = "researcher"            #写：这个智能体自己的笔记
+SHARED = "project-atlas"          # 读取：团队机构记忆
+PRIVATE = "researcher"            # 写入：此智能体自己的笔记
 
-#记忆召回共享记忆库进入系统提示（阅读面）
+# 将共享记忆库召回到系统提示中（读取侧）
 shared_context = memory_instructions(bank_id=SHARED)
 
-# 存储/召回工具限定到私有记忆库（写入侧）
+# 限定到私有记忆库的存入/召回工具（写入侧）
 tools = create_hindsight_tools(bank_id=PRIVATE)
 
 researcher = Agent(
     tools=tools,
-    system_prompt=f"你是一位研究智能体。\n\n{shared_context}",
+    system_prompt=f"You are a research agent.\n\n{shared_context}",
 )
 ```
 
-智能体每次运行时都会通过注入团队的共享上下文 `memory_instructions()`，但它决定通过 存储的任何内容 `hindsight_retain`登陆其私人记忆库。为了促进共享记忆的发现，记忆存储明确地`SHARED` — 例如，使用范围仅限于共享记忆库的单独工具集，或者通过向一个“发布者”智能体授予对共享记忆库的写入权限，而其余的则保持只读状态。
+智能体每次运行时，都会通过 `memory_instructions()` 注入团队共享的上下文；但它决定通过 `hindsight_retain` 存入的内容仍会进入自己的私有记忆库。要把发现提升到共享记忆中，可以明确地将其存入 `SHARED`。例如，可以另建一组限定到共享记忆库的工具，或者只给一名“发布者”智能体共享记忆库的写入权限，同时让其他智能体保持只读。
 
-您还可以使用记忆召回标签缩小每个智能体共享记忆库返回的内容，因此多个智能体共享一个记忆库，但每个智能体都拉出自己的切片；见`recall_tags` 中[Strands 集成文档](/sdks/integrations/strands)。
+你还可以使用召回标签，限制每名智能体从共享记忆库中获取的内容。这样，多个智能体虽然共享一个记忆库，但每个智能体可以只读取自己的部分。详见 [Strands 集成文档](/sdks/integrations/strands) 中的 `recall_tags`。
 
 ## 验证记忆库策略 {#verify-the-bank-strategy}
 
-确认隔离和共享按照您的预期方式运行：
+确认隔离和共享的行为符合预期：
 
-1. 使用智能体A，存储一个独特的事实（例如“API截止日期是3月3日”）。
-2. 用智能体B询问这个事实。
-3. 如果A和B**共享**一个记忆库，B应该记忆它。如果他们是**隔离**，B 不应该。
-4. 对于混合，确认来自 A 的私有写入是*不是*对 B 可见，直到您将其提升到共享记忆库，但共享上下文*是*注入两者。
+1. 使用智能体 A 存入一个容易辨认的事实，例如“API 截止日期是 March 3”。
+2. 向智能体 B 询问这个事实。
+3. 如果 A 和 B **共享**一个记忆库，B 应该能召回它；如果它们彼此**隔离**，B 就不应该能召回它。
+4. 对于混合模式，确认智能体 A 的私有写入在提升到共享记忆库之前对 B *不可见*，同时共享上下文*会*注入两名智能体。
 
-如果结果符合您的预期策略，则记忆库连接正确。如果没有，请检查每个智能体的 `bank_id`（记忆库传递给`memory_instructions()`）正是您所期望的。
+如果结果符合预期策略，记忆库就配置正确。如果不符合，请检查每个智能体的 `bank_id`，以及传给 `memory_instructions()` 的记忆库，确认它们都与你的预期完全一致。
 
 ## 常见错误 {#common-mistakes}
 
-### 需要隔离时共享记忆库 {#sharing-a-bank-when-you-needed-isolation}
+### 需要隔离时却共享了记忆库 {#sharing-a-bank-when-you-needed-isolation}
 
-如果两个智能体不小心共享一个`bank_id`，一个智能体的嘈杂或特定角色的记忆会渗透到另一个智能体中。当智能体具有不同的角色或服务于不同的用户时，给他们单独的记忆库。
+如果两个智能体意外共用了一个 `bank_id`，一名智能体产生的嘈杂记忆或角色专属记忆就会渗入另一名智能体的记忆中。如果智能体承担不同角色或服务不同用户，请为它们分别配置记忆库。
 
-### 隔离需要协作的智能体 {#isolating-agents-that-needed-to-collaborate}
+### 需要协作的智能体被隔离了 {#isolating-agents-that-needed-to-collaborate}
 
-相反的失败：每个智能体都拥有一个私有记忆库的管道，因此切换会失去上下文，并且作者无法记忆研究人员发现的内容。如果团队致力于一个结果，则共享记忆库。
+另一种常见问题是：工作流中的每名智能体都拥有私有记忆库，导致交接时丢失上下文，撰稿者也无法召回研究者的发现。如果整个团队共同完成一个目标，就应使用共享记忆库。
 
-### 混合中读写记忆库不匹配 {#mismatched-read-and-write-banks-in-the-hybrid}
+### 混合模式中读取和写入使用了不匹配的记忆库 {#mismatched-read-and-write-banks-in-the-hybrid}
 
-在shared-read/private-write设置，`memory_instructions()`和记忆存储工具故意指向不同的记忆库。如果您不小心将它们指向同一个记忆库，您就会失去私有写入边界。保留两个`bank_id` 价值观独特且深思熟虑。
+在共享读取、私有写入的设置中，`memory_instructions()` 和存入工具本来就应该指向不同的记忆库。如果你意外让它们指向同一个记忆库，就会失去私有写入边界。请有意区分这两个 `bank_id` 的值。
 
-### 建筑物`bank_id` 来自不稳定的事物 {#building-bankid-from-something-unstable}
+### 根据不稳定的值构造 `bank_id` {#building-bank_id-from-something-unstable}
 
-如果记忆库值在运行之间发生变化（随机 ID、时间戳），智能体将无法记忆自己较早的记忆。推导`bank_id` 来自稳定的东西——智能体角色、项目或用户。
+如果记忆库的值在不同运行之间发生变化，例如使用随机 ID 或时间戳，智能体就无法召回自己先前的记忆。应根据稳定的信息生成 `bank_id`，例如智能体角色、项目或用户。
 
 ## 常见问题解答 {#faq}
 
-### 我需要Hindsight Cloud吗？ {#do-i-need-hindsight-cloud}
+### 我需要使用 Hindsight Cloud 吗？ {#do-i-need-hindsight-cloud}
 
-没有。自托管Hindsight服务器也可以工作 — 将工具指向 `http://localhost:8888` 而不是云 URL。无论哪种方式，记忆库策略都是相同的。
+不需要。自托管的 Hindsight 服务器同样可用，只需让工具指向 `http://localhost:8888`，而不是 Cloud URL。两种方式使用的记忆库策略完全相同。
 
-### 智能体可以共享一些记忆但不是全部吗？ {#can-agents-share-some-memory-but-not-all}
+### 智能体能否只共享部分记忆？ {#can-agents-share-some-memory-but-not-all}
 
-是的——这就是混合模式。通过 阅读共享记忆库 `memory_instructions()`，同时通过记忆存储工具写入私人记忆库。您还可以共享一个记忆库并使用`recall_tags` 所以每个智能体都会拉出自己的一部分。
+可以，这就是混合模式：通过 `memory_instructions()` 读取共享记忆库，同时通过存入工具写入私有记忆库。你也可以让智能体共享一个记忆库，并使用 `recall_tags` 让每名智能体只读取自己的部分。
 
-### 在共享记忆库中是否可以发挥作用？ {#does-reflect-work-across-a-shared-bank}
+### Reflect 能否处理共享记忆库中的内容？ {#does-reflect-work-across-a-shared-bank}
 
-是的。 `hindsight_reflect` 综合了它所涉及的记忆库中所有内容的答案，因此指向一个共享记忆库，它对整个工作人员的贡献进行推理。
+可以。`hindsight_reflect` 会综合其所限定的记忆库中的所有内容来生成答案。因此，如果它指向共享记忆库，就会基于整个团队的贡献进行推理。
 
-### 多少记忆库才算太多？ {#how-many-banks-is-too-many}
+### 记忆库多少才算太多？ {#how-many-banks-is-too-many}
 
-没有硬性限制——记忆库便宜且隔离严格。让协作结构决定：每个隔离边界一个记忆库，每个团队或项目共享记忆库。
+没有硬性上限；记忆库成本低，而且隔离严格。根据协作结构来决定：每个隔离边界使用一个记忆库，每个团队或项目使用一个共享记忆库。
 
 ## 后续步骤 {#next-steps}
 
-- 从开始 [Strands 配置指南](https://hindsight.vectorize.io/guides/2026/05/04/guide-strands-memory-with-hindsight) 如果您还没有连接工具
-- 尝试[Hindsight Cloud](https://hindsight.vectorize.io) 用于托管后端
-- 阅读[完整 Hindsight 文档](/)
-- 跟随[快速入门指南](/developer/api/quickstart)
-- 回顾[Hindsight 记忆召回 API](/developer/api/recall)
-- 回顾[Hindsight 记忆存储 API](/developer/api/retain)
-- 阅读[Strands 集成文档](/sdks/integrations/strands)
+- 如果工具还没有接好，请先阅读 [Strands 配置指南](https://hindsight.vectorize.io/guides/2026/05/04/guide-strands-memory-with-hindsight)。
+- 试用面向托管后端的 [Hindsight Cloud](https://hindsight.vectorize.io)。
+- 阅读[完整 Hindsight 文档](/)。
+- 查看[快速入门指南](/developer/api/quickstart)。
+- 查看 [Hindsight Recall API](/developer/api/recall)。
+- 查看 [Hindsight Retain API](/developer/api/retain)。
+- 阅读 [Strands 集成文档](/sdks/integrations/strands)。

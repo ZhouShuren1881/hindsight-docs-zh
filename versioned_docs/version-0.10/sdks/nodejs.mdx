@@ -7,7 +7,7 @@ import nodejsSdkMjs from '!!raw-loader!@site/examples/api/nodejs-sdk.mjs';
 
 # TypeScript / JavaScript 客户端 {#typescript--javascript-client}
 
-Hindsight API 的官方 TypeScript / JavaScript 客户端。支持**Node.js** 和 **Deno**。
+Hindsight API 的官方 TypeScript/JavaScript 客户端，支持 **Node.js** 和 **Deno**。
 
 ## 安装 {#installation}
 
@@ -19,7 +19,7 @@ npm install @vectorize-io/hindsight-client
 
 ### Deno {#deno}
 
-无需安装，直接通过 `npm:` 说明符导入：
+无需安装，可直接使用 `npm:` 说明符导入：
 
 ```typescript
 import { HindsightClient } from "npm:@vectorize-io/hindsight-client";
@@ -39,19 +39,19 @@ import { HindsightClient } from "npm:@vectorize-io/hindsight-client";
 
 <CodeSnippet code={nodejsSdkMjs} section="get-version" language="typescript" />
 
-### 记忆存储（存储记忆） {#retain-store-memory}
+### Retain（存入记忆） {#retain-store-memory}
 
 <CodeSnippet code={nodejsSdkMjs} section="retain" language="typescript" />
 
-### 批量记忆存储 {#retain-batch}
+### 批量 Retain {#retain-batch}
 
 <CodeSnippet code={nodejsSdkMjs} section="retain-batch" language="typescript" />
 
-### 记忆召回（搜索） {#recall-search}
+### Recall（召回）：搜索 {#recall-search}
 
 <CodeSnippet code={nodejsSdkMjs} section="recall" language="typescript" />
 
-### 反思（生成响应） {#reflect-generate-response}
+### Reflect（反思）：生成响应 {#reflect-generate-response}
 
 <CodeSnippet code={nodejsSdkMjs} section="reflect" language="typescript" />
 

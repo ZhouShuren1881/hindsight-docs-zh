@@ -1,168 +1,168 @@
 ---
-title: "指南：用Hindsight添加Roo Code记忆"
+title: "指南：使用 Hindsight 为 Roo Code 添加记忆"
 authors: [benfrank241]
 date: 2026-07-17
 tags: [how-to, roo-code, coding-agents, memory]
-description: "使用后视-roo-code安装程序将Roo Code记忆与Hindsight一起添加，因此每个Roo Code任务在开始之前都会回忆起相关的项目上下文，并在开始之后保留所学到的知识。"
+description: "使用 hindsight-roo-code 安装器为 Roo Code 接入 Hindsight，让每项任务都能在开始前召回相关项目上下文，并在结束后存入新的经验。"
 image: /img/guides/guide-roo-code-memory-with-hindsight.svg
 hide_table_of_contents: true
 ---
 
 ![指南：使用 Hindsight 为 Roo Code 添加记忆](/img/guides/guide-roo-code-memory-with-hindsight.svg)
 
-如果希望**使用 Hindsight 为 Roo Code 添加记忆**，运行一次 `hindsight-roo-code` 安装器，注册 MCP 服务器并注入自定义规则，让 Roo 在任务前召回相关上下文、之后存储所学，跨编码会话延续项目知识。
+如果你想为 Roo Code 接入 Hindsight 记忆，最简便的方式是使用 `hindsight-roo-code` 安装器。运行一次后，它就会将 Hindsight 的 MCP 服务器注册到 Roo Code，并注入自定义规则，指导 Roo 在每项任务开始前召回相关上下文、结束后存入新的经验。这样，Roo Code 就能在不同编码会话之间延续长期记忆，无需每次开始新任务时都重新发现相同的项目上下文。
 
-这非常适合Roo Code因为Roo Code公开了两种与记忆完美搭配的可扩展机制：**MCP 服务器** 用于工具和 **自定义规则** 用于系统提示注入。安装程序同时使用两者。它电线Hindsight的`/mcp` 端点作为MCP服务器，然后放置一个规则文件，告诉 Roo 何时调用 `recall` 和 `retain` 所以记忆成为正常任务循环的一部分。
+Roo Code 很适合这种集成，因为它提供了两种与记忆配合良好的扩展机制：用于工具的 **MCP 服务器**，以及用于注入系统提示的**自定义规则**。安装器会同时使用这两种机制：将 Hindsight 的 `/mcp` 端点接入为 MCP 服务器，然后放置一个规则文件，告诉 Roo 何时调用 `recall` 和 `retain`，让记忆融入常规任务流程。
 
-本指南逐步介绍如何安装CLI，针对您的运行安装程序Hindsight后端，了解规则和MCP配置协同工作，以及快速验证流程，以便您可以确认记忆实际上正在被使用。保留[文档首页](/) 和 工作时， [快速入门指南](/developer/api/quickstart) 就在附近。
+本指南将介绍如何安装 CLI、针对 Hindsight 后端运行安装器、了解规则与 MCP 配置如何协同工作，以及如何快速验证记忆确实正在使用。操作时请备好[文档首页](/)和[快速入门指南](/developer/api/quickstart)。
 
 <!-- truncate -->
 
 > **快速解答**
 >
-> 1. `pip install hindsight-roo-code`。
-> 2.准备好 Hindsight 后端 — Hindsight Cloud（默认）或自托管服务器。
-> 3.运行项目目录中的 `hindsight-roo-code install`。
-> 4.重新启动 Roo Code，以便它获取新的 MCP 服务器和规则。
-> 5.验证后面的任务是否记住前面的任务存储的内容。
+> 1. 运行 `pip install hindsight-roo-code`。
+> 2. 准备好可用的 Hindsight 后端：Hindsight Cloud（默认）或自托管服务器。
+> 3. 在项目目录中运行 `hindsight-roo-code install`。
+> 4. 重启 Roo Code，使其加载新的 MCP 服务器和规则。
+> 5. 验证后续任务是否记得先前任务存入的内容。
 
-## 先决条件 {#prerequisites}
+## 前置条件 {#prerequisites}
 
-开始之前，请确保您拥有：
+开始之前，请确保你已准备好：
 
-- Roo Code已安装并工作
-- 可达Hindsight后端，[Hindsight Cloud](https://ui.hindsight.vectorize.io) 或自托管服务器
-- Python和 `pip` 可用于安装CLI
+- 已安装并可正常使用的 Roo Code
+- 可访问的 Hindsight 后端：[Hindsight Cloud](https://ui.hindsight.vectorize.io) 或自托管服务器
+- 可用于安装 CLI 的 Python 和 `pip`
 
-对于自托管，首先在本地运行Hindsight：
+如果使用自托管服务，请先在本地运行 Hindsight：
 
 ```bash
 pip install hindsight-all
 export HINDSIGHT_API_LLM_API_KEY=your-openai-key
-hindsight-api  # starts on http://localhost:8888
+hindsight-api  # 在 http://localhost:8888 启动服务
 ```
 
-## 第一步：安装CLI {#step-1-install-the-cli}
+## 第 1 步：安装 CLI {#step-1-install-the-cli}
 
-安装安装包：
+安装安装器软件包：
 
 ```bash
 pip install hindsight-roo-code
 ```
 
-这给你`hindsight-roo-code` 命令，接线Hindsight进入Roo Code的配置目录。它不会改变如何Roo Code有效 — 它注册了一个MCP服务器并添加规则文件。
+安装后会提供 `hindsight-roo-code` 命令，用于将 Hindsight 接入 Roo Code 的配置目录。它不会改变 Roo Code 的工作方式，只会注册一个 MCP 服务器并添加一个规则文件。
 
-## 第 2 步：运行安装程序 {#step-2-run-the-installer}
+## 第 2 步：运行安装器 {#step-2-run-the-installer}
 
-从您的项目目录中，运行：
+在项目目录中运行：
 
 ```bash
 hindsight-roo-code install
 ```
 
-默认目标为Hindsight Cloud。对于自托管服务器，请传递本地 URL：
+默认情况下，安装器会连接 Hindsight Cloud。如果使用自托管服务器，请传入本地 URL：
 
 ```bash
 hindsight-roo-code install --api-url http://localhost:8888
 ```
 
-安装程序写入两个文件：
+安装器会写入两个文件：
 
-- **`.roo/mcp.json`** — 寄存器Hindsight的`/mcp` 端点作为MCP服务器，带有 `recall` 和 `retain` 自动批准
-- **`.roo/rules/hindsight-memory.md`** — 每个 Roo 系统提示中注入指令
+- **`.roo/mcp.json`**：将 Hindsight 的 `/mcp` 端点注册为 MCP 服务器，并将 `recall` 和 `retain` 设为自动批准
+- **`.roo/rules/hindsight-memory.md`**：注入到 Roo 每个系统提示中的指令
 
-然后重新启动Roo Code，以便加载新的MCP服务器和规则。
+然后重启 Roo Code，使其加载新的 MCP 服务器和规则。
 
-## 第 3 步：选择项目本地或全局 {#step-3-choose-project-local-or-global}
+## 第 3 步：选择项目级或全局安装 {#step-3-choose-project-local-or-global}
 
-默认情况下，安装程序写入`.roo/` 在当前目录中，因此记忆的范围仅限于该项目：
+默认情况下，安装器会将文件写入当前目录下的 `.roo/`，因此记忆仅适用于该项目：
 
 ```bash
 hindsight-roo-code install --project-dir /path/to/project
 ```
 
-要在所有项目中应用集成，请全局安装到 `~/.roo/`：
+若要将集成应用于所有项目，请全局安装到 `~/.roo/`：
 
 ```bash
 hindsight-roo-code install --global
 ```
 
-更新API安装后的URL，重新运行安装程序或编辑直接 `.roo/mcp.json`。
+安装后如需更新 API URL，请重新运行安装器，或直接编辑 `.roo/mcp.json`。
 
-## 整合如何使用记忆 {#how-the-integration-uses-memory}
+## 集成如何使用记忆 {#how-the-integration-uses-memory}
 
-Roo Code 有两个主要的可扩展性机制 - 用于工具的MCP 服务器和用于系统提示注入的自定义规则 - 并且此集成同时使用：
+Roo Code 有两种主要的扩展机制：用于工具的 MCP 服务器和用于注入系统提示的自定义规则。本集成同时使用这两种机制：
 
-- **召回（之前）：** 规则文件指示 Roo 调用 `recall` 当新任务开始时，相关记忆会自动注入到上下文中。
-- **存储（工作期间与结束后）：**智能体可以打电话`retain` 任务中存储重大决策或发现，规则文件指示Roo调用`retain` 任务结束时有总结。
+- **Recall（开始前）：**规则文件会指示 Roo 在新任务开始时调用 `recall`，自动将相关记忆注入上下文。
+- **Retain（进行中和结束后）：**智能体可以在任务进行中调用 `retain`，存入重要决策或发现；规则文件也会指示 Roo 在任务结束时调用 `retain`，存入一份总结。
 
-Hindsight通过其 暴露了两个工具 `/mcp`端点：
+Hindsight 通过 `/mcp` 端点提供两个工具：
 
-|工具|说明|
-|------|-------------|
-|`recall`|在记忆中搜索与查询相关的上下文|
-|`retain`|立即将内容存储在记忆中|
+| 工具 | 说明 |
+| --- | --- |
+| `recall` | 在记忆中搜索与查询相关的上下文 |
+| `retain` | 立即将内容存入记忆 |
 
-因为这两个工具都列在下 `alwaysAllow` `.roo/mcp.json`，Roo 可以调用它们，而无需每次调用批准提示。对于较低级别的行为，请阅读 [Hindsight 记忆召回 API](/developer/api/recall) 和 [Hindsight 记忆存储 API](/developer/api/retain)。
+由于这两个工具都列在 `.roo/mcp.json` 的 `alwaysAllow` 中，Roo 无需针对每次调用请求批准即可使用它们。若要了解更底层的行为，请阅读 [Hindsight Recall API](/developer/api/recall) 和 [Hindsight Retain API](/developer/api/retain)。
 
-## 验证记忆是否有效 {#verify-that-memory-is-working}
+## 验证记忆是否正常工作 {#verify-that-memory-is-working}
 
-一个好的测试序列是：
+可以按以下步骤进行测试：
 
-1. 启动Hindsight并运行安装程序
-2. 打开Roo Code
-3. 检查**设置 → MCP 服务器（Settings → MCP Servers）** — `hindsight` 应显示为已连接
-4. 开始任务并观察工具调用日志中的 `recall`
-5. 让一个任务记录一个决定或约定，然后开始一个稍后的任务并询问它
+1. 启动 Hindsight 并运行安装器
+2. 在项目中打开 Roo Code
+3. 检查**设置 → MCP 服务器**（Settings → MCP Servers），确认 `hindsight` 显示为已连接
+4. 开始一项任务，并在工具调用日志中查看是否调用了 `recall`
+5. 让某项任务记录一个决策或约定，然后开始后续任务并询问相关内容
 
 例如：
 
-- 一个任务重构了 auth 模块并记录了重试逻辑发生变化的原因
-- 稍后的任务询问当前的身份验证约定是什么
+- 一项任务重构了 auth 模块，并记录重试逻辑发生变化的原因
+- 后续任务询问当前的身份验证约定
 
-如果后面的任务显示了前面的决定，则设置正在起作用。
+如果后续任务能说出先前记录的决策，就说明集成正常工作。
 
 ## 常见错误 {#common-mistakes}
 
-### 安装后不重新启动Roo Code {#not-restarting-roo-code-after-install}
+### 安装后未重启 Roo Code {#not-restarting-roo-code-after-install}
 
-安装程序写道`.roo/mcp.json` 和 `.roo/rules/hindsight-memory.md`，但是Roo Code在启动时加载它们。重新启动它，这样MCP服务器和规则生效。
+安装器会写入 `.roo/mcp.json` 和 `.roo/rules/hindsight-memory.md`，但 Roo Code 只会在启动时加载这些文件。请重启 Roo Code，使 MCP 服务器和规则生效。
 
-### 指向错误的后端 {#pointing-at-the-wrong-backend}
+### 指向了错误的后端 {#pointing-at-the-wrong-backend}
 
-如果您自行托管，请通过 `--api-url http://localhost:8888`。如果没有它，安装程序的目标Hindsight Cloud，因此正在运行的本地服务器将不会被使用。
+如果使用自托管服务，请传入 `--api-url http://localhost:8888`。如果不传此参数，安装器会连接 Hindsight Cloud，因此正在运行的本地服务器不会被使用。
 
-### 令人困惑的项目本地和全局安装 {#confusing-project-local-and-global-installs}
+### 混淆项目级和全局安装 {#confusing-project-local-and-global-installs}
 
-`hindsight-roo-code install` 写入当前目录下的 `.roo/`； `--global` 写入当前目录下的 `~/.roo/`。如果记忆没有出现在项目中，请确认您安装到哪个范围。
+`hindsight-roo-code install` 会将文件写入当前目录下的 `.roo/`；`--global` 则写入 `~/.roo/`。如果某个项目中没有出现记忆，请确认安装时选择的作用范围。
 
-### 在MCP服务器连接之前期望记忆 {#expecting-memory-before-the-mcp-server-connects}
+### MCP 服务器连接前就期待记忆生效 {#expecting-memory-before-the-mcp-server-connects}
 
-如果**设置 → MCP 服务器（Settings → MCP Servers）**不显示`hindsight` 连接后，记忆召回将不会运行。请先确认连接后再判断记忆是否有效。
+如果**设置 → MCP 服务器**（Settings → MCP Servers）中没有显示 `hindsight` 已连接，Recall 就不会运行。请先确认连接正常，再判断记忆是否有效。
 
-## 常见问题解答 {#faq}
+## 常见问题 {#faq}
 
-### 我需要Hindsight Cloud吗？ {#do-i-need-hindsight-cloud}
+### 我必须使用 Hindsight Cloud 吗？ {#do-i-need-hindsight-cloud}
 
-没有。自托管Hindsight服务器也可以工作 — 运行 `hindsight-api` 并使用 安装 `--api-url http://localhost:8888`。
+不必。自托管的 Hindsight 服务器也可以使用：运行 `hindsight-api`，并在安装时传入 `--api-url http://localhost:8888`。
 
-### 这会改变我使用Roo Code的方式吗？ {#does-this-change-how-i-use-roo-code}
+### 这会改变我使用 Roo Code 的方式吗？ {#does-this-change-how-i-use-roo-code}
 
-没有。安装程序仅注册一个MCP服务器并添加一个规则文件。你像以前一样使用Roo Code； 记忆召回和记忆存储通过正常的任务循环发生。
+不会。安装器只会注册一个 MCP 服务器并添加一个规则文件。你仍可像以前一样使用 Roo Code；Recall 和 Retain 会融入常规任务流程。
 
-### 智能体可以在任务中调用记忆召回和记忆存储吗？ {#can-the-agent-call-recall-and-retain-mid-task}
+### 智能体可以在任务进行中调用 recall 和 retain 吗？ {#can-the-agent-call-recall-and-retain-mid-task}
 
-是的。规则文件驱动任务开始和结束时的自动调用，但智能体也可以调用 工作时明确 `recall` 和 `retain`。
+可以。规则文件会在任务开始和结束时触发自动调用，智能体也可以在工作期间显式调用 `recall` 和 `retain`。
 
-### 以后如何更改API URL？ {#how-do-i-change-the-api-url-later}
+### 之后如何更改 API URL？ {#how-do-i-change-the-api-url-later}
 
-重新运行`hindsight-roo-code install` 与新`--api-url`，或编辑`.roo/mcp.json`。
+使用新的 `--api-url` 重新运行 `hindsight-roo-code install`，或直接编辑 `.roo/mcp.json`。
 
 ## 后续步骤 {#next-steps}
 
-- 从开始 [Hindsight Cloud](https://hindsight.vectorize.io)如果您想要托管后端
-- 阅读[完整 Hindsight 文档](/)
-- 跟随[快速入门指南](/developer/api/quickstart)
-- 回顾[Hindsight 记忆召回 API](/developer/api/recall)
-- 回顾[Hindsight 记忆存储 API](/developer/api/retain)
-- 阅读[Roo Code 集成文档](/sdks/integrations/roo-code)
+- 如果想使用托管后端，可以从 [Hindsight Cloud](https://hindsight.vectorize.io) 开始
+- 阅读 [Hindsight 完整文档](/)
+- 按照[快速入门指南](/developer/api/quickstart)操作
+- 查看 [Hindsight Recall API](/developer/api/recall)
+- 查看 [Hindsight Retain API](/developer/api/retain)
+- 阅读 [Roo Code 集成文档](/sdks/integrations/roo-code)

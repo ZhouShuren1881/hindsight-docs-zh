@@ -23,8 +23,8 @@ const { text } = await generateText({
   model: openai('gpt-4o'),
   tools,
   maxSteps: 5,
-  system: '你是具有长期记忆的助手。',
-  prompt: '记住，我偏好深色模式和大字体。',
+  system: 'You are a helpful assistant with long-term memory.',
+  prompt: 'Remember that I prefer dark mode and large fonts.',
 });
 // [/docs:generate-text]
 
@@ -35,8 +35,8 @@ const result = streamText({
   model: openai('gpt-4o'),
   tools,
   maxSteps: 5,
-  system: '你是具有长期记忆的助手。',
-  prompt: '我的显示偏好是什么？',
+  system: 'You are a helpful assistant with long-term memory.',
+  prompt: 'What are my display preferences?',
 });
 
 for await (const chunk of result.textStream) {
@@ -56,11 +56,11 @@ const agent = new ToolLoopAgent({
   model: openai('gpt-4o'),
   tools: createHindsightTools({ client, bankId: 'user-123' }),
   stopWhen: stepCountIs(10),
-  system: '你是具有长期记忆的助手。',
+  system: 'You are a helpful assistant with long-term memory.',
 });
 
 const result = await agent.generate({
-  prompt: '记住，我最喜欢的编辑器是 Neovim',
+  prompt: 'Remember that my favorite editor is Neovim',
 });
 // [/docs:tool-loop-agent]
 
@@ -88,7 +88,7 @@ export async function POST(req: Request) {
     model: openai('gpt-4o'),
     tools,
     maxSteps: 5,
-    system: '你是具有长期记忆的助手。',
+    system: 'You are a helpful assistant with long-term memory.',
     messages,
   }).toDataStreamResponse();
 }
@@ -100,21 +100,21 @@ const tools = createHindsightTools({
   bankId: userId,
 
   retain: {
-    async: true,                        // 异步发出，默认 false
-    tags: ['env:prod', 'app:support'],  // 附加到每条存储记忆
-    metadata: { version: '2.0' },       // 附加到每条存储记忆
+    async: true,                        // fire-and-forget（默认值：false）
+    tags: ['env:prod', 'app:support'],  // 始终附加到每条存入的记忆
+    metadata: { version: '2.0' },       // 始终附加到每条存入的记忆
   },
 
   recall: {
-    budget: 'high',                     // 深度 low | mid | high，默认 mid
+    budget: 'high',                     // 检索深度：low | mid | high（默认值：mid）
     types: ['experience', 'world'],     // 限制事实类型，默认全部
-    maxTokens: 2048,                    // token 预算上限，默认 API 值
-    includeEntities: true,              // 包含实体观察，默认 false
-    includeChunks: true,                // 包含来源分块，默认 false
+    maxTokens: 2048,                    // 返回 token 上限（默认值：API 默认值）
+    includeEntities: true,              // 包含实体观测（默认值：false）
+    includeChunks: true,                // 包含原始来源文本分块（默认值：false）
   },
 
   reflect: {
-    budget: 'mid',                      // 深度，默认 mid
+    budget: 'mid',                      // 综合生成深度（默认值：mid）
   },
 
 });

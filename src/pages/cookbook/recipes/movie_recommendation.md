@@ -2,29 +2,29 @@
 sidebar_position: 8
 ---
 
-# 拥有 Hindsight 记忆的电影推荐助手 {#movie-recommendation-assistant-with-hindsight-memory}
+# 使用 Hindsight 记忆的电影推荐助手 {#movie-recommendation-assistant-with-hindsight-memory}
 
 
 :::tip 运行此笔记本
-此教程提供交互式 Jupyter 笔记本。
-[**在 GitHub 打开 →**](https://github.com/vectorize-io/hindsight-cookbook/blob/main/notebooks/movie_recommendation.ipynb)
+本示例提供可交互的 Jupyter 笔记本。
+[**在 GitHub 中打开 →**](https://github.com/vectorize-io/hindsight-cookbook/blob/main/notebooks/movie_recommendation.ipynb)
 :::
 
 
-个性化推荐助手，记住偏好、观影历史和品味，让建议逐步改善。
+这是一款个性化电影推荐助手。它会记住你的偏好、观影记录和品味，随着时间推移给出更合适的建议。
 
 ## 功能 {#features}
-- 记住喜欢的类型、导演和演员
-- 跟踪看过并喜欢的电影
-- 根据心情提供相关建议
+- 记住你喜欢的电影类型、导演和演员
+- 记录你看过并喜欢的电影
+- 根据你的心情提供有针对性的推荐
 
 ## 前置条件 {#prerequisites}
 - OpenAI API 密钥
-- 通过 Docker 在本地运行 Hindsight，配置见下文
+- 通过 Docker 在本地运行的 Hindsight（设置方法见下文）
 
-## 本地启动 Hindsight {#start-hindsight-locally}
+## 在本地启动 Hindsight {#start-hindsight-locally}
 
-运行笔记本前，在终端启动 Hindsight：
+运行此笔记本前，先在终端中启动 Hindsight：
 
 ```bash
 export OPENAI_API_KEY="your-openai-api-key"
@@ -45,18 +45,18 @@ docker run --rm -it --pull always -p 8888:8888 -p 9999:9999 \
 
 ## 2. 配置 OpenAI API 密钥 {#2-configure-openai-api-key}
 
-按提示输入 OpenAI API 密钥，Hindsight 和演示共同使用。
+按提示输入 OpenAI API 密钥，Hindsight 和此演示都会使用该密钥。
 
 
 ```python
 import getpass
 import os
 
-# 设置 Hindsight 与演示共同使用的 OpenAI API 密钥
+# 设置 Hindsight 和演示共用的 OpenAI API 密钥
 if not os.getenv("OPENAI_API_KEY"):
-    os.environ["OPENAI_API_KEY"] = getpass.getpass("请输入 OpenAI API 密钥：")
+    os.environ["OPENAI_API_KEY"] = getpass.getpass("Enter your OpenAI API key: ")
 
-print("API 密钥配置完成！")
+print("API key configured!")
 ```
 
 ## 3. 初始化客户端 {#3-initialize-clients}
@@ -69,7 +69,7 @@ nest_asyncio.apply()
 from openai import OpenAI
 from hindsight_client import Hindsight
 
-# 初始化 Hindsight 客户端，连接本地 Docker 实例
+# 初始化 Hindsight 客户端（连接本地 Docker 实例）
 hindsight = Hindsight(
     base_url=os.getenv("HINDSIGHT_BASE_URL", "http://localhost:8888"),
 )
@@ -77,29 +77,29 @@ hindsight = Hindsight(
 # 初始化 OpenAI 客户端
 openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# 用户记忆库的唯一标识符
+# 此用户记忆库的唯一标识符
 USER_ID = "movie-fan-demo"
 
-print("客户端初始化完成！")
+print("Clients initialized!")
 ```
 
 ## 4. 定义辅助函数 {#4-define-helper-functions}
 
-函数演示三个核心操作：
-- **retain()**：存储记忆
-- **recall()**：检索相关记忆
-- **reflect()**：综合记忆形成洞察
+以下函数演示 Hindsight 的三个核心操作：
+- **retain()**：存入记忆
+- **recall()**：召回相关记忆
+- **reflect()**：基于记忆进行反思
 
 
 ```python
 def get_recommendation(user_query: str) -> str:
     """
-    根据查询和记忆中的偏好推荐电影。
+    Get a movie recommendation based on user query and remembered preferences.
     """
-    # 召回用户电影偏好的相关记忆
+    # 召回与该用户电影偏好相关的记忆
     memories = hindsight.recall(
         bank_id=USER_ID,
-        query=f"电影 偏好 品味 类型 {user_query}",
+        query=f"movie preferences tastes genres {user_query}",
         budget="mid",
     )
 
@@ -111,14 +111,14 @@ def get_recommendation(user_query: str) -> str:
         )
 
     # 结合上下文生成推荐
-    system_prompt = f"""你是有帮助的电影推荐助手。
-记住用户偏好和过去对话，提供个性化建议。
+    system_prompt = f"""You are a helpful movie recommendation assistant.
+You remember the user's preferences and past conversations to give personalized suggestions.
 
-你对用户的了解：
-{memory_context if memory_context else "尚未记录偏好。"}
+What you know about this user:
+{memory_context if memory_context else "No previous preferences recorded yet."}
 
-根据品味给出经过考虑的个性化建议。
-提及新偏好时，确认你已了解。"""
+Give thoughtful, personalized recommendations based on their tastes.
+If they mention new preferences, acknowledge them."""
 
     response = openai_client.chat.completions.create(
         model="gpt-4o-mini",
@@ -132,10 +132,10 @@ def get_recommendation(user_query: str) -> str:
 
     recommendation = response.choices[0].message.content
 
-    # 存储交互，供未来使用
+    # 存储本次交互，供后续使用
     hindsight.retain(
         bank_id=USER_ID,
-        content=f"用户询问：{user_query}\n推荐：{recommendation}",
+        content=f"User asked: {user_query}\nRecommendation given: {recommendation}",
         metadata={"category": "movie_recommendation"},
     )
 
@@ -143,86 +143,86 @@ def get_recommendation(user_query: str) -> str:
 
 
 def store_preference(preference: str) -> None:
-    """存储明确的用户偏好。"""
+    """Store an explicit user preference."""
     hindsight.retain(
         bank_id=USER_ID,
-        content=f"用户偏好：{preference}",
+        content=f"User preference: {preference}",
         metadata={"category": "preference"},
     )
-    print(f"已存储偏好：{preference}")
+    print(f"Stored preference: {preference}")
 
 
 def get_preference_summary() -> str:
-    """总结已了解的电影品味。"""
+    """Get a summary of what we know about the user's movie tastes."""
     summary = hindsight.reflect(
         bank_id=USER_ID,
-        query="总结用户的电影偏好、喜欢的类型和演员，以及喜欢或不喜欢的电影。",
+        query="Summarize this user's movie preferences, favorite genres, actors they like, and movies they've mentioned enjoying or disliking.",
         budget="high",
     )
     return summary.text if hasattr(summary, 'text') else str(summary)
 
-print("辅助函数定义完成！")
+print("Helper functions defined!")
 ```
 
 ## 5. 运行演示 {#5-run-the-demo}
 
-观察助手如何跨对话学习和记住偏好。
+观察助手如何在多次对话中逐渐了解并记住用户偏好。
 
 
 ```python
 import time
 
 print("=" * 60)
-print("  具有记忆的电影推荐助手")
+print("  Movie Recommendation Assistant with Memory")
 print("=" * 60)
 print()
 
-# 模拟持续对话
+# 模拟一段持续一段时间的对话
 conversations = [
-    "今晚想看电影，有什么推荐？",
-    "特别喜欢《盗梦空间》和《星际穿越》，Christopher Nolan 很棒！",
-    "推荐类似的电影吧，我喜欢烧脑情节。",
-    "现在不想看沉重的，来点轻松的？",
-    "上周看了《布达佩斯大饭店》，很喜欢！",
-    "今晚该看什么？记得我的偏好！",
+    "I'm looking for a movie to watch tonight. Any suggestions?",
+    "I really loved Inception and Interstellar. Christopher Nolan is amazing!",
+    "Can you suggest something similar to those? I like mind-bending plots.",
+    "Actually, I'm not in the mood for something heavy. Something lighter?",
+    "I watched The Grand Budapest Hotel last week and loved it!",
+    "What should I watch tonight? Remember what I like!",
 ]
 
 for i, query in enumerate(conversations, 1):
-    print(f"\n[对话 {i}]")
-    print(f"用户：{query}")
+    print(f"\n[Conversation {i}]")
+    print(f"User: {query}")
     print("-" * 40)
 
     response = get_recommendation(query)
-    print(f"助手：{response}")
+    print(f"Assistant: {response}")
     print()
 
     time.sleep(1)
 ```
 
-## 6. 查看已学到的偏好 {#6-view-learned-preferences}
+## 6. 查看已了解的偏好 {#6-view-learned-preferences}
 
-使用 `reflect()` 综合 Hindsight 已了解的电影品味。
+使用 `reflect()` 综合 Hindsight 对你电影品味的了解。
 
 
 ```python
 print("=" * 60)
-print("  已了解的电影品味：")
+print("  What I've learned about your movie tastes:")
 print("=" * 60)
 print(get_preference_summary())
 ```
 
-## 7. 尝试自己的查询 {#7-try-your-own-queries}
+## 7. 尝试自行提问 {#7-try-your-own-queries}
 
-尝试输入自己的电影偏好。
+试着输入你自己的电影偏好！
 
 
 ```python
-# 尝试自己的查询
-your_query = "我想看科幻惊悚片"  # 可修改此问题
+# 试着输入自己的查询！
+your_query = "I'm in the mood for a sci-fi thriller"  # 可以修改这里！
 
-print(f"你：{your_query}")
+print(f"You: {your_query}")
 print("-" * 40)
-print(f"助手：{get_recommendation(your_query)}")
+print(f"Assistant: {get_recommendation(your_query)}")
 ```
 
 ## 8. 清理 {#8-cleanup}
@@ -232,7 +232,7 @@ print(f"助手：{get_recommendation(your_query)}")
 
 ```python
 hindsight.close()
-print("客户端连接已关闭。")
+print("Client connection closed.")
 ```
 
 

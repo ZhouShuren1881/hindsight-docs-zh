@@ -2,30 +2,30 @@
 sidebar_position: 6
 ---
 
-# 拥有 Hindsight 记忆的健身教练 {#fitness-coach-with-hindsight-memory}
+# 使用 Hindsight 记忆的健身教练 {#fitness-coach-with-hindsight-memory}
 
 
 :::tip 运行此笔记本
-此教程提供交互式 Jupyter 笔记本。
-[**在 GitHub 打开 →**](https://github.com/vectorize-io/hindsight-cookbook/blob/main/notebooks/fitness_tracker.ipynb)
+此食谱提供交互式 Jupyter 笔记本。
+[**在 GitHub 中打开 →**](https://github.com/vectorize-io/hindsight-cookbook/blob/main/notebooks/fitness_tracker.ipynb)
 :::
 
 
-个性化健身助手，持续跟踪训练、饮食、恢复和进度，提供结合上下文的建议。
+这是一款个性化健身助手，可持续跟踪训练、饮食、恢复和进度，并据此提供结合上下文的建议。
 
 ## 功能 {#features}
-- 记录训练动作和重量
-- 跟踪饮食和偏好
-- 观察恢复与睡眠模式
+- 记录训练课程、训练动作和使用重量
+- 跟踪餐食和饮食偏好
+- 监测恢复情况和睡眠模式
 - 提供个性化训练建议
 
 ## 前置条件 {#prerequisites}
 - OpenAI API 密钥
-- 通过 Docker 在本地运行 Hindsight，配置见下文
+- 在本地通过 Docker 运行 Hindsight（见下方设置说明）
 
-## 本地启动 Hindsight {#start-hindsight-locally}
+## 在本地启动 Hindsight {#start-hindsight-locally}
 
-运行笔记本前，在终端启动 Hindsight：
+运行此笔记本前，请先在终端中启动 Hindsight：
 
 ```bash
 export OPENAI_API_KEY="your-openai-api-key"
@@ -46,18 +46,18 @@ docker run --rm -it --pull always -p 8888:8888 -p 9999:9999 \
 
 ## 2. 配置 OpenAI API 密钥 {#2-configure-openai-api-key}
 
-按提示输入 OpenAI API 密钥，Hindsight 和演示共同使用。
+按提示输入 OpenAI API 密钥；Hindsight 和本演示都会使用该密钥。
 
 
 ```python
 import getpass
 import os
 
-# 设置 Hindsight 与演示共同使用的 OpenAI API 密钥
+# 设置供 Hindsight 和本演示共同使用的 OpenAI API 密钥
 if not os.getenv("OPENAI_API_KEY"):
-    os.environ["OPENAI_API_KEY"] = getpass.getpass("请输入 OpenAI API 密钥：")
+    os.environ["OPENAI_API_KEY"] = getpass.getpass("Enter your OpenAI API key: ")
 
-print("API 密钥配置完成！")
+print("API key configured!")
 ```
 
 ## 3. 初始化客户端 {#3-initialize-clients}
@@ -71,7 +71,7 @@ from datetime import datetime
 from openai import OpenAI
 from hindsight_client import Hindsight
 
-# 初始化 Hindsight 客户端，连接本地 Docker 实例
+# 初始化 Hindsight 客户端（连接本地 Docker 实例）
 hindsight = Hindsight(
     base_url=os.getenv("HINDSIGHT_BASE_URL", "http://localhost:8888"),
 )
@@ -80,7 +80,7 @@ openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 USER_ID = "fitness-user-demo"
 
-print("客户端初始化完成！")
+print("Clients initialized!")
 ```
 
 ## 4. 定义辅助函数 {#4-define-helper-functions}
@@ -88,53 +88,53 @@ print("客户端初始化完成！")
 
 ```python
 def log_workout(workout_details: str) -> str:
-    """记录带时间戳的训练。"""
+    """Log a workout session with timestamp."""
     today = datetime.now().strftime("%B %d, %Y")
     hindsight.retain(
         bank_id=USER_ID,
-        content=f"{today} - 训练记录：{workout_details}",
+        content=f"{today} - WORKOUT LOG: {workout_details}",
         metadata={"category": "workout", "date": today},
     )
-    return f"已记录 {today} 的训练：{workout_details}"
+    return f"Logged workout for {today}: {workout_details}"
 
 
 def log_meal(meal_details: str) -> str:
-    """记录带时间戳的饮食。"""
+    """Log a meal with timestamp."""
     today = datetime.now().strftime("%B %d, %Y")
     hindsight.retain(
         bank_id=USER_ID,
-        content=f"{today} - 饮食记录：{meal_details}",
+        content=f"{today} - MEAL LOG: {meal_details}",
         metadata={"category": "nutrition", "date": today},
     )
-    return f"已记录 {today} 的饮食：{meal_details}"
+    return f"Logged meal for {today}: {meal_details}"
 
 
 def log_recovery(recovery_details: str) -> str:
-    """记录睡眠、酸痛等恢复信息。"""
+    """Log recovery information (sleep, soreness, etc.)."""
     today = datetime.now().strftime("%B %d, %Y")
     hindsight.retain(
         bank_id=USER_ID,
-        content=f"{today} - 恢复记录：{recovery_details}",
+        content=f"{today} - RECOVERY LOG: {recovery_details}",
         metadata={"category": "recovery", "date": today},
     )
-    return f"已记录 {today} 的恢复：{recovery_details}"
+    return f"Logged recovery for {today}: {recovery_details}"
 
 
 def store_user_profile(profile_info: str) -> str:
-    """存储用户资料。"""
+    """Store user profile information."""
     hindsight.retain(
         bank_id=USER_ID,
-        content=f"用户资料：{profile_info}",
+        content=f"USER PROFILE: {profile_info}",
         metadata={"category": "profile"},
     )
-    return f"已存储资料：{profile_info}"
+    return f"Stored profile info: {profile_info}"
 
 
 def fitness_coach(user_query: str) -> str:
-    """根据查询和历史提供个性化健身建议。"""
+    """Get personalized fitness advice based on query and user history."""
     memories = hindsight.recall(
         bank_id=USER_ID,
-        query=f"健身 训练 饮食 恢复 目标 {user_query}",
+        query=f"fitness workout diet recovery goals {user_query}",
         budget="high",
     )
 
@@ -142,19 +142,19 @@ def fitness_coach(user_query: str) -> str:
     if memories and memories.results:
         memory_context = "\n".join(f"- {m.text}" for m in memories.results[:10])
 
-    system_prompt = f"""你是知识丰富且给予支持的健身教练。
-你可访问用户训练历史、饮食、恢复笔记和个人资料。
+    system_prompt = f"""You are a knowledgeable and supportive fitness coach.
+You have access to the user's workout history, diet logs, recovery notes, and personal profile.
 
-你对用户的了解：
-{memory_context if memory_context else "尚无历史记录。"}
+What you know about this user:
+{memory_context if memory_context else "No history recorded yet."}
 
-根据以下信息提供个性化、可执行的建议：
-- 训练历史和进度
-- 饮食偏好与限制
-- 恢复模式
-- 个人目标
+Provide personalized, actionable advice based on their:
+- Training history and progress
+- Dietary preferences and restrictions
+- Recovery patterns
+- Personal goals
 
-鼓励用户，但保持现实；相关时引用具体历史。"""
+Be encouraging but realistic. Reference their specific history when relevant."""
 
     response = openai_client.chat.completions.create(
         model="gpt-4o-mini",
@@ -170,7 +170,7 @@ def fitness_coach(user_query: str) -> str:
 
     hindsight.retain(
         bank_id=USER_ID,
-        content=f"用户询问：{user_query}\n教练建议：{advice[:200]}...",
+        content=f"User asked: {user_query}\nCoach advised: {advice[:200]}...",
         metadata={"category": "coaching"},
     )
 
@@ -178,73 +178,73 @@ def fitness_coach(user_query: str) -> str:
 
 
 def get_progress_report() -> str:
-    """根据训练历史生成进度报告。"""
+    """Generate a progress report based on workout history."""
     report = hindsight.reflect(
         bank_id=USER_ID,
-        query="""分析用户的健身历程：
-        1. 训练是否持续？
-        2. 重量和动作有何进展？
-        3. 恢复和睡眠如何？
-        4. 有哪些饮食模式？
-        5. 接下来应关注什么？""",
+        query="""Analyze this user's fitness journey:
+        1. How consistent have they been with workouts?
+        2. What progress have they made (weight lifted, exercises)?
+        3. How is their recovery and sleep?
+        4. What dietary patterns do you notice?
+        5. What should they focus on next?""",
         budget="high",
     )
     return report.text if hasattr(report, 'text') else str(report)
 
-print("辅助函数定义完成！")
+print("Helper functions defined!")
 ```
 
 ## 5. 设置用户资料 {#5-set-up-user-profile}
 
 
 ```python
-print("正在设置用户资料……")
+print("Setting up user profile...")
 
 profile_data = [
-    "姓名：Anish，26 岁，身高 5 英尺 10 英寸，体重 72 kg",
-    "目标：增长精瘦肌肉，开始健身六个月",
-    "计划：推、拉、腿分化，每周五次",
-    "休息日：周三和周日",
-    "饮食限制：轻度乳糖不耐受，使用杏仁奶",
-    "健康备注：偶尔膝痛，避免深蹲到底",
-    "补充剂：无乳糖乳清蛋白、镁",
-    "睡眠：目标七小时以上，少于六小时表现下降",
+    "Name: Anish, Age: 26, Height: 5'10\", Weight: 72kg",
+    "Goal: Building lean muscle, started gym 6 months ago",
+    "Routine: Push-pull-legs split, 5x per week",
+    "Rest days: Wednesday and Sunday",
+    "Dietary restriction: Mild lactose intolerance, uses almond milk",
+    "Health note: Occasional knee pain, avoids deep squats",
+    "Supplements: Whey protein (lactose-free), magnesium",
+    "Sleep: Aims for 7+ hours, performance drops under 6 hours",
 ]
 
 for info in profile_data:
     store_user_profile(info)
-    print(f"  已存储：{info[:50]}...")
+    print(f"  Stored: {info[:50]}...")
 ```
 
 ## 6. 记录训练历史 {#6-log-workout-history}
 
 
 ```python
-print("正在记录训练历史……")
+print("Logging workout history...")
 
 workouts = [
-    "推训练：卧推 3x8，60 kg；肩推 4x12；臂屈伸 3x10，感觉有力量。",
-    "拉训练：硬拉 3x5，80 kg；杠铃划船 4x10；弯举 3x12，训练顺利。",
-    "腿训练：腿举 4x12，腿弯举 3x12，臀桥 3x15，膝盖感觉正常。",
+    "Push day: Bench press 3x8 @ 60kg, overhead press 4x12, tricep dips 3x10. Felt strong.",
+    "Pull day: Deadlift 3x5 @ 80kg, barbell rows 4x10, bicep curls 3x12. Good session.",
+    "Leg day: Leg press 4x12, hamstring curls 3x12, glute bridges 3x15. Knee felt okay.",
 ]
 
 for workout in workouts:
     print(f"  {log_workout(workout)[:60]}...")
 
-print("\n正在记录近期饮食……")
+print("\nLogging recent meals...")
 meals = [
-    "训练后：杏仁奶乳清蛋白饮、香蕉、燕麦",
-    "晚餐：烤鸡肉、糙米、蒸蔬菜",
-    "加餐：无乳糖希腊酸奶配莓果",
+    "Post-workout: Whey shake with almond milk, banana, oats",
+    "Dinner: Grilled chicken, brown rice, steamed vegetables",
+    "Snack: Greek yogurt (lactose-free) with berries",
 ]
 
 for meal in meals:
     print(f"  {log_meal(meal)[:60]}...")
 
-print("\n正在记录恢复情况……")
+print("\nLogging recovery notes...")
 recovery = [
-    "睡了 7.5 小时，休息充分",
-    "昨天腿训练后有些延迟性肌肉酸痛，正在喝姜黄奶",
+    "Slept 7.5 hours, feeling well rested",
+    "Some DOMS in legs from yesterday, using turmeric milk",
 ]
 
 for note in recovery:
@@ -258,21 +258,21 @@ for note in recovery:
 import time
 
 print("=" * 60)
-print("  与健身教练对话……")
+print("  Talking to your fitness coach...")
 print("=" * 60)
 
 queries = [
-    "最近卧推使用多大重量？",
-    "昨晚只睡五小时，今天训练应如何安排？",
-    "推荐符合我饮食限制的训练后餐食。",
-    "膝盖最近更不舒服，动作应如何调整？",
+    "How much was I lifting for bench press recently?",
+    "I slept poorly last night (only 5 hours). What should I do for today's workout?",
+    "Suggest a post-workout meal that works with my dietary restrictions.",
+    "My knee has been bothering me more. Any exercise modifications?",
 ]
 
 for query in queries:
-    print(f"\n用户：{query}")
+    print(f"\nUser: {query}")
     print("-" * 40)
     response = fitness_coach(query)
-    print(f"教练：{response}")
+    print(f"Coach: {response}")
     time.sleep(1)
 ```
 
@@ -281,7 +281,7 @@ for query in queries:
 
 ```python
 print("=" * 60)
-print("  进度报告")
+print("  Progress Report")
 print("=" * 60)
 print(get_progress_report())
 ```
@@ -290,11 +290,11 @@ print(get_progress_report())
 
 
 ```python
-your_query = "今天应练哪些动作？"  # 可修改此问题
+your_query = "What exercises should I do today?"  # Change this!
 
-print(f"你：{your_query}")
+print(f"You: {your_query}")
 print("-" * 40)
-print(f"教练：{fitness_coach(your_query)}")
+print(f"Coach: {fitness_coach(your_query)}")
 ```
 
 ## 10. 清理 {#10-cleanup}
@@ -302,5 +302,5 @@ print(f"教练：{fitness_coach(your_query)}")
 
 ```python
 hindsight.close()
-print("客户端连接已关闭。")
+print("Client connection closed.")
 ```

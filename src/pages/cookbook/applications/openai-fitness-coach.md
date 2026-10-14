@@ -2,35 +2,33 @@
 sidebar_position: 11
 ---
 
-# OpenAI智能体+Hindsight记忆整合 {#openai-agent--hindsight-memory-integration}
-
+# OpenAI 智能体 + Hindsight 记忆集成 {#openai-agent--hindsight-memory-integration}
 
 :::info 完整应用
-这是一个完整的、可运行的应用程序，演示了Hindsight集成。
-[**在 GitHub 查看源码 →**](https://github.com/vectorize-io/hindsight-cookbook/tree/main/applications/openai-fitness-coach)
+这是一个完整且可运行的应用，用于演示如何集成 Hindsight。
+[**在 GitHub 上查看源代码 →**](https://github.com/vectorize-io/hindsight-cookbook/tree/main/applications/openai-fitness-coach)
 :::
 
+本健身教练示例演示如何将 **OpenAI Agents** 与 **Hindsight 记忆后端**结合使用。
 
-健身教练示例演示如何使用**OpenAI Agents** 与 **Hindsight 作为记忆后端**。
+## 本示例演示的内容 {#what-this-demonstrates}
 
-## 这说明了什么 {#what-this-demonstrates}
+本示例展示了：
 
-此示例展示了：
+- **OpenAI Assistants** 负责对话逻辑
+- **Hindsight** 提供完善的记忆存储与检索
+- **函数调用** 将两者连接起来
+- **流式响应** 支持实时交互（默认启用）
+- **双向记忆**：同时存储用户数据和教练的观测
+- **系统级后处理**：自动存储意见，提高可靠性
+- **时序语义记忆**：通过函数工具查询
+- **增强的偏好学习**：教练会学习并尊重用户的喜好与厌恶
+- **真实世界的集成模式**：为 AI 智能体添加记忆
 
-- **OpenAI Assistants** 处理对话逻辑
-- **Hindsight** 提供复杂的记忆存储和检索
-- **函数调用** 将它们连接在一起
-- **流式回复**用于实时交互（默认启用）
-- **双向记忆** - 存储用户数据和教练观察
-- **系统级后处理** - 自动意见存储以确保可靠性
-- **时间与语义记忆** 通过功能工具查询
-- **增强偏好学习** - 教练学习并尊重用户likes/dislikes
-- **实际集成模式** 用于添加记忆AI智能体
-
-## 建筑 {#architecture}
+## 架构 {#architecture}
 
 ```
-User: "今天跑了5K，不喜欢节奏跑"
+User: "I ran 5K today, don't like tempo runs"
     |
 OpenAI Assistant
     |
@@ -38,9 +36,9 @@ Function Call: store_memory(workout + preference)
     |
 Hindsight API (stores as world/agent)
     |
-OpenAI Assistant: "我应该关注什么？"
+OpenAI Assistant: "What should I focus on?"
     |
-Function Call: retrieve_memories("锻炼和偏好")
+Function Call: retrieve_memories("workouts and preferences")
     |
 Hindsight API (returns workouts + preferences)
     |
@@ -55,30 +53,30 @@ Personalized Answer
 
 ## 与标准演示的主要区别 {#key-difference-from-standard-demo}
 
-|组件|标准演示|OpenAI 积分|
-|-----------|---------------|-------------------|
-|**对话**|Hindsight`/think`终点|OpenAI助理API|
-|**记忆**|Hindsight（内置）|Hindsight（通过函数调用）|
-|**LLM**|配置于Hindsight|OpenAIGPT-4|
-|**观点形成**|自动`/think`|显式通过 `store_memory(type="opinion")`|
-|**适用场景**|Hindsight-原生应用程序|将记忆集成到现有OpenAI智能体中|
+| 组件 | 标准演示 | OpenAI 集成 |
+| --- | --- | --- |
+| **对话** | Hindsight `/think` 端点 | OpenAI Assistant API |
+| **记忆** | Hindsight（内置） | Hindsight（通过函数调用） |
+| **LLM** | 在 Hindsight 中配置 | OpenAI GPT-4 |
+| **意见形成** | 在 `/think` 中自动完成 | 通过 `store_memory(type="opinion")` 显式完成 |
+| **适用场景** | 原生使用 Hindsight 的应用 | 为现有 OpenAI 智能体集成记忆 |
 
-## 快速入门 {#quick-start}
+## 快速开始 {#quick-start}
 
-### 先决条件 {#prerequisites}
+### 前置条件 {#prerequisites}
 
 1. **OpenAI API 密钥**
    ```bash
    export OPENAI_API_KEY=your_openai_api_key
    ```
 
-2. **Hindsight API 正在运行**
+2. **运行中的 Hindsight API**
    ```bash
-   #按照Hindsight设置说明启动API
-   # Default: http://localhost:8888
+   # 按照 Hindsight 的设置说明启动 API
+   # 默认地址：http://localhost:8888
    ```
 
-3. **安装依赖**
+3. **安装依赖项**
    ```bash
    pip install openai requests
    ```
@@ -91,35 +89,36 @@ export OPENAI_API_KEY=your_key_here
 python demo_conversational.py
 ```
 
-演示展示了：
-1. **自然语言训练记录** - 通过对话告诉教练你做了什么
-2. **偏好学习** - 快递likes/dislikes观看教练适应
-3. **目标跟踪** - 设定目标、跟踪进度、实现里程碑
-4. **双向记忆** - 您的活动和教练的建议都会被存储
-5. **流式回复** - 查看实时出现的回复
-6. **7 个交互阶段** - 从目标设定到成就认可
+本演示展示了：
 
-演示使用单独的智能体（`fitness-coach-demo`）以避免与真实数据混合。
+1. **用自然语言记录训练**：以对话方式告诉教练你做了什么
+2. **偏好学习**：表达喜好与厌恶，观察教练如何适应
+3. **目标跟踪**：设定目标、跟踪进度并达成里程碑
+4. **双向记忆**：你的活动和教练的建议都会被存储
+5. **流式响应**：实时查看响应内容
+6. **7 个交互阶段**：从设定目标到认可成就
 
-## 使用 {#usage}
+本演示使用单独的智能体（`fitness-coach-demo`），避免与真实数据混在一起。
 
-### 与你的教练聊天 {#chat-with-your-coach}
+## 用法 {#usage}
+
+### 与教练对话 {#chat-with-your-coach}
 
 **交互模式：**
 ```bash
 python openai_coach.py
 ```
 
-**单个问题：**
+**提出单个问题：**
 ```bash
-python openai_coach.py "这周我训练了什么？"
+python openai_coach.py "What did I do for training this week?"
 ```
 
-## 它是如何工作的 {#how-it-works}
+## 工作原理 {#how-it-works}
 
-### 1。 记忆工具（`memory_tools.py`) {#1-memory-tools-memorytoolspy}
+### 1. 记忆工具（`memory_tools.py`） {#1-memory-tools-memorytoolspy}
 
-定义了OpenAI智能体可以调用的功能工具：
+定义 OpenAI 智能体可以调用的函数工具：
 
 ```python
 retrieve_memories(query, fact_types, top_k)
@@ -129,187 +128,196 @@ get_user_goals()
 get_coach_opinions(about)
 ```
 
-每个函数都会对Hindsight进行API调用以获取相关记忆。
+每个函数都会调用 Hindsight API，以获取相关记忆。
 
-### 2。OpenAI智能体 (`openai_coach.py`) {#2-openai-agent-openaicoachpy}
+### 2. OpenAI 智能体（`openai_coach.py`） {#2-openai-agent-openaicoachpy}
 
-创建一个OpenAI助手：
-- 健身教练指导
-- 访问记忆功能工具
-- 对话管理
+创建一个 OpenAI Assistant，并为其配置：
 
-当你提问时：
-1. 用户消息发送至OpenAI助手
-2. 助手决定调用哪些记忆函数
-3. 函数从Hindsight获取数据
-4. Assistant 使用检索到的上下文生成响应
+- 健身指导说明
+- 记忆函数工具的调用权限
+- 对话管理能力
 
-### 3。函数调用流程 {#3-function-calling-flow}
+当你提出问题时：
+
+1. 用户消息会发送给 OpenAI Assistant。
+2. Assistant 会决定调用哪些记忆函数。
+3. 函数会从 Hindsight 获取数据。
+4. Assistant 会结合检索到的上下文生成回复。
+
+### 3. 函数调用流程 {#3-function-calling-flow}
 
 ```python
-#用户问：“这周我跑了什么？”
+# 用户提问：“这周我跑了什么？”
 
-#OpenAI 助理决定呼叫：
+# OpenAI Assistant 决定调用：
 search_workouts(
     after_date="2024-11-18",
     workout_type="running"
 )
 
-#函数从Hindsight检索：
+# 函数从 Hindsight 检索数据：
 {
   "results": [
-    {"text": "用户完成了 45 分钟的有氧运动：跑步..."},
-    {"text": "用户完成了 60 分钟的有氧运动：跑步..."}
+    {"text": "User completed 45-minute cardio workout: running..."},
+    {"text": "User completed 60-minute cardio workout: running..."}
   ]
 }
 
-#OpenAI 助手生成响应：
+# OpenAI Assistant 生成回复：
 "This week you've done two runs: a 45-minute run on Monday
 and a longer 60-minute run on Wednesday. Great consistency!"
 ```
 
 ## 示例问题 {#example-questions}
 
-尝试询问：
+可以尝试提出以下问题：
 
 ```bash
-python openai_coach.py "这周我的训练怎么样？"
-python openai_coach.py "根据我的锻炼情况，我今天应该休息吗？"
-python openai_coach.py "我的营养如何支持我的目标？"
-python openai_coach.py "我在实现目标方面取得了哪些进展？"
-python openai_coach.py "比较我这个月和上个月的训练"
+python openai_coach.py "What does my training look like this week?"
+python openai_coach.py "Based on my workouts, should I rest today?"
+python openai_coach.py "How is my nutrition supporting my goals?"
+python openai_coach.py "What's my progress toward my goal?"
+python openai_coach.py "Compare my training this month to last month"
 ```
 
 智能体会自动：
-1. 识别它需要什么记忆
-2. 调用相应的功能工具
-3. 从Hindsight检索数据
-4. 生成个性化响应
+
+1. 判断需要哪些记忆
+2. 调用相应的函数工具
+3. 从 Hindsight 检索数据
+4. 生成个性化回复
 
 ## 检索的记忆类型 {#memory-types-retrieved}
 
-OpenAI智能体可以从Hindsight检索不同的记忆类型：
+OpenAI 智能体可以从 Hindsight 检索不同类型的记忆：
 
-- **世界事实** (`fact_type: "world"`)：锻炼、膳食、活动
-- **智能体事实** (`fact_type: "agent"`)：目标、意图
-- **观点** (`fact_type: "opinion"`)：教练对模式的观察
+- **世界事实**（`fact_type: "world"`）：训练、膳食和活动
+- **智能体事实**（`fact_type: "agent"`）：目标和意图
+- **意见**（`fact_type: "opinion"`）：教练对行为模式的观测
 
-## 定制 {#customization}
+## 自定义 {#customization}
 
-### 添加新功能工具 {#add-new-function-tools}
+### 添加新的函数工具 {#add-new-function-tools}
 
-编辑`memory_tools.py` 添加新功能：
+编辑 `memory_tools.py`，添加新的功能：
 
 ```python
 def get_weekly_summary(week_offset: int = 0):
-    """获取特定一周的摘要。"""
-    # Implementation
+    """Get a summary of a specific week."""
+    # 实现
     pass
 
-# 加入 MEMORY_TOOLS 列表
+# 添加到 MEMORY_TOOLS 列表
 MEMORY_TOOLS.append({
     "type": "function",
     "function": {
         "name": "get_weekly_summary",
-        "description": "获取特定一周的训练总结",
-        # ... parameters
+        "description": "Get training summary for a specific week",
+        # ... 参数
     }
 })
 
-# 加入 FUNCTION_MAP
+# 添加到 FUNCTION_MAP
 FUNCTION_MAP["get_weekly_summary"] = get_weekly_summary
 ```
 
-### 修改助手指令 {#modify-assistant-instructions}
+### 修改 Assistant 的指令 {#modify-assistant-instructions}
 
-编辑 `openai_coach.py`，更改教练的风格或行为：
+编辑 `openai_coach.py`，修改教练的个性或行为：
 
 ```python
 assistant = client.beta.assistants.create(
-    name="您的定制教练",
-    instructions="您的自定义说明在这里...",
+    name="Your Custom Coach",
+    instructions="Your custom instructions here...",
     model="gpt-4o-mini",
     tools=MEMORY_TOOLS
 )
 ```
 
-## 用例 {#use-cases}
+## 使用场景 {#use-cases}
 
-此模式适用于任何需要记忆的应用程序：
+这种模式适用于任何需要记忆的应用：
 
-1. **客户支持智能体** - 记住此前对话和问题
-2. **个人助手** - 记住偏好、日程和此前决策
-3. **教育辅导助手** - 跟踪一段时间内的学习进度
-4. **健康教练** - 监控习惯、进度、目标（如本示例）
-5. **销售助手** - 记住客户互动和偏好
+1. **客户支持智能体**：记住以往的对话和问题
+2. **个人助手**：记住偏好、日程安排和过往决定
+3. **教育辅导智能体**：跟踪长期学习进度
+4. **健康教练**：监测习惯、进度和目标（如本示例）
+5. **销售助手**：记住客户互动和偏好
 
-## 整合模式 {#integration-pattern}
+## 集成模式 {#integration-pattern}
 
-**为你的 OpenAI 智能体添加 Hindsight 记忆：**
+**为自己的 OpenAI 智能体添加 Hindsight 记忆：**
 
-1. 定义调用HindsightAPI的函数工具
-2. 通过您的OpenAI助手注册
-3. 实现函数处理程序来执行Hindsight查询
-4. 让OpenAI助手决定何时检索记忆
+1. 定义调用 Hindsight API 的函数工具。
+2. 将这些工具注册到 OpenAI Assistant。
+3. 实现函数处理程序，执行 Hindsight 查询。
+4. 由 OpenAI Assistant 决定何时检索记忆。
 
-主要好处：**职责分离**
+主要优势：**职责分离**
+
 - OpenAI = 对话逻辑
-- Hindsight = 记忆存储、检索、时间查询、实体链接
+- Hindsight = 记忆存储、检索、时序查询和实体关联
 
-## 何时使用此与标准Hindsight {#when-to-use-this-vs-standard-hindsight}
+## 何时采用此方案，何时直接使用 Hindsight {#when-to-use-this-vs-standard-hindsight}
 
-**以下情况使用 OpenAI 与 Hindsight（本示例）：**
-- 你想要OpenAI的对话功能
-- 您已经在使用OpenAI智能体
-- 你想要明确控制何时检索记忆
-- 您想要将Hindsight与其他OpenAI功能结合起来
+**以下情况适合使用 OpenAI + Hindsight（本示例）：**
 
-**以下情况直接使用 Hindsight：**
-- 您想要一个完整的记忆第一解决方案
-- 你想要自动记忆检索和意见形成
-- 您想使用不同的LLM提供商（不仅仅是OpenAI）
-- 你想要`/think`端点的集成方法
+- 你希望使用 OpenAI 的对话能力。
+- 你已经在使用 OpenAI 智能体。
+- 你希望明确控制何时检索记忆。
+- 你希望将 Hindsight 与其他 OpenAI 功能结合使用。
+
+**以下情况适合直接使用 Hindsight：**
+
+- 你希望采用完整的记忆优先方案。
+- 你希望自动检索记忆并形成意见。
+- 你希望使用不同的 LLM 服务提供方，而不局限于 OpenAI。
+- 你希望使用 `/think` 端点提供的一体化方案。
 
 ## 学习要点 {#learning-points}
 
-运行此演示后，您将了解：
+运行本演示后，你将了解：
 
-1. 如何为任何OpenAI智能体添加复杂的记忆
-2. 函数调用如何桥接法学硕士和记忆系统
-3. 时间语义查询如何通过函数工具工作
-4. LLM+记忆整合的真实世界模式
+1. 如何为任意 OpenAI 智能体添加完善的记忆能力
+2. 函数调用如何连接 LLM 与记忆系统
+3. 如何通过函数工具执行时序语义查询
+4. LLM 与记忆系统集成的真实场景模式
 
 ## 核心文件 {#core-files}
 
-- `demo_conversational.py` - 展示偏好学习和目标跟踪的对话演示
-- `openai_coach.py` -OpenAI具有流媒体和记忆集成的辅助包装器
-- `memory_tools.py` - 桥接到的函数调用工具HindsightAPI
-- `.openai_assistant_id` - 保存的助手 ID（自动生成，gitignored）
+- `demo_conversational.py`：演示偏好学习和目标跟踪的对话应用
+- `openai_coach.py`：集成流式响应和记忆功能的 OpenAI Assistant 封装
+- `memory_tools.py`：通过函数调用连接 Hindsight API 的工具
+- `.openai_assistant_id`：保存的 Assistant ID（自动生成，已加入 gitignore）
 
 ## 常见问题 {#common-issues}
 
-**"OPENAI_API_KEY not set"**
+**“OPENAI_API_KEY 未设置”**
 ```bash
 export OPENAI_API_KEY=your_api_key_here
 ```
 
-**"Agent not found"**
-- 确保Hindsight健身教练智能体存在
+**“找不到智能体”**
+- 确认已创建 Hindsight 的 `fitness-coach` 智能体。
 
-**"Connection refused"**
-- 确保 Hindsight API 在 localhost:8888 上运行
+**“连接被拒绝”**
+- 确认 Hindsight API 正在 `localhost:8888` 上运行。
 
 ## 后续步骤 {#next-steps}
 
-1. 运行演示以查看其实际效果
-2. 尝试与教练聊天：`python openai_coach.py`
-3. 记录您自己的锻炼和膳食
-4. 尝试不同的问题
-5. 为您的用例添加自定义功能工具
+1. 运行演示，了解其工作方式。
+2. 尝试与教练对话：`python openai_coach.py`
+3. 记录自己的训练和膳食。
+4. 尝试提出不同的问题。
+5. 根据自己的使用场景添加自定义函数工具。
 
 ---
 
-**使用以下技术构建：**
-- OpenAI 助手API
-- Hindsight（时间语义记忆）
-- 集成函数调用
+**构建所用技术：**
+
+- OpenAI Assistants API
+- Hindsight（时序语义记忆）
+- 用于集成的函数调用
+
+---

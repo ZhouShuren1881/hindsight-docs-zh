@@ -8,12 +8,10 @@ interface PageHeroProps {
 }
 
 /**
- * The band at the top of the standalone pages — FAQ, Best Practices, Cookbook,
- * Changelog, the blog and every integration changelog.
+ * 独立页面顶部的横幅，适用于 FAQ、最佳实践、Cookbook、Changelog、博客和所有集成更新日志。
  *
- * The band itself is the shared `hs-hero-band` recipe in custom.css, the same
- * one the homepage hero and the two hub pages use, so this file carries only
- * its sizing and its own two pieces of content.
+ * 横幅本身使用 custom.css 中共享的 `hs-hero-band` 样式，与首页主视觉区和两个 Hub 页面相同；
+ * 因此本文件只负责设置尺寸和显示这两个内容项。
  */
 export default function PageHero({title, subtitle}: PageHeroProps): ReactNode {
   const hero = useRef<HTMLDivElement>(null);
@@ -23,7 +21,7 @@ export default function PageHero({title, subtitle}: PageHeroProps): ReactNode {
     if (!el) return;
     const root = document.documentElement;
     let frame: number | null = null;
-    // clientWidth excludes the vertical scrollbar, unlike 100vw.
+    // 与 100vw 不同，clientWidth 不包含垂直滚动条的宽度。
     const syncWidth = () => {
       el.style.setProperty('--page-hero-width', `${root.clientWidth}px`);
     };
