@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 Changelog for [`@vectorize-io/hindsight-paperclip`](https://www.npmjs.com/package/@vectorize-io/hindsight-paperclip).
 
-For the source code, see [`hindsight-integrations/paperclip`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/paperclip).
+For the source code, see [`hindsight-integrations/paperclip`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/paperclip).
 
 ← [Back to main changelog](/changelog)
 

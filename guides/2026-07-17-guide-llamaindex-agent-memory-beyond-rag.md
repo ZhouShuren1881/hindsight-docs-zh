@@ -14,7 +14,7 @@ LlamaIndex 最为人熟知的用途是 RAG：为文档建立索引，并检索�
 
 这两种能力并不冲突，而是相辅相成。只有 RAG 的 LlamaIndex 智能体每次运行时都要把每位用户当作陌生人重新认识一遍，并重新发现相同的上下文。只有记忆的 LlamaIndex 智能体虽然能保持连续性，却没有可供参考、有事实依据的知识库。把两者结合起来，智能体既能从索引中回忆持久、可靠的知识，也能回忆先前对话中不断变化的个人背景。
 
-本指南会说明 RAG 在哪里止步、记忆从哪里开始，然后介绍 Hindsight 如何通过集成中已有的两种模式为 LlamaIndex 添加记忆层：由智能体调用的工具（`HindsightToolSpec`），以及通过 LlamaIndex `BaseMemory` 接口实现的自动记忆。本指南侧重概念和实践，不是安装教程；安装步骤请参阅[配置指南](https://hindsight.vectorize.io/guides/2026/05/04/guide-llamaindex-memory-with-hindsight)。
+本指南会说明 RAG 在哪里止步、记忆从哪里开始，然后介绍 Hindsight 如何通过集成中已有的两种模式为 LlamaIndex 添加记忆层：由智能体调用的工具（`HindsightToolSpec`），以及通过 LlamaIndex `BaseMemory` 接口实现的自动记忆。本指南侧重概念和实践，不是安装教程；安装步骤请参阅[配置指南](/guides/2026/05/04/guide-llamaindex-memory-with-hindsight)。
 
 <!-- truncate -->
 
@@ -96,11 +96,11 @@ tools = spec.to_tool_list()
 agent = ReActAgent(tools=tools, llm=OpenAI(model="gpt-4o"))
 ```
 
-你可以通过 `spec.to_tool_list(spec_functions=["recall_memory", "reflect_on_memory"])` 限定要公开的工具，也可以通过 `create_hindsight_tools(...)` 工厂函数及其 `include_retain` / `include_recall` / `include_reflect` 标记来限定。两种模式共用同一个记忆库，因此自动存入的事实也能由显式召回工具获取，反之亦然。完整的参数表见 [LlamaIndex 集成文档](https://hindsight.vectorize.io/docs/integrations/llamaindex)。
+你可以通过 `spec.to_tool_list(spec_functions=["recall_memory", "reflect_on_memory"])` 限定要公开的工具，也可以通过 `create_hindsight_tools(...)` 工厂函数及其 `include_retain` / `include_recall` / `include_reflect` 标记来限定。两种模式共用同一个记忆库，因此自动存入的事实也能由显式召回工具获取，反之亦然。完整的参数表见 [LlamaIndex 集成文档](/sdks/integrations/llamaindex)。
 
 ## 将 LlamaIndex 连接到 Hindsight {#connect-llamaindex-to-hindsight}
 
-安装和首次连接步骤请参阅 [LlamaIndex 配置指南](https://hindsight.vectorize.io/guides/2026/05/04/guide-llamaindex-memory-with-hindsight)。简而言之：运行 `pip install hindsight-llamaindex`，将 `Hindsight` 客户端指向 Hindsight Cloud 或本地 API，并传入稳定的 `bank_id`。完成后，可以回到这里了解如何让记忆与 RAG 索引协同工作。
+安装和首次连接步骤请参阅 [LlamaIndex 配置指南](/guides/2026/05/04/guide-llamaindex-memory-with-hindsight)。简而言之：运行 `pip install hindsight-llamaindex`，将 `Hindsight` 客户端指向 Hindsight Cloud 或本地 API，并传入稳定的 `bank_id`。完成后，可以回到这里了解如何让记忆与 RAG 索引协同工作。
 
 ## 同时使用 RAG 和记忆 {#using-rag-and-memory-together}
 
@@ -182,10 +182,10 @@ response = await agent.run("What should I prioritize?", memory=memory)
 
 ## 后续步骤 {#next-steps}
 
-- 按照 [LlamaIndex 配置指南](https://hindsight.vectorize.io/guides/2026/05/04/guide-llamaindex-memory-with-hindsight)完成安装和首次连接
+- 按照 [LlamaIndex 配置指南](/guides/2026/05/04/guide-llamaindex-memory-with-hindsight)完成安装和首次连接
 - 如果你想使用托管式记忆后端，可以从 [Hindsight Cloud](https://hindsight.vectorize.io) 开始
-- 阅读[完整的 Hindsight 文档](https://hindsight.vectorize.io/docs)
-- 阅读[快速入门指南](https://hindsight.vectorize.io/docs/quickstart)
-- 查看 [Hindsight 的召回 API](https://hindsight.vectorize.io/docs/api/recall)
-- 查看 [Hindsight 的存入 API](https://hindsight.vectorize.io/docs/api/retain)
-- 阅读 [LlamaIndex 集成文档](https://hindsight.vectorize.io/docs/integrations/llamaindex)
+- 阅读[完整的 Hindsight 文档](/)
+- 阅读[快速入门指南](/developer/api/quickstart)
+- 查看 [Hindsight 的召回 API](/developer/api/recall)
+- 查看 [Hindsight 的存入 API](/developer/api/retain)
+- 阅读 [LlamaIndex 集成文档](/sdks/integrations/llamaindex)

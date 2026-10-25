@@ -12,7 +12,7 @@ hide_table_of_contents: true
 
 安全规则很简单：一个用户对应一个记忆库身份。实践中通常从稳定用户标识符生成 `bank_id`，并经常加入租户标识符，再为每个会话将该值传入 Hermes Hindsight 提供商。这样召回保持相关，记忆隔离也更容易理解。
 
-本指南介绍记忆库命名规则、Hermes 按用户配置生成方式、何时加入租户前缀，以及如何验证用户偏好不会进入其他用户的会话。操作时可参考 [Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)、[文档首页](/)、[快速入门指南](/developer/api/quickstart)和[记忆召回 API 参考](/developer/api/recall)。
+本指南介绍记忆库命名规则、Hermes 按用户配置生成方式、何时加入租户前缀，以及如何验证用户偏好不会进入其他用户的会话。操作时可参考 [Hermes 集成文档](/sdks/integrations/hermes)、[文档首页](/)、[快速入门指南](/developer/api/quickstart)和[记忆召回 API 参考](/developer/api/recall)。
 
 <!-- truncate -->
 
@@ -33,7 +33,7 @@ hide_table_of_contents: true
 - 应用具有稳定用户 ID，而非临时连接 ID。
 - 你知道用户是否属于不同租户。
 
-如需基础提供商配置，从 [Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)、[快速入门指南](/developer/api/quickstart)、[记忆存储 API 参考](/developer/api/retain)和[文档首页](/)开始。
+如需基础提供商配置，从 [Hermes 集成文档](/sdks/integrations/hermes)、[快速入门指南](/developer/api/quickstart)、[记忆存储 API 参考](/developer/api/retain)和[文档首页](/)开始。
 
 ## 分步操作 {#step-by-step}
 
@@ -102,7 +102,7 @@ PY
 }
 ```
 
-需要自动召回和显式工具时使用 `hybrid`；希望工具界面更简洁时，切换为 `context`。后续调整可参考 [Hermes 记忆模式指南](https://hindsight.vectorize.io/guides/2026/04/14/guide-hermes-memory-modes-with-hindsight-hybrid-context-tools)。
+需要自动召回和显式工具时使用 `hybrid`；希望工具界面更简洁时，切换为 `context`。后续调整可参考 [Hermes 记忆模式指南](/guides/2026/04/14/guide-hermes-memory-modes-with-hindsight-hybrid-context-tools)。
 
 ### 4. 尽早加入租户和环境边界 {#4-add-tenant-and-environment-boundaries-early}
 
@@ -181,7 +181,7 @@ PY
 ## 后续步骤 {#next-steps}
 
 - 如需多用户 Hermes 的托管后端，从 [Hindsight Cloud](https://hindsight.vectorize.io)开始。
-- 查阅 [Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)，了解提供商配置。
+- 查阅 [Hermes 集成文档](/sdks/integrations/hermes)，了解提供商配置。
 - 如果仍需要后端，使用[快速入门指南](/developer/api/quickstart)。
 - 阅读[记忆召回 API 参考](/developer/api/recall)和[记忆存储 API 参考](/developer/api/retain)，了解展示和存储的内容。
 - 对照 [AI 编码智能体的团队共享记忆](/blog/2026/07/10/shared-memory-across-ai-tools)，了解记忆库范围划分的取舍。

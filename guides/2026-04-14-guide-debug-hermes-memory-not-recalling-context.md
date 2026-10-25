@@ -14,7 +14,7 @@ hide_table_of_contents: true
 
 令人困扰的是，系统表面上似乎一切正常，实际使用时却会失败。`hermes memory status` 可能显示提供方已配置，工具列表中也可能出现 Hindsight 工具，配置文件看起来也没有问题，但智能体的回答仍像是没有记忆。这通常说明问题出在实际行为，而不只是配置：模式、预期或时机不匹配，都可能让正常的基础设施显得像是坏了。
 
-本指南按可靠的顺序带你排查：检查当前模式、确认 Hindsight 后端可以访问、验证自动召回钩子是否可用、实际执行跨轮记忆测试、查看日志，并处理最常见的召回缺失原因。排查时如需完整配置参考，可同时打开 [Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)、[文档首页](/)和[快速入门指南](/developer/api/quickstart)。
+本指南按可靠的顺序带你排查：检查当前模式、确认 Hindsight 后端可以访问、验证自动召回钩子是否可用、实际执行跨轮记忆测试、查看日志，并处理最常见的召回缺失原因。排查时如需完整配置参考，可同时打开 [Hermes 集成文档](/sdks/integrations/hermes)、[文档首页](/)和[快速入门指南](/developer/api/quickstart)。
 
 <!-- truncate -->
 
@@ -121,7 +121,7 @@ grep '^HINDSIGHT_' ~/.hermes/.env || true
 
 如果缺少 API 密钥或 URL，Hermes 可能看似完成了初始化，实际上却没有可用后端。
 
-如果使用本地模式，且需要更全面的配置参考，可在排查时随手查阅 [Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)和[快速入门指南](/developer/api/quickstart)。
+如果使用本地模式，且需要更全面的配置参考，可在排查时随手查阅 [Hermes 集成文档](/sdks/integrations/hermes)和[快速入门指南](/developer/api/quickstart)。
 
 ### 3. 检查记忆是否确实存入 {#3-test-whether-retention-is-succeeding-at-all}
 
@@ -344,12 +344,12 @@ hermes memory status
 
 ### 如需深入 CLI 之外排查，可以阅读什么？ {#where-can-i-learn-more-if-i-want-to-debug-deeper-than-the-cli}
 
-先阅读 [Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)，然后查看 [Recall API 参考](/developer/api/recall)和 [Retain API 参考](/developer/api/retain)。如果还想看自动注入记忆的另一个实例，可以对照 [OpenClaw 集成文档](/sdks/integrations/openclaw)。
+先阅读 [Hermes 集成文档](/sdks/integrations/hermes)，然后查看 [Recall API 参考](/developer/api/recall)和 [Retain API 参考](/developer/api/retain)。如果还想看自动注入记忆的另一个实例，可以对照 [OpenClaw 集成文档](/sdks/integrations/openclaw)。
 
 ## 后续步骤 {#next-steps}
 
 - 如果想最快开始测试记忆，同时避免本地守护进程配置带来的干扰，可以[创建 Hindsight Cloud 账户](https://hindsight.vectorize.io)。
-- 实际排查问题时，可随时查阅 [Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)。
+- 实际排查问题时，可随时查阅 [Hermes 集成文档](/sdks/integrations/hermes)。
 - 想先建立一个更简单的配置基线，再继续排查，可阅读[快速入门指南](/developer/api/quickstart)。
 - 通过 [Recall API 参考](/developer/api/recall)了解召回正常时应该返回什么。
 - 通过 [Retain API 参考](/developer/api/retain)分析预期信息为何可能从未被存入。

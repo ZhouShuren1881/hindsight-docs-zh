@@ -75,7 +75,7 @@ GitHub 上的一万颗星不只是一个数字。它说明成千上万名 AI 工
 
 这种模式很重要，因为开发者会使用多种 AI 工具。没有统一的智能体记忆，你就得不断切换上下文、反复解释自己的情况。有了作为基础的 Hindsight 智能体记忆，一个记忆库就能服务所有工具。
 
-[阅读完整故事：“我使用的每个 AI 工具，都有同一份记忆”](https://hindsight.vectorize.io/blog/2026/04/07/one-memory-for-every-ai-tool)
+[阅读完整故事：“我使用的每个 AI 工具，都有同一份记忆”](/blog/2026/04/07/one-memory-for-every-ai-tool)
 
 **2. 能学习代码库的 AI 编程智能体**
 
@@ -85,7 +85,7 @@ GitHub 上的一万颗星不只是一个数字。它说明成千上万名 AI 工
 
 这正是智能体记忆的核心承诺：随着持续使用，智能体的表现会不断改善，就像与你熟悉代码库的资深工程师合作一样。
 
-[阅读故事：“OpenClaude：为 Claude Code 智能体提供长期记忆”](https://hindsight.vectorize.io/blog/2026/03/23/claude-code-telegram)
+[阅读故事：“OpenClaude：为 Claude Code 智能体提供长期记忆”](/blog/2026/03/23/claude-code-telegram)
 
 **3. 尊重隐私的金融 AI**
 
@@ -95,7 +95,7 @@ GitHub 上的一万颗星不只是一个数字。它说明成千上万名 AI 工
 
 对金融科技行业来说，这一点很重要，因为财务顾问需要依托机构记忆才能更好地工作。部署在公司自有基础设施上的 Hindsight 智能体记忆同时解决了学习和合规问题。
 
-[阅读案例研究：“我们如何为金融产品构建多用户 AI 记忆”](https://hindsight.vectorize.io/blog/2026/04/13/hindsight-financial-ai-memory-customer-story)
+[阅读案例研究：“我们如何为金融产品构建多用户 AI 记忆”](/blog/2026/04/13/hindsight-financial-ai-memory-customer-story)
 
 有个团队在 Slack 上分享了他们的评估过程：
 

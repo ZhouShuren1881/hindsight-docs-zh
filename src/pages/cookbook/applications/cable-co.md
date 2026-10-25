@@ -11,7 +11,7 @@ sidebar_position: 1
 :::
 
 
-这是一个 AI 助手，可通过为模拟客户场景建议回复和操作，协助客户服务代表（CSR）。CSR 可以批准或拒绝每条建议，并提供反馈。该助手会通过 [Hindsight](https://hindsight.vectorize.io) 从纠正中学习，不再重复犯过的错误。
+这是一个 AI 助手，可通过为模拟客户场景建议回复和操作，协助客户服务代表（CSR）。CSR 可以批准或拒绝每条建议，并提供反馈。该助手会通过 [Hindsight](/) 从纠正中学习，不再重复犯过的错误。
 
 ## 前提条件 {#prerequisites}
 

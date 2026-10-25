@@ -22,7 +22,7 @@ hide_table_of_contents: true
 - **向量检索**擅长找到*概念上接近*的内容，在释义和同义词方面非常出色，却常常无法处理精确名称、多跳问题、矛盾和时间信息。
 - **知识图谱**用于建模*实体及实体之间的关系*。它擅长回答“谁”“为什么”以及“它们之间如何关联”，但需要预先执行信息抽取和实体解析。
 - **智能体记忆不是文档 RAG。**它涉及反复出现的实体、会变化的事实和时间信息，而这些恰好是纯向量检索最不擅长处理的查询。
-- 生产环境中的答案是**混合检索**：同时运行向量、关键词和时间检索，再融合结果。[Hindsight](https://hindsight.vectorize.io) 每次执行 `recall` 都会这样做。
+- 生产环境中的答案是**混合检索**：同时运行向量、关键词和时间检索，再融合结果。[Hindsight](/) 每次执行 `recall` 都会这样做。
 
 ## 向量检索真正擅长什么 {#what-vector-search-is-actually-good-at}
 
@@ -47,7 +47,7 @@ hide_table_of_contents: true
 
 这种结构恰好能回答向量检索难以处理的问题：
 
-- **实体是一等对象。**只需一次性将“Sarah”“Sarah Chen”和“she”解析到同一个节点，之后关于她的每条记忆都能关联到同一位置。（Hindsight 使用共现图而不是嵌入向量来实现这一点；这本身就是[一个棘手的问题](https://hindsight.vectorize.io/blog/2026/06/29/entity-resolution-agent-memory)。）
+- **实体是一等对象。**只需一次性将“Sarah”“Sarah Chen”和“she”解析到同一个节点，之后关于她的每条记忆都能关联到同一位置。（Hindsight 使用共现图而不是嵌入向量来实现这一点；这本身就是[一个棘手的问题](/blog/2026/06/29/entity-resolution-agent-memory)。）
 - **关系支持多跳检索。**“还有谁参与了 Alice 离开的那个项目？”需要两跳遍历：Alice → 项目 → 人员。图可以沿这条路径检索，向量索引则无法表达这种关系。
 - **矛盾可以保留在结构中。**Alice 换工作时，你不希望两个嵌入向量相似却相互冲突的文本块都排在前面。在图中，新关系可以取代旧关系，同时把历史保留为一条时间线，而不是变成矛盾内容。
 
@@ -72,7 +72,7 @@ hide_table_of_contents: true
 - 其中的事实**不断变化**：某人的角色、一个决定或某种状态。昨天为真的内容，今天可能就与新事实冲突。
 - 它**对时间高度敏感**：“上周”“迁移之前”“后来发生了什么变化”。
 
-纯向量检索最不擅长处理的，恰好是这三种情况；图则最擅长处理。因此，“只装一个向量数据库”是[智能体记忆的错误默认选择](https://hindsight.vectorize.io/blog/2026/05/12/case-against-external-vector-dbs-agent-memory)。这并不是说嵌入向量没有用，而是因为它们只解决了更大任务中的概念相似度这一部分。
+纯向量检索最不擅长处理的，恰好是这三种情况；图则最擅长处理。因此，“只装一个向量数据库”是[智能体记忆的错误默认选择](/blog/2026/05/12/case-against-external-vector-dbs-agent-memory)。这并不是说嵌入向量没有用，而是因为它们只解决了更大任务中的概念相似度这一部分。
 
 ## 生产环境的答案是“兼用”，不是“二选一” {#the-production-answer-is-and-not-vs}
 
@@ -81,9 +81,9 @@ hide_table_of_contents: true
 - **语义检索**：基于嵌入向量计算相似度，用于理解含义和释义。
 - **关键词检索**：使用 BM25 进行全文检索，用于匹配准确名称、代码和标识符。
 - **图检索**：遍历预先计算的连接（实体共现、语义邻居和因果链），用于回答多跳问题和“为什么”。
-- **时间检索**：限制时间范围进行记忆召回，并[通过事件传播激活](https://hindsight.vectorize.io/blog/2026/03/12/spreading-activation-memory-graphs)，用于回答“何时”。
+- **时间检索**：限制时间范围进行记忆召回，并[通过事件传播激活](/blog/2026/03/12/spreading-activation-memory-graphs)，用于回答“何时”。
 
-四种检索并发运行，使用倒数排名融合合并结果，再由交叉编码器对筛出的结果进行重排序。这样，最终列表会按实际相关性排序，而不是由最强势的检索策略决定顺序。想了解背后的工程实现，可以阅读我们介绍[四路并行混合检索如何运作的文章](https://hindsight.vectorize.io/blog/2026/03/27/parallel-hybrid-search)。
+四种检索并发运行，使用倒数排名融合合并结果，再由交叉编码器对筛出的结果进行重排序。这样，最终列表会按实际相关性排序，而不是由最强势的检索策略决定顺序。想了解背后的工程实现，可以阅读我们介绍[四路并行混合检索如何运作的文章](/blog/2026/03/27/parallel-hybrid-search)。
 
 在这里，知识图谱并不是向量索引的竞争者，而是合唱中的一个声部，恰好能处理嵌入向量无法回答的问题。
 
@@ -105,7 +105,7 @@ hide_table_of_contents: true
 
 ### 需要 Neo4j 这样的专用图数据库吗？ {#do-i-need-a-dedicated-graph-database-like-neo4j}
 
-不一定。知识图谱是一种*数据模型*，不是某个特定产品。Hindsight 在 PostgreSQL 中构建并遍历图谱，与向量索引和全文索引并存，因此无需另行部署并同步第二个数据库，也能进行图遍历。这也是[不外挂外部向量数据库（或图数据库）的理由](https://hindsight.vectorize.io/blog/2026/05/12/case-against-external-vector-dbs-agent-memory)之一：对于智能体记忆工作负载，额外的运维成本往往得不偿失。
+不一定。知识图谱是一种*数据模型*，不是某个特定产品。Hindsight 在 PostgreSQL 中构建并遍历图谱，与向量索引和全文索引并存，因此无需另行部署并同步第二个数据库，也能进行图遍历。这也是[不外挂外部向量数据库（或图数据库）的理由](/blog/2026/05/12/case-against-external-vector-dbs-agent-memory)之一：对于智能体记忆工作负载，额外的运维成本往往得不偿失。
 
 ### 什么是混合检索？ {#what-is-hybrid-search}
 
@@ -122,6 +122,6 @@ GraphRAG 风格的方法会在*静态文档语料库*上构建知识图谱，以
 ---
 
 **了解更多：**
-- [Recall 与 Reflect](https://hindsight.vectorize.io/blog/2026/07/24/recall-vs-reflect) — 搜索智能体的记忆，或让它基于记忆推理
-- [四路并行混合检索如何运作](https://hindsight.vectorize.io/blog/2026/03/27/parallel-hybrid-search) — 融合四种策略背后的工程实现
-- [智能体记忆中的实体解析](https://hindsight.vectorize.io/blog/2026/06/29/entity-resolution-agent-memory) — 如何将拥有多个名称的同一个人解析为一个节点
+- [Recall 与 Reflect](/blog/2026/07/24/recall-vs-reflect) — 搜索智能体的记忆，或让它基于记忆推理
+- [四路并行混合检索如何运作](/blog/2026/03/27/parallel-hybrid-search) — 融合四种策略背后的工程实现
+- [智能体记忆中的实体解析](/blog/2026/06/29/entity-resolution-agent-memory) — 如何将拥有多个名称的同一个人解析为一个节点

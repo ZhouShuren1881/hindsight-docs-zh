@@ -95,7 +95,7 @@ Continue 没有预提示钩子，因此适配器通过 Continue 提供的扩展�
 
 ## 在智能体模式下自动召回 {#automatic-recall-in-agent-mode}
 
-`@hindsight` 提供商适合精确的按需召回。如果希望自动召回和存入记忆，可以将 Hindsight MCP 服务器接入 Continue 的智能体模式，并添加“先召回”规则。示例资源位于 [`examples/.continue/`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/continue/examples/.continue) 目录中：
+`@hindsight` 提供商适合精确的按需召回。如果希望自动召回和存入记忆，可以将 Hindsight MCP 服务器接入 Continue 的智能体模式，并添加“先召回”规则。示例资源位于 [`examples/.continue/`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/continue/examples/.continue) 目录中：
 
 - 注册 Hindsight 工具的 MCP 服务器配置块
 - 要求智能体自动召回的规则文件

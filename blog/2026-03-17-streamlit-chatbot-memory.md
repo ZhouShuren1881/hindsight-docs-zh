@@ -63,7 +63,7 @@ st.sidebar → 显示召回的事实和 Reflect 按钮
 这套架构分为三层：
 
 - **`st.session_state`** — 每个浏览器标签页独立的临时对话历史（关闭浏览器后会丢失）
-- **[Hindsight](https://hindsight.vectorize.io)** — 跨重启保留的持久记忆（事实、实体和[知识图谱](/blog/2026/03/12/spreading-activation-memory-graphs)）
+- **[Hindsight](/)** — 跨重启保留的持久记忆（事实、实体和[知识图谱](/blog/2026/03/12/spreading-activation-memory-graphs)）
 - **OpenAI** — 根据加入记忆的上下文生成回复
 
 ---

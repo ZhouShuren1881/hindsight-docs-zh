@@ -113,7 +113,7 @@ image: /img/blog/your-agent-is-not-forgetful.webp
 
 并非所有场景都适合把一切内容放在同一个记忆库里。
 
-有些架构需要每个项目各有一个记忆库；有些需要整个团队共享记忆；还有些要求严格隔离每位用户的数据。如果记忆范围划分不当，内容就会变得嘈杂，或越过本不该跨越的边界。[记忆库参考文档](https://hindsight.vectorize.io/developer/api/memory-banks)介绍了不同架构中的常见范围划分模式。
+有些架构需要每个项目各有一个记忆库；有些需要整个团队共享记忆；还有些要求严格隔离每位用户的数据。如果记忆范围划分不当，内容就会变得嘈杂，或越过本不该跨越的边界。[记忆库参考文档](/developer/api/memory-banks)介绍了不同架构中的常见范围划分模式。
 
 这就是演示原型和可靠系统之间的差别。
 
@@ -205,7 +205,7 @@ image: /img/blog/your-agent-is-not-forgetful.webp
 
 ## Hindsight 如何发挥作用 {#how-hindsight-fits}
 
-[Hindsight](https://hindsight.vectorize.io) 是为智能体打造的学习层，其核心理念是：记忆应当帮助系统进步，而不只是存储信息。
+[Hindsight](/) 是为智能体打造的学习层，其核心理念是：记忆应当帮助系统进步，而不只是存储信息。
 
 Hindsight 不把记忆当作一个庞大的对话记录库，而是专注于让学习成为可能的机制：
 
@@ -215,7 +215,7 @@ Hindsight 不把记忆当作一个庞大的对话记录库，而是专注于让�
 - **Reflect（反思）**——智能体和技能可以查询心智模型，综合生成更好的回答
 - **划定范围**——按用户、项目、团队或渠道划分学习范围，让每种上下文都能独立学习
 
-Hindsight 可与现有智能体框架集成，包括 LangGraph、CrewAI、Pydantic AI、Claude Code 等。请参阅[集成指南](https://hindsight.vectorize.io/sdks/integrations)，为你的技术栈添加智能体记忆。
+Hindsight 可与现有智能体框架集成，包括 LangGraph、CrewAI、Pydantic AI、Claude Code 等。请参阅[集成指南](/integrations)，为你的技术栈添加智能体记忆。
 
 它既可以为一个智能体提供支持，也可以服务于多个智能体。
 
@@ -233,7 +233,7 @@ Hindsight 可与现有智能体框架集成，包括 LangGraph、CrewAI、Pydant
 
 记忆并非没有成本，也并非总是必需的。
 
-如果你的工作流主要是无需连续性的单次提示，那么增加记忆层可能只会带来不必要的开销。如果数据高度敏感，就应该仔细考虑记忆存储在哪里，以及自托管是否适合你的情况。[Hindsight 快速入门](https://hindsight.vectorize.io/developer/api/quickstart)介绍了对隐私有要求的团队可采用的自托管部署方案。
+如果你的工作流主要是无需连续性的单次提示，那么增加记忆层可能只会带来不必要的开销。如果数据高度敏感，就应该仔细考虑记忆存储在哪里，以及自托管是否适合你的情况。[Hindsight 快速入门](/developer/api/quickstart)介绍了对隐私有要求的团队可采用的自托管部署方案。
 
 此外还有其他替代方案，但各有局限：
 
@@ -263,7 +263,7 @@ Hindsight 可与现有智能体框架集成，包括 LangGraph、CrewAI、Pydant
 ## 后续步骤 {#next-steps}
 
 - [注册 Hindsight Cloud](https://ui.hindsight.vectorize.io)，以最快方式在无需基础设施的情况下添加智能体记忆
-- 如果你想自行托管，请阅读[快速入门](https://hindsight.vectorize.io/developer/api/quickstart)
-- 浏览[记忆库参考文档](https://hindsight.vectorize.io/developer/api/memory-banks)，了解范围划分模式
-- 查看[集成指南](https://hindsight.vectorize.io/sdks/integrations)，为现有智能体添加记忆
+- 如果你想自行托管，请阅读[快速入门](/developer/api/quickstart)
+- 浏览[记忆库参考文档](/developer/api/memory-banks)，了解范围划分模式
+- 查看[集成指南](/integrations)，为现有智能体添加记忆
 - 如果你正在比较检索和记忆，不妨从两者都用开始：用检索查找参考资料，用记忆积累交互历史

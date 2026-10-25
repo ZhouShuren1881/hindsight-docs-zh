@@ -14,7 +14,7 @@ hide_table_of_contents: true
 
 这很有用，因为基于心跳运行的智能体常常反复进行成本高昂的上下文收集。它们会重新发现相同的用户偏好、重试同样失败的方法，也会丢失先前运行的结果。Hindsight 为 Paperclip 提供长期记忆层，让下一个心跳周期能够承接上一次的学习成果。
 
-本指南介绍快速入门路径、HTTP 和进程适配器模式、按公司和智能体隔离记忆库，以及确认记忆层确实正常工作的检查方法。操作时请打开[文档首页](https://hindsight.vectorize.io/docs)和[快速开始指南](https://hindsight.vectorize.io/docs/quickstart)作为参考。
+本指南介绍快速入门路径、HTTP 和进程适配器模式、按公司和智能体隔离记忆库，以及确认记忆层确实正常工作的检查方法。操作时请打开[文档首页](/)和[快速开始指南](/developer/api/quickstart)作为参考。
 
 <!-- truncate -->
 
@@ -31,7 +31,7 @@ hide_table_of_contents: true
 开始前，请确保具备以下条件：
 
 - 一个已通过心跳模型运行的 Paperclip 智能体
-- 一个 Hindsight 后端：[Hindsight Cloud](https://ui.hindsight.vectorize.io)（推荐：提供免费套餐，无需运行基础设施）或[自行托管](https://hindsight.vectorize.io/developer/installation)
+- 一个 Hindsight 后端：[Hindsight Cloud](https://ui.hindsight.vectorize.io)（推荐：提供免费套餐，无需运行基础设施）或[自行托管](/developer/installation)
 - 稳定的 `companyId` 和 `agentId` 标识符
 
 标识符设计很重要。Paperclip 的默认隔离模式很合适，因为它能清晰映射到多租户设置。
@@ -103,7 +103,7 @@ paperclip::{companyId}::{agentId}
 - **仅按智能体隔离**：同一个智能体需要在多个公司上下文之间延续记忆时使用
 - **自定义前缀**：需要使用自己的 bank 命名空间方案时使用
 
-如果之后想更深入地了解检索行为，请查看 [Hindsight 的 recall API](https://hindsight.vectorize.io/docs/api/recall)。如果想了解存储哪些内容以及如何存储，请查看 [Hindsight 的 retain API](https://hindsight.vectorize.io/docs/api/retain)。
+如果之后想更深入地了解检索行为，请查看 [Hindsight 的 recall API](/developer/api/recall)。如果想了解存储哪些内容以及如何存储，请查看 [Hindsight 的 retain API](/developer/api/retain)。
 
 ## HTTP 适配器集成 {#http-adapter-integration}
 

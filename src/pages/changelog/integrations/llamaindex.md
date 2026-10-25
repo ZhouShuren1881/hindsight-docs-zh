@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 Changelog for [`hindsight-llamaindex`](https://pypi.org/project/hindsight-llamaindex/).
 
-For the source code, see [`hindsight-integrations/llamaindex`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/llamaindex).
+For the source code, see [`hindsight-integrations/llamaindex`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/llamaindex).
 
 ← [Back to main changelog](/changelog)
 

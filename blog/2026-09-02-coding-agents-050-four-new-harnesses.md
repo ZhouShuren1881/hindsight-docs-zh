@@ -141,6 +141,6 @@ npm install -g @vectorize-io/hindsight-coding-agents@latest
 
 ## 了解更多 {#learn-more}
 
-- [Coding Agents 更新日志](https://hindsight.vectorize.io/changelog/integrations/coding-agents)：查看所有版本的完整记录。
+- [Coding Agents 更新日志](/changelog/integrations/coding-agents)：查看所有版本的完整记录。
 - [面向编程智能体的知识页](/blog/2026/08/13/knowledge-pages-coding-agents)：智能体会首先读取的人工维护层。
 - [一个记忆库还是多个？智能体记忆结构指南](/blog/2026/07/16/bank-strategy-agent-memory)：了解记忆如何在不同仓库和智能体之间划分范围。

@@ -10,7 +10,7 @@ hide_table_of_contents: true
 
 ![安全降低 Hindsight 整合过程中的内存占用扩散](/img/guides/guide-reduce-hindsight-consolidation-memory-fan-out.webp)
 
-如果需要**降低 Hindsight 整合过程中的内存扇出**，近期默认值确实带来了改进。过去，内部召回可能放大内存使用量，尤其是在大型记忆库中：加载来源事实和重排序器的行为可能使 RSS 高于预期。新的默认值让这条处理路径受到更多限制。调整时，请备好[配置指南](/developer/configuration)、[观测指南](/developer/observations)、[安装指南](/developer/installation)和[文档首页](https://hindsight.vectorize.io)以供参考。
+如果需要**降低 Hindsight 整合过程中的内存扇出**，近期默认值确实带来了改进。过去，内部召回可能放大内存使用量，尤其是在大型记忆库中：加载来源事实和重排序器的行为可能使 RSS 高于预期。新的默认值让这条处理路径受到更多限制。调整时，请备好[配置指南](/developer/configuration)、[观测指南](/developer/observations)、[安装指南](/developer/installation)和[文档首页](/)以供参考。
 
 <!-- truncate -->
 
@@ -91,4 +91,4 @@ export HINDSIGHT_API_RERANKER_FLASHRANK_CPU_MEM_ARENA=false
 - [配置指南](/developer/configuration)
 - [观测指南](/developer/observations)
 - [安装指南](/developer/installation)
-- [文档首页](https://hindsight.vectorize.io)
+- [文档首页](/)

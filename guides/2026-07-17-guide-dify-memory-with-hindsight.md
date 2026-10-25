@@ -51,7 +51,7 @@ hide_table_of_contents: true
 - **API URL** — 默认值为 `https://api.hindsight.vectorize.io`（Cloud）；如果使用自托管服务器，请改为对应地址
 - **API Key** — 你的 `hsk_...` 密钥（对于未启用身份验证的自托管实例，此项可选）
 
-如果你还没有密钥，可以在免费套餐中[注册 Hindsight Cloud](https://ui.hindsight.vectorize.io)，然后从控制台获取密钥；也可以[自托管](https://hindsight.vectorize.io/developer/installation)服务器。
+如果你还没有密钥，可以在免费套餐中[注册 Hindsight Cloud](https://ui.hindsight.vectorize.io)，然后从控制台获取密钥；也可以[自托管](/developer/installation)服务器。
 
 ## 步骤 3：将工具接入工作流 {#step-3-wire-the-tools-into-a-workflow}
 

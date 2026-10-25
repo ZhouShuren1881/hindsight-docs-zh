@@ -13,7 +13,7 @@ hide_table_of_contents: true
 
 Hindsight 的 GitHub 星标数刚刚突破 **40,000**。
 
-在[达到两万星标时](https://hindsight.vectorize.io/blog/2026/08/14/hindsight-20k-stars)，我们按版本梳理了完整时间线。最初的两万用了约十个月。
+在[达到两万星标时](/blog/2026/08/14/hindsight-20k-stars)，我们按版本梳理了完整时间线。最初的两万用了约十个月。
 
 第二个两万只用了 45 天。
 
@@ -62,10 +62,10 @@ Hindsight 的 GitHub 星标数刚刚突破 **40,000**。
 
 星标翻倍恰好赶上我们迄今发布最密集的一段时间。从两万星标那篇文章发布以来：**发布了 24 个版本**，合并了 678 个拉取请求，并推出了四个核心版本。
 
-- **[0.9.1](https://hindsight.vectorize.io/blog/2026/08/14/version-0-9-1)** 让 Reflect 能够使用当前日期，并使迁移内容可以跨实例携带。
-- **[0.9.2](https://hindsight.vectorize.io/blog/2026/08/24/version-0-9-2)** 让 MCP 客户端可以访问知识库，为 Recall 添加显式时间窗口，并使 Retain 操作的内存占用上限不再随文档大小增长。
-- **[0.10.0](https://hindsight.vectorize.io/blog/2026/09/14/version-0-10-0)** 将图片和文件纳入一等记忆内容，加入提示词预览，让你能准确查看一次操作将发送什么内容，并重建了请求路径。
-- **[0.10.1](https://hindsight.vectorize.io/blog/2026/09/21/version-0-10-1)** 新增了 [Jev 重排序模型](https://hindsight.vectorize.io/blog/2026/09/24/adding-jev-reranker-what-we-learned)，并让[记忆库可以打包迁移](https://hindsight.vectorize.io/blog/2026/09/22/move-a-memory-bank)。
+- **[0.9.1](/blog/2026/08/14/version-0-9-1)** 让 Reflect 能够使用当前日期，并使迁移内容可以跨实例携带。
+- **[0.9.2](/blog/2026/08/24/version-0-9-2)** 让 MCP 客户端可以访问知识库，为 Recall 添加显式时间窗口，并使 Retain 操作的内存占用上限不再随文档大小增长。
+- **[0.10.0](/blog/2026/09/14/version-0-10-0)** 将图片和文件纳入一等记忆内容，加入提示词预览，让你能准确查看一次操作将发送什么内容，并重建了请求路径。
+- **[0.10.1](/blog/2026/09/21/version-0-10-1)** 新增了 [Jev 重排序模型](/blog/2026/09/24/adding-jev-reranker-what-we-learned)，并让[记忆库可以打包迁移](/blog/2026/09/22/move-a-memory-bank)。
 
 集成进展比核心功能更快，这通常说明人们确实在把 Hindsight 接入实际系统。
 
@@ -83,6 +83,6 @@ Hindsight 的 GitHub 星标数刚刚突破 **40,000**。
 
 ## 了解更多 {#learn-more}
 
-- [两万星标：Hindsight 如何逐版本走到今天](https://hindsight.vectorize.io/blog/2026/08/14/hindsight-20k-stars)：查看完整时间线。
-- [这个夏天，Hindsight 学会了什么](https://hindsight.vectorize.io/blog/2026/09/18/what-hindsight-learned-this-summer)：了解能力演进，而非版本列表。
+- [两万星标：Hindsight 如何逐版本走到今天](/blog/2026/08/14/hindsight-20k-stars)：查看完整时间线。
+- [这个夏天，Hindsight 学会了什么](/blog/2026/09/18/what-hindsight-learned-this-summer)：了解能力演进，而非版本列表。
 - [项目仓库](https://github.com/vectorize-io/hindsight)

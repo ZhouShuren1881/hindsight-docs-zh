@@ -132,8 +132,8 @@ Retain 和整合所用的系统前缀有意不依赖特定记忆库。服务器�
 
 ## 了解更多 {#learn-more}
 
-- [Hindsight 0.10.0 有哪些新内容](https://hindsight.vectorize.io/blog/2026/09/14/version-0-10-0)：了解本次发布的其他内容。
-- [如何构建考虑性格倾向的智能体](https://hindsight.vectorize.io/blog/2026/03/13/disposition-aware-agents)：了解 Reflect 提示词底部会出现的性格特征。
-- [深入了解 retain()](https://hindsight.vectorize.io/blog/2026/07/13/inside-retain-agent-memory)：了解这些提示词驱动的写入路径。
-- [把截图存入智能体记忆，需要做什么](https://hindsight.vectorize.io/blog/2026/09/16/screenshot-agent-memory)：了解预览省略的附件指令。
-- [停止膨胀常驻上下文](https://hindsight.vectorize.io/blog/2026/09/16/stop-growing-your-system-prompt)：了解如何判断每一轮对话都值得发送哪些内容。
+- [Hindsight 0.10.0 有哪些新内容](/blog/2026/09/14/version-0-10-0)：了解本次发布的其他内容。
+- [如何构建考虑性格倾向的智能体](/blog/2026/03/13/disposition-aware-agents)：了解 Reflect 提示词底部会出现的性格特征。
+- [深入了解 retain()](/blog/2026/07/13/inside-retain-agent-memory)：了解这些提示词驱动的写入路径。
+- [把截图存入智能体记忆，需要做什么](/blog/2026/09/16/screenshot-agent-memory)：了解预览省略的附件指令。
+- [停止膨胀常驻上下文](/blog/2026/09/16/stop-growing-your-system-prompt)：了解如何判断每一轮对话都值得发送哪些内容。

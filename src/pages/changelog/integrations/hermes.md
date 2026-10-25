@@ -4,9 +4,9 @@ hide_table_of_contents: true
 
 # Hermes Agent Integration Changelog
 
-Changelog for [`hindsight`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/hermes).
+Changelog for [`hindsight`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/hermes).
 
-For the source code, see [`hindsight-integrations/hermes`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/hermes).
+For the source code, see [`hindsight-integrations/hermes`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/hermes).
 
 ← [Back to main changelog](/changelog)
 

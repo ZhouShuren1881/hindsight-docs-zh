@@ -194,8 +194,8 @@ hermes plugins update hindsight    # 此时会拉取我们的 main 分支
 
 - [Hermes 记忆提供方](https://hermes-agent.nousresearch.com/docs/user-guide/features/memory-providers)：了解上游对这次迁移的说明。
 - [Hermes 目录中的 Hindsight 插件](https://hermes-agent.nousresearch.com/docs/plugins/hindsight)
-- [Hermes Agent 使用 Hindsight 实现持久记忆](https://hindsight.vectorize.io/sdks/integrations/hermes)：查看完整配置参考。
-- [完整开放的智能体记忆技术栈：自托管 Hermes + Hindsight](https://hindsight.vectorize.io/blog/2026/07/17/hermes-hindsight-open-stack)：了解如何在本地运行整套系统。
-- [为每个 Hermes 机器人配备独立记忆](https://hindsight.vectorize.io/blog/2026/08/18/hermes-bot-mode-memory)：了解如何按机器人隔离记忆库。
+- [Hermes Agent 使用 Hindsight 实现持久记忆](/sdks/integrations/hermes)：查看完整配置参考。
+- [完整开放的智能体记忆技术栈：自托管 Hermes + Hindsight](/blog/2026/07/17/hermes-hindsight-open-stack)：了解如何在本地运行整套系统。
+- [为每个 Hermes 机器人配备独立记忆](/blog/2026/08/18/hermes-bot-mode-memory)：了解如何按机器人隔离记忆库。
 
 ---

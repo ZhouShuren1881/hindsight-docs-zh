@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 Changelog for [`hindsight-openai-agents`](https://pypi.org/project/hindsight-openai-agents/).
 
-For the source code, see [`hindsight-integrations/openai-agents`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/openai-agents).
+For the source code, see [`hindsight-integrations/openai-agents`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/openai-agents).
 
 ← [Back to main changelog](/changelog)
 

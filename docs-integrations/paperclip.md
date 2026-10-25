@@ -6,7 +6,7 @@ description: "通过 Hindsight 为所有 Paperclip 智能体添加长期记忆�
 
 # Paperclip {#paperclip}
 
-借助 [Hindsight](https://hindsight.vectorize.io)，为 [Paperclip AI](https://github.com/paperclipai/paperclip) 智能体提供持久记忆。
+借助 [Hindsight](/)，为 [Paperclip AI](https://github.com/paperclipai/paperclip) 智能体提供持久记忆。
 
 只需安装一次 `@vectorize-io/hindsight-paperclip` 插件。Paperclip 实例中的每个智能体都会自动获得长期记忆，并在不同运行、公司和重启之间持续保留，无需更改代码。
 

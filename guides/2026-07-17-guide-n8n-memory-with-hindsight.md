@@ -60,7 +60,7 @@ npm install @vectorize-io/n8n-nodes-hindsight
 
 凭证会自动添加 `Bearer` 授权标头。它还可以通过 Hindsight `/health` 端点进行测试；云端和自托管服务都支持该端点。
 
-如果你还没有密钥，可以[注册 Hindsight Cloud](https://ui.hindsight.vectorize.io)（免费套餐），然后从控制面板获取密钥；也可以改为[自行托管](https://hindsight.vectorize.io/developer/installation)。
+如果你还没有密钥，可以[注册 Hindsight Cloud](https://ui.hindsight.vectorize.io)（免费套餐），然后从控制面板获取密钥；也可以改为[自行托管](/developer/installation)。
 
 ## 第三步：添加 Hindsight 节点并选择操作 {#step-3-add-a-hindsight-node-and-pick-an-operation}
 

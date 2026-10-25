@@ -10,7 +10,7 @@ hide_table_of_contents: true
 
 ![安全地减少 Hindsight 整合过程中的内存扇出](/img/guides/guide-reduce-hindsight-consolidation-memory-fan-out.webp)
 
-如果您需要**减少 Hindsight 整合过程中的内存扇出**，最近的默认值确实有了改进。过去，整合可能会在内部召回期间放大内存用量，尤其是在大型记忆库上：来源事实的加载和重排序模型的行为都可能使 RSS 高于预期。新的默认值让这条处理路径受到更多限制。调整时，请备好[配置指南](https://hindsight.vectorize.io/sdks/developer/configuration)、[观测指南](https://hindsight.vectorize.io/sdks/developer/observations)、[安装指南](https://hindsight.vectorize.io/sdks/developer/installation)和[文档首页](https://hindsight.vectorize.io)以供查阅。
+如果您需要**减少 Hindsight 整合过程中的内存扇出**，最近的默认值确实有了改进。过去，整合可能会在内部召回期间放大内存用量，尤其是在大型记忆库上：来源事实的加载和重排序模型的行为都可能使 RSS 高于预期。新的默认值让这条处理路径受到更多限制。调整时，请备好[配置指南](/developer/configuration)、[观测指南](/developer/observations)、[安装指南](/developer/installation)和[文档首页](/)以供查阅。
 
 <!-- truncate -->
 
@@ -44,7 +44,7 @@ export HINDSIGHT_API_RERANKER_FLASHRANK_CPU_MEM_ARENA=false
 
 - 只有当较低的召回预算明显漏掉有用的相关观测时，才提高 `HINDSIGHT_API_CONSOLIDATION_RECALL_BUDGET`。
 - 只有当 LLM 需要更多支持证据才能稳定地更新内容时，才提高 `HINDSIGHT_API_CONSOLIDATION_SOURCE_FACTS_MAX_TOKENS`。
-- 如果要权衡吞吐量与峰值内存压力，请参阅[配置指南](https://hindsight.vectorize.io/sdks/developer/configuration)中的 `HINDSIGHT_API_CONSOLIDATION_MAX_MEMORIES_PER_ROUND` 和 `HINDSIGHT_API_CONSOLIDATION_LLM_BATCH_SIZE`。
+- 如果要权衡吞吐量与峰值内存压力，请参阅[配置指南](/developer/configuration)中的 `HINDSIGHT_API_CONSOLIDATION_MAX_MEMORIES_PER_ROUND` 和 `HINDSIGHT_API_CONSOLIDATION_LLM_BATCH_SIZE`。
 
 关键是默认让开销较大的处理路径保持收窄；如果记忆库确实需要，再一次只调高一个参数。
 
@@ -57,7 +57,7 @@ export HINDSIGHT_API_RERANKER_FLASHRANK_CPU_MEM_ARENA=false
 - PostgreSQL 是否也在使用同一份内存配额？
 - 如果外部重排序服务更适合您的部署，您是否仍在使用本地重排序？
 
-因此，[安装指南](https://hindsight.vectorize.io/sdks/developer/installation)和[服务指南](https://hindsight.vectorize.io/sdks/developer/services)仍然有参考价值。整合过程的内存扇出只是整体资源占用的一个影响因素，并非全部原因。
+因此，[安装指南](/developer/installation)和[服务指南](/developer/services)仍然有参考价值。整合过程的内存扇出只是整体资源占用的一个影响因素，并非全部原因。
 
 ## 一份简单的运维手册 {#a-simple-operating-playbook}
 
@@ -88,7 +88,7 @@ export HINDSIGHT_API_RERANKER_FLASHRANK_CPU_MEM_ARENA=false
 ## 后续步骤 {#next-steps}
 
 - [Hindsight Cloud](https://hindsight.vectorize.io)
-- [配置指南](https://hindsight.vectorize.io/sdks/developer/configuration)
-- [观测指南](https://hindsight.vectorize.io/sdks/developer/observations)
-- [安装指南](https://hindsight.vectorize.io/sdks/developer/installation)
-- [文档首页](https://hindsight.vectorize.io)
+- [配置指南](/developer/configuration)
+- [观测指南](/developer/observations)
+- [安装指南](/developer/installation)
+- [文档首页](/)

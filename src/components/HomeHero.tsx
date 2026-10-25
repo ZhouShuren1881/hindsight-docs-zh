@@ -28,9 +28,8 @@ const REPO = 'https://github.com/vectorize-io/hindsight';
  * The primary link opens the local quickstart; GitHub and the paper provide
  * source and research references.
  *
- * It lives in src/components rather than in the page body because the page is
- * versioned: production serves versioned_docs/version-0.10/developer/index.mdx.
- * A component keeps each version's include to one line.
+ * It lives in src/components to keep docs/developer/index.mdx focused on the
+ * page content, with a single-line include for the hero.
  */
 export default function HomeHero(): ReactNode {
   const stars = useGitHubStars();

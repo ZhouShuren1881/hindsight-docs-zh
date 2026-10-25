@@ -14,7 +14,7 @@ LangGraph 的检查点器为图提供**短期状态**：它持久保存单个线
 
 缺少的这一层就是**长期记忆**。Hindsight 会存储事实、偏好和经历，其生命周期超过任何单个线程，因此智能体能在新会话中回想起用户上周告诉它的内容。两者互为补充，并不冲突：检查点器管理本次运行的*工作集*，Hindsight 管理应随用户延续到各处的*持久知识*。
 
-本指南会说明检查点器记住和忘记的内容、短期状态与长期记忆如何协同、为什么 `BaseStore` 适配器是连接两者的自然桥梁，以及该选择哪一层的决策方法。指南基于现有的 [LangGraph 配置指南](https://hindsight.vectorize.io/guides/2026/05/04/guide-langgraph-memory-with-hindsight) 和 [LangGraph 集成文档](https://hindsight.vectorize.io/docs/integrations/langgraph)，建议将两者放在手边。
+本指南会说明检查点器记住和忘记的内容、短期状态与长期记忆如何协同、为什么 `BaseStore` 适配器是连接两者的自然桥梁，以及该选择哪一层的决策方法。指南基于现有的 [LangGraph 配置指南](/guides/2026/05/04/guide-langgraph-memory-with-hindsight) 和 [LangGraph 集成文档](/sdks/integrations/langgraph)，建议将两者放在手边。
 
 <!-- truncate -->
 
@@ -92,7 +92,7 @@ results = await store.asearch(("user", "123", "prefs"), query="theme preference"
 
 ## 将 LangGraph 连接到 Hindsight {#connect-langgraph-to-hindsight}
 
-本指南讨论的是*状态与记忆*的区别，不涉及安装。完整的安装和接线步骤包括运行 `pip install hindsight-langgraph`、连接客户端、添加召回／存入节点，以及解析动态记忆库 ID。请参阅 [LangGraph 配置指南](https://hindsight.vectorize.io/guides/2026/05/04/guide-langgraph-memory-with-hindsight)。完成这些步骤后，本指南的其余内容即可直接应用。
+本指南讨论的是*状态与记忆*的区别，不涉及安装。完整的安装和接线步骤包括运行 `pip install hindsight-langgraph`、连接客户端、添加召回／存入节点，以及解析动态记忆库 ID。请参阅 [LangGraph 配置指南](/guides/2026/05/04/guide-langgraph-memory-with-hindsight)。完成这些步骤后，本指南的其余内容即可直接应用。
 
 ## 何时使用哪一层 {#which-layer-to-use-when}
 
@@ -155,7 +155,7 @@ results = await store.asearch(("user", "123", "prefs"), query="theme preference"
 
 ## 后续步骤 {#next-steps}
 
-- 按照 [LangGraph 配置指南](https://hindsight.vectorize.io/guides/2026/05/04/guide-langgraph-memory-with-hindsight) 安装并接入集成
+- 按照 [LangGraph 配置指南](/guides/2026/05/04/guide-langgraph-memory-with-hindsight) 安装并接入集成
 - 如果需要托管记忆后端，可以从 [Hindsight Cloud](https://hindsight.vectorize.io) 开始
 - 阅读[完整 Hindsight 文档](/)
 - 阅读[快速入门指南](/developer/api/quickstart)

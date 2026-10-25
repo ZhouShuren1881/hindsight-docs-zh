@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 Changelog for [`hindsight-cursor-cli`](https://pypi.org/project/hindsight-cursor-cli/).
 
-For the source code, see [`hindsight-integrations/cursor-cli`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/cursor-cli).
+For the source code, see [`hindsight-integrations/cursor-cli`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/cursor-cli).
 
 ← [Back to main changelog](/changelog)
 

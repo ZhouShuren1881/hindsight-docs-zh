@@ -364,7 +364,7 @@ npx sanity query '*[_type == "post"][0..2]{title}'
 
 ## 资源 {#resources}
 
-- [Hindsight 文档](https://hindsight.vectorize.io/)
+- [Hindsight 文档](/)
 - [Hindsight GitHub 仓库](https://github.com/vectorize-io/hindsight)
 - [Sanity CMS 文档](https://www.sanity.io/docs)
 - [Hindsight 实战示例集](https://github.com/vectorize-io/hindsight-cookbook)

@@ -12,7 +12,7 @@ hide_table_of_contents: true
 
 关键不在于逐字节复制所有本地内容，而在于保留你真正关心的持久事实，然后将 Hermes 指向托管的 Hindsight 后端，使之后的记忆存入和召回都在那里进行。实际操作中，先备份当前 Hermes 记忆文件，再将记忆提供方配置切换到 Cloud，并用几条已知事实验证召回，确认无误后再完全依赖新路径。
 
-本指南介绍如何安全迁移、如何为 Hermes 配置 Hindsight Cloud，以及如何确认切换后助手仍记得重要信息。操作时可同时参考 [Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)、[快速入门指南](/developer/api/quickstart)、[Retain API 参考](/developer/api/retain)和[文档首页](/)。
+本指南介绍如何安全迁移、如何为 Hermes 配置 Hindsight Cloud，以及如何确认切换后助手仍记得重要信息。操作时可同时参考 [Hermes 集成文档](/sdks/integrations/hermes)、[快速入门指南](/developer/api/quickstart)、[Retain API 参考](/developer/api/retain)和[文档首页](/)。
 
 <!-- truncate -->
 
@@ -32,7 +32,7 @@ hide_table_of_contents: true
 - Hermes 在本地已正常工作，你知道要保留哪些行为。
 - 可以编辑 `~/.hermes/hindsight/config.json`。
 
-参考资料：[Hindsight Cloud](https://hindsight.vectorize.io)、[Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)、[快速入门指南](/developer/api/quickstart)和[记忆存储 API 参考](/developer/api/retain)。
+参考资料：[Hindsight Cloud](https://hindsight.vectorize.io)、[Hermes 集成文档](/sdks/integrations/hermes)、[快速入门指南](/developer/api/quickstart)和[记忆存储 API 参考](/developer/api/retain)。
 
 ## 分步操作 {#step-by-step}
 
@@ -159,7 +159,7 @@ PY
 ## 后续步骤 {#next-steps}
 
 - 如果尚未创建后端，从 [Hindsight Cloud](https://hindsight.vectorize.io)开始。
-- 查阅 [Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)，了解原生提供商配置。
+- 查阅 [Hermes 集成文档](/sdks/integrations/hermes)，了解原生提供商配置。
 - 如果希望自托管而非 Cloud，使用[快速入门指南](/developer/api/quickstart)。
 - 阅读[记忆存储 API 参考](/developer/api/retain)和[记忆召回 API 参考](/developer/api/recall)，更有针对性地初始化或调整新记忆库。
 - 对照[使用 Hindsight 为 Codex 添加记忆](/blog/2026/04/08/adding-memory-to-codex-with-hindsight)和 [AI 编码智能体的团队共享记忆](/blog/2026/07/10/shared-memory-across-ai-tools)，了解相关迁移思路。

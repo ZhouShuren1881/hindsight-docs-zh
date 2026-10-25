@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 Changelog for [`hindsight-google-adk`](https://pypi.org/project/hindsight-google-adk/).
 
-For the source code, see [`hindsight-integrations/google-adk`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/google-adk).
+For the source code, see [`hindsight-integrations/google-adk`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/google-adk).
 
 ← [Back to main changelog](/changelog)
 

@@ -139,7 +139,7 @@ http://hindsight-api:8888/mcp/my-team-bank/
 | `create_mental_model` | 创建心智模型 |
 | `list_documents` | 列出已摄取的文档 |
 
-完整工具列表请参阅 [MCP 服务器参考文档](https://hindsight.vectorize.io/developer/mcp-server#available-tools)。
+完整工具列表请参阅 [MCP 服务器参考文档](/developer/mcp-server#available-tools)。
 
 ## Helm 自动注册 {#helm-auto-registration}
 

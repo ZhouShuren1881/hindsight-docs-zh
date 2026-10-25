@@ -21,7 +21,7 @@ import templates from '@site/figures/templates.json';
 
 - Hindsight 0.5.0 新增*记忆库模板中心*，用于复用记忆库配置。
 - 模板是一份 JSON 清单，可记录记忆库配置、心智模型和强制指令。
-- 您可以在 [hindsight.vectorize.io/templates](https://hindsight.vectorize.io/templates) 浏览入门模板，再通过 API 或控制台导入。
+- 您可以在 [hindsight.vectorize.io/templates](/templates) 浏览入门模板，再通过 API 或控制台导入。
 - 您也可以导出现有记忆库，并在其他地方复用这套配置。
 - 需要特别注意：模板包含的是*配置*，不包含记忆库中存储的记忆。
 
@@ -63,7 +63,7 @@ Hindsight 0.5.0 将记忆库配置变成可复用的产物。
 
 ### 1. 浏览入门模板 {#1-browse-the-starter-templates}
 
-模板中心位于 [hindsight.vectorize.io/templates](https://hindsight.vectorize.io/templates)。
+模板中心位于 [hindsight.vectorize.io/templates](/templates)。
 
 在 0.5.0 中，模板库包含三个入门模板：
 
@@ -300,7 +300,7 @@ Hindsight 0.5.0 的记忆库模板中心解决了一个实际的运维问题：�
 ## 后续步骤 {#next-steps}
 
 - **使用 Hindsight Cloud：** 注册[免费账户](https://ui.hindsight.vectorize.io)，无需自托管
-- **浏览入门模板库：** [hindsight.vectorize.io/templates](https://hindsight.vectorize.io/templates)
+- **浏览入门模板库：** [hindsight.vectorize.io/templates](/templates)
 - **阅读 API 文档：** [记忆库模板参考](/developer/api/bank-templates)
 - **了解 0.5.0 的其他更新：** [Hindsight 0.5.0 有哪些新功能](/blog/2026/04/07/version-0-5-0)
 - **探索框架集成：** [Agno](/sdks/integrations/agno)、[AutoGen](/sdks/integrations/autogen)、[LangGraph](/sdks/integrations/langgraph)、[Pydantic AI](/sdks/integrations/pydantic-ai)、[CrewAI](/sdks/integrations/crewai)

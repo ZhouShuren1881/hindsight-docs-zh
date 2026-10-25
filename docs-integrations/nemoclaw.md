@@ -6,7 +6,7 @@ description: "使用 Hindsight 为 NemoClaw 沙盒智能体添加持久记忆。
 
 # NemoClaw {#nemoclaw}
 
-使用 [Hindsight](https://hindsight.vectorize.io) 为 [NemoClaw](https://nemoclaw.ai) 沙盒智能体提供持久记忆。
+使用 [Hindsight](/) 为 [NemoClaw](https://nemoclaw.ai) 沙盒智能体提供持久记忆。
 
 NemoClaw 在 OpenShell 沙盒中运行 [OpenClaw](https://openclaw.ai)，并通过策略控制文件系统、进程和网络出口。`hindsight-nemoclaw` 软件包可通过一条命令自动为沙盒添加 Hindsight 记忆，无需修改代码。
 

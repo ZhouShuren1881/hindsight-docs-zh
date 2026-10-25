@@ -22,16 +22,16 @@
 | persistent memory / persistent state | 持久记忆 / 持久状态 | persistence 为持久化 | `rag-vs-hindsight.md` |
 | memory bank / bank | 记忆库 | 不写银行、记忆银行；bank_id 保留 | `api/memory-banks.mdx` |
 | memory / memories | 记忆 | 表示存储的内容；不一律改成事实 | `index.mdx`, `api/memories.mdx` |
-| memory unit | 记忆单元 | 原子存储单元，与文档不同 | `api/memories.mdx` |
-| fact | 事实 | 原文称为事实不代表系统已外部验证其真伪 | `retain.md`, `observations.mdx` |
+| memory unit | 记忆单元 | 原子存储单元，与文档、文本分块不同；一项输入可以产生多个记忆单元 | `api/memories.mdx`, `api/retain.mdx` |
+| fact | 事实 | 原文称为事实不代表系统已外部验证其真伪；与观测、心智模型、知识页不能统称为“摘要” | `retain.md`, `observations.mdx` |
 | raw fact / source fact | 原始事实 / 来源事实 | 来源事实为派生知识提供证据 | `reflect.mdx`, `api/recall.mdx` |
-| world fact / world | 世界事实 | 关于外部人物、事物和事件；`world` 不翻译 | `retain.md` |
-| experience fact / experience | 经历事实 | 该记忆库的智能体自己的经历；不泛指用户经历 | `retain.md` |
-| observation | 观测 | 从事实中整合的认知判断；不是观察动作、原始记录或心智模型 | `observations.mdx`, `figures/observations.json` |
+| world fact / world | 世界事实 | 关于外部人物、事物和事件；与经历事实按说话者是否为该库的智能体区分，不按第一人称语法区分。用户说“我买了一辆车”仍是关于用户的世界事实；`world` 不翻译 | `retain.md` |
+| experience fact / experience | 经历事实 | 该记忆库的智能体自己的经历；不泛指用户经历；类型值 `experience` 不翻译 | `retain.md` |
+| observation | 观测 | 从事实中整合、带证据并随证据演变的认知判断；不是观察动作、原始记录或心智模型 | `observations.mdx`, `figures/observations.json` |
 | belief | 认知判断 | 指系统基于证据形成的认识，不译为信仰，也不承诺绝对正确 | `observations.mdx`, `index.mdx` |
 | consolidated knowledge / consolidated belief | 整合后的知识 / 整合后的认知判断 | 不等于临时生成的摘要 | `observations.mdx` |
 | mental model | 心智模型 | 用户定义问题，系统生成并维护常备答案；不等于底层 LLM | `mental-models.mdx`, `api/mental-models.mdx` |
-| knowledge page | 知识页 | 以心智模型为底层的持续更新文档 | `knowledge-pages.mdx`, `api/knowledge-pages.mdx` |
+| knowledge page | 知识页 | 以心智模型为底层，提供持续更新的文档与目录树 | `knowledge-pages.mdx`, `api/knowledge-pages.mdx` |
 | knowledge base | 知识库 | 与记忆库区分；此处常指知识页目录树及内容 | `api/knowledge-pages.mdx` |
 | living document | 持续更新的文档 | 不写活文档 | `knowledge-pages.mdx` |
 | standing answer | 常备答案 | 预先写好、供反复读取并可更新的答案 | `mental-models.mdx` |
@@ -49,7 +49,7 @@
 | provenance / source provenance | 来源追溯信息 / 来源追溯信息 | 描述证据、来源及历史，不写出处可信度 | `mental-models.mdx`, `retain.md` |
 | citation / cite | 引用 / 引用 | 引用来源 ID 不翻译 | `reflect.mdx` |
 | freshness / freshness awareness | 更新状态 / 更新状态感知 | 关注是否落后于新记忆，不是缓存 TTL | `observations.mdx`, `mental-models.mdx` |
-| fresh / stale / staleness | 最新 / 待更新 / 待更新状态 | 不译为有效/无效；待更新不等于错误 | `api/knowledge-pages.mdx`, `observations.mdx` |
+| fresh / stale / staleness | 最新 / 待更新 / 待更新状态 | 表示是否落后于范围内的新记忆，不译为有效/无效；待更新不等于已证明错误或到期删除，需要时写“内容待更新” | `api/knowledge-pages.mdx`, `observations.mdx` |
 
 ## 摄取、内容与实体
 
@@ -61,7 +61,7 @@
 | extraction mode | 提取模式 | `concise`、`verbose` 等枚举保留 | `api/memory-banks.mdx` |
 | concise / verbose / custom | 精简 / 详尽 / 自定义 | 作为模式值时写 `concise` / `verbose` / `custom` | `retain.md` |
 | verbatim / chunks (modes) | 原文保留模式 / 直接分块模式 | 前者仍由 LLM 提取元数据；后者不调用 LLM | `api/memory-banks.mdx` |
-| document / document body | 文档 / 文档正文 | 逻辑文档，不保证一文档等于一上传文件 | `api/documents.mdx`, `api/retain.mdx` |
+| document / document body | 文档 / 文档正文 | 逻辑文档，不保证一文档等于一上传文件；原始文档与提取后的事实不同 | `api/documents.mdx`, `api/retain.mdx` |
 | item | 输入项 | Retain 请求中的一项；不是一条提取后记忆 | `api/retain.mdx` |
 | content | 内容 | 键 `content` 保留；可为字符串或有序内容块 | `retain.md`, `api/retain.mdx` |
 | context | 上下文 | 来源/情境说明，影响提取；不简单归为元数据 | `api/retain.mdx` |
@@ -79,9 +79,9 @@
 | canonical name | 规范名称 | 返回名或用于关联的字符串保持一致 | `api/recall.mdx` |
 | fuzzy name matching / exact match | 模糊名称匹配 / 精确匹配 | 相似名称与完全匹配是不同规则 | `retain.md`, `api/memory-banks.mdx` |
 | co-occurrence / temporal proximity | 共现 / 时间接近度 | 消解和排序中的含义按各自上下文解释 | `retain.md`, `retrieval.md` |
-| entity label / label group | 实体标签 / 标签组 | `entity_labels` 的分类维度，与 tag_groups 不同 | `api/memory-banks.mdx` |
+| entity label / label group | 实体标签 / 标签组 | `entity_labels` 的分类维度，与 tag_groups 不同；实体标签成为实体，可选择同时写入 `tags`，不能把实体标签与标签当作同一个字段 | `api/memory-banks.mdx` |
 | controlled vocabulary / open vocabulary | 受控词表 / 开放词表 | 实体标签的取值约束，不是本翻译术语表 | `api/memory-banks.mdx` |
-| tag / tagging | 标签 / 添加标签 | 不能把所有 label 都译成这种数据标签 | `api/retain.mdx` |
+| tag / tagging | 标签 / 添加标签 | 用于筛选和限定范围；不能把所有 label 都译成这种数据标签 | `api/retain.mdx` |
 | document tags / item tags | 文档标签 / 输入项标签 | 保留传播范围和覆盖/合并规则 | `retain.md`, `api/documents.mdx` |
 | upsert / idempotent | 插入或更新 / 幂等 | 保留同 document_id 重处理与 operation_id 安全重试的区别 | `api/retain.mdx` |
 | append / replace | 追加 / 替换 | 枚举与字段值保留；追加也可能重处理合并文档 | `api/retain.mdx` |
@@ -118,7 +118,8 @@
 | boost / recency boost | 加权提升 / 近期性加权提升 | 原文的乘法调整也可能降低排名，按上下文说明 | `retrieval.md` |
 | recency / temporal window | 近期性 / 时间窗口 | 近期性、窗口接近度与新知识待整合是不同信号 | `retrieval.md`, `api/recall.mdx` |
 | occurred_start / occurred_end | 发生时间起点 / 发生时间终点 | 字段保留，解释为事实所述事件时间 | `api/recall.mdx`, `api/memories.mdx` |
-| mentioned_at / query_timestamp | 提及时间 / 查询参照时间 | 字段保留；不要统译为创建时间 | `api/recall.mdx` |
+| mentioned_at / query_timestamp | 提及时间 / 查询参照时间 | 字段保留；不要统译为创建时间；相对时间必须保留其 `timestamp` 或 `query_timestamp` 参照 | `api/recall.mdx`, `api/retain.mdx` |
+| occurred / mentioned / created / updated | 发生 / 被提及 / 创建 / 更新 | 事件时间、提及时间、摄取时间与最后更新时间不能互换 | `api/memories.mdx`, `api/retain.mdx` |
 | token / token budget | token / token 预算 | 全文保留 token 这一计量词，不用汉字数代替 | `retrieval.md` |
 | search depth / context window | 检索深度 / 上下文窗口 | `budget` 与 `max_tokens` 分别说明 | `retrieval.md` |
 | top-k / token truncation | 前 k 项 / 按 token 预算截取 | `top-k` 标识保留；具体事实与分块截取规则不同 | `retrieval.md`, `api/recall.mdx` |
@@ -134,9 +135,9 @@
 | tool call / iteration | 工具调用 / 迭代轮次 | 不保证每次调用就是一个新用户轮次 | `reflect.mdx` |
 | mission | 任务说明 | 自然语言身份/关注重点，不一律译成任务目标 | `api/memory-banks.mdx` |
 | retain mission / observations mission / reflect mission | 提取任务说明 / 观测任务说明 / 反思任务说明 | 键分别为 retain_mission / observations_mission / reflect_mission；作用不同 | `retain.md`, `observations.mdx`, `reflect.mdx` |
-| disposition / disposition trait | 性格倾向 / 性格倾向特征 | 软性影响，不是强制规则 | `reflect.mdx` |
+| disposition / disposition trait | 性格倾向 / 性格倾向特征 | 影响解读与语气，属于软性影响，不是强制规则 | `reflect.mdx` |
 | skepticism / literalism / empathy | 怀疑倾向 / 字面解读倾向 / 共情倾向 | 保留 1–5 的方向，literalism 不写文学性 | `reflect.mdx`, `api/memory-banks.mdx` |
-| directive / hard rule / guardrail | 强制指令 / 硬性规则 / 约束 | directive 与普通 instructions 区分 | `reflect.mdx`, `api/memory-banks.mdx` |
+| directive / hard rule / guardrail | 强制指令 / 硬性规则 / 约束 | directive 是适用范围内的硬规则，与普通 instructions 区分 | `reflect.mdx`, `api/memory-banks.mdx` |
 | scope / visibility scope | 范围 / 可见范围 | 指标签集合限定的数据边界，不是词法作用域 | `api/recall.mdx`, `api/reflect.mdx` |
 | observation scope / consolidation scope | 观测范围 / 整合范围 | 已按 observation_scopes 分组的范围 | `observations.mdx`, `api/retain.mdx` |
 | consolidation strategy | 整合策略 | 不同范围的任务说明与限额规则 | `observations.mdx` |

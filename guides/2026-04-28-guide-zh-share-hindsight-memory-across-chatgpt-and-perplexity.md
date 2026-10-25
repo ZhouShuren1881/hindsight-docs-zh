@@ -10,7 +10,7 @@ hide_table_of_contents: true
 
 ![在 ChatGPT 和 Perplexity 之间共享 Hindsight 记忆](/img/guides/guide-share-hindsight-memory-across-chatgpt-and-perplexity.webp)
 
-如果您想**在 ChatGPT 和 Perplexity 之间共享 Hindsight 记忆**，关键在于记忆库边界，而不是连接器本身。两个工具都已经能与 Hindsight 通信，但只有在有意让它们写入并读取同一个记忆库时，才会形成统一的工作流。设置共享路径时，请参考 [ChatGPT 指南](https://hindsight.vectorize.io/sdks/integrations/chatgpt)、[Perplexity 指南](https://hindsight.vectorize.io/sdks/integrations/perplexity)、[MCP 服务器文档](https://hindsight.vectorize.io/sdks/developer/mcp-server) 和 [快速入门指南](https://hindsight.vectorize.io/sdks/developer/quickstart)。
+如果您想**在 ChatGPT 和 Perplexity 之间共享 Hindsight 记忆**，关键在于记忆库边界，而不是连接器本身。两个工具都已经能与 Hindsight 通信，但只有在有意让它们写入并读取同一个记忆库时，才会形成统一的工作流。设置共享路径时，请参考 [ChatGPT 指南](/sdks/integrations/chatgpt)、[Perplexity 指南](/sdks/integrations/perplexity)、[MCP 服务器文档](/developer/mcp-server) 和 [快速入门指南](/developer/api/quickstart)。
 
 <!-- truncate -->
 
@@ -64,7 +64,7 @@ https://api.hindsight.vectorize.io/mcp/product-launch/
 - 定期在 Hindsight Cloud 中检查噪声较多的记忆。
 - 如果研究资料不应与个人偏好数据混在一起，就将它们分到不同的工作流中。
 
-如果需要更细致的控制，可以进一步了解 [Retain API](/developer/api/retain)、[Recall API](/developer/api/recall) 和 [文档首页](https://hindsight.vectorize.io)中的记忆库级配置。共享记忆只有在范围明确时才最有用。
+如果需要更细致的控制，可以进一步了解 [Retain API](/developer/api/retain)、[Recall API](/developer/api/recall) 和 [文档首页](/)中的记忆库级配置。共享记忆只有在范围明确时才最有用。
 
 ## ChatGPT 和 Perplexity 各自最适合做什么 {#where-chatgpt-and-perplexity-each-help-most}
 
@@ -89,7 +89,7 @@ https://api.hindsight.vectorize.io/mcp/product-launch/
 ## 后续步骤 {#next-steps}
 
 - [Hindsight Cloud](https://hindsight.vectorize.io)
-- [ChatGPT 集成指南](https://hindsight.vectorize.io/sdks/integrations/chatgpt)
-- [Perplexity 集成指南](https://hindsight.vectorize.io/sdks/integrations/perplexity)
-- [MCP 服务器文档](https://hindsight.vectorize.io/sdks/developer/mcp-server)
-- [快速入门指南](https://hindsight.vectorize.io/sdks/developer/quickstart)
+- [ChatGPT 集成指南](/sdks/integrations/chatgpt)
+- [Perplexity 集成指南](/sdks/integrations/perplexity)
+- [MCP 服务器文档](/developer/mcp-server)
+- [快速入门指南](/developer/api/quickstart)

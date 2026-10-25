@@ -64,5 +64,5 @@ Academy 提供的是一条循序渐进的学习路径，而不是一堆文档。
 
 **了解更多：**
 - [Hindsight Academy](https://learn.hindsight.vectorize.io) — 免费的实践课程
-- [Recall 与 Reflect 的区别](https://hindsight.vectorize.io/blog/2026/07/24/recall-vs-reflect) — 了解检索一条事实与基于记忆进行推理的区别
+- [Recall 与 Reflect 的区别](/blog/2026/07/24/recall-vs-reflect) — 了解检索一条事实与基于记忆进行推理的区别
 - [Hindsight on GitHub](https://github.com/vectorize-io/hindsight) — 底层使用的开源记忆引擎

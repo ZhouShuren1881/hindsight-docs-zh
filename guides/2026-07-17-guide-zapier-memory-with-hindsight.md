@@ -36,7 +36,7 @@ Zapier 很适合用于此场景，因为它已经连接了 Gmail、Slack、Sheet
 
 ## 第 1 步：获取 Hindsight API 密钥 {#step-1-get-a-hindsight-api-key}
 
-注册 [Hindsight Cloud](https://hindsight.vectorize.io)（免费套餐），或[自行托管](https://hindsight.vectorize.io/docs)服务器。然后从 Hindsight 控制台获取 API 密钥（`hsk_...`）。
+注册 [Hindsight Cloud](https://hindsight.vectorize.io)（免费套餐），或[自行托管](/developer/installation)服务器。然后从 Hindsight 控制台获取 API 密钥（`hsk_...`）。
 
 如果你自行托管且未启用身份认证，可以不使用密钥；连接时将密钥留空即可。
 

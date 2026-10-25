@@ -176,4 +176,4 @@ Spark 规划一轮对话时，会查看可用工具及其说明，再决定调�
 - **集成文档：**[Gemini Spark + Hindsight](/sdks/integrations/gemini-spark)
 - **源码：**[vectorize-io/hindsight/hindsight-integrations/gemini-spark](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/gemini-spark)
 - **OAuth 代理：**[cloudflare-oauth-proxy](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/cloudflare-oauth-proxy)
-- **为什么通过 MCP 实现记忆：**[MCP 客户端的原生 OAuth](https://hindsight.vectorize.io/blog/2026/03/27/mcp-oauth-native)
+- **为什么通过 MCP 实现记忆：**[MCP 客户端的原生 OAuth](/blog/2026/03/30/mcp-oauth-native)

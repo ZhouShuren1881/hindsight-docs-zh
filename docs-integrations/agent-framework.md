@@ -61,4 +61,4 @@ hindsight-api  # http://localhost:8888
 HindsightProvider(bank_id="user-123", hindsight_api_url="http://localhost:8888")
 ```
 
-完整信息请参阅[集成源码](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/agent-framework)。
+完整信息请参阅[集成源码](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/agent-framework)。

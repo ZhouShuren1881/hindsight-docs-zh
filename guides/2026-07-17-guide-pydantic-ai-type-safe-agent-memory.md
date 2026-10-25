@@ -14,13 +14,13 @@ Pydantic AI 面向**原生异步**、强类型智能体构建，记忆也应遵�
 
 这很重要，因为许多记忆扩展都假设使用同步客户端。要在异步智能体中使用它们，你最终会把每次记忆调用都交给线程池处理，这会增加延迟、让错误隐藏在线程池执行器的边界后面，也会让流程更难推理。Hindsight 避开了这些问题：它的工具都可以直接等待，因此 `await agent.run(...)` 会像驱动智能体执行其他工作一样，在同一个事件循环上驱动记忆操作。
 
-本指南讲的是*设计*，不是安装。[配置指南](https://hindsight.vectorize.io/guides/2026/05/04/guide-pydantic-ai-memory-with-hindsight) 已介绍安装和接线。这里重点说明原生异步记忆为什么适合 Pydantic AI、记忆工具应挂接在哪里，以及怎样让整个生产流程保持类型安全、可预测。
+本指南讲的是*设计*，不是安装。[配置指南](/guides/2026/05/04/guide-pydantic-ai-memory-with-hindsight) 已介绍安装和接线。这里重点说明原生异步记忆为什么适合 Pydantic AI、记忆工具应挂接在哪里，以及怎样让整个生产流程保持类型安全、可预测。
 
 <!-- truncate -->
 
 > **快速解答**
 >
-> 1. 按照[配置指南](https://hindsight.vectorize.io/guides/2026/05/04/guide-pydantic-ai-memory-with-hindsight)完成安装和连接。
+> 1. 按照[配置指南](/guides/2026/05/04/guide-pydantic-ai-memory-with-hindsight)完成安装和连接。
 > 2. 使用 `create_hindsight_tools(client=..., bank_id=...)` 为智能体接入记忆，让存入、召回和反思成为可等待的工具。
 > 3. 如果希望每次运行前注入相关记忆，请添加 `memory_instructions(...)`。
 > 4. 为每位用户或每个项目使用一个稳定的 `bank_id`，让记忆召回前后一致。
@@ -75,7 +75,7 @@ print(result.output)
 
 标准配置指南介绍了安装和连接：运行 `pip install hindsight-pydantic-ai`，将客户端指向 Hindsight Cloud 或本地服务器，再把工具接入智能体。按指南完成一次配置后，再回到这里了解设计细节：
 
-- [配置指南：借助 Hindsight 为 Pydantic AI 添加持久记忆](https://hindsight.vectorize.io/guides/2026/05/04/guide-pydantic-ai-memory-with-hindsight)
+- [配置指南：借助 Hindsight 为 Pydantic AI 添加持久记忆](/guides/2026/05/04/guide-pydantic-ai-memory-with-hindsight)
 
 ## 让记忆流程保持类型安全且可预测 {#keeping-the-memory-flow-typed-and-predictable}
 
@@ -136,7 +136,7 @@ print(result.output)
 
 ## 后续步骤 {#next-steps}
 
-- 按照 [Pydantic AI 配置指南](https://hindsight.vectorize.io/guides/2026/05/04/guide-pydantic-ai-memory-with-hindsight)完成安装和接线。
+- 按照 [Pydantic AI 配置指南](/guides/2026/05/04/guide-pydantic-ai-memory-with-hindsight)完成安装和接线。
 - 如果需要托管后端，可以从 [Hindsight Cloud](https://hindsight.vectorize.io) 开始。
 - 阅读[完整的 Hindsight 文档](/)。
 - 按照[快速入门指南](/developer/api/quickstart)开始使用。

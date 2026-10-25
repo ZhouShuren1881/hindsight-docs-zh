@@ -72,4 +72,4 @@ hindsight-api  # http://localhost:8888
 
 将安装程序指向此服务：`--api-url http://localhost:8888`。
 
-完整详情请参阅[集成源码](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/cline)。
+完整详情请参阅[集成源码](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/cline)。

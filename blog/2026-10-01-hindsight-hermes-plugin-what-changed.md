@@ -191,7 +191,7 @@ Hindsight 已在插件目录中，所以第一行只需写名称。
 
 ## 了解更多 {#learn-more}
 
-- [Hermes Agent 集成参考](https://hindsight.vectorize.io/sdks/integrations/hermes)：了解完整的配置选项
-- [Hermes Desktop](https://hindsight.vectorize.io/sdks/integrations/hermes-desktop)：了解仅通过设置界面配置的方式
-- [Hindsight + Hermes = AGI？](https://hindsight.vectorize.io/blog/2026/09/25/hindsight-hermes-plugin-catalog)：阅读更短、观点更鲜明的版本
-- [让每个 Hermes 机器人都有自己的记忆](https://hindsight.vectorize.io/blog/2026/08/18/hermes-bot-mode-memory)：了解如何为每个机器人隔离记忆库
+- [Hermes Agent 集成参考](/sdks/integrations/hermes)：了解完整的配置选项
+- [Hermes Desktop](/sdks/integrations/hermes-desktop)：了解仅通过设置界面配置的方式
+- [Hindsight + Hermes = AGI？](/blog/2026/09/25/hindsight-hermes-plugin-catalog)：阅读更短、观点更鲜明的版本
+- [让每个 Hermes 机器人都有自己的记忆](/blog/2026/08/18/hermes-bot-mode-memory)：了解如何为每个机器人隔离记忆库

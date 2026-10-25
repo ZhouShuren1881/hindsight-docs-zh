@@ -14,13 +14,13 @@ hide_table_of_contents: true
 
 本指南将讨论这个选择。插件在事件层运行：`agent.run.started` 会触发记忆召回，运行输出和评论会触发记忆存入，因此只需一个配置值，就能选择记忆的*组织方式*。让所有智能体使用同一个共享记忆库，分流智能体学到的经验就能立即供审查智能体和部署智能体使用。也可以按公司和智能体划分记忆范围，让每个智能体各行其道。插件相同，安装方式相同，记忆库策略不同。
 
-下文会介绍“安装一次，所有智能体都能记住”的模式、共享记忆库何时优于每个智能体各用一个记忆库、何时确实需要隔离，以及许多智能体共用记忆后自动召回和存入的运行方式。至于安装插件和配置凭据等准备工作，现有的[设置指南](https://hindsight.vectorize.io/guides/2026/04/16/guide-paperclip-memory-with-hindsight)已完整说明，本指南会链接到该指南，不再重复介绍。
+下文会介绍“安装一次，所有智能体都能记住”的模式、共享记忆库何时优于每个智能体各用一个记忆库、何时确实需要隔离，以及许多智能体共用记忆后自动召回和存入的运行方式。至于安装插件和配置凭据等准备工作，现有的[设置指南](/guides/2026/04/16/guide-paperclip-memory-with-hindsight)已完整说明，本指南会链接到该指南，不再重复介绍。
 
 <!-- truncate -->
 
 > **快速解答**
 >
-> 1. 只需安装一次插件——参阅[设置指南](https://hindsight.vectorize.io/guides/2026/04/16/guide-paperclip-memory-with-hindsight)。
+> 1. 只需安装一次插件——参阅[设置指南](/guides/2026/04/16/guide-paperclip-memory-with-hindsight)。
 > 2. 要共享记忆，请将 `dynamicBankId` 设为 `false`，并为每个智能体设置相同的 `bankId`。
 > 3. 要进行隔离，请让 `dynamicBankId` 保持为 `true`，并选择 `bankGranularity`。
 > 4. 随后，每个智能体都会自动执行运行前召回和运行后存入，并使用你选定的记忆库。
@@ -83,7 +83,7 @@ paperclip::{agentId}                ← 按智能体划分（同一智能体跨�
 
 现有设置指南完整介绍了安装插件、自托管或连接到 Hindsight Cloud，以及配置 API 密钥。请先按照该指南完成设置，再回到这里选择记忆库策略：
 
-- [指南：使用 Hindsight 为 Paperclip 添加记忆](https://hindsight.vectorize.io/guides/2026/04/16/guide-paperclip-memory-with-hindsight)
+- [指南：使用 Hindsight 为 Paperclip 添加记忆](/guides/2026/04/16/guide-paperclip-memory-with-hindsight)
 
 安装并配置插件后，要实现共享记忆，只需更改 **Settings → Plugins → Hindsight Memory** 中的 `dynamicBankId` / `bankId` 设置。
 
@@ -147,7 +147,7 @@ paperclip::{agentId}                ← 按智能体划分（同一智能体跨�
 
 ## 后续步骤 {#next-steps}
 
-- 先参阅 [Paperclip 设置指南](https://hindsight.vectorize.io/guides/2026/04/16/guide-paperclip-memory-with-hindsight)配置插件
+- 先参阅 [Paperclip 设置指南](/guides/2026/04/16/guide-paperclip-memory-with-hindsight)配置插件
 - 如果需要托管后端，可从 [Hindsight Cloud](https://hindsight.vectorize.io) 开始
 - 阅读 [Hindsight 完整文档](/)
 - 按照[快速入门指南](/developer/api/quickstart)操作

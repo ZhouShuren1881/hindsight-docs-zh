@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 Changelog for [`hindsight-openhands`](https://pypi.org/project/hindsight-openhands/).
 
-For the source code, see [`hindsight-integrations/openhands`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/openhands).
+For the source code, see [`hindsight-integrations/openhands`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/openhands).
 
 ← [Back to main changelog](/changelog)
 

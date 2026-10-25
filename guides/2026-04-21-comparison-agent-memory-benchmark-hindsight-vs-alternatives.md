@@ -51,7 +51,7 @@ BEAM 的价值就在于，它设置了一些规模档位，让暴力回退方案
 
 在 10M token 档位，把内容塞满上下文不再是一种取舍，而是根本做不到。
 
-基准的背景和方法见[智能体记忆基准：一份宣言](https://hindsight.vectorize.io/blog/agent-memory-benchmark)和 [Hindsight 在 BEAM 中排名第一](https://hindsight.vectorize.io/blog/2026/04/02/beam-sota)。
+基准的背景和方法见[智能体记忆基准：一份宣言](/blog/2026/03/23/agent-memory-benchmark)和 [Hindsight 在 BEAM 中排名第一](/blog/2026/04/02/beam-sota)。
 
 ## 已公布的结果 {#the-published-results}
 
@@ -87,7 +87,7 @@ Hindsight 不会把记忆当成一堆语义相似的文本分块。它会保留�
 - 时间检索
 - 对融合后的结果集进行交叉编码器重排序
 
-[检索架构指南](https://hindsight.vectorize.io/docs/developer/retrieval)介绍了这套流程，[Hindsight 的记忆召回 API](https://hindsight.vectorize.io/docs/api/recall)则直接提供了相应能力。
+[检索架构指南](/developer/retrieval)介绍了这套流程，[Hindsight 的记忆召回 API](/developer/api/recall)则直接提供了相应能力。
 
 这一点很重要，因为实际的记忆查询往往很复杂。智能体提出的问题不只有语义问题，还包括：
 
@@ -186,7 +186,7 @@ LangChain 是一个框架，Hindsight 是一个记忆系统，两者并非同一
 - 多个工具或智能体需要共享同一记忆层
 - 你希望使用的系统在有意义的规模上有公开基准证据
 
-[AI 编码智能体的团队共享记忆](https://hindsight.vectorize.io/blog/team-shared-memory-ai-coding-agents)介绍了相关模式：它的价值在于跨工具和会话累积上下文，而不必一遍遍重新解释所有背景。
+[AI 编码智能体的团队共享记忆【无效博客链接】](https://hindsight.vectorize.io/blog/team-shared-memory-ai-coding-agents)介绍了相关模式：它的价值在于跨工具和会话累积上下文，而不必一遍遍重新解释所有背景。
 
 ## 何时简单方案已经足够 {#when-a-simpler-option-is-enough}
 

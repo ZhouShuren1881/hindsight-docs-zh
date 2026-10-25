@@ -79,7 +79,7 @@ async def main():
 asyncio.run(main())
 ```
 
-如果要连接[自托管服务器](https://hindsight.vectorize.io/developer/installation)而不是 Cloud，请传入 `hindsight_api_url="http://localhost:8888"`。
+如果要连接[自托管服务器](/developer/installation)而不是 Cloud，请传入 `hindsight_api_url="http://localhost:8888"`。
 
 对于防护模型和脱敏模型，推荐使用 `gpt-4.1-nano`：它速度快、成本低，并且能准确区分提示注入与恰好包含 PII 的合法内容。Superagent 还发布了开放权重防护模型（`superagent/guard-0.6b`、`guard-1.7b`、`guard-4b`），可通过 Ollama 或 vLLM[自行托管](https://docs.superagent.sh/sdk/models)。
 

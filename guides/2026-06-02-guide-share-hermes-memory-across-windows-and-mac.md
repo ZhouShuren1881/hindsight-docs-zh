@@ -122,4 +122,4 @@ hermes memory setup           # 选择 "hindsight"
 
 - 阅读[使用 Hindsight Cloud 为 Hermes 提供跨设备记忆](/guides/2026/06/02/guide-hermes-cross-device-memory-with-hindsight-cloud)
 - 阅读 [Windows 上的 Hermes 智能体：使用 Hindsight 设置持久记忆](/blog/2026/06/01/hermes-hindsight-windows-setup)
-- 从 [Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)开始
+- 从 [Hermes 集成文档](/sdks/integrations/hermes)开始

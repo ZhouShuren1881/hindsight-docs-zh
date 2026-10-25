@@ -11,7 +11,7 @@ hide_table_of_contents: true
 
 ![同一事实在不同范围按各自的任务说明进行整合：用户范围保留完整细节，公司范围只保留趋势](/img/blog/per-scope-consolidation.webp)
 
-七月，我们发布了[智能体记忆结构指南](https://hindsight.vectorize.io/blog/2026/07/16/bank-strategy-agent-memory)，把核心选择描述成一个两难：
+七月，我们发布了[智能体记忆结构指南](/blog/2026/07/16/bank-strategy-agent-memory)，把核心选择描述成一个两难：
 
 > 范围太宽，一个用户的记忆会渗入另一个用户的记忆；范围太窄，智能体又无法访问它需要的内容，因为这些内容位于另一个它看不到的记忆库中。
 
@@ -171,7 +171,7 @@ Recall 能触及哪些内容，由记忆库决定；采用哪份任务说明，�
 
 ## 了解更多 {#learn-more}
 
-- [一个记忆库还是多个？智能体记忆结构指南](https://hindsight.vectorize.io/blog/2026/07/16/bank-strategy-agent-memory)：了解如何选择记忆库边界。
-- [只记录事实，不记录认知判断](https://hindsight.vectorize.io/blog/2026/09/23/bring-facts-not-beliefs)：了解整合会、不会合并哪些内容。
-- [智能体记忆的整合问题](https://hindsight.vectorize.io/blog/2026/05/21/agent-memory-consolidation)：以重要性、合并、衰减和淘汰为框架展开讨论。
-- [Hindsight 0.10.2 新功能](https://hindsight.vectorize.io/blog/2026/09/29/version-0-10-2)：了解本次版本的其他更新。
+- [一个记忆库还是多个？智能体记忆结构指南](/blog/2026/07/16/bank-strategy-agent-memory)：了解如何选择记忆库边界。
+- [只记录事实，不记录认知判断](/blog/2026/09/23/bring-facts-not-beliefs)：了解整合会、不会合并哪些内容。
+- [智能体记忆的整合问题](/blog/2026/05/21/agent-memory-consolidation)：以重要性、合并、衰减和淘汰为框架展开讨论。
+- [Hindsight 0.10.2 新功能](/blog/2026/09/29/version-0-10-2)：了解本次版本的其他更新。

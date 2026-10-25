@@ -341,7 +341,7 @@ results = client.recall(
 
 **进一步阅读：**
 
-- [`entity_labels` 参考](https://hindsight.vectorize.io/developer/api/memory-banks#entity-labels) — 完整的模式文档
+- [`entity_labels` 参考](/developer/api/memory-banks) — 完整的模式文档
 - [Map 类型实体标签（v0.6.1）](/blog/2026/05/08/version-0-6-1) — 结构化实体功能的发布说明
 - [稳定的用户定义标签实体（v0.7.0）](/blog/2026/05/27/version-0-7-0) — 了解标签为何能在整合过程中保持稳定
 - [星座图视图](/blog/2026/04/16/constellation-view) — 查看标签实体的可视化效果

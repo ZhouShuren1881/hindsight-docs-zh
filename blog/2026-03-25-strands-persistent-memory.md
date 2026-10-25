@@ -275,7 +275,7 @@ Strands 智能体默认是无状态的。`hindsight-strands` 添加了三种原�
 ## 后续步骤 {#next-steps}
 
 - [PyPI 上的 hindsight-strands](https://pypi.org/project/hindsight-strands/)
-- [Hindsight 文档：Strands 集成指南](https://hindsight.vectorize.io/sdks/integrations/strands)
+- [Hindsight 文档：Strands 集成指南](/sdks/integrations/strands)
 - 使用 Docker 在本地运行 Hindsight，并尝试上面的快速入门
 - 探索 `memory_instructions()`，了解如何为面向客户的应用预热智能体
-- 查看 [CrewAI](https://hindsight.vectorize.io/blog/2026-03-02-crewai) 和 [LangGraph](https://hindsight.vectorize.io/blog/2026-03-24-langgraph-longterm-memory) 集成文章，对比类似的集成模式
+- 查看 [CrewAI](/blog/2026/03/02/crewai) 和 [LangGraph](/blog/2026/03/24/langgraph-longterm-memory) 集成文章，对比类似的集成模式

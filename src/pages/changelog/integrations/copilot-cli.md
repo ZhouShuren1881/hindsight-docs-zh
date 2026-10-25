@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 Changelog for [`hindsight-copilot-cli`](https://pypi.org/project/hindsight-copilot-cli/).
 
-For the source code, see [`hindsight-integrations/copilot-cli`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/copilot-cli).
+For the source code, see [`hindsight-integrations/copilot-cli`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/copilot-cli).
 
 ← [Back to main changelog](/changelog)
 

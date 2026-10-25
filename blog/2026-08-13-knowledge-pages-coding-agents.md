@@ -13,7 +13,7 @@ hide_table_of_contents: true
 
 你的编码智能体聪明过人，却没有记忆。它能出色地推理任务，但结束会话后，就忘了这个代码库用的是 `pnpm`、错误采用带类型的 Result 值，也忘了你上个月已经排除过单独使用向量数据库的方案。每次会话都得从头重新了解代码库。
 
-Hindsight 0.9.0 推出了[知识页](https://hindsight.vectorize.io/developer/knowledge-pages)，解决的正是这个问题。知识页是由记忆库根据自身内容生成的持续更新文档；随着记忆库学到新内容，这些文档也会重写。它们特别适合编码场景：通过[编码智能体集成](https://hindsight.vectorize.io/sdks/integrations/coding-agents)，智能体可以自行**构建、维护和读取**这些页面。Claude Code 会替你完成这些工作。
+Hindsight 0.9.0 推出了[知识页](/developer/knowledge-pages)，解决的正是这个问题。知识页是由记忆库根据自身内容生成的持续更新文档；随着记忆库学到新内容，这些文档也会重写。它们特别适合编码场景：通过[编码智能体集成](/sdks/integrations/coding-agents)，智能体可以自行**构建、维护和读取**这些页面。Claude Code 会替你完成这些工作。
 
 <!-- truncate -->
 
@@ -68,7 +68,7 @@ Hindsight 0.9.0 推出了[知识页](https://hindsight.vectorize.io/developer/kn
 
 - `hindsight_search_knowledge_pages` — 混合搜索，为当前任务找到合适的页面。
 - `hindsight_read_knowledge_page` — 完整读取指定页面。
-- `hindsight_reflect` — 当单页内容不够深入时，基于代码库的完整记忆进行[更深入的推理](https://hindsight.vectorize.io/blog/2026/07/24/recall-vs-reflect)。
+- `hindsight_reflect` — 当单页内容不够深入时，基于代码库的完整记忆进行[更深入的推理](/blog/2026/07/24/recall-vs-reflect)。
 
 这样一来，会话就不再从零开始。智能体动笔之前，可以先读取约定页面和相关决策，并以代码库中已有的信息为依据。这就像一位新同事读完所有文档，而且永远不会忘记其中内容。
 
@@ -103,13 +103,13 @@ npx @vectorize-io/hindsight-coding-agents install claude-code
 1. 安装：运行 `npx @vectorize-io/hindsight-coding-agents install claude-code`，并选择记忆的存放位置。
 2. 在代码库中启动 Claude Code。首次会话会调查代码库，并创建初始页面。
 3. 继续工作。智能体会在开始任务前读取页面、记录新的计划，Hindsight 则会持续更新所有内容。
-4. 随时在控制平面、通过 [API](https://hindsight.vectorize.io/developer/api/knowledge-pages)，或使用 `hindsight fs mount` 浏览或调整页面。
+4. 随时在控制平面、通过 [API](/developer/api/knowledge-pages)，或使用 `hindsight fs mount` 浏览或调整页面。
 
-推理已经不再是难题，保持连续性才是。阅读 [0.9.0 发布说明](https://hindsight.vectorize.io/blog/2026/08/06/hindsight-0-9-0)，或者安装集成，让你的编码智能体编写自己的文档。
+推理已经不再是难题，保持连续性才是。阅读 [0.9.0 发布说明](/blog/2026/08/06/hindsight-0-9-0)，或者安装集成，让你的编码智能体编写自己的文档。
 
 ---
 
 **了解更多：**
-- [编码智能体集成](https://hindsight.vectorize.io/sdks/integrations/coding-agents) — 一条命令，为 Claude Code 及其他编码智能体接入原生记忆
-- [知识页开发者指南](https://hindsight.vectorize.io/developer/knowledge-pages) — 了解知识页概念及其底层模型
-- [为任意 Agent Plugins 客户端接入记忆](https://hindsight.vectorize.io/blog/2026/08/12/agent-plugins-persistent-memory) — 与此自动集成相对应的显式、可移植方案
+- [编码智能体集成](/sdks/integrations/coding-agents) — 一条命令，为 Claude Code 及其他编码智能体接入原生记忆
+- [知识页开发者指南](/developer/knowledge-pages) — 了解知识页概念及其底层模型
+- [为任意 Agent Plugins 客户端接入记忆](/blog/2026/08/12/agent-plugins-persistent-memory) — 与此自动集成相对应的显式、可移植方案

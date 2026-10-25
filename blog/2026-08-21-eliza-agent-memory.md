@@ -13,7 +13,7 @@ hide_table_of_contents: true
 
 [elizaOS](https://github.com/elizaOS/eliza) 智能体旨在全天候运行。你可以定义角色、接入几个插件，让智能体常驻 Discord 服务器、Telegram 群组或 X，持续回答所有人的问题。这也带来了编码助理领域很少以同等规模遇到的问题：始终在线的智能体会与*所有人*交流；如果没有长期记忆，它每次都会把对方当作陌生人。
 
-如今，[`@vectorize-io/hindsight-eliza`](https://www.npmjs.com/package/@vectorize-io/hindsight-eliza) 插件为 elizaOS 智能体提供由 [Hindsight](https://hindsight.vectorize.io) 支持的持久记忆，并利用 elizaOS 已有的两个接入点：提供方和评估器。
+如今，[`@vectorize-io/hindsight-eliza`](https://www.npmjs.com/package/@vectorize-io/hindsight-eliza) 插件为 elizaOS 智能体提供由 [Hindsight](/) 支持的持久记忆，并利用 elizaOS 已有的两个接入点：提供方和评估器。
 
 <!-- truncate -->
 
@@ -111,13 +111,13 @@ export const character = {
 };
 ```
 
-就是这样：智能体启动时，召回提供方和存入评估器都会启用。记忆可以存放在 [Hindsight Cloud](https://ui.hindsight.vectorize.io) 或你自行托管的服务器上。Hindsight 采用 MIT 许可证，而且只需一条 Docker 命令即可自托管，因此你可以完全在自己的硬件上运行一整套带持久记忆的 elizaOS 智能体。完整操作演示和验证流程请参阅 [elizaOS 记忆指南](https://hindsight.vectorize.io/guides/2026/07/17/guide-eliza-memory-with-hindsight)。
+就是这样：智能体启动时，召回提供方和存入评估器都会启用。记忆可以存放在 [Hindsight Cloud](https://ui.hindsight.vectorize.io) 或你自行托管的服务器上。Hindsight 采用 MIT 许可证，而且只需一条 Docker 命令即可自托管，因此你可以完全在自己的硬件上运行一整套带持久记忆的 elizaOS 智能体。完整操作演示和验证流程请参阅 [elizaOS 记忆指南](/guides/2026/07/17/guide-eliza-memory-with-hindsight)。
 
 为始终在线的智能体配备持久记忆，让它重启后仍能记住所学内容，并确保每位用户彼此隔离。现在就免费试用 [Hindsight Cloud](https://ui.hindsight.vectorize.io)。
 
 ---
 
 **了解更多：**
-- [elizaOS 集成文档](https://hindsight.vectorize.io/sdks/integrations/eliza) — 介绍提供方、评估器及所有配置选项
-- [指南：使用 Hindsight 为 elizaOS 添加记忆](https://hindsight.vectorize.io/guides/2026/07/17/guide-eliza-memory-with-hindsight) — 分步设置与验证
-- [一个记忆库还是多个？如何规划智能体记忆](https://hindsight.vectorize.io/blog/2026/07/16/bank-strategy-agent-memory) — 如何按用户、房间或共享范围组织记忆
+- [elizaOS 集成文档](/sdks/integrations/eliza) — 介绍提供方、评估器及所有配置选项
+- [指南：使用 Hindsight 为 elizaOS 添加记忆](/guides/2026/07/17/guide-eliza-memory-with-hindsight) — 分步设置与验证
+- [一个记忆库还是多个？如何规划智能体记忆](/blog/2026/07/16/bank-strategy-agent-memory) — 如何按用户、房间或共享范围组织记忆

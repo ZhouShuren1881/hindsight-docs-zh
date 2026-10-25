@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 Changelog for [`hindsight-aider`](https://pypi.org/project/hindsight-aider/).
 
-For the source code, see [`hindsight-integrations/aider`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/aider).
+For the source code, see [`hindsight-integrations/aider`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/aider).
 
 ← [Back to main changelog](/changelog)
 

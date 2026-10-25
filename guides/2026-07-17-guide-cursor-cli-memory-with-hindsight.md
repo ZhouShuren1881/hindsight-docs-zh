@@ -111,7 +111,7 @@ Retain 会将会话 ID 用作文档 ID，因此再次处理同一会话时会更
 
 使用此配置时，在 `~/projects/api` 和 `~/projects/frontend` 中运行 Cursor 会分别存入和召回记忆。记忆库 ID 根据工作目录生成。若要让同一仓库的所有工作树共享记忆，请在 `dynamicBankGranularity` 中使用 `gitProject` 代替 `project`。
 
-所有配置选项请参阅[软件包 README](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/cursor-cli)。
+所有配置选项请参阅[软件包 README](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/cursor-cli)。
 
 ## 验证记忆是否正常工作 {#verify-that-memory-is-working}
 

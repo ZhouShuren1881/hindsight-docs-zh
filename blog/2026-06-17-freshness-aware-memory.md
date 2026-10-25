@@ -83,7 +83,7 @@ Reflect 智能体按层级工作，先读取成本最低、综合程度最高的
 
 具备待更新状态感知的检索会把“这是最接近的综合匹配”变成“这是最接近的匹配，同时也会告诉你是否应该再核查”。智能体会判断信息是否仍是最新的，而不只判断相关性。
 
-这补足了 Hindsight 在[整合](https://hindsight.vectorize.io/blog/2026/05/21/agent-memory-consolidation)过程中处理矛盾的方式：新事实推翻旧事实时，观测会被改写以记录这一变化，而不是被覆盖。待更新状态覆盖的是整合赶上之前的这段空档：新记忆已经存在，但综合层尚未将其纳入其中。
+这补足了 Hindsight 在[整合](/blog/2026/05/21/agent-memory-consolidation)过程中处理矛盾的方式：新事实推翻旧事实时，观测会被改写以记录这一变化，而不是被覆盖。待更新状态覆盖的是整合赶上之前的这段空档：新记忆已经存在，但综合层尚未将其纳入其中。
 
 ## 回顾 {#recap}
 
@@ -100,5 +100,5 @@ Reflect 智能体按层级工作，先读取成本最低、综合程度最高的
 - **观测：**[了解整合的工作方式](/developer/observations)
 - **Reflect：**[智能体推理检索循环](/developer/reflect)
 - **Recall：**[检索原始事实](/developer/api/recall)
-- **延伸阅读：**[智能体记忆中的整合问题](https://hindsight.vectorize.io/blog/2026/05/21/agent-memory-consolidation)
-- **立即试用：**[Hindsight Cloud](https://ui.hindsight.vectorize.io)，或[使用一条 Docker 命令自托管](https://hindsight.vectorize.io/developer/installation)
+- **延伸阅读：**[智能体记忆中的整合问题](/blog/2026/05/21/agent-memory-consolidation)
+- **立即试用：**[Hindsight Cloud](https://ui.hindsight.vectorize.io)，或[使用一条 Docker 命令自托管](/developer/installation)

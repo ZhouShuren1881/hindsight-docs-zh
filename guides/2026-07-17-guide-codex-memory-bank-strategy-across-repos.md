@@ -14,13 +14,13 @@ hide_table_of_contents: true
 
 本指南讨论的是*如何组织记忆*，而不是如何安装钩子。Codex CLI 已经提供 Hindsight 所需的生命周期入口——在每次提示前召回，在每轮对话后存入——因此关键在于把这些记忆放在哪里。记忆库划分得当，Codex 就能记住某个仓库为何修改了身份验证重试逻辑，而不会连带带入另一个无关仓库的发布细节。
 
-如果还没有安装 Codex 钩子，请先按照 [Codex 配置指南](https://hindsight.vectorize.io/guides/2026/05/04/guide-codex-memory-with-hindsight)完成设置，再回来决定如何划分记忆库。工作时可将[文档首页](/)和[快速入门](/developer/api/quickstart)放在手边。
+如果还没有安装 Codex 钩子，请先按照 [Codex 配置指南](/guides/2026/05/04/guide-codex-memory-with-hindsight)完成设置，再回来决定如何划分记忆库。工作时可将[文档首页](/)和[快速入门](/developer/api/quickstart)放在手边。
 
 <!-- truncate -->
 
 > **快速解答**
 >
-> 1. 按照[配置指南](https://hindsight.vectorize.io/guides/2026/05/04/guide-codex-memory-with-hindsight)安装 Codex 钩子。
+> 1. 按照[配置指南](/guides/2026/05/04/guide-codex-memory-with-hindsight)安装 Codex 钩子。
 > 2. 启用按代码库划分的记忆库：设置 `dynamicBankId: true` 和 `dynamicBankGranularity: ["agent", "project"]`。
 > 3. 存入值得记住的内容——约定、脆弱区域、过往调试记录和决策。
 > 4. 仅将固定 `bankId` 的共享记忆库用于跨代码库的团队标准。
@@ -60,7 +60,7 @@ Hindsight 的记忆库隔离十分严格，数据不会跨记忆库流动。因�
 
 ## 将 Codex 连接到 Hindsight {#connect-codex-to-hindsight}
 
-这是一份策略指南，不是安装教程。完整安装流程涵盖钩子包、连接 Hindsight Cloud 或本地守护进程，以及启用 `codex_hooks`；请参阅 [Codex 配置指南](https://hindsight.vectorize.io/guides/2026/05/04/guide-codex-memory-with-hindsight)。先完成设置，再采用下面的记忆库布局。
+这是一份策略指南，不是安装教程。完整安装流程涵盖钩子包、连接 Hindsight Cloud 或本地守护进程，以及启用 `codex_hooks`；请参阅 [Codex 配置指南](/guides/2026/05/04/guide-codex-memory-with-hindsight)。先完成设置，再采用下面的记忆库布局。
 
 ## 团队代码库共用一个记忆库 {#a-shared-bank-for-team-repos}
 
@@ -116,7 +116,7 @@ Hindsight 的记忆库隔离十分严格，数据不会跨记忆库流动。因�
 
 ### 必须使用 Hindsight Cloud 吗？ {#do-i-need-hindsight-cloud}
 
-不必。自托管的 Hindsight 服务器或本地 `hindsight-embed` 守护进程都可以采用同样的方式。无论后端是哪一种，记忆库策略都相同；连接方式请参阅[配置指南](https://hindsight.vectorize.io/guides/2026/05/04/guide-codex-memory-with-hindsight)。
+不必。自托管的 Hindsight 服务器或本地 `hindsight-embed` 守护进程都可以采用同样的方式。无论后端是哪一种，记忆库策略都相同；连接方式请参阅[配置指南](/guides/2026/05/04/guide-codex-memory-with-hindsight)。
 
 ### 按代码库划分记忆库，还是使用一个共享记忆库？ {#per-repo-banks-or-one-shared-bank}
 
@@ -132,7 +132,7 @@ Hindsight 的记忆库隔离十分严格，数据不会跨记忆库流动。因�
 
 ## 后续步骤 {#next-steps}
 
-- 先按照 [Codex 配置指南](https://hindsight.vectorize.io/guides/2026/05/04/guide-codex-memory-with-hindsight)安装钩子。
+- 先按照 [Codex 配置指南](/guides/2026/05/04/guide-codex-memory-with-hindsight)安装钩子。
 - 如果需要托管后端，可从 [Hindsight Cloud](https://hindsight.vectorize.io)开始。
 - 阅读[完整的 Hindsight 文档](/)。
 - 阅读[快速入门指南](/developer/api/quickstart)。

@@ -147,4 +147,4 @@ hermes memory setup           # 选择 "hindsight"
 
 - 阅读[无状态智能体与记忆驱动的智能体](/guides/2026/04/23/guide-stateless-agents-vs-memory-powered-agents)
 - 查看[Hermes 搭配 Hindsight 的记忆模式](/guides/2026/04/14/guide-hermes-memory-modes-with-hindsight-hybrid-context-tools)
-- 从 [Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)开始
+- 从 [Hermes 集成文档](/sdks/integrations/hermes)开始

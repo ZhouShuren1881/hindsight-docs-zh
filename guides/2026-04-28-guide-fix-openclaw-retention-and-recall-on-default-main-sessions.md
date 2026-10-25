@@ -10,7 +10,7 @@ hide_table_of_contents: true
 
 ![修复 OpenClaw 默认主会话中的记忆存入与召回](/img/guides/guide-fix-openclaw-retention-and-recall-on-default-main-sessions.webp)
 
-如果你需要**修复 OpenClaw 默认主会话中的记忆存入与召回**，近期的 OpenClaw 集成更新值得关注。它修复了一处细微的默认值不一致：运行时的默认记忆库粒度本已意味着应该存入 `agent:main:main` 会话，但这些会话仍可能被跳过。结果看起来像是记忆缺失，根本原因却是配置逻辑。验证修复时，请随手查阅 [OpenClaw 集成文档](https://hindsight.vectorize.io/sdks/integrations/openclaw)、[配置指南](/developer/configuration)、[Recall API 指南](/developer/api/recall)和[文档首页](https://hindsight.vectorize.io)。
+如果你需要**修复 OpenClaw 默认主会话中的记忆存入与召回**，近期的 OpenClaw 集成更新值得关注。它修复了一处细微的默认值不一致：运行时的默认记忆库粒度本已意味着应该存入 `agent:main:main` 会话，但这些会话仍可能被跳过。结果看起来像是记忆缺失，根本原因却是配置逻辑。验证修复时，请随手查阅 [OpenClaw 集成文档](/sdks/integrations/openclaw)、[配置指南](/developer/configuration)、[Recall API 指南](/developer/api/recall)和[文档首页](/)。
 
 <!-- truncate -->
 
@@ -69,7 +69,7 @@ hide_table_of_contents: true
 
 此修复只涵盖一类特定的静默跳过问题，并不能消除记忆看似缺失的所有其他原因。
 
-你仍应检查是否排除了相关提供方、是否使用了无状态会话模式、是否缺少发送者身份，以及记忆库范围是否与正在检查的会话不匹配。查阅 [OpenClaw 集成文档](https://hindsight.vectorize.io/sdks/integrations/openclaw)、[Recall API 指南](/developer/api/recall)和[Retain API 指南](/developer/api/retain)，并确认它们讨论的是同一组会话和记忆库边界，这样就更容易理解相关行为。
+你仍应检查是否排除了相关提供方、是否使用了无状态会话模式、是否缺少发送者身份，以及记忆库范围是否与正在检查的会话不匹配。查阅 [OpenClaw 集成文档](/sdks/integrations/openclaw)、[Recall API 指南](/developer/api/recall)和[Retain API 指南](/developer/api/retain)，并确认它们讨论的是同一组会话和记忆库边界，这样就更容易理解相关行为。
 
 ## 常见问题 {#faq}
 
@@ -88,7 +88,7 @@ hide_table_of_contents: true
 ## 后续步骤 {#next-steps}
 
 - [Hindsight Cloud](https://hindsight.vectorize.io)
-- [OpenClaw 集成文档](https://hindsight.vectorize.io/sdks/integrations/openclaw)
+- [OpenClaw 集成文档](/sdks/integrations/openclaw)
 - [配置指南](/developer/configuration)
 - [Recall API 指南](/developer/api/recall)
-- [文档首页](https://hindsight.vectorize.io)
+- [文档首页](/)

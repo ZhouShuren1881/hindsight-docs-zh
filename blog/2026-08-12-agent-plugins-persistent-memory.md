@@ -23,7 +23,7 @@ hide_table_of_contents: true
 - Hindsight 为该标准提供 **一个** 插件，无须为每个 IDE 分别维护 N 份配置。插件提供同一套 `recall` / `retain` / `reflect` 记忆能力。
 - 插件包由三个文件组成：清单、MCP 服务器配置和记忆技能。它 **仅负责传输**——所有记忆逻辑都留在 Hindsight 服务器端。
 - 设置两个环境变量（`HINDSIGHT_API_KEY`，以及可选的 `HINDSIGHT_BANK_ID`），智能体便会在随附技能的指导下自动调用记忆工具。
-- 需要说明的限制是：该标准涵盖 Skills 和 MCP，不包含会话钩子，因此记忆调用是 **显式的、由工具驱动的**。若要在编程智能体中自动捕获记忆，请使用 [Coding Agents 集成](https://hindsight.vectorize.io/sdks/integrations/coding-agents)；它与插件共用同一批记忆库。
+- 需要说明的限制是：该标准涵盖 Skills 和 MCP，不包含会话钩子，因此记忆调用是 **显式的、由工具驱动的**。若要在编程智能体中自动捕获记忆，请使用 [Coding Agents 集成](/sdks/integrations/coding-agents)；它与插件共用同一批记忆库。
 
 ## Agent Plugins 到底是什么 {#what-agent-plugins-actually-is}
 
@@ -51,7 +51,7 @@ agent-plugin/
 
 这就是插件的全部内容。它刻意保持轻量，因为记忆引擎早已存在且经受过实战检验；这个插件只是以标准化方式提供的入口。
 
-- **`mcp.json`** 通过 Streamable HTTP 将客户端连接到 Hindsight 内置的 [MCP 服务器](https://hindsight.vectorize.io/developer/mcp-server)。它仅负责传输：检索、整合和推理都在服务器端完成。
+- **`mcp.json`** 通过 Streamable HTTP 将客户端连接到 Hindsight 内置的 [MCP 服务器](/developer/mcp-server)。它仅负责传输：检索、整合和推理都在服务器端完成。
 - **`skills/hindsight-memory/SKILL.md`** 会加载到智能体的上下文中，让它知道 *何时* 使用记忆，而不只是知道这些工具存在。这是多数集成会忽略的部分，也正是“拥有记忆工具的智能体”和“能在恰当时机实际使用这些工具的智能体”之间的区别。
 
 整个插件采用 MIT 许可证，存放在 [Hindsight 仓库](https://github.com/vectorize-io/hindsight)中。
@@ -77,7 +77,7 @@ agent-plugin/
 | API 密钥 | `HINDSIGHT_API_KEY` | — | 你的 `hsk_...` 密钥，会作为 `Authorization: Bearer` 发送。使用 Hindsight Cloud 时必须设置。 |
 | 记忆库 | `HINDSIGHT_BANK_ID` | `default` | 要读取和写入的记忆库，其 ID 会通过 `X-Bank-Id` 发送。每位用户、每个项目或每个团队各使用一个记忆库。 |
 
-记忆库的范围值得特别说明。`mcp.json` 中的端点针对特定记忆库，因此智能体永远不需要传递 `bank_id` 参数；隔离由连接本身保证，而不依赖模型记住为每次调用指定范围。这与多租户用户所依赖的[按用户隔离模式](https://hindsight.vectorize.io/blog/2026/08/04/per-user-multi-tenant-agent-memory)相同，也正是[每个项目或团队使用一个记忆库](https://hindsight.vectorize.io/blog/2026/07/16/bank-strategy-agent-memory)能让上下文保持相关、避免不同关注事项相互混杂的原因。
+记忆库的范围值得特别说明。`mcp.json` 中的端点针对特定记忆库，因此智能体永远不需要传递 `bank_id` 参数；隔离由连接本身保证，而不依赖模型记住为每次调用指定范围。这与多租户用户所依赖的[按用户隔离模式](/blog/2026/08/04/per-user-multi-tenant-agent-memory)相同，也正是[每个项目或团队使用一个记忆库](/blog/2026/07/16/bank-strategy-agent-memory)能让上下文保持相关、避免不同关注事项相互混杂的原因。
 
 还有一点与可移植性有关：大多数客户端会替换 `${VAR}`，但 VS Code 和 Cursor 等客户端要求使用 `${env:VAR}`。如果客户端完全不支持变量插值，就把实际的密钥和记忆库 ID 填入 `mcp.json`。
 
@@ -85,7 +85,7 @@ agent-plugin/
 
 这里有一个明确的边界：Agent Plugins `1.0.0` 标准化了 **Skills 和 MCP**，但没有标准化会话生命周期钩子。因此，这个插件提供的是 **显式的、由工具驱动的** 记忆：技能指示智能体何时调用 `recall` 和 `retain`，所有受支持客户端中的行为都相同。
 
-该插件不会在每条提示到来前自动触发，也不会在会话结束时自动捕获会话内容。要实现完全自动化的体验，需要针对具体工具进行更深入的接入。对于编程任务，[Coding Agents 集成](https://hindsight.vectorize.io/sdks/integrations/coding-agents)正是为此提供支持：它通过一个软件包，为 opencode、Cline、Kilo、Cursor CLI、Codex CLI、GitHub Copilot CLI、Claude Code、Grok Build 等工具安装原生记忆。它会根据 git 历史和过往会话自动为每个代码仓库构建一个记忆库，并在智能体工作时注入相关上下文，因此模型不必记住要调用哪些工具。
+该插件不会在每条提示到来前自动触发，也不会在会话结束时自动捕获会话内容。要实现完全自动化的体验，需要针对具体工具进行更深入的接入。对于编程任务，[Coding Agents 集成](/sdks/integrations/coding-agents)正是为此提供支持：它通过一个软件包，为 opencode、Cline、Kilo、Cursor CLI、Codex CLI、GitHub Copilot CLI、Claude Code、Grok Build 等工具安装原生记忆。它会根据 git 历史和过往会话自动为每个代码仓库构建一个记忆库，并在智能体工作时注入相关上下文，因此模型不必记住要调用哪些工具。
 
 这两种方式并非互斥方案。它们读写的是 **同一批 Hindsight 记忆库**，因此，Coding Agents 集成自动捕获的上下文可以由任意 Agent Plugins 客户端中的可移植插件召回，反之亦然。你可以针对不同工具选择可移植且显式的方式，或原生且自动的方式；底层使用的是同一个记忆存储。
 
@@ -118,6 +118,6 @@ agent-plugin/
 **了解更多：**
 - [Agent Plugins 标准](https://agent-plugins.org) — 规范和指南
 - [Agent Plugins 介绍](https://vercel.com/blog/introducing-agent-plugins) — Vercel 的公告
-- [Hindsight MCP 服务器参考](https://hindsight.vectorize.io/developer/mcp-server) — 插件提供的所有工具
+- [Hindsight MCP 服务器参考](/developer/mcp-server) — 插件提供的所有工具
 
 ---

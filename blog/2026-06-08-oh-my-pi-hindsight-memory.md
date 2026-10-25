@@ -206,7 +206,7 @@ export HINDSIGHT_API_TOKEN="hsk_your_token"
 
 也可以使用应用内设置：`hindsight.apiUrl`、`hindsight.apiToken`、`hindsight.scoping`。默认的 `per-project-tagged` 范围会自动生效；每个记忆库的首次会话会触发心智模型播种。
 
-你可以[免费获取 Hindsight Cloud 密钥](https://ui.hindsight.vectorize.io)，也可以[自行托管 Hindsight](https://hindsight.vectorize.io/developer/installation)，并将 oh-my-pi 指向 `http://localhost:8888`。无论采用哪种方式，API 接口都相同。
+你可以[免费获取 Hindsight Cloud 密钥](https://ui.hindsight.vectorize.io)，也可以[自行托管 Hindsight](/developer/installation)，并将 oh-my-pi 指向 `http://localhost:8888`。无论采用哪种方式，API 接口都相同。
 
 ---
 

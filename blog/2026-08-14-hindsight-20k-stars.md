@@ -110,6 +110,6 @@ hide_table_of_contents: true
 ---
 
 **了解更多：**
-- [完整变更日志](https://hindsight.vectorize.io/changelog) — 查看每个版本的详细信息
-- [Hindsight 0.9.0](https://hindsight.vectorize.io/blog/2026/08/06/hindsight-0-9-0) — 知识页，以及面向所有编程智能体的记忆
-- [最佳开源智能体记忆系统](https://hindsight.vectorize.io/blog/2026/08/11/open-source-agent-memory-systems) — 客观审视整个类别
+- [完整变更日志](/changelog) — 查看每个版本的详细信息
+- [Hindsight 0.9.0](/blog/2026/08/06/hindsight-0-9-0) — 知识页，以及面向所有编程智能体的记忆
+- [最佳开源智能体记忆系统](/blog/2026/08/11/open-source-agent-memory-systems) — 客观审视整个类别

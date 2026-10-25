@@ -6,7 +6,7 @@ description: "使用 Hindsight 为任意 Flowise 聊天流程或智能体添加�
 
 # Flowise {#flowise}
 
-通过 [Hindsight](https://hindsight.vectorize.io)，为 [Flowise](https://flowiseai.com) 聊天流程和智能体提供持久记忆。三个工具节点——**Hindsight Retain**、**Hindsight Recall** 和 **Hindsight Reflect**——可与其他 LangChain 工具一起接入任意流程。
+通过 [Hindsight](/)，为 [Flowise](https://flowiseai.com) 聊天流程和智能体提供持久记忆。三个工具节点——**Hindsight Retain**、**Hindsight Recall** 和 **Hindsight Reflect**——可与其他 LangChain 工具一起接入任意流程。
 
 [查看更新日志 →](/changelog/integrations/flowise)
 

@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 Changelog for [`hindsight-roo-code`](https://pypi.org/project/hindsight-roo-code/).
 
-For the source code, see [`hindsight-integrations/roo-code`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/roo-code).
+For the source code, see [`hindsight-integrations/roo-code`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/roo-code).
 
 ← [Back to main changelog](/changelog)
 

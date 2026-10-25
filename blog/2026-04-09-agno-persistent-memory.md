@@ -40,7 +40,7 @@ hide_table_of_contents: true
 - 通过语义检索，跨越数天、数周乃至数月找回相关上下文
 - 根据零散积累的知识综合生成连贯的答案
 
-[Hindsight](https://hindsight.vectorize.io/) 提供的正是这些能力。`hindsight-agno` 包将 Hindsight 直接接入 Agno 的 `Toolkit` 系统，因此你无需自行构建这些功能。
+[Hindsight](/) 提供的正是这些能力。`hindsight-agno` 包将 Hindsight 直接接入 Agno 的 `Toolkit` 系统，因此你无需自行构建这些功能。
 
 ## Agno 持久记忆如何与 Hindsight 配合 {#how-agno-persistent-memory-works-with-hindsight}
 

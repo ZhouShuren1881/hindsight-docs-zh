@@ -6,7 +6,7 @@ import PageHero from '@site/src/components/PageHero';
 
 <PageHero title="Microsoft Agent Framework Changelog" subtitle="Hindsight memory integration for Microsoft Agent Framework." />
 
-[← Microsoft Agent Framework integration](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/agent-framework)
+[← Microsoft Agent Framework integration](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/agent-framework)
 
 ## [0.1.0](https://github.com/vectorize-io/hindsight/tree/integrations/agent-framework/v0.1.0)
 

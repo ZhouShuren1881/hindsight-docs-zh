@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 Changelog for [`hindsight-claude-agent-sdk`](https://pypi.org/project/hindsight-claude-agent-sdk/).
 
-For the source code, see [`hindsight-integrations/claude-agent-sdk`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/claude-agent-sdk).
+For the source code, see [`hindsight-integrations/claude-agent-sdk`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/claude-agent-sdk).
 
 ← [Back to main changelog](/changelog)
 

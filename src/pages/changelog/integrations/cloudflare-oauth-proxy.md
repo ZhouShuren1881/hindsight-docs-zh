@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 Changelog for [`hindsight-cloudflare-oauth-proxy`](https://pypi.org/project/hindsight-cloudflare-oauth-proxy/).
 
-For the source code, see [`hindsight-integrations/cloudflare-oauth-proxy`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/cloudflare-oauth-proxy).
+For the source code, see [`hindsight-integrations/cloudflare-oauth-proxy`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/cloudflare-oauth-proxy).
 
 ← [Back to main changelog](/changelog)
 

@@ -264,4 +264,4 @@ MCP 工具覆盖记忆的完整生命周期：用 `retain` 存入记忆，用 `r
 - **探索心智模型**：创建会随着记忆增长而自动更新的文档。试试：`"创建一个总结项目架构的心智模型。"`
 - **尝试多记忆库配置**：为不同项目或智能体分别运行记忆库。连接 `/mcp/` 以使用多记忆库模式。
 - **直接使用 SDK**：除了 MCP，Hindsight 还提供 [Python](https://pypi.org/project/hindsight-client/) 和 [TypeScript](https://www.npmjs.com/package/@vectorize-io/hindsight-client) SDK，可将记忆集成到你自己的应用中。
-- **查看文档**：完整 API 参考、SDK 指南及更多内容请见 [hindsight.vectorize.io](https://hindsight.vectorize.io)。
+- **查看文档**：完整 API 参考、SDK 指南及更多内容请见 [hindsight.vectorize.io](/)。

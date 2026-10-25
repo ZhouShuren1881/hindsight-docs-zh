@@ -60,4 +60,4 @@ hide_table_of_contents: true
 
 感谢大家一路支持。一路为项目点亮星标的每个人，都是我们能走到今天的原因之一。
 
-[在 GitHub 上为 Hindsight 点亮星标](https://github.com/vectorize-io/hindsight)，或[只用一条 Docker 命令进行自托管部署](https://hindsight.vectorize.io/developer/installation)。
+[在 GitHub 上为 Hindsight 点亮星标](https://github.com/vectorize-io/hindsight)，或[只用一条 Docker 命令进行自托管部署](/developer/installation)。

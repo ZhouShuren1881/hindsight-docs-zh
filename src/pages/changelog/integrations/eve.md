@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 Changelog for [`@vectorize-io/hindsight-eve`](https://www.npmjs.com/package/@vectorize-io/hindsight-eve).
 
-For the source code, see [`hindsight-integrations/eve`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/eve).
+For the source code, see [`hindsight-integrations/eve`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/eve).
 
 ← [Back to main changelog](/changelog)
 

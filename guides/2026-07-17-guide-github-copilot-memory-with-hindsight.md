@@ -91,7 +91,7 @@ VS Code Copilot 在这里没有逐提示包装器；该集成使用的是 Copilo
 
 有了这两项配置，你就不必记得亲自调用这些工具；规则会告诉 Copilot 何时使用它们。
 
-如需了解更底层的行为，请阅读 [Hindsight 的 Recall API](https://hindsight.vectorize.io/docs/api/recall)和 [Hindsight 的 Retain API](https://hindsight.vectorize.io/docs/api/retain)。
+如需了解更底层的行为，请阅读 [Hindsight 的 Recall API](/developer/api/recall)和 [Hindsight 的 Retain API](/developer/api/retain)。
 
 ## 记忆库 {#memory-banks}
 
@@ -99,7 +99,7 @@ MCP 服务器限定到一个**记忆库**，其名称就是 MCP 端点 URL 的�
 
 如果你还在其他编辑器或编程智能体中使用 Hindsight，并将它们指向同一个记忆库，它们就会读取同一份项目记忆：在一个工具中学到的约定也能供其他工具使用。
 
-你也可以通过 `HINDSIGHT_COPILOT_BANK_ID` 环境变量设置记忆库，或通过 `HINDSIGHT_API_URL` 和 `HINDSIGHT_API_TOKEN` 设置 API URL 与令牌。完整配置选项见[软件包 README](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/github-copilot)。
+你也可以通过 `HINDSIGHT_COPILOT_BANK_ID` 环境变量设置记忆库，或通过 `HINDSIGHT_API_URL` 和 `HINDSIGHT_API_TOKEN` 设置 API URL 与令牌。完整配置选项见[软件包 README](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/github-copilot)。
 
 ## 验证记忆是否正常工作 {#verify-that-memory-is-working}
 

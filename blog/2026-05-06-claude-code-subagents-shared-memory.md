@@ -26,7 +26,7 @@ image: /img/blog/claude-code-subagents-memory.webp
 - 每个子代理的 `memory` 目录都与其他子代理隔离。代码审查子代理看不到安全审计子代理学到的内容，反之亦然
 - 共享记忆层（在单个项目记忆库上使用 Hindsight）让每个子代理以及编排器都能拥有共同且不断累积的理解
 - 这种模式体现了文件系统与记忆的差别：每个子代理各自的 `MEMORY.md` 文件像硬盘；共享的学习型记忆库则更接近记忆
-- [Hindsight](https://github.com/vectorize-io/hindsight)提供记忆层；[hindsight-memory 插件](https://hindsight.vectorize.io/integrations)会自动通过 Claude Code 的会话钩子接入
+- [Hindsight](https://github.com/vectorize-io/hindsight)提供记忆层；[hindsight-memory 插件](/integrations)会自动通过 Claude Code 的会话钩子接入
 
 ---
 
@@ -128,7 +128,7 @@ Claude Code 并非没有意识到这个问题。它提供了两种部分解决�
 
 ## 设置方法 {#setting-it-up}
 
-这项集成刻意设计得很简单。面向 Claude Code 的 [hindsight-memory 插件](https://hindsight.vectorize.io/integrations)使用标准的 [钩子架构](https://docs.claude.com/en/docs/claude-code/hooks)：
+这项集成刻意设计得很简单。面向 Claude Code 的 [hindsight-memory 插件](/integrations)使用标准的 [钩子架构](https://docs.claude.com/en/docs/claude-code/hooks)：
 
 - `SessionStart` — 检查记忆库的健康状态
 - `UserPromptSubmit` — 在调用模型前自动召回相关记忆
@@ -152,7 +152,7 @@ Claude Code 并非没有意识到这个问题。它提供了两种部分解决�
 }
 ```
 
-`bankId` 是共享身份标识：该项目中的每个会话，以及它启动的每个子代理，都会从 `my-project` 读取并向其中写入。如果你希望按项目、用户或通道隔离，可以将 `dynamicBankId` 设为 `true`，并配置 `dynamicBankGranularity`（例如 `["agent", "project"]` 或 `["user"]`）。[记忆库参考](https://hindsight.vectorize.io/developer/api/memory-banks)介绍了这些模式；同一套钩子都适用。
+`bankId` 是共享身份标识：该项目中的每个会话，以及它启动的每个子代理，都会从 `my-project` 读取并向其中写入。如果你希望按项目、用户或通道隔离，可以将 `dynamicBankId` 设为 `true`，并配置 `dynamicBankGranularity`（例如 `["agent", "project"]` 或 `["user"]`）。[记忆库参考](/developer/api/memory-banks)介绍了这些模式；同一套钩子都适用。
 
 这就是全部设置。正常工作几个会话后，你就可以让子代理使用这个记忆库，并观察编排器如何呈现此前会话中的子代理总结出的偏好和决策。
 
@@ -211,7 +211,7 @@ Claude Code 并非没有意识到这个问题。它提供了两种部分解决�
 
 共享记忆并非总是合适的选择。以下是一些需要坦诚考虑的权衡：
 
-- **记忆库范围很重要。** 在互不相关的项目间共用一个记忆库会产生噪音。可按项目使用一个记忆库，或在适当时按团队使用一个记忆库。[记忆库参考](https://hindsight.vectorize.io/developer/api/memory-banks)介绍了这些模式。
+- **记忆库范围很重要。** 在互不相关的项目间共用一个记忆库会产生噪音。可按项目使用一个记忆库，或在适当时按团队使用一个记忆库。[记忆库参考](/developer/api/memory-banks)介绍了这些模式。
 - **敏感背景。** 如果子代理会读取客户数据，请仔细考虑哪些内容会被存入。插件的存入行为可以配置；你可以让特定数据不进入记忆库。
 - **单次任务。** 如果你几乎不用子代理，而且会话彼此独立，共享记忆的价值就较低。工作具有迭代性时，记忆才更有用。
 - **最初几天。** 新记忆库是空的。经过几轮会话积累后，复合效应才会显现——通常在正常使用一周内开始体现。
@@ -237,17 +237,17 @@ Claude Code 并非没有意识到这个问题。它提供了两种部分解决�
 
 ## 延伸阅读 {#further-reading}
 
-- [每个智能体运行框架都缺少的一层](https://hindsight.vectorize.io/blog/2026/05/04/agent-harness-needs-memory)——更全面地说明智能体运行框架为何需要记忆
-- [你的智能体并非健忘，而是从未获得记忆](https://hindsight.vectorize.io/blog/2026/04/23/your-agent-is-not-forgetful)——基础论述
-- [Claude Code on Telegram：随时随地结对编程](https://hindsight.vectorize.io/blog/2026/03/23/claude-code-telegram)——横跨不同使用界面的 Claude Code 配置；在界面层面采用相同的共享记忆模式
-- [使用 Hindsight 为 OpenClaw 添加持久记忆](https://hindsight.vectorize.io/blog/2026/03/06/adding-memory-to-openclaw-with-hindsight)——配套的智能体运行框架集成；同一钩子模式可直接用于 Claude Code
-- [记忆库参考](https://hindsight.vectorize.io/developer/api/memory-banks)——介绍项目、团队和按用户划分的记忆库范围模式
+- [每个智能体运行框架都缺少的一层](/blog/2026/05/04/agent-harness-needs-memory)——更全面地说明智能体运行框架为何需要记忆
+- [你的智能体并非健忘，而是从未获得记忆](/blog/2026/04/23/your-agent-is-not-forgetful)——基础论述
+- [Claude Code on Telegram：随时随地结对编程](/blog/2026/03/23/claude-code-telegram)——横跨不同使用界面的 Claude Code 配置；在界面层面采用相同的共享记忆模式
+- [使用 Hindsight 为 OpenClaw 添加持久记忆](/blog/2026/03/06/adding-memory-to-openclaw-with-hindsight)——配套的智能体运行框架集成；同一钩子模式可直接用于 Claude Code
+- [记忆库参考](/developer/api/memory-banks)——介绍项目、团队和按用户划分的记忆库范围模式
 
 ---
 
 ## 后续步骤 {#next-steps}
 
 - [注册 Hindsight Cloud](https://ui.hindsight.vectorize.io)，几分钟内即可为 Claude Code 添加记忆
-- 阅读[快速入门](https://hindsight.vectorize.io/developer/api/quickstart)，了解自托管部署
-- 浏览[集成指南](https://hindsight.vectorize.io/integrations)，查看 Claude Code 和其他智能体运行框架的集成方式
-- 配置[记忆库](https://hindsight.vectorize.io/developer/api/memory-banks)，使其符合团队的工作方式：每个项目一个记忆库、按用户划分的记忆库，或团队共享记忆库
+- 阅读[快速入门](/developer/api/quickstart)，了解自托管部署
+- 浏览[集成指南](/integrations)，查看 Claude Code 和其他智能体运行框架的集成方式
+- 配置[记忆库](/developer/api/memory-banks)，使其符合团队的工作方式：每个项目一个记忆库、按用户划分的记忆库，或团队共享记忆库

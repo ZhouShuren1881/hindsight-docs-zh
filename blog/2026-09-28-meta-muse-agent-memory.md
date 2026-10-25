@@ -192,7 +192,7 @@ Muse 召回的任何内容都会进入它的上下文，而 Muse 运行在 Meta 
 
 ## 了解更多 {#learn-more}
 
-- [Meta Muse 集成参考](https://hindsight.vectorize.io/sdks/integrations/meta-muse)：查看完整设置和配置说明。
-- [MCP 服务器](https://hindsight.vectorize.io/developer/mcp-server)：了解单库端点和根端点。
-- [一个记忆库还是多个？智能体记忆结构指南](https://hindsight.vectorize.io/blog/2026/07/16/bank-strategy-agent-memory)：了解如何决定每个记忆库存放什么。
-- [带来事实，而非认知判断](https://hindsight.vectorize.io/blog/2026/09/23/bring-facts-not-beliefs)：了解多个工具向同一记忆库写入内容时会发生什么。
+- [Meta Muse 集成参考](/sdks/integrations/meta-muse)：查看完整设置和配置说明。
+- [MCP 服务器](/developer/mcp-server)：了解单库端点和根端点。
+- [一个记忆库还是多个？智能体记忆结构指南](/blog/2026/07/16/bank-strategy-agent-memory)：了解如何决定每个记忆库存放什么。
+- [带来事实，而非认知判断](/blog/2026/09/23/bring-facts-not-beliefs)：了解多个工具向同一记忆库写入内容时会发生什么。

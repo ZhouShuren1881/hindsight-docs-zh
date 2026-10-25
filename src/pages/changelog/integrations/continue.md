@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 Changelog for [`hindsight-continue`](https://pypi.org/project/hindsight-continue/).
 
-For the source code, see [`hindsight-integrations/continue`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/continue).
+For the source code, see [`hindsight-integrations/continue`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/continue).
 
 ← [Back to main changelog](/changelog)
 

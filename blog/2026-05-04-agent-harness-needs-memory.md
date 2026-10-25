@@ -194,7 +194,7 @@ Codex 使用 `AGENTS.md` 提供静态上下文，并且越来越多地用于多�
 
 编程运行框架需要按项目划分记忆。多租户支持运行框架需要按用户划分记忆。一群 OpenClaw 智能体需要共享记忆。使用 Codex 的团队需要默认共享，也可以选择隔离。记忆层必须支持所有这些模式，不能迫使运行框架自行发明范围逻辑。
 
-这些正是 [Hindsight](https://hindsight.vectorize.io) 优化的设计点。存入、召回、反思和范围划分是四种原语，通过任何运行框架都能使用的 API 和集成提供。
+这些正是 [Hindsight](/) 优化的设计点。存入、召回、反思和范围划分是四种原语，通过任何运行框架都能使用的 API 和集成提供。
 
 ---
 
@@ -210,13 +210,13 @@ Codex 使用 `AGENTS.md` 提供静态上下文，并且越来越多地用于多�
 
 ## Hindsight 如何融入 {#how-hindsight-fits}
 
-[Hindsight](https://hindsight.vectorize.io) 被设计为任何运行框架都能接入的记忆层。它以 API 为先、兼容 MCP，并为主要框架和运行框架提供[集成](https://hindsight.vectorize.io/integrations)。
+[Hindsight](/) 被设计为任何运行框架都能接入的记忆层。它以 API 为先、兼容 MCP，并为主要框架和运行框架提供[集成](/integrations)。
 
 实际集成时，运行框架的工作方式如下：
 
 - 随着循环运行，运行框架会将相关上下文存入记忆库（自动存入，或显式调用 `retain`）
 - 每次调用模型之前，运行框架都会召回相关记忆并将其注入提示（自动召回，或显式调用 `recall`）
-- 通过[记忆库](https://hindsight.vectorize.io/developer/api/memory-banks)配置，正确划分记忆库范围：按项目、按用户、按团队，或在一群智能体之间共享
+- 通过[记忆库](/developer/api/memory-banks)配置，正确划分记忆库范围：按项目、按用户、按团队，或在一群智能体之间共享
 - 累积的记忆会定期综合生成观测和心智模型；需要综合信息时，运行框架可以直接查询它们，而不只进行记忆召回
 
 运行框架继续做自己擅长的事：运行循环、调用工具、管理权限和呈现输出。记忆层负责运行框架从未被设计来处理的部分。
@@ -239,17 +239,17 @@ Codex 使用 `AGENTS.md` 提供静态上下文，并且越来越多地用于多�
 
 ## 延伸阅读 {#further-reading}
 
-- [你的智能体并非健忘，它从未被赋予记忆。](https://hindsight.vectorize.io/blog/2026/04/23/your-agent-is-not-forgetful) — 关于智能体记忆的更广泛论述，运行框架层只是其中一部分
-- [Hindsight 现已成为 Hermes Agent 的原生记忆提供方](https://hindsight.vectorize.io/blog/2026/04/06/hermes-native-memory-provider) — 记忆作为运行框架功能这一模式背后的集成故事
-- [你的 OpenClaw 智能体彼此陌生，Hindsight 可以改变这一点。](https://hindsight.vectorize.io/blog/2026/04/01/openclaw-shared-memory) — 多界面网关模式详解
-- [使用 Hindsight 为 OpenAI Codex 添加持久记忆](https://hindsight.vectorize.io/blog/2026/04/08/adding-memory-to-codex-with-hindsight) — 编程智能体运行框架中的共享记忆是什么样子
-- [Hindsight 集成](https://hindsight.vectorize.io/integrations) — 当前支持的运行框架和框架列表
+- [你的智能体并非健忘，它从未被赋予记忆。](/blog/2026/04/23/your-agent-is-not-forgetful) — 关于智能体记忆的更广泛论述，运行框架层只是其中一部分
+- [Hindsight 现已成为 Hermes Agent 的原生记忆提供方](/blog/2026/04/06/hermes-native-memory-provider) — 记忆作为运行框架功能这一模式背后的集成故事
+- [你的 OpenClaw 智能体彼此陌生，Hindsight 可以改变这一点。](/blog/2026/04/01/openclaw-shared-memory) — 多界面网关模式详解
+- [使用 Hindsight 为 OpenAI Codex 添加持久记忆](/blog/2026/04/08/adding-memory-to-codex-with-hindsight) — 编程智能体运行框架中的共享记忆是什么样子
+- [Hindsight 集成](/integrations) — 当前支持的运行框架和框架列表
 
 ---
 
 ## 后续步骤 {#next-steps}
 
 - [注册 Hindsight Cloud](https://ui.hindsight.vectorize.io)，几分钟内为你的运行框架添加记忆
-- 阅读[快速入门](https://hindsight.vectorize.io/developer/api/quickstart)，了解自托管部署
-- 浏览适用于你的运行框架或框架的[集成指南](https://hindsight.vectorize.io/integrations)
-- 查看[记忆库参考](https://hindsight.vectorize.io/developer/api/memory-banks)，了解如何按用户、项目、团队和智能体群体划分范围
+- 阅读[快速入门](/developer/api/quickstart)，了解自托管部署
+- 浏览适用于你的运行框架或框架的[集成指南](/integrations)
+- 查看[记忆库参考](/developer/api/memory-banks)，了解如何按用户、项目、团队和智能体群体划分范围

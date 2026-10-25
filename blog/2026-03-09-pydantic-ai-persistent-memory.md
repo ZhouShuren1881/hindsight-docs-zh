@@ -38,7 +38,7 @@ hide_table_of_contents: true
 - 跨越数天、数周和数月检索相关上下文
 - 从零散记忆中综合生成连贯的答案
 
-这正是 [Hindsight](https://hindsight.vectorize.io/) 提供的能力。如果你用过 Hindsight 与 [CrewAI](/blog/2026/03/02/crewai) 或 [OpenAI](/blog/2026/03/05/add-memory-to-openai-application) 等其他框架集成，原理是相同的。`hindsight-pydantic-ai` 会将这些能力直接接入 Pydantic AI 的工具和指令系统，因此你无需自行构建这一切。
+这正是 [Hindsight](/) 提供的能力。如果你用过 Hindsight 与 [CrewAI](/blog/2026/03/02/crewai) 或 [OpenAI](/blog/2026/03/05/add-memory-to-openai-application) 等其他框架集成，原理是相同的。`hindsight-pydantic-ai` 会将这些能力直接接入 Pydantic AI 的工具和指令系统，因此你无需自行构建这一切。
 
 ---
 

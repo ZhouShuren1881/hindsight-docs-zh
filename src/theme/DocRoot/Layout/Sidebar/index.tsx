@@ -9,11 +9,11 @@ import featured from '@site/src/data/featured-posts.json';
 type Props = WrapperProps<typeof SidebarType>;
 
 // Single source of truth: src/data/integrations.json drives the "Integrations"
-// sidebar category on the versioned main docs. Those sidebar files (current +
-// frozen versioned_sidebars/*) carry only a placeholder category with one link
+// sidebar category on the current main docs. sidebars.ts carries only a
+// placeholder category with one link
 // to the gallery; we replace that placeholder at render time with the full,
 // alphabetically-sorted list, so adding a JSON entry is all it takes — no
-// per-version sidebar edits. The unversioned integration pages have their own
+// manual sidebar edits. The integration pages have their own
 // generated sidebar (sidebars-integrations.ts), which is left untouched here.
 //
 // Grouped into coding agents / frameworks / apps rather than one flat run of 59

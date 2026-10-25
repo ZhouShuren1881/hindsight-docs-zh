@@ -279,7 +279,7 @@ tools = create_hindsight_tools(bank_id="user-123")
 | **与框架耦合** | 仅限 LlamaIndex | 仅限 LlamaIndex | 无 | 无 |
 | **适用场景** | 单会话聊天 | 在 LlamaIndex 中进行简单的跨会话召回 | 文档检索（RAG） | 跨框架的用户和智能体长期记忆 |
 
-**与 LangGraph/LangChain 对比：** 如果你使用的是 LangGraph 而非 LlamaIndex，请参阅 [`hindsight-langgraph`](https://hindsight.vectorize.io/sdks/integrations/langgraph)。它提供工具、图节点和 `BaseStore` 适配器。
+**与 LangGraph/LangChain 对比：** 如果你使用的是 LangGraph 而非 LlamaIndex，请参阅 [`hindsight-langgraph`](/sdks/integrations/langgraph)。它提供工具、图节点和 `BaseStore` 适配器。
 
 ## 常见问题 {#faq}
 
@@ -307,5 +307,5 @@ Hindsight 会异步处理存入的内容。调用 `retain_memory` 后，等待 1
 
 ## 后续步骤 {#next-steps}
 
-- **文档：** [LlamaIndex 集成指南](https://hindsight.vectorize.io/sdks/integrations/llamaindex)
-- **其他集成：** [LangGraph](https://hindsight.vectorize.io/sdks/integrations/langgraph)、[Pydantic AI](https://hindsight.vectorize.io/sdks/integrations/pydantic-ai)、[CrewAI](https://hindsight.vectorize.io/sdks/integrations/crewai)
+- **文档：** [LlamaIndex 集成指南](/sdks/integrations/llamaindex)
+- **其他集成：** [LangGraph](/sdks/integrations/langgraph)、[Pydantic AI](/sdks/integrations/pydantic-ai)、[CrewAI](/sdks/integrations/crewai)

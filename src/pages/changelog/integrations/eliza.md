@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 Changelog for [`@vectorize-io/hindsight-eliza`](https://www.npmjs.com/package/@vectorize-io/hindsight-eliza).
 
-For the source code, see [`hindsight-integrations/eliza`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/eliza).
+For the source code, see [`hindsight-integrations/eliza`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/eliza).
 
 ← [Back to main changelog](/changelog)
 

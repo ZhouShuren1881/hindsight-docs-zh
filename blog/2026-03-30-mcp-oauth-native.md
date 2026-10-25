@@ -170,4 +170,4 @@ OAuth 流程完成后，重新启动或重新加载 MCP 客户端。有些客户
 
 所有 [Hindsight Cloud](https://ui.hindsight.vectorize.io) 账户现已支持原生 MCP OAuth。将 `https://mcp.hindsight.vectorize.io` 添加到 MCP 客户端配置中，然后按照授权提示操作。
 
-对于脚本或自动化场景，[API 密钥](https://hindsight.vectorize.io/developer/retrieval)仍可在 Hindsight Cloud 控制台中使用。两种方式都能完整访问[记忆召回](https://hindsight.vectorize.io/developer/retrieval)、存入和反思功能。
+对于脚本或自动化场景，[API 密钥](/developer/retrieval)仍可在 Hindsight Cloud 控制台中使用。两种方式都能完整访问[记忆召回](/developer/retrieval)、存入和反思功能。

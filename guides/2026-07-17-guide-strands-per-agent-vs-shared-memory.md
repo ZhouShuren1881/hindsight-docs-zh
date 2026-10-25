@@ -14,7 +14,7 @@ hide_table_of_contents: true
 
 单个 Strands 智能体很简单：一个用户，一个记忆库。真正需要考虑的是这样的协作流程：规划者把工作交给研究者，研究者再交给撰稿者；你必须决定每个智能体可以记住其他智能体的哪些信息。按智能体划分的记忆库能清晰隔离信息，避免相互污染。共享记忆库则让整个团队使用同一份记忆，因此一名智能体学到的事实，在下一次运行时也能被其他智能体使用。
 
-本指南讨论的是**记忆库策略**，不是又一篇安装教程；[配置指南](https://hindsight.vectorize.io/guides/2026/05/04/guide-strands-memory-with-hindsight) 已经介绍了如何接入工具。这里将说明何时应该隔离、何时应该共享，以及如何设置混合模式，让智能体读取共享记忆库，同时只写入自己的记忆库。
+本指南讨论的是**记忆库策略**，不是又一篇安装教程；[配置指南](/guides/2026/05/04/guide-strands-memory-with-hindsight) 已经介绍了如何接入工具。这里将说明何时应该隔离、何时应该共享，以及如何设置混合模式，让智能体读取共享记忆库，同时只写入自己的记忆库。
 
 <!-- truncate -->
 
@@ -89,7 +89,7 @@ writer = Agent(tools=create_hindsight_tools(bank_id=BANK))
 
 ## 将 Strands 接入 Hindsight {#connect-strands-to-hindsight}
 
-本指南假设工具已经接好。如果你还没有安装并接入 `hindsight-strands`，请先阅读 [Strands 配置指南](https://hindsight.vectorize.io/guides/2026/05/04/guide-strands-memory-with-hindsight)。该指南介绍了如何运行 `pip install hindsight-strands`，通过 `configure()` 将工具指向 Hindsight Cloud 或本地服务器，以及如何使用原生 `@tool` 模式为每个智能体配置 `hindsight_retain`、`hindsight_recall` 和 `hindsight_reflect`。完成后再回到这里选择记忆库策略。
+本指南假设工具已经接好。如果你还没有安装并接入 `hindsight-strands`，请先阅读 [Strands 配置指南](/guides/2026/05/04/guide-strands-memory-with-hindsight)。该指南介绍了如何运行 `pip install hindsight-strands`，通过 `configure()` 将工具指向 Hindsight Cloud 或本地服务器，以及如何使用原生 `@tool` 模式为每个智能体配置 `hindsight_retain`、`hindsight_recall` 和 `hindsight_reflect`。完成后再回到这里选择记忆库策略。
 
 ## 混合模式：共享读取，私有写入 {#a-hybrid-shared-read-private-write}
 
@@ -169,7 +169,7 @@ researcher = Agent(
 
 ## 后续步骤 {#next-steps}
 
-- 如果工具还没有接好，请先阅读 [Strands 配置指南](https://hindsight.vectorize.io/guides/2026/05/04/guide-strands-memory-with-hindsight)。
+- 如果工具还没有接好，请先阅读 [Strands 配置指南](/guides/2026/05/04/guide-strands-memory-with-hindsight)。
 - 试用面向托管后端的 [Hindsight Cloud](https://hindsight.vectorize.io)。
 - 阅读[完整 Hindsight 文档](/)。
 - 查看[快速入门指南](/developer/api/quickstart)。

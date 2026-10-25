@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="660" viewBox="0 0 1120 660" role="img" aria-labelledby="title description">
+  <title id="title">源项目与中文文档的 Git 提交历史</title>
+  <desc id="description">两个项目左右并列，提交历史从下往上排列，两条历史的顶部和底部均有向上的延伸箭头，表示还有其他提交。左侧从 local hash 经 commit hash 1、省略号、commit hash 2、commit hash 3 到 target hash。右侧从 old 直接到 new。local hash 经一个 translation work 提交连接到 old，target hash 经另一个 translation work 提交连接到 new。</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 1 1 L 9 5 L 1 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <style>
+      svg { color: #202020; }
+      .background { fill: #ffffff; }
+      text { fill: currentColor; font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; text-anchor: middle; }
+      .heading { font-size: 24px; font-weight: 600; }
+      .label { font-size: 20px; dominant-baseline: central; }
+      .ellipsis { font-size: 32px; dominant-baseline: central; }
+      .node { fill: none; stroke: currentColor; stroke-width: 1.6; }
+      .endpoint { stroke-width: 2.2; }
+      .edge { fill: none; stroke: currentColor; stroke-width: 1.6; marker-end: url(#arrow); }
+      @media (prefers-color-scheme: dark) {
+        svg { color: #e6e6e6; }
+        .background { fill: #171717; }
+      }
+    </style>
+  </defs>
+
+  <!-- An opaque background preserves contrast even when the host theme differs. -->
+  <rect class="background" width="1120" height="660" fill="#ffffff"/>
+
+  <text class="heading" x="200" y="66">源项目 commit 历史</text>
+  <text class="heading" x="920" y="66">中文文档 commit 历史</text>
+
+  <!-- History flows upward; translation connections flow to the right. -->
+  <g class="edge">
+    <path d="M 200 638 V 601"/>
+    <path d="M 200 115 V 88"/>
+    <path d="M 920 638 V 601"/>
+    <path d="M 920 115 V 88"/>
+    <path d="M 200 545 V 515"/>
+    <path d="M 200 459 V 421"/>
+    <path d="M 200 381 V 343"/>
+    <path d="M 200 287 V 257"/>
+    <path d="M 200 201 V 171"/>
+    <path d="M 920 545 V 171"/>
+    <path d="M 320 573 H 440"/>
+    <path d="M 680 573 H 800"/>
+    <path d="M 320 143 H 440"/>
+    <path d="M 680 143 H 800"/>
+  </g>
+
+  <g>
+    <rect class="node endpoint" x="80" y="115" width="240" height="56" rx="8"/>
+    <text class="label" x="200" y="143">target hash</text>
+    <rect class="node" x="80" y="201" width="240" height="56" rx="8"/>
+    <text class="label" x="200" y="229">commit hash 3</text>
+    <rect class="node" x="80" y="287" width="240" height="56" rx="8"/>
+    <text class="label" x="200" y="315">commit hash 2</text>
+    <text class="ellipsis" x="200" y="401">⋮</text>
+    <rect class="node" x="80" y="459" width="240" height="56" rx="8"/>
+    <text class="label" x="200" y="487">commit hash 1</text>
+    <rect class="node endpoint" x="80" y="545" width="240" height="56" rx="8"/>
+    <text class="label" x="200" y="573">local hash</text>
+  </g>
+
+  <g>
+    <rect class="node" x="440" y="115" width="240" height="56" rx="28"/>
+    <text class="label" x="560" y="143">translation work</text>
+    <rect class="node" x="440" y="545" width="240" height="56" rx="28"/>
+    <text class="label" x="560" y="573">translation work</text>
+  </g>
+
+  <g>
+    <rect class="node endpoint" x="800" y="115" width="240" height="56" rx="8"/>
+    <text class="label" x="920" y="143">new</text>
+    <rect class="node endpoint" x="800" y="545" width="240" height="56" rx="8"/>
+    <text class="label" x="920" y="573">old</text>
+  </g>
+</svg>

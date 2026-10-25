@@ -440,7 +440,7 @@ def apply_combined_scoring(scored_results, now, recency_alpha=0.2, temporal_alph
 
 Hindsight 中每次调用 `recall_memory` 都会运行这套流程：并行混合检索、RRF 融合、交叉编码器重排序和乘法加权评分。即使记忆库增长到数万条事实，这种架构仍然适用。
 
-如果你想使用这套检索架构，又不想自己构建，[Hindsight Cloud](https://ui.hindsight.vectorize.io) 可以代为运行。[记忆召回文档](https://hindsight.vectorize.io/developer/retrieval)介绍了完整的技术细节，包括 `budget` 如何决定运行哪些策略，以及如何应用重排序。
+如果你想使用这套检索架构，又不想自己构建，[Hindsight Cloud](https://ui.hindsight.vectorize.io) 可以代为运行。[记忆召回文档](/developer/retrieval)介绍了完整的技术细节，包括 `budget` 如何决定运行哪些策略，以及如何应用重排序。
 
 ## 构建能在生产环境稳定运行的并行混合搜索 {#building-parallel-hybrid-search-that-holds-up-in-production}
 

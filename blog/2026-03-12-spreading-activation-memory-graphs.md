@@ -312,7 +312,7 @@ def pick_best_date(row):
 
 ## 混合检索流程中的时间扩散激活 {#temporal-spreading-activation-in-a-hybrid-retrieval-stack}
 
-时间扩散激活只是 Hindsight [混合检索系统](https://docs.hindsight.vectorize.io/recall)中的一个组成部分。实际使用时，我们会将它与语义检索、[BM25](https://en.wikipedia.org/wiki/Okapi_BM25) 和纯图遍历并行运行：
+时间扩散激活只是 Hindsight [混合检索系统](/developer/retrieval)中的一个组成部分。实际使用时，我们会将它与语义检索、[BM25](https://en.wikipedia.org/wiki/Okapi_BM25) 和纯图遍历并行运行：
 
 ```python
 semantic_result, bm25_result, graph_result, temporal_result = await asyncio.gather(
@@ -361,4 +361,4 @@ semantic_result, bm25_result, graph_result, temporal_result = await asyncio.gath
 
 ---
 
-*Hindsight 是一个 AI 智能体记忆系统，通过混合检索为智能体提供持久、结构化的记忆。[了解架构](https://docs.hindsight.vectorize.io/recall)，或[注册使用 Hindsight Cloud](https://ui.hindsight.vectorize.io)。*
+*Hindsight 是一个 AI 智能体记忆系统，通过混合检索为智能体提供持久、结构化的记忆。[了解架构](/developer/retrieval)，或[注册使用 Hindsight Cloud](https://ui.hindsight.vectorize.io)。*

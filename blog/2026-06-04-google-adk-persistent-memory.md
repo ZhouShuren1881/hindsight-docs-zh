@@ -298,17 +298,17 @@ ADK 提供智能体运行时和 `BaseMemoryService` 扩展位；Hindsight 提供
 ## 后续步骤 {#next-steps}
 
 - **从 Hindsight Cloud 开始：** [注册](https://ui.hindsight.vectorize.io)，获取 API key，并将 `Runner` 指向它。
-- **阅读 [Google ADK 集成文档](https://hindsight.vectorize.io/integrations/google-adk)**，查看完整配置参考。
+- **阅读 [Google ADK 集成文档](/sdks/integrations/google-adk)**，查看完整配置参考。
 - **选择符合用户模型的 `bank_id_template`：** 按用户隔离是安全的默认设置。
 - **决定使用自动方式、显式方式还是两者兼用：** 先从 `BaseMemoryService` 开始；如果智能体适合在一轮对话中调用记忆工具，再添加这些工具。
 - **根据需要调整 `budget`：** 对延迟敏感时使用 `low`，需要深入推理时使用 `high`。
-- **浏览[完整集成列表](https://hindsight.vectorize.io/integrations/)**：Hermes、OpenAI Agents、n8n、Vapi、AgentCore 等 30 多种集成都共用同一记忆层。
+- **浏览[完整集成列表](/integrations)**：Hermes、OpenAI Agents、n8n、Vapi、AgentCore 等 30 多种集成都共用同一记忆层。
 
 ---
 
 **延伸阅读：**
 
 - [什么是智能体记忆？](https://vectorize.io/what-is-agent-memory/) — 基础概念。
-- [Hindsight Google ADK 集成文档](https://hindsight.vectorize.io/integrations/google-adk) — 完整配置参考。
+- [Hindsight Google ADK 集成文档](/sdks/integrations/google-adk) — 完整配置参考。
 - [使用 AWS AgentCore 实现多轮智能体记忆](/blog/2026/05/01/agentcore-persistent-memory) — 类似的运行时适配器模式。
 - [2026 年最佳 AI 智能体记忆系统](https://vectorize.io/articles/best-ai-agent-memory-systems/) — 全面比较各类方案。

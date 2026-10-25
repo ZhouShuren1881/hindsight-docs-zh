@@ -10,7 +10,7 @@ hide_table_of_contents: true
 
 ![无需变通即可在 Linux ARM64 上运行 Hindsight CLI](/img/guides/guide-run-hindsight-cli-on-linux-arm64.webp)
 
-如果你想要**在 Linux ARM64 上运行 Hindsight CLI**，现在的配置过程终于简单直接了。最新的发布流程现在会提供正式的 `hindsight-linux-arm64` 产物，因此 Raspberry Pi 设备、Graviton 实例和小型 ARM 服务器不再需要为了运行 CLI 而在本地重新构建，也不必通过非官方方式复制二进制文件。如果你在操作时还需要查阅相关文档，可以同时打开 [CLI 参考](/sdks/cli)、[安装指南](/developer/installation)、[快速入门指南](https://hindsight.vectorize.io/developer/api/quickstart)和[文档首页](https://hindsight.vectorize.io)。
+如果你想要**在 Linux ARM64 上运行 Hindsight CLI**，现在的配置过程终于简单直接了。最新的发布流程现在会提供正式的 `hindsight-linux-arm64` 产物，因此 Raspberry Pi 设备、Graviton 实例和小型 ARM 服务器不再需要为了运行 CLI 而在本地重新构建，也不必通过非官方方式复制二进制文件。如果你在操作时还需要查阅相关文档，可以同时打开 [CLI 参考](/sdks/cli)、[安装指南](/developer/installation)、[快速入门指南](/developer/api/quickstart)和[文档首页](/)。
 
 <!-- truncate -->
 
@@ -72,7 +72,7 @@ hindsight memory retain test-bank "Alice prefers async updates"
 hindsight memory recall test-bank "How should I update Alice?"
 ```
 
-如果命令运行成功，Linux ARM64 的配置就完成了。你在 Linux ARM64 主机上使用的，正是[记忆存入 API 指南](/developer/api/retain)、[记忆召回 API 指南](/developer/api/recall)和[快速入门指南](https://hindsight.vectorize.io/developer/api/quickstart)中介绍的那些记忆命令。
+如果命令运行成功，Linux ARM64 的配置就完成了。你在 Linux ARM64 主机上使用的，正是[记忆存入 API 指南](/developer/api/retain)、[记忆召回 API 指南](/developer/api/recall)和[快速入门指南](/developer/api/quickstart)中介绍的那些记忆命令。
 
 ## 排查 Linux ARM64 常见问题 {#troubleshooting-common-linux-arm64-misses}
 
@@ -104,5 +104,5 @@ hindsight memory recall test-bank "How should I update Alice?"
 - [Hindsight Cloud](https://hindsight.vectorize.io)
 - [CLI 参考](/sdks/cli)
 - [安装指南](/developer/installation)
-- [快速入门指南](https://hindsight.vectorize.io/developer/api/quickstart)
-- [文档首页](https://hindsight.vectorize.io)
+- [快速入门指南](/developer/api/quickstart)
+- [文档首页](/)

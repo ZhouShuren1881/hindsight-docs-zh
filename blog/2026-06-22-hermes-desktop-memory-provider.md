@@ -15,7 +15,7 @@ hide_table_of_contents: true
 Hindsight 不再与 Hermes 捆绑。Nous Research 已将所有记忆提供方移出 Hermes 核心代码库，因此新安装时需要先运行 `hermes plugins install hindsight`，再运行 `hermes memory setup`。已有安装会自动迁移。请参阅[Hindsight 成为 Hermes 插件后有何变化](/blog/2026/10/01/hindsight-hermes-plugin-what-changed)。
 :::
 
-Nous Research 开发的 [Hermes Agent](https://github.com/NousResearch/hermes-agent) 已将 Hindsight 作为[原生记忆提供方](https://hindsight.vectorize.io/blog/2026/04/06/hermes-native-memory-provider)提供一段时间了。此前要配置它，需要编辑 `config.json`，或把密钥写进 `.env`。如果你习惯使用终端，这不成问题；否则，这就成了一道门槛。
+Nous Research 开发的 [Hermes Agent](https://github.com/NousResearch/hermes-agent) 已将 Hindsight 作为[原生记忆提供方](/blog/2026/04/06/hermes-native-memory-provider)提供一段时间了。此前要配置它，需要编辑 `config.json`，或把密钥写进 `.env`。如果你习惯使用终端，这不成问题；否则，这就成了一道门槛。
 
 现在这道门槛消失了。**Hermes 桌面应用现在支持选择 Hindsight 作为记忆提供方，并直接在应用内完成全部配置**：选择模式、粘贴 API 密钥、保存。无需处理文件或环境变量，也不必折腾重启。
 
@@ -73,7 +73,7 @@ Hermes 自带一系列记忆插件。在桌面应用的提供方下拉菜单中�
 
 ## 开始使用 {#get-started}
 
-- **集成文档：**[在 Hermes 桌面应用中配置 Hindsight](https://hindsight.vectorize.io/sdks/integrations/hermes-desktop)
+- **集成文档：**[在 Hermes 桌面应用中配置 Hindsight](/sdks/integrations/hermes-desktop)
 - **Hermes Agent：**[github.com/NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent)
 - **Hindsight Cloud（免费）：**[ui.hindsight.vectorize.io](https://ui.hindsight.vectorize.io)
-- **关于原生提供方：**[Hindsight 现已成为 Hermes Agent 的原生记忆提供方](https://hindsight.vectorize.io/blog/2026/04/06/hermes-native-memory-provider)
+- **关于原生提供方：**[Hindsight 现已成为 Hermes Agent 的原生记忆提供方](/blog/2026/04/06/hermes-native-memory-provider)

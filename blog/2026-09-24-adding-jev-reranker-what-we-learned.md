@@ -149,7 +149,7 @@ Jev 在这条处理路径中返回的是排名，归一化到 0 到 1 的范围�
 
 ## 了解更多 {#learn-more}
 
-- [交叉编码器重排序：智能体记忆召回的最后阶段](https://hindsight.vectorize.io/blog/2026/08/28/cross-encoder-reranking-agent-memory)：介绍重排序阶段、分数归一化和故障时的开放策略。
-- [知识图谱与向量搜索](https://hindsight.vectorize.io/blog/2026/08/24/knowledge-graphs-vs-vector-search)：介绍为重排序提供候选的检索分支。
-- [提供事实，而非认知判断](https://hindsight.vectorize.io/blog/2026/09/23/bring-facts-not-beliefs)：介绍重排序不会完成的去重工作。
-- [Hindsight 0.10.1 有哪些新功能](https://hindsight.vectorize.io/blog/2026/09/21/version-0-10-1)：了解此次发布的其他内容。
+- [交叉编码器重排序：智能体记忆召回的最后阶段](/blog/2026/08/28/cross-encoder-reranking-agent-memory)：介绍重排序阶段、分数归一化和故障时的开放策略。
+- [知识图谱与向量搜索](/blog/2026/08/24/knowledge-graphs-vs-vector-search-agent-memory)：介绍为重排序提供候选的检索分支。
+- [提供事实，而非认知判断](/blog/2026/09/23/bring-facts-not-beliefs)：介绍重排序不会完成的去重工作。
+- [Hindsight 0.10.1 有哪些新功能](/blog/2026/09/21/version-0-10-1)：了解此次发布的其他内容。

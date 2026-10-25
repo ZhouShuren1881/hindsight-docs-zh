@@ -28,13 +28,13 @@ hide_table_of_contents: true
 
 ## 记忆会为自己编写文档 {#memory-that-writes-its-own-documentation}
 
-这个夏天最重要的新想法出现在 [0.9.0](https://hindsight.vectorize.io/blog/2026/08/07/version-0-9-0)：**知识页**。
+这个夏天最重要的新想法出现在 [0.9.0](/blog/2026/08/07/version-0-9-0)：**知识页**。
 
 知识页是记忆库为自身编写的持续更新文档，用来回答“我们的错误处理约定是什么？”之类的问题；随着记忆库不断学习，页面也会重写。页面像 wiki 一样放在目录树中；运行 `hindsight fs mount`，就能把这棵目录树映射到磁盘，成为实际的 Markdown 文件。这样一来，`ls`、`grep`、编辑器和智能体的文件工具都能直接使用这些文件。
 
 知识页之所以不只是 wiki，关键在于它是投影视图，而不是存储本身。即使删除页面，也不会丢失信息，因为页面可以根据已经提取、去重并协调处理过的记忆重新生成。页面反映的是*当前*成立的内容，而不是每个人曾经说过的所有矛盾说法。
 
-又过了两个版本，[0.9.2](https://hindsight.vectorize.io/blog/2026/08/24/version-0-9-2) 将知识库变成原生 MCP 接口：新增七个工具，用于浏览、搜索和维护页面。智能体可以通过已有的连接维护自己的 wiki，并继续使用同一连接存入和召回记忆。[0.10.0](https://hindsight.vectorize.io/blog/2026/09/14/version-0-10-0) 则让整个综合生成层都可以迁移：整库导出现在会携带知识页和心智模型，无需在另一端从头重建。
+又过了两个版本，[0.9.2](/blog/2026/08/24/version-0-9-2) 将知识库变成原生 MCP 接口：新增七个工具，用于浏览、搜索和维护页面。智能体可以通过已有的连接维护自己的 wiki，并继续使用同一连接存入和召回记忆。[0.10.0](/blog/2026/09/14/version-0-10-0) 则让整个综合生成层都可以迁移：整库导出现在会携带知识页和心智模型，无需在另一端从头重建。
 
 ## 所有编程智能体共用一份记忆 {#one-memory-for-every-coding-agent}
 
@@ -48,7 +48,7 @@ Claude Code、Codex CLI、Cursor CLI、GitHub Copilot CLI、opencode、Qwen Code
 
 这里的基本出发点值得再说一遍：实际修复中的大部分内容都能从代码推导出来，但最后一步往往取决于代码中没有写明的决定，例如舍入规则或重试策略。这些信息存在于 git 历史和过去的对话中。插件会在智能体开始工作时把它们提供给智能体，同时也会提供它持续维护的架构与约定知识页。
 
-[九月初又有四种智能体加入](https://hindsight.vectorize.io/blog/2026/09/02/coding-agents-050-four-new-harnesses)；[面向编程智能体的知识页](https://hindsight.vectorize.io/blog/2026/08/13/knowledge-pages-coding-agents)则深入介绍了人工维护的知识层。
+[九月初又有四种智能体加入](/blog/2026/09/02/coding-agents-050-four-new-harnesses)；[面向编程智能体的知识页](/blog/2026/08/13/knowledge-pages-coding-agents)则深入介绍了人工维护的知识层。
 
 ## 记忆能看图 {#memory-that-can-see}
 
@@ -56,21 +56,21 @@ Claude Code、Codex CLI、Cursor CLI、GitHub Copilot CLI、opencode、Qwen Code
 
 现在，`content` 可以是由文本、图片和文件块组成的有序列表。图片会按其所在位置读取，因此夹在两段文字之间的图表也会作为这两段文字之间的内容来读取。来源追溯信息落实到每条事实：Recall 可以在返回某条事实时一并给出提取这条事实所依据的确切截图，而不只是该文本分块中的所有图片。
 
-有一点值得了解：如果无法确定图片归属，系统会怎么处理。提取器会被要求指出每条事实需要哪张图片；如果回答无法确定图片，就会丢弃这条回答，而不是把它归到最近的一张图片上。没有引用，胜过引用错误。[完整介绍在这里](https://hindsight.vectorize.io/blog/2026/09/16/screenshot-agent-memory)。
+有一点值得了解：如果无法确定图片归属，系统会怎么处理。提取器会被要求指出每条事实需要哪张图片；如果回答无法确定图片，就会丢弃这条回答，而不是把它归到最近的一张图片上。没有引用，胜过引用错误。[完整介绍在这里](/blog/2026/09/16/screenshot-agent-memory)。
 
 ## 记忆情况一目了然 {#memory-you-can-inspect}
 
 这个夏天反复出现的一个主题是：减少对记忆实际运行方式的猜测。
 
-- **花 token 之前，先查看提示词。** 0.10.0 的预览端点会返回 Retain（存入）、观测整合或 Reflect（反思）将发送的确切消息，并按消息块拆分；每块都会标明对应的设置。它不会调用 LLM，也不会写入数据。例如，你可以借此发现，存入任务说明放在用户消息中，而不是系统提示词中。[这里有更多介绍](https://hindsight.vectorize.io/blog/2026/09/17/prompt-preview)。
+- **花 token 之前，先查看提示词。** 0.10.0 的预览端点会返回 Retain（存入）、观测整合或 Reflect（反思）将发送的确切消息，并按消息块拆分；每块都会标明对应的设置。它不会调用 LLM，也不会写入数据。例如，你可以借此发现，存入任务说明放在用户消息中，而不是系统提示词中。[这里有更多介绍](/blog/2026/09/17/prompt-preview)。
 - **无需改动心智模型，就能调试它。** 0.9.0 新增了刷新试运行：计算下一个版本但不持久化，并保留读取内容和决策过程的追踪记录。0.9.2 又为每次刷新增加了带类型的结果；如果刷新生成的内容与原来相同，结果会明确说明这一点，而不会误报为已写入。
-- **按时间顺序查看某个实体的全部信息。** [0.8.6](https://hindsight.vectorize.io/blog/2026/07/29/version-0-8-6) 新增实体时间线：选择一个人、公司或项目，就能从首次提及开始，查看记忆库中与其相关的全部信息。它由 API 筛选器提供支持，因此你自己的工具也能获得相同视图。
+- **按时间顺序查看某个实体的全部信息。** [0.8.6](/blog/2026/07/29/version-0-8-6) 新增实体时间线：选择一个人、公司或项目，就能从首次提及开始，查看记忆库中与其相关的全部信息。它由 API 筛选器提供支持，因此你自己的工具也能获得相同视图。
 
 ## 记忆理解时间 {#memory-that-understands-time}
 
 有两项改动让时间成为显式输入，而不再只是从文字中推断。
 
-[0.9.1](https://hindsight.vectorize.io/blog/2026/08/14/version-0-9-1) 为 Reflect 提供了当前日期和时间，因此“上周”和“最近”会根据实际时钟确定，而不再含糊不清。
+[0.9.1](/blog/2026/08/14/version-0-9-1) 为 Reflect 提供了当前日期和时间，因此“上周”和“最近”会根据实际时钟确定，而不再含糊不清。
 
 0.9.2 允许直接为 Recall 传入具有明确起止时间的 `temporal_window`。此前，若要限定时间，只能把时间写进查询，并希望日期解析器能正确理解。现在，日期选择器或已经根据真实日历确定“上季度”范围的智能体，都可以直接传入这个范围。设置该参数还会跳过它所取代的日期提取步骤；对于文档级查询，最多可节省约 1.3 秒。
 
@@ -87,18 +87,18 @@ Claude Code、Codex CLI、Cursor CLI、GitHub Copilot CLI、opencode、Qwen Code
 | 纯 ASGI 请求路径 | 0.10.0 | 在两个 CPU 上，健康检查吞吐量从每秒 2,476 个请求提升到 7,917 个 |
 | 不先生成 ID 的 token 计数 | 0.10.0 | 一次 Recall 中的计数阶段从 34.2 ms 降到 5.0 ms |
 
-这些改动不会改变智能体记住什么，只会改变记住信息的成本；运行得越多，这一点就越重要。[Retain 内存预算文章](https://hindsight.vectorize.io/blog/2026/08/27/retain-memory-budget)详细介绍了内存上限。
+这些改动不会改变智能体记住什么，只会改变记住信息的成本；运行得越多，这一点就越重要。[Retain 内存预算文章](/blog/2026/08/27/retain-memory-budget)详细介绍了内存上限。
 
 ## 接下来可以看什么 {#where-to-go-from-here}
 
 以上能力都包含在 v0.10.0 中，无论使用 Hindsight Cloud 还是自托管部署都可以获得。各篇发布说明都提供了完整细节；升级前尤其值得阅读 0.10.0 中的几项不兼容变更。
 
-- [0.10.0](https://hindsight.vectorize.io/blog/2026/09/14/version-0-10-0)：附件、提示词预览、更快的请求路径
-- [0.9.2](https://hindsight.vectorize.io/blog/2026/08/24/version-0-9-2)：通过 MCP 使用知识库、时间窗口、Retain 内存预算
-- [0.9.1](https://hindsight.vectorize.io/blog/2026/08/14/version-0-9-1)：Reflect 获得当前时间、可迁移的数据
-- [0.9.0](https://hindsight.vectorize.io/blog/2026/08/07/version-0-9-0)：知识页、重新设计的控制台
-- [0.8.6](https://hindsight.vectorize.io/blog/2026/07/29/version-0-8-6)：实体时间线、按操作控制模型
-- [0.8.5](https://hindsight.vectorize.io/blog/2026/07/21/version-0-8-5)：批处理 API、提示缓存、有韧性的模型输出
+- [0.10.0](/blog/2026/09/14/version-0-10-0)：附件、提示词预览、更快的请求路径
+- [0.9.2](/blog/2026/08/24/version-0-9-2)：通过 MCP 使用知识库、时间窗口、Retain 内存预算
+- [0.9.1](/blog/2026/08/14/version-0-9-1)：Reflect 获得当前时间、可迁移的数据
+- [0.9.0](/blog/2026/08/07/version-0-9-0)：知识页、重新设计的控制台
+- [0.8.6](/blog/2026/07/29/version-0-8-6)：实体时间线、按操作控制模型
+- [0.8.5](/blog/2026/07/21/version-0-8-5)：批处理 API、提示缓存、有韧性的模型输出
 
 ## 常见问题 {#faq}
 
@@ -106,7 +106,7 @@ Claude Code、Codex CLI、Cursor CLI、GitHub Copilot CLI、opencode、Qwen Code
 不必。发布说明会标出不兼容变更。0.10.0 有几项值得先读，包括移除了记忆库 profile 端点，以及 Docker 镜像中不再包含 `curl`。
 
 **Hindsight Cloud 上也有这些功能吗？**
-有。Cloud 运行的是 0.10.0，因此这里列出的功能都已在 Cloud 上提供；知识库功能从[Cloud 六月至八月更新汇总](https://hindsight.vectorize.io/blog/2026/09/01/hindsight-cloud-june-august-updates)发布以来就已可用。如果你自托管 v0.10.0，今天也可以使用这里列出的全部功能。
+有。Cloud 运行的是 0.10.0，因此这里列出的功能都已在 Cloud 上提供；知识库功能从[Cloud 六月至八月更新汇总](/blog/2026/09/01/hindsight-cloud-june-august-updates)发布以来就已可用。如果你自托管 v0.10.0，今天也可以使用这里列出的全部功能。
 
 **编程智能体插件属于核心版本的一部分吗？**
 它以 `@vectorize-io/hindsight-coding-agents` 的形式单独发布，可配合 Hindsight Cloud、自行运行的服务器或本地守护进程使用。

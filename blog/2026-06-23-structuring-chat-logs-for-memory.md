@@ -178,4 +178,4 @@ client.retain(
 - **Retain API：**[摄取对话及完整参数列表](/developer/api/retain)
 - **Retain 的工作方式：**[事实提取、实体消解，以及世界事实与经历事实的区别](/developer/retain)
 - **Recall：**[检索记忆，包括按标签过滤](/developer/api/recall)
-- **试用：**[Hindsight Cloud](https://ui.hindsight.vectorize.io)，或[使用一条 Docker 命令进行自托管](https://hindsight.vectorize.io/developer/installation)
+- **试用：**[Hindsight Cloud](https://ui.hindsight.vectorize.io)，或[使用一条 Docker 命令进行自托管](/developer/installation)

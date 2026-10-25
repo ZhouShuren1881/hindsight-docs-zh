@@ -14,7 +14,7 @@ hide_table_of_contents: true
 
 保持相同记忆库很重要。许多团队担心迁移意味着从头重建记忆、重新教导智能体，或者手动导入导出数据。通常这些都不需要。如果旧配置已经把记忆存入 Hindsight，记忆库就已存在。只要保留相同的后端和 `bank_id`，原生提供商就能继续使用它。
 
-本指南介绍安全的迁移步骤，包括备份当前配置、干净地卸载已弃用插件、切换到 Hermes 原生 Hindsight 提供商、验证召回和工具，以及修复常见迁移错误。操作时如需更完整的配置参考，可以在其他标签页打开 [Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)和 [Hindsight 文档首页](/)。
+本指南介绍安全的迁移步骤，包括备份当前配置、干净地卸载已弃用插件、切换到 Hermes 原生 Hindsight 提供商、验证召回和工具，以及修复常见迁移错误。操作时如需更完整的配置参考，可以在其他标签页打开 [Hermes 集成文档](/sdks/integrations/hermes)和 [Hindsight 文档首页](/)。
 
 <!-- truncate -->
 
@@ -49,7 +49,7 @@ $HOME/.hermes/hermes-agent/venv/bin/python -m pip show hindsight-hermes
 
 如果命令输出包元数据，基本可以确定你仍在使用旧插件路径。
 
-开始前也建议浏览新版 [Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)、[快速入门](/developer/api/quickstart)和[记忆存储 API 参考](/developer/api/retain)，以便核对切换后的存储与召回行为。
+开始前也建议浏览新版 [Hermes 集成文档](/sdks/integrations/hermes)、[快速入门](/developer/api/quickstart)和[记忆存储 API 参考](/developer/api/retain)，以便核对切换后的存储与召回行为。
 
 ## 分步操作 {#step-by-step}
 
@@ -348,12 +348,12 @@ cat ~/.hermes/logs/hindsight-embed.log
 
 ### 哪里有更完整的配置参考？ {#where-should-i-go-if-i-want-a-more-complete-setup-reference}
 
-可以查阅 [Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)、[文档首页](/)和[快速入门指南](/developer/api/quickstart)。如果想比较其他智能体集成的共享记忆方式，[OpenClaw 集成文档](/sdks/integrations/openclaw)和[使用 Hindsight 为 Codex 添加记忆](/blog/2026/04/08/adding-memory-to-codex-with-hindsight)也很有参考价值。
+可以查阅 [Hermes 集成文档](/sdks/integrations/hermes)、[文档首页](/)和[快速入门指南](/developer/api/quickstart)。如果想比较其他智能体集成的共享记忆方式，[OpenClaw 集成文档](/sdks/integrations/openclaw)和[使用 Hindsight 为 Codex 添加记忆](/blog/2026/04/08/adding-memory-to-codex-with-hindsight)也很有参考价值。
 
 ## 后续步骤 {#next-steps}
 
 - [创建 Hindsight Cloud 账户](https://hindsight.vectorize.io)，使用托管后端快速完成迁移。
-- 阅读 [Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)，了解完整配置选项。
+- 阅读 [Hermes 集成文档](/sdks/integrations/hermes)，了解完整配置选项。
 - 如需简明的端到端 Hindsight 回顾，阅读[快速入门指南](/developer/api/quickstart)。
 - 需要理解自动召回实际返回什么时，使用[记忆召回 API 参考](/developer/api/recall)。
 - 需要调整记忆库的存储内容时，使用[记忆存储 API 参考](/developer/api/retain)。

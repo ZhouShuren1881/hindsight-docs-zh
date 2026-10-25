@@ -115,5 +115,5 @@ Eve 0.51.0 不再向 `turn.completed` 传递该回合的历史记录（这是相
 
 ## 链接 {#links}
 
-- [Hindsight 文档](https://hindsight.vectorize.io)
+- [Hindsight 文档](/)
 - [Eve 记忆文档](https://eve.dev/docs/memory) · [构建记忆提供者](https://github.com/vercel/eve/blob/main/docs/memory/custom-provider.md)

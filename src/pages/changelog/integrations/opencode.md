@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 Changelog for [`@vectorize-io/opencode-hindsight`](https://www.npmjs.com/package/@vectorize-io/opencode-hindsight).
 
-For the source code, see [`hindsight-integrations/opencode`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/opencode).
+For the source code, see [`hindsight-integrations/opencode`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/opencode).
 
 ← [Back to main changelog](/changelog)
 

@@ -35,7 +35,7 @@ tags: [tutorial]
 
 默认情况下，沙盒会为所需服务配置策略：LLM 提供商、GitHub、npm 和 OpenClaw API。其他所有端点都会被阻止。这是一个合理的默认设置——如果智能体可以调用任意端点，就更难让人放心。
 
-[Hindsight](https://hindsight.vectorize.io) 以外部 API 的形式运行。插件通过 HTTPS 调用 `api.hindsight.vectorize.io`，以[存入和召回记忆](https://hindsight.vectorize.io/blog/2026/03/04/mcp-agent-memory)。从沙盒的角度看，这只是另一个出站端点，需要明确允许访问。
+[Hindsight](/) 以外部 API 的形式运行。插件通过 HTTPS 调用 `api.hindsight.vectorize.io`，以[存入和召回记忆](/blog/2026/03/04/mcp-agent-memory)。从沙盒的角度看，这只是另一个出站端点，需要明确允许访问。
 
 完整架构如下：
 
@@ -57,13 +57,13 @@ tags: [tutorial]
 └─────────────────────────────────────────────┘
 ```
 
-插件存入一段对话时，Hindsight 不会只保存原始文本。它会提取结构化事实、消解实体、构建[知识图谱](https://hindsight.vectorize.io/blog/2026/03/12/spreading-activation-memory-graphs)，并为多策略检索建立索引，包括语义检索、BM25 关键词匹配、图遍历，以及结合[交叉编码器重排序](https://hindsight.vectorize.io/blog/2026/03/04/mcp-agent-memory)的时间筛选。这样一来，即使智能体的问题与已存储内容的确切措辞不同，召回仍然有效。
+插件存入一段对话时，Hindsight 不会只保存原始文本。它会提取结构化事实、消解实体、构建[知识图谱](/blog/2026/03/12/spreading-activation-memory-graphs)，并为多策略检索建立索引，包括语义检索、BM25 关键词匹配、图遍历，以及结合[交叉编码器重排序](/blog/2026/03/04/mcp-agent-memory)的时间筛选。这样一来，即使智能体的问题与已存储内容的确切措辞不同，召回仍然有效。
 
 插件有两种模式。在**本地守护进程模式**下，它会启动本地 `hindsight-embed` 进程，并通过本地端口与其通信。在**外部 API 模式**下，它完全跳过守护进程，直接向 Hindsight Cloud 端点发送 HTTP 请求。
 
 在沙盒中，本地守护进程模式不太方便。沙盒会控制可以启动哪些进程，而后台守护进程还要启动 `uvx` 子进程，这会带来不必要的阻碍。外部 API 模式很适合这种场景：插件变成轻量的 HTTP 客户端，所需的基础设施只有一条网络出口规则。
 
-如需了解 OpenClaw 插件本身的背景——例如它如何接入网关生命周期、自动将记忆注入上下文，以及防止反馈循环——请参阅[每个 OpenClaw 用户都需要的记忆升级](https://hindsight.vectorize.io/blog/2026/03/06/adding-memory-to-openclaw-with-hindsight)。
+如需了解 OpenClaw 插件本身的背景——例如它如何接入网关生命周期、自动将记忆注入上下文，以及防止反馈循环——请参阅[每个 OpenClaw 用户都需要的记忆升级](/blog/2026/03/06/adding-memory-to-openclaw-with-hindsight)。
 
 ## 实现：一条命令 {#implementation-one-command}
 
@@ -225,7 +225,7 @@ openclaw plugins install @vectorize-io/hindsight-openclaw
 
 ### 3. 记忆存入是异步的 {#3-memory-retention-is-asynchronous}
 
-插件在会话结束时调用 `retain` 后，[事实提取和实体消解](https://hindsight.vectorize.io/blog/2026/03/12/spreading-activation-memory-graphs)会在 Hindsight 一侧的后台进行。如果你立即开启新会话，最新的记忆可能尚未建立索引。实际等待时间通常只有几秒，不过连续测试时需要留意这一点。
+插件在会话结束时调用 `retain` 后，[事实提取和实体消解](/blog/2026/03/12/spreading-activation-memory-graphs)会在 Hindsight 一侧的后台进行。如果你立即开启新会话，最新的记忆可能尚未建立索引。实际等待时间通常只有几秒，不过连续测试时需要留意这一点。
 
 ### 4. 按二进制文件限定的网络出口规则很严格 {#4-binary-scoped-egress-is-strict}
 
@@ -245,7 +245,7 @@ openclaw plugins install @vectorize-io/hindsight-openclaw
 
 当数据必须保留在本机、网络出口被完全锁定，或你在沙盒之外且进程启动不受限制时，**使用本地守护进程模式**。
 
-如需了解本地守护进程方案的背景，请参阅[每个 OpenClaw 用户都需要的记忆升级](https://hindsight.vectorize.io/blog/2026/03/06/adding-memory-to-openclaw-with-hindsight)。
+如需了解本地守护进程方案的背景，请参阅[每个 OpenClaw 用户都需要的记忆升级](/blog/2026/03/06/adding-memory-to-openclaw-with-hindsight)。
 
 ## 这种模式对沙盒智能体记忆的意义 {#what-this-pattern-means-for-sandboxed-agent-memory}
 
@@ -275,9 +275,9 @@ openclaw plugins install @vectorize-io/hindsight-openclaw
 
 - **运行设置命令**：执行 `npx @vectorize-io/hindsight-nemoclaw setup --help` 开始使用。
 - **尝试按用户划分记忆库**：启用 `dynamicBankId: true`，在多租户部署中为每位用户提供独立记忆。
-- **深入了解 OpenClaw 插件**：参阅[每个 OpenClaw 用户都需要的记忆升级](https://hindsight.vectorize.io/blog/2026/03/06/adding-memory-to-openclaw-with-hindsight)，了解插件如何接入网关生命周期事件。
-- **将其他智能体连接到同一记忆**：Hindsight 也适用于 [Hermes Agent](https://hindsight.vectorize.io/blog/2026/03/17/hermes-agent-memory)、[Streamlit 聊天机器人](https://hindsight.vectorize.io/blog/2026/03/17/python-chatbot-memory-streamlit)和[任意 MCP 客户端](https://hindsight.vectorize.io/blog/2026/03/04/mcp-agent-memory)。
-- **查看文档**：[docs.hindsight.vectorize.io](https://docs.hindsight.vectorize.io/recall/) 提供完整的 API 参考和 SDK 指南。
+- **深入了解 OpenClaw 插件**：参阅[每个 OpenClaw 用户都需要的记忆升级](/blog/2026/03/06/adding-memory-to-openclaw-with-hindsight)，了解插件如何接入网关生命周期事件。
+- **将其他智能体连接到同一记忆**：Hindsight 也适用于 [Hermes Agent](/blog/2026/03/17/hermes-agent-memory)、[Streamlit 聊天机器人](/blog/python-chatbot-memory-streamlit)和[任意 MCP 客户端](/blog/2026/03/04/mcp-agent-memory)。
+- **查看文档**：[docs.hindsight.vectorize.io](/developer/api/recall) 提供完整的 API 参考和 SDK 指南。
 
 ---
 

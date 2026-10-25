@@ -11,7 +11,7 @@ hide_table_of_contents: true
 
 ![借助 Hindsight 实现 Eve 持久记忆](/img/blog/eve-persistent-memory.png)
 
-[Vercel Eve](https://vercel.com/eve) 是一个开源、以文件系统为核心的 AI 智能体构建框架：智能体是一个文件目录，工具是一个 TypeScript 文件，技能是一个 Markdown 文件。Vercel 于 2026 年 6 月[发布了 Eve](https://vercel.com/blog/introducing-eve)，并默认提供持久执行、沙盒计算和 OpenTelemetry 追踪等生产环境功能。它没有内置长期记忆，而这正是 [Hindsight](https://hindsight.vectorize.io) 能发挥作用的地方。
+[Vercel Eve](https://vercel.com/eve) 是一个开源、以文件系统为核心的 AI 智能体构建框架：智能体是一个文件目录，工具是一个 TypeScript 文件，技能是一个 Markdown 文件。Vercel 于 2026 年 6 月[发布了 Eve](https://vercel.com/blog/introducing-eve)，并默认提供持久执行、沙盒计算和 OpenTelemetry 追踪等生产环境功能。它没有内置长期记忆，而这正是 [Hindsight](/) 能发挥作用的地方。
 
 最初为 [Eve](https://github.com/vercel/eve) 开发的 Hindsight 集成版本向智能体提供记忆**工具**：`recall`、`retain` 和 `reflect`，通过 MCP 暴露给模型调用。这种方式可行，但和所有基于工具的记忆方案一样有个问题：模型必须**决定**使用它。如果模型没有调用 `recall`，这些记忆就形同不存在。
 

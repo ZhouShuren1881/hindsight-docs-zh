@@ -12,7 +12,7 @@ hide_table_of_contents: true
 
 我最常见到的错误是过早选定一个记忆库，随后又把它扩展到互不相关的工作流中。这样起初看起来很简单，却会让召回结果变成杂乱的大杂烩。更稳妥的做法是根据智能体的实际使用方式制定记忆库命名规则，并长期保持稳定。
 
-本指南将介绍适用于生产环境的记忆库模式、各自的适用场景，以及如何避免预发布、生产、多用户和团队共享配置彼此干扰。设计时可随手查阅 [Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)、[快速入门指南](/developer/api/quickstart)、[Recall API 参考](/developer/api/recall)和 [Retain API 参考](/developer/api/retain)。
+本指南将介绍适用于生产环境的记忆库模式、各自的适用场景，以及如何避免预发布、生产、多用户和团队共享配置彼此干扰。设计时可随手查阅 [Hermes 集成文档](/sdks/integrations/hermes)、[快速入门指南](/developer/api/quickstart)、[Recall API 参考](/developer/api/recall)和 [Retain API 参考](/developer/api/retain)。
 
 <!-- truncate -->
 
@@ -32,7 +32,7 @@ hide_table_of_contents: true
 - 你清楚部署属于单用户、多用户还是多智能体场景。
 - 你清楚预发布和生产环境是否共用同一个 Hindsight 后端。
 
-参考资料：[Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)、[文档首页](/)、[快速入门指南](/developer/api/quickstart)和 [AI 编码智能体的团队共享记忆](/blog/2026/07/10/shared-memory-across-ai-tools)。
+参考资料：[Hermes 集成文档](/sdks/integrations/hermes)、[文档首页](/)、[快速入门指南](/developer/api/quickstart)和 [AI 编码智能体的团队共享记忆](/blog/2026/07/10/shared-memory-across-ai-tools)。
 
 ## 分步操作 {#step-by-step}
 
@@ -169,7 +169,7 @@ PY
 ## 后续步骤 {#next-steps}
 
 - 如果要为生产环境中的 Hermes 使用托管后端，请从 [Hindsight Cloud](https://hindsight.vectorize.io) 开始。
-- 打开 [Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)，了解提供商配置选项。
+- 打开 [Hermes 集成文档](/sdks/integrations/hermes)，了解提供商配置选项。
 - 如果还需要后端，请参阅[快速入门指南](/developer/api/quickstart)。
 - 调整检索和存储设置前，请阅读 [Recall API 参考](/developer/api/recall)和 [Retain API 参考](/developer/api/retain)。
 - 阅读[面向 AI 编码智能体的团队共享记忆](/blog/2026/07/10/shared-memory-across-ai-tools)，了解团队场景下的权衡。

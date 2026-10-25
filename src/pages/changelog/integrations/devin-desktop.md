@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 Changelog for [`hindsight-devin-desktop`](https://pypi.org/project/hindsight-devin-desktop/).
 
-For the source code, see [`hindsight-integrations/devin-desktop`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/devin-desktop).
+For the source code, see [`hindsight-integrations/devin-desktop`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/devin-desktop).
 
 ← [Back to main changelog](/changelog)
 

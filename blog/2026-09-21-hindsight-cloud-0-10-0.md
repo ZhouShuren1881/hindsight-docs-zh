@@ -39,7 +39,7 @@ Retain 请求的 `content` 字段现在接受由文本、图片和文件块组�
 
 召回结果携带的是引用，而不是字节：包括 ID、媒体类型、大小、原始文件名和 URL。使用与召回相同的凭据获取该 URL，就能以你发送时使用的内容类型取回图片。由于 ID 根据内容哈希生成，图片可以永久缓存。这些信息足以将缩略图作为答案旁的引用展示，也足以在下一轮把原图交给视觉模型。
 
-关于这些设计决策的更多内容，包括为何会丢弃无法解析的引用，而不是将其就近匹配到某张图片，请参阅[将截图放入智能体记忆需要做些什么](https://hindsight.vectorize.io/blog/2026/09/16/screenshot-agent-memory)。
+关于这些设计决策的更多内容，包括为何会丢弃无法解析的引用，而不是将其就近匹配到某张图片，请参阅[将截图放入智能体记忆需要做些什么](/blog/2026/09/16/screenshot-agent-memory)。
 
 ## 发送提示词前先查看内容 {#see-the-prompt-before-you-send-it}
 
@@ -49,7 +49,7 @@ Retain 请求的 `content` 字段现在接受由文本、图片和文件块组�
 
 有两点常让人意外。第一，Retain 或整合的任务说明会进入**用户**消息，而不是系统提示词；因此，如果只查看系统提示词，就会误以为已配置的任务说明缺失。第二，即使某项设置已被关闭，它仍会返回，只是标记为非活动状态，并保留在启用时本来会占据的位置。
 
-[查看完整详情](https://hindsight.vectorize.io/blog/2026/09/17/prompt-preview)，其中也包括那些看起来已配置、实际却不会生效的设置。
+[查看完整详情](/blog/2026/09/17/prompt-preview)，其中也包括那些看起来已配置、实际却不会生效的设置。
 
 ## 能容忍拼写错误的召回 {#recall-that-forgives-typos}
 
@@ -79,11 +79,11 @@ Retain 请求的 `content` 字段现在接受由文本、图片和文件块组�
 
 这里介绍的功能并非 Cloud 专属。它们都已随 v0.10.0 发布；从 9 月中旬起，自托管部署就可以使用该版本，Cloud 现在也已跟上。区别在于，Cloud 用户无需升级任何内容，而且系统已为你配置好图片 Retain 所需的视觉模型。
 
-如果你运行自己的部署，有两条升级说明对你尤其重要：Docker 镜像中不再包含 `curl`，因此基于 exec 的健康探针需要改为 HTTP 探针；记忆库 profile 和 background 端点现在会返回 `410 Gone`。[0.10.0 发布说明](https://hindsight.vectorize.io/blog/2026/09/14/version-0-10-0)列出了完整信息。
+如果你运行自己的部署，有两条升级说明对你尤其重要：Docker 镜像中不再包含 `curl`，因此基于 exec 的健康探针需要改为 HTTP 探针；记忆库 profile 和 background 端点现在会返回 `410 Gone`。[0.10.0 发布说明](/blog/2026/09/14/version-0-10-0)列出了完整信息。
 
 ## 了解更多 {#learn-more}
 
-- [将截图放入智能体记忆需要做些什么](https://hindsight.vectorize.io/blog/2026/09/16/screenshot-agent-memory)：了解按事实关联来源的工作方式。
-- [消耗 token 前先查看准确的提示词](https://hindsight.vectorize.io/blog/2026/09/17/prompt-preview)：了解提示词预览端点。
-- [Hindsight 这个夏天学到了什么](https://hindsight.vectorize.io/blog/2026/09/18/what-hindsight-learned-this-summer)：了解最近几次发布的整体发展脉络。
-- [Hindsight Cloud 6 月至 8 月更新](https://hindsight.vectorize.io/blog/2026/09/01/hindsight-cloud-june-august-updates)：查看上一期汇总，涵盖知识库和企业控制功能。
+- [将截图放入智能体记忆需要做些什么](/blog/2026/09/16/screenshot-agent-memory)：了解按事实关联来源的工作方式。
+- [消耗 token 前先查看准确的提示词](/blog/2026/09/17/prompt-preview)：了解提示词预览端点。
+- [Hindsight 这个夏天学到了什么](/blog/2026/09/18/what-hindsight-learned-this-summer)：了解最近几次发布的整体发展脉络。
+- [Hindsight Cloud 6 月至 8 月更新](/blog/2026/09/01/hindsight-cloud-june-august-updates)：查看上一期汇总，涵盖知识库和企业控制功能。

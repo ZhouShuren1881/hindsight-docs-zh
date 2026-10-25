@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 Changelog for [`hindsight-copilot`](https://pypi.org/project/hindsight-copilot/).
 
-For the source code, see [`hindsight-integrations/github-copilot`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/github-copilot).
+For the source code, see [`hindsight-integrations/github-copilot`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/github-copilot).
 
 ← [Back to main changelog](/changelog)
 

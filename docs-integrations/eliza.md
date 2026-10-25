@@ -5,7 +5,7 @@ description: "为 elizaOS 智能体提供持久的长期记忆。Hindsight 插�
 
 # elizaOS {#elizaos}
 
-`@vectorize-io/hindsight-eliza` 软件包为 [elizaOS](https://github.com/elizaOS/eliza) 智能体提供由 [Hindsight](https://hindsight.vectorize.io) 支持的长期记忆。
+`@vectorize-io/hindsight-eliza` 软件包为 [elizaOS](https://github.com/elizaOS/eliza) 智能体提供由 [Hindsight](/) 支持的长期记忆。
 
 它会为智能体注册两个组件：
 

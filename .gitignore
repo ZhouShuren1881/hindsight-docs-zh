@@ -4,6 +4,9 @@
 # temporary files
 /temp
 
+# source monorepo
+/src-mono-repo
+
 # Dependencies
 /node_modules
 

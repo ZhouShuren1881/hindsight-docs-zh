@@ -166,7 +166,7 @@ Cline 会看到这个记忆块，但它不会显示在编辑器输出中。因�
 }
 ```
 
-完整的团队设置指南请参阅[为 AI 编程智能体配置共享记忆](https://hindsight.vectorize.io/blog/2026/03/31/team-shared-memory-ai-coding-agents)。
+完整的团队设置指南请参阅[为 AI 编程智能体配置共享记忆【无效博客链接】](https://hindsight.vectorize.io/blog/2026/03/31/team-shared-memory-ai-coding-agents)。
 
 ## 重要配置选项 {#key-configuration-options}
 
@@ -197,7 +197,7 @@ Cline 会看到这个记忆块，但它不会显示在编辑器输出中。因�
 
 **第一个任务没有召回记忆。** 只有在记忆存入后，召回才会返回结果。先完成一项实际任务；从第二项任务开始，就能看到召回的上下文。
 
-**在 Windows 上没有任何反应。** Cline 的钩子运行器仅支持 macOS 和 Linux，目前没有 Windows 版本。如果你使用 Windows，并希望为编程智能体添加持久记忆，[Hermes + Hindsight](https://hindsight.vectorize.io/blog/2026/06/01/hermes-hindsight-windows-setup) 是一个不错的选择。
+**在 Windows 上没有任何反应。** Cline 的钩子运行器仅支持 macOS 和 Linux，目前没有 Windows 版本。如果你使用 Windows，并希望为编程智能体添加持久记忆，[Hermes + Hindsight](/blog/2026/06/01/hermes-hindsight-windows-setup) 是一个不错的选择。
 
 **不启动 Cline，直接对钩子进行冒烟测试。** 可以将合成事件直接通过管道传给钩子脚本，确认整个流程能够运行：
 
@@ -231,5 +231,5 @@ echo '{"hookName":"UserPromptSubmit","prompt":"how do we authenticate?","taskId"
 - **Hindsight Cloud：** [ui.hindsight.vectorize.io](https://ui.hindsight.vectorize.io)
 - **集成文档：** [Cline + Hindsight](/sdks/integrations/cline)
 - **源码：** [vectorize-io/hindsight/hindsight-integrations/cline](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/cline)
-- **团队记忆：** [为 AI 编程智能体配置共享记忆](https://hindsight.vectorize.io/blog/2026/03/31/team-shared-memory-ai-coding-agents)
-- **Windows 替代方案：** [使用 Hindsight 的 Hermes 智能体](https://hindsight.vectorize.io/blog/2026/06/01/hermes-hindsight-windows-setup)
+- **团队记忆：** [为 AI 编程智能体配置共享记忆【无效博客链接】](https://hindsight.vectorize.io/blog/2026/03/31/team-shared-memory-ai-coding-agents)
+- **Windows 替代方案：** [使用 Hindsight 的 Hermes 智能体](/blog/2026/06/01/hermes-hindsight-windows-setup)

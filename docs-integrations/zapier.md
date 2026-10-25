@@ -6,7 +6,7 @@ description: "使用 Hindsight 为你的 Zap 添加长期记忆。通过 Retain�
 
 # Zapier {#zapier}
 
-通过 [Hindsight](https://hindsight.vectorize.io) 为 [Zapier](https://zapier.com) 提供长期智能体记忆。Hindsight Zapier 应用提供三个操作——**Retain（存入）**、**Recall（召回）**、**Reflect（反思）**——以及即时**触发器**。记忆事件触发时，触发器会启动 Zap，让记忆在 Hindsight 与 7,000 多个应用之间流动。
+通过 [Hindsight](/) 为 [Zapier](https://zapier.com) 提供长期智能体记忆。Hindsight Zapier 应用提供三个操作——**Retain（存入）**、**Recall（召回）**、**Reflect（反思）**——以及即时**触发器**。记忆事件触发时，触发器会启动 Zap，让记忆在 Hindsight 与 7,000 多个应用之间流动。
 
 ## 为什么这很重要 {#why-this-matters}
 

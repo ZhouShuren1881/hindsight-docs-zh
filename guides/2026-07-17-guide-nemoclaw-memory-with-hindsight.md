@@ -14,7 +14,7 @@ hide_table_of_contents: true
 
 这很适合 NemoClaw，因为沙箱会严格限制网络出站访问——每个出站端点都必须明确获准。`hindsight-openclaw` 插件支持外部 API 模式，在该模式下会跳过本地守护进程，直接通过 HTTPS 调用 Hindsight Cloud。这样一来，插件就成了轻量级 HTTP 客户端，沙箱只需添加一条允许访问 Hindsight API 的出站规则。
 
-本指南会介绍如何运行设置命令、了解插件如何挂接到 OpenClaw 网关的生命周期、选择记忆库策略，以及如何快速验证记忆确实在使用。操作时可将[文档首页](https://hindsight.vectorize.io/docs)和[快速入门指南](https://hindsight.vectorize.io/docs/quickstart)放在手边。
+本指南会介绍如何运行设置命令、了解插件如何挂接到 OpenClaw 网关的生命周期、选择记忆库策略，以及如何快速验证记忆确实在使用。操作时可将[文档首页](/)和[快速入门指南](/developer/api/quickstart)放在手边。
 
 <!-- truncate -->
 
@@ -105,7 +105,7 @@ npx @vectorize-io/hindsight-nemoclaw setup \
 - **召回（`before_agent_start`）：** 从过去的会话中召回相关记忆，并将其注入上下文。
 - **存入（`agent_end`）：** 智能体结束运行时，将对话存入 Hindsight 记忆库。
 
-沙箱不会妨碍这两个步骤——它会将 Hindsight 调用视为发往获准端点的普通 HTTPS 出站请求。若要了解更底层的行为，请阅读 [Hindsight 的 Recall API](https://hindsight.vectorize.io/docs/api/recall) 和 [Hindsight 的 Retain API](https://hindsight.vectorize.io/docs/api/retain)。
+沙箱不会妨碍这两个步骤——它会将 Hindsight 调用视为发往获准端点的普通 HTTPS 出站请求。若要了解更底层的行为，请阅读 [Hindsight 的 Recall API](/developer/api/recall) 和 [Hindsight 的 Retain API](/developer/api/retain)。
 
 ## 验证记忆是否正常工作 {#verify-that-memory-is-working}
 
@@ -174,8 +174,8 @@ tail -f /tmp/openclaw/openclaw-*.log | grep Hindsight
 ## 后续步骤 {#next-steps}
 
 - 如果你需要托管后端，可从 [Hindsight Cloud](https://hindsight.vectorize.io) 开始
-- 阅读[完整的 Hindsight 文档](https://hindsight.vectorize.io/docs)
-- 按照[快速入门指南](https://hindsight.vectorize.io/docs/quickstart)操作
-- 查看 [Hindsight 的 Recall API](https://hindsight.vectorize.io/docs/api/recall)
-- 查看 [Hindsight 的 Retain API](https://hindsight.vectorize.io/docs/api/retain)
-- 阅读 [NemoClaw 集成文档](https://hindsight.vectorize.io/docs/integrations/nemoclaw)
+- 阅读[完整的 Hindsight 文档](/)
+- 按照[快速入门指南](/developer/api/quickstart)操作
+- 查看 [Hindsight 的 Recall API](/developer/api/recall)
+- 查看 [Hindsight 的 Retain API](/developer/api/retain)
+- 阅读 [NemoClaw 集成文档](/sdks/integrations/nemoclaw)

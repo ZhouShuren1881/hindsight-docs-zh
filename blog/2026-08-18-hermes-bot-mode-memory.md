@@ -53,7 +53,7 @@ Hermes 和 Hindsight 一样，均采用 MIT 许可证。
 
 - **每个机器人使用一个记忆库。** 为每个命名机器人分配自己的 `bank_id`。研究机器人积累研究记忆，支持机器人积累支持记忆，彼此无法看到对方的内容。隔离由存储层强制执行，而不是依赖提示词。
 - **每个房间使用一个共享记忆库。** 让协作房间中的机器人都指向同一个 `bank_id`，它们就能*共同*记忆。研究机器人学到的内容，写作机器人可以在下一轮召回。它们的上下文不断累积，让整个房间发挥出超过单个机器人的能力。
-- **混合模式。** 为每个机器人设置一个用于自身工作记忆的私有记忆库，再设置一个共享团队记忆库，用来保存房间共同认可的结论。这种模式更容易扩展，也是我们的多智能体用户已经在采用的[记忆库策略](https://hindsight.vectorize.io/blog/2026/07/16/bank-strategy-agent-memory)。
+- **混合模式。** 为每个机器人设置一个用于自身工作记忆的私有记忆库，再设置一个共享团队记忆库，用来保存房间共同认可的结论。这种模式更容易扩展，也是我们的多智能体用户已经在采用的[记忆库策略](/blog/2026/07/16/bank-strategy-agent-memory)。
 
 ## 设置 {#setup}
 
@@ -82,13 +82,13 @@ hermes memory status     # 确认提供方和记忆库
 
 Bot Mode 为每个机器人预留了一个记忆位置。Hindsight 为它提供了持久且范围明确的记忆：记忆会跨会话保留，可以通过单个 bank id 实现隔离或共享，支持自行托管，而且已经作为原生提供方接入 Hermes。记忆库模型几乎能直接对应到白板上绘制的专家团队结构，这正是一个优秀基础构件的特点。
 
-组建你的机器人团队，决定哪些机器人共享记忆、哪些机器人保留自己的记忆，让它们每次运行都能变得更有经验。你可以从 [Hindsight Cloud](https://ui.hindsight.vectorize.io) 免费开始，也可以先阅读 [Hermes 集成指南](https://hindsight.vectorize.io/sdks/integrations/hermes)。
+组建你的机器人团队，决定哪些机器人共享记忆、哪些机器人保留自己的记忆，让它们每次运行都能变得更有经验。你可以从 [Hindsight Cloud](https://ui.hindsight.vectorize.io) 免费开始，也可以先阅读 [Hermes 集成指南](/sdks/integrations/hermes)。
 
 ---
 
 **了解更多：**
-- [Hermes 集成](https://hindsight.vectorize.io/sdks/integrations/hermes) — 原生记忆提供方、设置和配置
-- [一个记忆库还是多个？构建智能体记忆](https://hindsight.vectorize.io/blog/2026/07/16/bank-strategy-agent-memory) — 如何按机器人或房间划定记忆范围
-- [构建具有共享记忆的多智能体系统](https://hindsight.vectorize.io/guides/2026/04/21/guide-building-multi-agent-systems-with-shared-memory) — 经得起实践的隔离与共享模式
+- [Hermes 集成](/sdks/integrations/hermes) — 原生记忆提供方、设置和配置
+- [一个记忆库还是多个？构建智能体记忆](/blog/2026/07/16/bank-strategy-agent-memory) — 如何按机器人或房间划定记忆范围
+- [构建具有共享记忆的多智能体系统](/guides/2026/04/21/guide-building-multi-agent-systems-with-shared-memory) — 经得起实践的隔离与共享模式
 
 ---

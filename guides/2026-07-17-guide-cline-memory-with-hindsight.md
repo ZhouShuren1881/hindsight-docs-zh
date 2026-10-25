@@ -84,7 +84,7 @@ Cline 提供生命周期钩子，此集成会在以下四个时机运行：
 
 常用键包括 `hindsightApiUrl`、`hindsightApiToken`、`bankId`、`autoRecall`、`autoRetain`、`recallBudget`、`dynamicBankId` 和 `debug`。例如，将 `dynamicBankId` 设为 `true`，即可按项目或会话使用不同的记忆库；如果只想召回记忆，可以关闭 `autoRetain`。
 
-完整配置选项请参阅[包的 README](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/cline)。
+完整配置选项请参阅[包的 README](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/cline)。
 
 ## 验证记忆是否正常工作 {#verify-that-memory-is-working}
 

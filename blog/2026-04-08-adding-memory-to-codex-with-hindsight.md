@@ -18,7 +18,7 @@ hide_table_of_contents: true
 - Hindsight 插件通过三个 Python 脚本接入 Codex，无需执行 `pip install`。运行一条 `curl` 命令即可完成设置。
 - 自动召回会在每次提示前查询记忆库，并将相关事实作为不可见上下文注入。Codex 能看到这些内容，你无需重复说明。
 - 自动存入会在每次会话结束时触发，从会话记录中提取事实并保存，以供日后召回。
-- 团队可以将每个人的配置指向同一个 Hindsight 服务器，并使用固定的 `bankId`。请参阅[面向 AI 编程智能体的共享记忆](https://hindsight.vectorize.io/blog/2026/03/31/team-shared-memory-ai-coding-agents)。
+- 团队可以将每个人的配置指向同一个 Hindsight 服务器，并使用固定的 `bankId`。请参阅[面向 AI 编程智能体的共享记忆【无效博客链接】](https://hindsight.vectorize.io/blog/2026/03/31/team-shared-memory-ai-coding-agents)。
 - Hindsight Cloud 会在服务器端存储记忆库，无需本地守护进程，记忆也会随你在不同机器间使用。[免费注册。](https://ui.hindsight.vectorize.io)
 
 ## 问题：Codex 没有持久记忆 {#the-problem-codex-has-no-persistent-memory}
@@ -139,7 +139,7 @@ Codex 能看到这个内容块，但它不会出现在终端输出中。因此�
 }
 ```
 
-请参阅[面向 AI 编程智能体的共享记忆](https://hindsight.vectorize.io/blog/2026/03/31/team-shared-memory-ai-coding-agents)，了解完整的团队设置指南，其中包括记忆库播种、按项目隔离和成员入门流程。
+请参阅[面向 AI 编程智能体的共享记忆【无效博客链接】](https://hindsight.vectorize.io/blog/2026/03/31/team-shared-memory-ai-coding-agents)，了解完整的团队设置指南，其中包括记忆库播种、按项目隔离和成员入门流程。
 
 ## 关键配置选项 {#key-configuration-options}
 
@@ -206,5 +206,5 @@ Codex 能看到这个内容块，但它不会出现在终端输出中。因此�
 - **Hindsight Cloud**：[ui.hindsight.vectorize.io](https://ui.hindsight.vectorize.io)
 - **安装**：`curl -fsSL https://hindsight.vectorize.io/get-codex | bash`
 - **配置参考**：[Codex 集成文档](/sdks/integrations/codex)
-- **团队记忆**：[面向 AI 编程智能体的共享记忆](https://hindsight.vectorize.io/blog/2026/03/31/team-shared-memory-ai-coding-agents)
+- **团队记忆**：[面向 AI 编程智能体的共享记忆【无效博客链接】](https://hindsight.vectorize.io/blog/2026/03/31/team-shared-memory-ai-coding-agents)
 - **食谱**：[applications/codex-memory](https://github.com/vectorize-io/hindsight-cookbook/tree/main/applications/codex-memory)

@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 Changelog for [`@vectorize-io/flowise-nodes-hindsight`](https://www.npmjs.com/package/@vectorize-io/flowise-nodes-hindsight).
 
-For the source code, see [`hindsight-integrations/flowise`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/flowise).
+For the source code, see [`hindsight-integrations/flowise`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/flowise).
 
 ← [Back to main changelog](/changelog)
 

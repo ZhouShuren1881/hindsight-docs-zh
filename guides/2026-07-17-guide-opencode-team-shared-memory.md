@@ -14,7 +14,7 @@ hide_table_of_contents: true
 
 大多数 OpenCode 与 Hindsight 的配置默认采用按项目或按开发者划分的记忆库，这适合彼此隔离的工作。不过，一位开发者学到的编码约定、某人上个月踩过的坑，或过去某项架构决策背后的原因，都应该由*团队*共同记住，而不只留在当事人的记忆中。共享记忆库能把这些一次性的发现转化为每个人都能召回的信息。
 
-本指南讨论的是策略，而不是安装过程。内容涵盖何时共享记忆库、何时隔离记忆库，静态和动态记忆库 ID 如何服务团队，以及记忆库逐渐扩充时如何保持召回内容整洁。插件本身的配置已在[使用 Hindsight 为 OpenCode 添加记忆](https://hindsight.vectorize.io/guides/2026/04/16/guide-opencode-memory-with-hindsight)中介绍；这里聚焦在此基础上的团队记忆决策。
+本指南讨论的是策略，而不是安装过程。内容涵盖何时共享记忆库、何时隔离记忆库，静态和动态记忆库 ID 如何服务团队，以及记忆库逐渐扩充时如何保持召回内容整洁。插件本身的配置已在[使用 Hindsight 为 OpenCode 添加记忆](/guides/2026/04/16/guide-opencode-memory-with-hindsight)中介绍；这里聚焦在此基础上的团队记忆决策。
 
 <!-- truncate -->
 
@@ -55,7 +55,7 @@ hide_table_of_contents: true
 
 ## 团队使用静态还是动态记忆库 ID {#static-vs-dynamic-bank-ids-for-teams}
 
-插件根据记忆库 ID 配置确定要使用哪个记忆库；这个配置决定记忆库适用于整个团队，还是仅适用于特定上下文。完整机制见[设置指南](https://hindsight.vectorize.io/guides/2026/04/16/guide-opencode-memory-with-hindsight)和[集成文档](/sdks/integrations/opencode)。下面说明两种方式如何用于团队记忆。
+插件根据记忆库 ID 配置确定要使用哪个记忆库；这个配置决定记忆库适用于整个团队，还是仅适用于特定上下文。完整机制见[设置指南](/guides/2026/04/16/guide-opencode-memory-with-hindsight)和[集成文档](/sdks/integrations/opencode)。下面说明两种方式如何用于团队记忆。
 
 ### 静态记忆库 ID——团队默认方案 {#static-bank-id--the-team-default}
 
@@ -100,7 +100,7 @@ export HINDSIGHT_USER_ID="user123"
 
 本指南假设 Hindsight 插件已经安装并指向你的后端。如果还没有，请先完成标准设置：将 `@vectorize-io/opencode-hindsight` 添加到 OpenCode 配置中，将其指向本地服务器或 Hindsight Cloud，并启用自动召回和自动存入：
 
-- [使用 Hindsight 为 OpenCode 添加记忆](https://hindsight.vectorize.io/guides/2026/04/16/guide-opencode-memory-with-hindsight)
+- [使用 Hindsight 为 OpenCode 添加记忆](/guides/2026/04/16/guide-opencode-memory-with-hindsight)
 
 完成后，唯一与团队有关的改动就是前面介绍的记忆库 ID 策略。
 
@@ -163,7 +163,7 @@ export HINDSIGHT_USER_ID="user123"
 
 ## 后续步骤 {#next-steps}
 
-- 按照[使用 Hindsight 为 OpenCode 添加记忆](https://hindsight.vectorize.io/guides/2026/04/16/guide-opencode-memory-with-hindsight)中的说明配置插件。
+- 按照[使用 Hindsight 为 OpenCode 添加记忆](/guides/2026/04/16/guide-opencode-memory-with-hindsight)中的说明配置插件。
 - 如果想为团队使用托管后端，可以从 [Hindsight Cloud](https://hindsight.vectorize.io) 开始。
 - 阅读[完整的 Hindsight 文档](/)。
 - 阅读[快速入门指南](/developer/api/quickstart)。

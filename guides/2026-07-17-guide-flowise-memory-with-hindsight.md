@@ -66,7 +66,7 @@ Flowise 启动后，三个 Hindsight 工具节点会与其他工具一起出现�
 - **API URL** — 默认为 `https://api.hindsight.vectorize.io`（Cloud）；如果使用自托管服务器，请改为对应地址。
 - **API Key** — 填写你的 `hsk_...` 密钥（对于未启用身份验证的自托管实例，此项可选）。
 
-如果你还没有密钥，可以在 [Hindsight Cloud 免费注册](https://ui.hindsight.vectorize.io)，然后从控制台获取 API 密钥；也可以[自托管](https://hindsight.vectorize.io/developer/installation)服务器。三个工具节点可以共用同一个凭据。
+如果你还没有密钥，可以在 [Hindsight Cloud 免费注册](https://ui.hindsight.vectorize.io)，然后从控制台获取 API 密钥；也可以[自托管](/developer/installation)服务器。三个工具节点可以共用同一个凭据。
 
 ## 步骤 3：将三个工具接入智能体 {#step-3-attach-the-three-tools-to-an-agent}
 

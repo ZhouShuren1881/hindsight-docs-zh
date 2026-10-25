@@ -183,7 +183,7 @@ Hermes 资料将 Holographic 的特点概括为：
 
 ### Hindsight 的性能 {#hindsight-performance}
 
-Hindsight 的性能目标有所不同。它并不追求成为尽可能轻量的本地记忆提供商，而是希望在更复杂的记忆负载下准确检索，包括应对 [BEAM](https://hindsight.vectorize.io/blog/2026/04/02/beam-sota) 这样的大规模基准测试。
+Hindsight 的性能目标有所不同。它并不追求成为尽可能轻量的本地记忆提供商，而是希望在更复杂的记忆负载下准确检索，包括应对 [BEAM](/blog/2026/04/02/beam-sota) 这样的大规模基准测试。
 
 因此，脱离具体场景问“哪个更快？”并没有太大意义。真正要问的是：“哪个针对我实际面对的负载进行了优化？”
 

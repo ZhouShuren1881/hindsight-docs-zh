@@ -107,7 +107,7 @@ export HINDSIGHT_BANK_ID=grok_build
 grok
 ```
 
-完整配置说明请参阅 [Claude Code 配置文档](https://hindsight.vectorize.io/sdks/integrations/claude-code#configuration)。
+完整配置说明请参阅 [Claude Code 配置文档](/sdks/integrations/claude-code#configuration)。
 
 ## 验证记忆是否正常工作 {#verify-that-memory-is-working}
 

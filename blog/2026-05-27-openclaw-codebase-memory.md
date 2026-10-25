@@ -83,7 +83,7 @@ tail -f /tmp/openclaw/openclaw-*.log | grep Hindsight
 
 部署时，如果你需要在多台机器上工作，或与团队共享记忆，请使用云端服务。如果你希望所有内容都保留在本地且不依赖外部服务，嵌入式守护进程会在后台运行本地 PostgreSQL 实例。首次启动大约需要一分钟，之后启动会很快。启动日志保存在 `~/.hindsight/profiles/openclaw.log`。
 
-> **从 0.5.x 迁移？** 0.6.0 版插件移除了所有读取进程环境变量的功能。此前从 shell 环境变量（`OPENAI_API_KEY`、`HINDSIGHT_API_LLM_PROVIDER` 等）读取的配置，现在必须通过 `openclaw config set` 设置；凭据应使用 SecretRef。迁移后请运行 `openclaw config validate`。完整映射见[集成文档](https://hindsight.vectorize.io/integrations/openclaw)。
+> **从 0.5.x 迁移？** 0.6.0 版插件移除了所有读取进程环境变量的功能。此前从 shell 环境变量（`OPENAI_API_KEY`、`HINDSIGHT_API_LLM_PROVIDER` 等）读取的配置，现在必须通过 `openclaw config set` 设置；凭据应使用 SecretRef。迁移后请运行 `openclaw config validate`。完整映射见[集成文档](/sdks/integrations/openclaw)。
 
 ---
 
@@ -219,7 +219,7 @@ npx --package @vectorize-io/hindsight-openclaw hindsight-openclaw-backfill \
 
 摄取的项目文档、从会话中提取的事实和回填的历史记录结合起来，就能从三个角度为 OpenClaw 提供完整图景：有意记录的内容、使用过程中发现的内容，以及安装插件之前发生的事情。
 
-完整 API 参考见 [Hindsight 心智模型文档](https://hindsight.vectorize.io/developer/api/mental-models)。
+完整 API 参考见 [Hindsight 心智模型文档](/developer/api/mental-models)。
 
 ---
 

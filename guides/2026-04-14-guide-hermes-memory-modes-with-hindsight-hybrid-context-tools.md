@@ -14,7 +14,7 @@ hide_table_of_contents: true
 
 模式的影响比表面上更大。团队经常启用 Hindsight，确认记忆有效，就不再深究。但模式决定了是否在每轮之前召回、模型能否直接调用 `hindsight_recall` 和 `hindsight_reflect`，以及助手是默默使用记忆，还是显式调用工具。选错模式后，系统状态可能依然健康，行为却不符合预期。
 
-本指南介绍各模式的作用、适用场景、安全切换方法、`prefetch_method` 对体验的影响，以及如何验证模式是否按预期运行。如需完整参考，请查阅 [Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)、[文档首页](/)和[快速入门指南](/developer/api/quickstart)。
+本指南介绍各模式的作用、适用场景、安全切换方法、`prefetch_method` 对体验的影响，以及如何验证模式是否按预期运行。如需完整参考，请查阅 [Hermes 集成文档](/sdks/integrations/hermes)、[文档首页](/)和[快速入门指南](/developer/api/quickstart)。
 
 <!-- truncate -->
 
@@ -312,12 +312,12 @@ What do you remember about the design review?
 
 ### 哪里可以了解 Hindsight 注入的内容？ {#where-can-i-learn-more-about-what-hindsight-is-injecting}
 
-[记忆召回 API 参考](/developer/api/recall)最适合了解事实检索，[记忆存储 API 参考](/developer/api/retain)解释新信息如何变成记忆。[Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)则将这些概念与 Hermes 配置联系起来。
+[记忆召回 API 参考](/developer/api/recall)最适合了解事实检索，[记忆存储 API 参考](/developer/api/retain)解释新信息如何变成记忆。[Hermes 集成文档](/sdks/integrations/hermes)则将这些概念与 Hermes 配置联系起来。
 
 ## 后续步骤 {#next-steps}
 
 - [创建 Hindsight Cloud 账户](https://hindsight.vectorize.io)，无需处理本地基础设施，即可快速测试模式变更。
-- 阅读 [Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)，了解完整配置选项。
+- 阅读 [Hermes 集成文档](/sdks/integrations/hermes)，了解完整配置选项。
 - 如需清晰的端到端配置参考，保持[快速入门指南](/developer/api/quickstart)在手边。
 - 阅读[记忆召回 API 参考](/developer/api/recall)，了解 `recall` 预取实际返回什么。
 - 如果需要严格控制哪些信息成为记忆，阅读[记忆存储 API 参考](/developer/api/retain)。

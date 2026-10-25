@@ -151,6 +151,6 @@ Hermes + Hindsight 尤其适合：
 
 ## 后续步骤 {#next-steps}
 
-- 从 [Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)开始
+- 从 [Hermes 集成文档](/sdks/integrations/hermes)开始
 - 阅读 [Hindsight 单库与多库对比](/guides/2026/04/16/comparison-single-bank-vs-multi-bank-hindsight)
 - 如果你希望客户账户记忆能在不同设备和队友之间共用，请使用 [Hindsight Cloud](https://hindsight.vectorize.io)

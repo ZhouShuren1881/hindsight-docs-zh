@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 Changelog for [`hindsight-autogen`](https://pypi.org/project/hindsight-autogen/).
 
-For the source code, see [`hindsight-integrations/autogen`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/autogen).
+For the source code, see [`hindsight-integrations/autogen`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/autogen).
 
 ← [Back to main changelog](/changelog)
 

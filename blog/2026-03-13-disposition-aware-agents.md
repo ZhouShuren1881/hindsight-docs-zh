@@ -61,7 +61,7 @@ image: /img/blog/disposition-aware-agents.webp
 - **3 – 均衡**：同时考虑事实和情绪背景。
 - **5 – 高度共情**：充分权衡对人的影响和情绪状态。
 
-这三个数字保存在[记忆库配置文件](https://docs.hindsight.vectorize.io/recall)中，不会以“做 X，不要做 Y”这样的规则形式出现。
+这三个数字保存在[记忆库配置文件](/developer/api/memory-banks#disposition_skepticism)中，不会以“做 X，不要做 Y”这样的规则形式出现。
 
 ## 为什么选择这三个维度和 1–5 的量表？
 
@@ -222,10 +222,10 @@ async def run_reflect_agent(
 
 1. **选择三个维度**，精准控制智能体如何处理证据、推断和人的背景。
 2. **将这些维度编码为紧凑的元数据**，而不是冗长的指令。
-3. **让我们的[记忆层次结构和工具驱动循环](https://docs.hindsight.vectorize.io/recall)**为这些维度改变行为提供空间。
+3. **让我们的[记忆层次结构和工具驱动循环](/developer/retrieval)**为这些维度改变行为提供空间。
 
 这样一来，智能体不只是听起来不同，处理记忆的方式也确实不同，从而帮助它们按你的期望行事。
 
 ---
 
-*Hindsight 为你的 AI 智能体提供持久、结构化的记忆，并支持基于性格倾向的推理。[了解 Hindsight 的工作方式](https://docs.hindsight.vectorize.io/recall)，或[免费开始使用](https://ui.hindsight.vectorize.io)。*
+*Hindsight 为你的 AI 智能体提供持久、结构化的记忆，并支持基于性格倾向的推理。[了解 Hindsight 的工作方式](/developer/retrieval)，或[免费开始使用](https://ui.hindsight.vectorize.io)。*

@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 Changelog for [`hindsight-vapi`](https://pypi.org/project/hindsight-vapi/).
 
-For the source code, see [`hindsight-integrations/vapi`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/vapi).
+For the source code, see [`hindsight-integrations/vapi`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/vapi).
 
 ← [Back to main changelog](/changelog)
 

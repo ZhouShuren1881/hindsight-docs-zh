@@ -246,4 +246,4 @@ const tools = createHindsightTools({
 - **Hindsight Cloud：**[ui.hindsight.vectorize.io](https://ui.hindsight.vectorize.io)
 - **集成文档：**[Vercel AI SDK + Hindsight](/sdks/integrations/ai-sdk)
 - **源代码：**[vectorize-io/hindsight/hindsight-integrations/ai-sdk](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/ai-sdk)
-- **Reflect 详解：**[心智模型与分层检索](https://hindsight.vectorize.io/blog/2026/06/05/mental-models-deep-dive)
+- **Reflect 详解：**[心智模型与分层检索](/blog/2026/06/05/mental-models-deep-dive)

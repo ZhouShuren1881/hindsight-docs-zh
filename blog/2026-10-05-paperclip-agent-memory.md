@@ -602,9 +602,9 @@ Paperclip 仍然提供自己的协作界面：工单、评论、委派和组织�
 
 如果你正在考虑如何在 Paperclip 之外构建这种结构，可以从以下内容继续了解：
 
-- [一个记忆库还是多个？智能体记忆架构实用指南](https://hindsight.vectorize.io/blog/2026/07/16/bank-strategy-agent-memory)：探讨根本问题——什么情况下两个对象应该共用一个 Hindsight 记忆库，以及何时新的记忆库才构成真正的隔离边界。
-- [一个记忆库、两类受众、两份简报](https://hindsight.vectorize.io/blog/2026/09/30/per-scope-consolidation-strategies)：介绍观测范围如何让一个记忆库按照不同的整合规则服务不同受众。
-- [让每个 Hermes 机器人都拥有自己的记忆](https://hindsight.vectorize.io/blog/2026/08/18/hermes-bot-mode-memory)：这是最接近的早期多智能体示例，展示了彼此独立的机器人如何使用私人记忆库，或有意共享同一房间的记忆。
+- [一个记忆库还是多个？智能体记忆架构实用指南](/blog/2026/07/16/bank-strategy-agent-memory)：探讨根本问题——什么情况下两个对象应该共用一个 Hindsight 记忆库，以及何时新的记忆库才构成真正的隔离边界。
+- [一个记忆库、两类受众、两份简报](/blog/2026/09/30/per-scope-consolidation-strategies)：介绍观测范围如何让一个记忆库按照不同的整合规则服务不同受众。
+- [让每个 Hermes 机器人都拥有自己的记忆](/blog/2026/08/18/hermes-bot-mode-memory)：这是最接近的早期多智能体示例，展示了彼此独立的机器人如何使用私人记忆库，或有意共享同一房间的记忆。
 - [Paperclip](https://github.com/paperclipai/paperclip)：了解该项目的组织、委派、权限和插件模型，也就是记忆边界的另一半。
 
 可以用一个简单的心智模型来理解：

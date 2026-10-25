@@ -148,6 +148,6 @@ MCP，因为它能让你更直接地通过工具服务器使用 Hindsight。
 
 ## 后续步骤 {#next-steps}
 
-- 从 [Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)开始。
+- 从 [Hermes 集成文档](/sdks/integrations/hermes)开始。
 - 在 [Hindsight 的 SDK 记忆与 MCP 记忆对比](/guides/2026/04/16/comparison-mcp-vs-sdk-memory-with-hindsight)中，了解更广泛的框架层面取舍。
 - 如果你希望配置路径尽可能短，请使用 [Hindsight Cloud](https://hindsight.vectorize.io)。

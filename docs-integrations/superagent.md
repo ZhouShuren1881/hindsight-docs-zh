@@ -35,7 +35,7 @@ export SUPERAGENT_API_KEY=sa-...
 export OPENAI_API_KEY=sk-...
 ```
 
-默认情况下，`SafeHindsight` 使用 `HINDSIGHT_API_KEY` 连接到 [Hindsight Cloud](https://ui.hindsight.vectorize.io)（`https://api.hindsight.vectorize.io`）。若要改用[自托管服务器](https://hindsight.vectorize.io/developer/installation)，请传入 `hindsight_api_url="http://localhost:8888"`。
+默认情况下，`SafeHindsight` 使用 `HINDSIGHT_API_KEY` 连接到 [Hindsight Cloud](https://ui.hindsight.vectorize.io)（`https://api.hindsight.vectorize.io`）。若要改用[自托管服务器](/developer/installation)，请传入 `hindsight_api_url="http://localhost:8888"`。
 
 ```python
 import asyncio

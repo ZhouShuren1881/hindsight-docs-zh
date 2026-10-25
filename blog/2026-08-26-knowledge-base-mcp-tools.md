@@ -11,7 +11,7 @@ hide_table_of_contents: true
 
 ![Hindsight 知识库作为原生 MCP 能力：智能体通过用于存入和召回记忆的同一连接，读取、搜索并维护一个可自我修复的 wiki](/img/blog/knowledge-base-mcp-tools.webp)
 
-[Hindsight](https://hindsight.vectorize.io) 知识库是构建在智能体记忆之上的可读、自我修复 wiki：其中的页面会提炼智能体所知的内容，方便人类快速浏览；底层记忆发生变化时，页面也会自行重建。
+[Hindsight](/) 知识库是构建在智能体记忆之上的可读、自我修复 wiki：其中的页面会提炼智能体所知的内容，方便人类快速浏览；底层记忆发生变化时，页面也会自行重建。
 
 此前，这两者之间存在一种奇怪的不对称：智能体可以随时通过 MCP `retain` 和 `recall`，但要浏览或维护 wiki，就必须另走 HTTP 接口。记忆原生支持 MCP，知识库却需要第二套集成。
 
@@ -82,7 +82,7 @@ Hindsight 0.9.2 弥合了这一差距。知识库现在具备**原生 MCP 能力
 
 ## 适用对象 {#who-its-for}
 
-如果你已经通过 MCP 让智能体使用 Hindsight，这次升级就能让智能体拥有并维护自己的文档，而不只是阅读文档。编码智能体可以形成最紧密的工作闭环：检查代码仓库、编写页面，并随着代码库变化就地更正页面。这正是[Claude Code 构建并阅读自己的知识库](https://hindsight.vectorize.io/blog/2026/08/13/knowledge-pages-coding-agents)所采用的模式。支持和研究智能体也可以将所学归档到知识库，让下一次会话从已有记录开始。
+如果你已经通过 MCP 让智能体使用 Hindsight，这次升级就能让智能体拥有并维护自己的文档，而不只是阅读文档。编码智能体可以形成最紧密的工作闭环：检查代码仓库、编写页面，并随着代码库变化就地更正页面。这正是[Claude Code 构建并阅读自己的知识库](/blog/2026/08/13/knowledge-pages-coding-agents)所采用的模式。支持和研究智能体也可以将所学归档到知识库，让下一次会话从已有记录开始。
 
 如果你此前因为接入知识库需要配置第二套集成而暂缓，现在这个顾虑已不复存在：连接、身份认证和记忆库都相同。
 
@@ -129,6 +129,6 @@ Hindsight 0.9.2 弥合了这一差距。知识库现在具备**原生 MCP 能力
 ---
 
 **了解更多：**
-- [Claude Code 构建并阅读自己的知识库](https://hindsight.vectorize.io/blog/2026/08/13/knowledge-pages-coding-agents) — 此能力支持的编码智能体模式
+- [Claude Code 构建并阅读自己的知识库](/blog/2026/08/13/knowledge-pages-coding-agents) — 此能力支持的编码智能体模式
 - [MCP 服务器指南](/developer/mcp-server) — 连接智能体并限定其工具范围
-- [Hindsight 0.9.2 有哪些新内容](https://hindsight.vectorize.io/blog/2026/08/24/version-0-9-2) — 发布此功能的版本
+- [Hindsight 0.9.2 有哪些新内容](/blog/2026/08/24/version-0-9-2) — 发布此功能的版本

@@ -6,7 +6,7 @@ description: "通过 Hindsight 为任意 Dify 工作流添加持久的长期记�
 
 # Dify {#dify}
 
-通过 [Hindsight](https://hindsight.vectorize.io) 为 [Dify](https://dify.ai) 工作流提供持久记忆。Hindsight Dify 插件提供三个工具——**Retain（存入）**、**Recall（召回）** 和 **Reflect（反思）**，可与工作流、聊天流和智能体应用中的其他 Dify 节点配合使用。
+通过 [Hindsight](/) 为 [Dify](https://dify.ai) 工作流提供持久记忆。Hindsight Dify 插件提供三个工具——**Retain（存入）**、**Recall（召回）** 和 **Reflect（反思）**，可与工作流、聊天流和智能体应用中的其他 Dify 节点配合使用。
 
 [查看更新日志 →](/changelog/integrations/dify)
 

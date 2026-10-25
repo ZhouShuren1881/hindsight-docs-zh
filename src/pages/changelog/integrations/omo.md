@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 Changelog for [`hindsight-omo`](https://pypi.org/project/hindsight-omo/).
 
-For the source code, see [`hindsight-integrations/omo`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/omo).
+For the source code, see [`hindsight-integrations/omo`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/omo).
 
 ← [Back to main changelog](/changelog)
 

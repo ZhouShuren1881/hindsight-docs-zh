@@ -6,7 +6,7 @@ description: "使用 Hindsight 为任何 n8n 工作流添加持久的长期记�
 
 # n8n {#n8n}
 
-通过 [Hindsight](https://hindsight.vectorize.io)，为 [n8n](https://n8n.io) 工作流提供持久记忆。`@vectorize-io/n8n-nodes-hindsight` 社区节点包新增了三个操作：**Retain**（存入）、**Recall**（召回）和 **Reflect**（反思），可与任何其他 n8n 节点配合使用。
+通过 [Hindsight](/)，为 [n8n](https://n8n.io) 工作流提供持久记忆。`@vectorize-io/n8n-nodes-hindsight` 社区节点包新增了三个操作：**Retain**（存入）、**Recall**（召回）和 **Reflect**（反思），可与任何其他 n8n 节点配合使用。
 
 [查看更新日志 →](/changelog/integrations/n8n)
 

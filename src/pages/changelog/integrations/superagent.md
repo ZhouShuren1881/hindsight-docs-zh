@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 Changelog for [`hindsight-superagent`](https://pypi.org/project/hindsight-superagent/).
 
-For the source code, see [`hindsight-integrations/superagent`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/superagent).
+For the source code, see [`hindsight-integrations/superagent`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/superagent).
 
 ← [Back to main changelog](/changelog)
 

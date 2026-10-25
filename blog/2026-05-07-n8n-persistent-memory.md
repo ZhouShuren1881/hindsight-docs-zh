@@ -21,7 +21,7 @@ image: /img/blog/n8n-persistent-memory.webp
 
 - 全新的 `@vectorize-io/n8n-nodes-hindsight` 社区节点，让任何 n8n 工作流都能使用 Hindsight 的持久记忆层。
 - 一个节点，三个操作：**Retain**（存入）、**Recall**（召回）、**Reflect**（由 LLM 综合生成答案）。
-- 可配合 [Hindsight Cloud](https://ui.hindsight.vectorize.io) 或[自托管的 Hindsight](https://hindsight.vectorize.io/developer/installation) 使用。
+- 可配合 [Hindsight Cloud](https://ui.hindsight.vectorize.io) 或[自托管的 Hindsight](/developer/installation) 使用。
 - 自托管 n8n 用户现在即可前往“Settings → Community Nodes”安装；**n8n Cloud 的安装仍在等待 Verified Node 审核**。
 - 下文提供实际用例：从每张已关闭工单中学习的客户支持工作流、记住每次过往接触的销售通话教练，以及与用户持续互动并积累信息的 Slack 机器人。
 
@@ -121,7 +121,7 @@ npm install @vectorize-io/n8n-nodes-hindsight
 
 无论使用自托管版本还是 Cloud，都需要配置 Hindsight API 凭据：
 
-1. 在 [Hindsight Cloud](https://ui.hindsight.vectorize.io) 注册（提供免费套餐），或[自托管 Hindsight](https://hindsight.vectorize.io/developer/installation)。
+1. 在 [Hindsight Cloud](https://ui.hindsight.vectorize.io) 注册（提供免费套餐），或[自托管 Hindsight](/developer/installation)。
 2. 从 Hindsight 控制台获取 API key。
 3. **在 n8n 中**新建 **Hindsight API** 凭据：
    - **API URL**：`https://api.hindsight.vectorize.io`（或你的自托管实例 URL）。
@@ -185,10 +185,10 @@ npm install @vectorize-io/n8n-nodes-hindsight
 这带来几个实用优势：
 
 - 同一个 Hindsight 记忆库可以供多个 n8n 工作流共享。如果支持工作流的写入和销售工作流的读取都指向相同的 `bankId`，销售工作流就能看到支持工作流写入的内容。
-- n8n 也可以和其他 Hindsight 集成共用同一个记忆库。写入该库的 [Claude Code 插件](https://hindsight.vectorize.io/integrations)可以让 n8n 工作流读取其中内容，反过来也一样。
+- n8n 也可以和其他 Hindsight 集成共用同一个记忆库。写入该库的 [Claude Code 插件](/integrations)可以让 n8n 工作流读取其中内容，反过来也一样。
 - 使用标签限定范围。例如，`tags: ["user:42", "shared"]` 配合 `tagsMatch: "any_strict"`，可在一个记忆库中同时实现按用户隔离和共享知识。
 
-对于多租户工作流（例如需要隔离每位客户自动化流程的 SaaS），[记忆库参考文档](https://hindsight.vectorize.io/developer/api/memory-banks)介绍了按租户限定范围的模式。最常见的做法是每个租户使用一个记忆库；n8n 的表达式语言可以根据触发器载荷动态设置 `bankId` 字段。
+对于多租户工作流（例如需要隔离每位客户自动化流程的 SaaS），[记忆库参考文档](/developer/api/memory-banks)介绍了按租户限定范围的模式。最常见的做法是每个租户使用一个记忆库；n8n 的表达式语言可以根据触发器载荷动态设置 `bankId` 字段。
 
 ---
 
@@ -216,10 +216,10 @@ n8n 方面近期有两项计划。
 
 ## 延伸阅读 {#further-reading}
 
-- [每个智能体运行框架都缺少的那一层](https://hindsight.vectorize.io/blog/2026/05/04/agent-harness-needs-memory)——进一步说明了为什么记忆是任何智能体运行时都缺少的那一层。
-- [你的智能体并非健忘，它只是从未获得记忆。](https://hindsight.vectorize.io/blog/2026/04/23/your-agent-is-not-forgetful)——关于这一问题的基础论述。
-- [Hindsight 集成](https://hindsight.vectorize.io/integrations)——支持的客户端、运行框架和框架完整列表（n8n 是最新加入的集成）。
-- [记忆库参考文档](https://hindsight.vectorize.io/developer/api/memory-banks)——项目、团队和按租户隔离的范围设置模式。
+- [每个智能体运行框架都缺少的那一层](/blog/2026/05/04/agent-harness-needs-memory)——进一步说明了为什么记忆是任何智能体运行时都缺少的那一层。
+- [你的智能体并非健忘，它只是从未获得记忆。](/blog/2026/04/23/your-agent-is-not-forgetful)——关于这一问题的基础论述。
+- [Hindsight 集成](/integrations)——支持的客户端、运行框架和框架完整列表（n8n 是最新加入的集成）。
+- [记忆库参考文档](/developer/api/memory-banks)——项目、团队和按租户隔离的范围设置模式。
 
 ---
 
@@ -227,8 +227,8 @@ n8n 方面近期有两项计划。
 
 - [注册 Hindsight Cloud](https://ui.hindsight.vectorize.io)，几分钟内即可获取 API key。
 - 在自托管 n8n 上安装 [Hindsight n8n 节点](https://www.npmjs.com/package/@vectorize-io/n8n-nodes-hindsight)。
-- 阅读 [n8n 集成文档](https://hindsight.vectorize.io/integrations)，了解完整的操作说明。
-- 浏览[记忆库参考文档](https://hindsight.vectorize.io/developer/api/memory-banks)，了解多租户范围设置模式。
+- 阅读 [n8n 集成文档](/integrations)，了解完整的操作说明。
+- 浏览[记忆库参考文档](/developer/api/memory-banks)，了解多租户范围设置模式。
 - 关注本文，等待 Verified Node 审核完成后的 n8n Cloud 安装更新。
 
 ---

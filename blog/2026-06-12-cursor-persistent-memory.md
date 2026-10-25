@@ -188,6 +188,6 @@ hindsight-cursor-cli install --api-url https://api.hindsight.vectorize.io --api-
 - **编辑器集成文档：**[Cursor + Hindsight](/sdks/integrations/cursor)
 - **CLI 集成文档：**[Cursor CLI + Hindsight](/sdks/integrations/cursor-cli)
 - **源代码：**
-  [`hindsight-integrations/cursor`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/cursor)、
-  [`hindsight-integrations/cursor-cli`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/cursor-cli)
+  [`hindsight-integrations/cursor`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/cursor)、
+  [`hindsight-integrations/cursor-cli`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/cursor-cli)
 - **Hindsight API 参考：**[API 快速入门](/developer/api/quickstart)

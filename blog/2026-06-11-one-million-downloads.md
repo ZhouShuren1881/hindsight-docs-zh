@@ -48,4 +48,4 @@ hide_table_of_contents: true
 pip install hindsight-client -U
 ```
 
-[在 GitHub 上给 Hindsight 点 Star](https://github.com/vectorize-io/hindsight)，或[只用一条 Docker 命令自托管](https://hindsight.vectorize.io/developer/installation)。
+[在 GitHub 上给 Hindsight 点 Star](https://github.com/vectorize-io/hindsight)，或[只用一条 Docker 命令自托管](/developer/installation)。

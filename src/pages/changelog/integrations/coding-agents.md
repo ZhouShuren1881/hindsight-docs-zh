@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 Changelog for [`@vectorize-io/hindsight-coding-agents`](https://www.npmjs.com/package/@vectorize-io/hindsight-coding-agents).
 
-For the source code, see [`hindsight-integrations/coding-agents`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/coding-agents).
+For the source code, see [`hindsight-integrations/coding-agents`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/coding-agents).
 
 ← [Back to main changelog](/changelog)
 

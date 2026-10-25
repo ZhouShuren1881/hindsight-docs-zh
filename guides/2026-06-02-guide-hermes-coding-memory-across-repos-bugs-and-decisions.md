@@ -133,6 +133,6 @@ Pick up the bug we were tracing in the payment retry path.
 
 - 阅读[构建能记住代码库的 Hermes 编码助手](/blog/2026/05/25/hermes-coding-assistant-codebase-memory)
 - 查看[面向生产环境的 Hermes 记忆库策略](/guides/2026/04/20/guide-hermes-memory-bank-strategy-for-production)
-- 从 [Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)开始
+- 从 [Hermes 集成文档](/sdks/integrations/hermes)开始
 
 ---

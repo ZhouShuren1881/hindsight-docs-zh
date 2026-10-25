@@ -368,7 +368,7 @@ client.refresh_mental_model(bank_id="my-app", mental_model_id=mm["id"])
 
 **延伸阅读：**
 
-- [心智模型 API 参考](https://hindsight.vectorize.io/developer/api/mental-models)——官方文档，包含完整的模式和端点参考
+- [心智模型 API 参考](/developer/api/mental-models)——官方文档，包含完整的模式和端点参考
 - [使用实体标签自动为记忆添加标签](/blog/2026/06/02/entity-labels-automatic-memory-tagging)——受控词汇标注通常决定心智模型可以看到哪些内容
 - [Hindsight 0.5.3 新增内容](/blog/2026/04/17/version-0-5-3)——Delta 模式刷新发布
 - [Hindsight 0.7.0 新增内容](/blog/2026/05/27/version-0-7-0)——清空端点与历史记录加固

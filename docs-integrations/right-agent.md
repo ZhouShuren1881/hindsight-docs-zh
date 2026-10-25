@@ -6,7 +6,7 @@ description: "为 Right Agent 添加持久记忆。Right Agent 是在 OpenShell 
 
 # Right Agent {#right-agent}
 
-使用 [Hindsight](https://hindsight.vectorize.io) 为 [Right Agent](https://github.com/onsails/right-agent) 提供持久记忆。
+使用 [Hindsight](/) 为 [Right Agent](https://github.com/onsails/right-agent) 提供持久记忆。
 
 Right Agent 在 [OpenShell](https://github.com/NVIDIA/OpenShell) 沙箱中运行 [Claude Code](https://docs.anthropic.com/en/docs/claude-code)。每个智能体都是独立的 Telegram 机器人；私聊、群组和论坛话题各自拥有一个 Claude Code 会话，但都会使用同一个按聊天添加标签的 Hindsight 记忆库。
 

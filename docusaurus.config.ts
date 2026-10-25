@@ -1,6 +1,7 @@
 import {themes as prismThemes} from 'prism-react-renderer';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
+import {version} from './package.json';
 
 const umamiUrl = process.env.UMAMI_URL;
 const umamiWebsiteId = process.env.UMAMI_WEBSITE_ID;
@@ -94,19 +95,18 @@ const config: Config = {
       'classic',
       {
         docs: {
-          sidebarPath: './versioned_sidebars/version-0.10-sidebars.json',
+          sidebarPath: './sidebars.ts',
           routeBasePath: '/',
           // 侧栏已展示页面位置，每篇文档也有自己的一级标题，
           // 因此面包屑只会重复这些内容。
           // src/theme/DocBreadcrumbs 仍渲染：此标志让原组件
           // 返回 null，包装组件则保留技能横幅。
           breadcrumbs: false,
-          // 此独立副本只包含已发布的 v0.10 文档。
-          path: './versioned_docs/version-0.10',
-          includeCurrentVersion: false,
-          onlyIncludeVersions: ['0.10'],
-          lastVersion: '0.10',
-          versions: {'0.10': {label: 'v0.10', badge: false}},
+          // 与源仓库一致，从 docs/ 维护 current 文档，仅提供当前版本。
+          path: './docs',
+          onlyIncludeVersions: ['current'],
+          lastVersion: 'current',
+          versions: {current: {label: `${version}（当前）`, path: '', badge: false}},
         },
         blog: {
           showReadingTime: true,
@@ -205,7 +205,7 @@ const config: Config = {
       {
         hashed: true,
         language: ['zh', 'en'],
-        docsDir: ['versioned_docs/version-0.10', 'docs-integrations'],
+        docsDir: ['docs', 'docs-integrations'],
         docsRouteBasePath: ['/', '/sdks/integrations'],
         indexBlog: true,
         blogDir: ['blog', 'guides'],

@@ -87,7 +87,7 @@ pipeline = Pipeline([
 
 ## 将 Pipecat 接入 Hindsight {#connect-pipecat-to-hindsight}
 
-本指南假设集成已经安装并接入管道。如果还没有完成，请先阅读设置指南：[使用 Hindsight 为 Pipecat 语音智能体添加记忆](https://hindsight.vectorize.io/guides/2026/05/04/guide-pipecat-memory-with-hindsight)。该指南介绍如何运行 `pip install hindsight-pipecat`、连接 Hindsight Cloud 或本地服务器，以及如何配置基础管道。完成后再回到本文了解按来电者划分记忆的策略。
+本指南假设集成已经安装并接入管道。如果还没有完成，请先阅读设置指南：[使用 Hindsight 为 Pipecat 语音智能体添加记忆](/guides/2026/05/04/guide-pipecat-memory-with-hindsight)。该指南介绍如何运行 `pip install hindsight-pipecat`、连接 Hindsight Cloud 或本地服务器，以及如何配置基础管道。完成后再回到本文了解按来电者划分记忆的策略。
 
 ## 语音场景特有的考量：延迟和召回预算 {#voice-specific-concerns-latency-and-recall-budget}
 
@@ -153,7 +153,7 @@ python examples/interactive_chat.py --bank caller-demo
 
 ## 后续步骤 {#next-steps}
 
-- 如果尚未安装集成，请参阅 [Pipecat 设置指南](https://hindsight.vectorize.io/guides/2026/05/04/guide-pipecat-memory-with-hindsight)
+- 如果尚未安装集成，请参阅 [Pipecat 设置指南](/guides/2026/05/04/guide-pipecat-memory-with-hindsight)
 - 使用 [Hindsight Cloud](https://hindsight.vectorize.io) 快速接入托管记忆后端
 - 阅读[完整的 Hindsight 文档](/)
 - 阅读[快速入门指南](/developer/api/quickstart)

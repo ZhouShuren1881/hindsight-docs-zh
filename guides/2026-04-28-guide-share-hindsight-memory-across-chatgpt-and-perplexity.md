@@ -10,7 +10,7 @@ hide_table_of_contents: true
 
 ![在 ChatGPT 和 Perplexity 之间共享 Hindsight 记忆](/img/guides/guide-share-hindsight-memory-across-chatgpt-and-perplexity.webp)
 
-如果你想**在 ChatGPT 和 Perplexity 之间共享 Hindsight 记忆**，关键要决定的不是连接器本身，而是记忆库的边界。两个工具都已经可以连接 Hindsight，但只有刻意让它们读写同一个记忆库，才能真正形成一套工作流。设置共享路径时，可参考 [ChatGPT 指南](https://hindsight.vectorize.io/sdks/integrations/chatgpt)、[Perplexity 指南](https://hindsight.vectorize.io/sdks/integrations/perplexity)、[MCP 服务器文档](/developer/mcp-server)和[快速入门指南](/developer/api/quickstart)。
+如果你想**在 ChatGPT 和 Perplexity 之间共享 Hindsight 记忆**，关键要决定的不是连接器本身，而是记忆库的边界。两个工具都已经可以连接 Hindsight，但只有刻意让它们读写同一个记忆库，才能真正形成一套工作流。设置共享路径时，可参考 [ChatGPT 指南](/sdks/integrations/chatgpt)、[Perplexity 指南](/sdks/integrations/perplexity)、[MCP 服务器文档](/developer/mcp-server)和[快速入门指南](/developer/api/quickstart)。
 
 <!-- truncate -->
 
@@ -64,7 +64,7 @@ https://api.hindsight.vectorize.io/mcp/product-launch/
 - 定期在 Hindsight Cloud 中检查嘈杂的记忆。
 - 如果研究资料不应与个人偏好数据混在一起，就把工作拆分到不同记忆库。
 
-如果需要更精细的控制，可以进一步了解[存入 API](/developer/api/retain)、[召回 API](/developer/api/recall)，以及[文档首页](https://hindsight.vectorize.io)中的记忆库级配置。共享记忆只有保持明确的适用范围，才能发挥最大作用。
+如果需要更精细的控制，可以进一步了解[存入 API](/developer/api/retain)、[召回 API](/developer/api/recall)，以及[文档首页](/)中的记忆库级配置。共享记忆只有保持明确的适用范围，才能发挥最大作用。
 
 ## ChatGPT 和 Perplexity 分别擅长什么 {#where-chatgpt-and-perplexity-each-help-most}
 
@@ -89,7 +89,7 @@ Perplexity 通常应存入研究发现和来源。ChatGPT 通常应存入之后�
 ## 后续步骤 {#next-steps}
 
 - [Hindsight Cloud](https://hindsight.vectorize.io)
-- [ChatGPT 集成指南](https://hindsight.vectorize.io/sdks/integrations/chatgpt)
-- [Perplexity 集成指南](https://hindsight.vectorize.io/sdks/integrations/perplexity)
+- [ChatGPT 集成指南](/sdks/integrations/chatgpt)
+- [Perplexity 集成指南](/sdks/integrations/perplexity)
 - [MCP 服务器文档](/developer/mcp-server)
 - [快速入门指南](/developer/api/quickstart)

@@ -163,7 +163,7 @@ Hindsight 不会追溯合并规范实体。如果“Sarah”和“Sarah Chen”�
 
 ## 如何自行查看 {#how-to-look-at-it-yourself}
 
-如果你正在运行 Hindsight，可以直接查询实体表：`mention_count` 会显示哪些实体在记忆库中最常出现，`entity_cooccurrences` 则会显示实体邻域。这是检查智能体实际上如何理解世界的一种好方法。你可以[自行托管整个系统](https://hindsight.vectorize.io)并检查图，也可以从云服务的免费套餐开始。
+如果你正在运行 Hindsight，可以直接查询实体表：`mention_count` 会显示哪些实体在记忆库中最常出现，`entity_cooccurrences` 则会显示实体邻域。这是检查智能体实际上如何理解世界的一种好方法。你可以[自行托管整个系统](/developer/installation)并检查图，也可以从云服务的免费套餐开始。
 
 ## 常见问题 {#frequently-asked-questions}
 

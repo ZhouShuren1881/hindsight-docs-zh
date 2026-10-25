@@ -6,7 +6,7 @@ import PageHero from '@site/src/components/PageHero';
 
 <PageHero title="Cline Changelog" subtitle="Hindsight memory integration for the Cline coding agent." />
 
-[← Cline integration](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/cline)
+[← Cline integration](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/cline)
 
 ## [0.2.0](https://github.com/vectorize-io/hindsight/tree/integrations/cline/v0.2.0)
 

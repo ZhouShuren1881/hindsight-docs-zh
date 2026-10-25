@@ -40,7 +40,7 @@ image: /img/blog/pipecat-voice-ai-persistent-memory.webp
 - 从数天、数周或数月前的对话中检索相关上下文
 - 综合多次通话中零散的记忆，生成连贯的答案
 
-这正是 [Hindsight](https://hindsight.vectorize.io/) 所提供的能力。借助 `hindsight-pipecat`，你无需重建管道即可获得这些能力。
+这正是 [Hindsight](/) 所提供的能力。借助 `hindsight-pipecat`，你无需重建管道即可获得这些能力。
 
 ---
 

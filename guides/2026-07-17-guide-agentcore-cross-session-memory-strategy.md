@@ -65,7 +65,7 @@ tenant:{tenant_id}:user:{user_id}:agent:{agent_name}
 
 ## 将 AgentCore 连接到 Hindsight {#connect-agentcore-to-hindsight}
 
-安装以及 `configure(...)` 的具体配置方式和 `HindsightRuntimeAdapter` 的接入方式，已在设置指南中完整介绍。本指南讨论策略，因此不再重复这些步骤；请参阅[使用 Hindsight 为 AgentCore Runtime 添加记忆](https://hindsight.vectorize.io/guides/2026/05/04/guide-agentcore-memory-with-hindsight)，了解如何安装 `hindsight-agentcore`、将其指向 Hindsight Cloud 或自托管端点，以及如何把“召回 → 执行 → 存入”循环接入处理函数。之后再回到本指南决定记忆库的范围。
+安装以及 `configure(...)` 的具体配置方式和 `HindsightRuntimeAdapter` 的接入方式，已在设置指南中完整介绍。本指南讨论策略，因此不再重复这些步骤；请参阅[使用 Hindsight 为 AgentCore Runtime 添加记忆](/guides/2026/05/04/guide-agentcore-memory-with-hindsight)，了解如何安装 `hindsight-agentcore`、将其指向 Hindsight Cloud 或自托管端点，以及如何把“召回 → 执行 → 存入”循环接入处理函数。之后再回到本指南决定记忆库的范围。
 
 ## 多智能体与按用户隔离 {#multi-agent-and-per-user-isolation}
 
@@ -130,10 +130,10 @@ tenant:{tenant_id}:user:{user_id}:agent:{agent_name}
 
 ## 后续步骤 {#next-steps}
 
-- 按照 [AgentCore 设置指南](https://hindsight.vectorize.io/guides/2026/05/04/guide-agentcore-memory-with-hindsight)完成安装和接线
+- 按照 [AgentCore 设置指南](/guides/2026/05/04/guide-agentcore-memory-with-hindsight)完成安装和接线
 - 如果需要托管的记忆后端，可从 [Hindsight Cloud](https://hindsight.vectorize.io)开始
-- 阅读 [Hindsight 完整文档](https://hindsight.vectorize.io/docs)
-- 按照[快速入门指南](https://hindsight.vectorize.io/docs/quickstart)开始使用
+- 阅读 [Hindsight 完整文档](/)
+- 按照[快速入门指南](/developer/api/quickstart)开始使用
 - 查阅 [Hindsight Recall API](/developer/api/recall)
 - 查阅 [Hindsight Retain API](/developer/api/retain)
 - 阅读 [AgentCore 集成文档](/sdks/integrations/agentcore)

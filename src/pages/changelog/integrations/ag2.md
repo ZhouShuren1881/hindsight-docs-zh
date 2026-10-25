@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 Changelog for [`hindsight-ag2`](https://pypi.org/project/hindsight-ag2/).
 
-For the source code, see [`hindsight-integrations/ag2`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/ag2).
+For the source code, see [`hindsight-integrations/ag2`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/ag2).
 
 ← [Back to main changelog](/changelog)
 

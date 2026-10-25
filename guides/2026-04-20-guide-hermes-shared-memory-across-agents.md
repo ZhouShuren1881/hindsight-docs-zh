@@ -12,7 +12,7 @@ hide_table_of_contents: true
 
 这种简单配置很有用，但也要求你审慎规划。只有参与者确实属于同一工作流，共享记忆才能改善结果。如果两个无关的智能体写入同一个记忆库，召回很快就会变得嘈杂。如果两个协作智能体共用一个目标明确的记忆库，效果则相反：每个智能体都能基于其他智能体已经学到的内容继续积累知识。
 
-本指南将介绍如何选择合适的共享记忆库、配置多个 Hermes 智能体共用它、在不拆分记忆库的情况下保留角色边界，以及如何验证一个智能体能否召回另一个智能体产生的记忆。操作时请同时打开 [Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)、[快速入门指南](/developer/api/quickstart)和 [Retain API 参考](/developer/api/retain)。
+本指南将介绍如何选择合适的共享记忆库、配置多个 Hermes 智能体共用它、在不拆分记忆库的情况下保留角色边界，以及如何验证一个智能体能否召回另一个智能体产生的记忆。操作时请同时打开 [Hermes 集成文档](/sdks/integrations/hermes)、[快速入门指南](/developer/api/quickstart)和 [Retain API 参考](/developer/api/retain)。
 
 <!-- truncate -->
 
@@ -33,7 +33,7 @@ hide_table_of_contents: true
 - 这些智能体确实属于同一个项目、客户工作流或团队流程。
 - 你清楚哪些持久上下文应该共享。
 
-如果还没有完成基础提供商配置，请从 [Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)、[文档首页](/)、[快速入门指南](/developer/api/quickstart)和 [Recall API 参考](/developer/api/recall)开始。
+如果还没有完成基础提供商配置，请从 [Hermes 集成文档](/sdks/integrations/hermes)、[文档首页](/)、[快速入门指南](/developer/api/quickstart)和 [Recall API 参考](/developer/api/recall)开始。
 
 ## 分步操作 {#step-by-step}
 
@@ -159,7 +159,7 @@ PY
 ## 后续步骤 {#next-steps}
 
 - 如果你希望所有 Hermes 智能体共用一个托管后端，可以从 [Hindsight Cloud](https://hindsight.vectorize.io)开始。
-- 查阅 [Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)，了解完整的提供商配置细节。
+- 查阅 [Hermes 集成文档](/sdks/integrations/hermes)，了解完整的提供商配置细节。
 - 如果你还需要后端，请使用[快速入门指南](/developer/api/quickstart)。
 - 阅读 [Recall API 参考](/developer/api/recall)和 [Retain API 参考](/developer/api/retain)，调整检索和存入行为。
 - 参考 [AI 编码智能体的团队共享记忆](/blog/2026/07/10/shared-memory-across-ai-tools)，了解协作模式。

@@ -6,7 +6,7 @@ description: "将 Obsidian 笔记库同步到 Hindsight，与基于笔记作答�
 
 # Obsidian {#obsidian}
 
-借助 [Hindsight](https://hindsight.vectorize.io)，让智能体真正了解 [Obsidian](https://obsidian.md) 笔记库中的内容。插件会将笔记库同步到 Hindsight 记忆库，并添加一个聊天面板。面板中的答案以笔记为依据，并引用相应笔记。
+借助 [Hindsight](/)，让智能体真正了解 [Obsidian](https://obsidian.md) 笔记库中的内容。插件会将笔记库同步到 Hindsight 记忆库，并添加一个聊天面板。面板中的答案以笔记为依据，并引用相应笔记。
 
 [查看更新日志 →](/changelog/integrations/obsidian)
 

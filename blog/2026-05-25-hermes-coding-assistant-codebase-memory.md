@@ -214,7 +214,7 @@ requests. The fix wasn't tuning, it was the ORM abstraction. Remember this.
 
 这也让自主编程智能体变得切实可用。具备丰富且最新的心智模型、约定、架构信息和已知脆弱环节的智能体，拥有足够的结构化背景来作出决策并推动变更，无需每项任务开始时都由人类向它介绍情况。持久的会话记忆能让你达到这样的起点。
 
-完整 API 参考请参阅 [Hindsight 心智模型文档](https://hindsight.vectorize.io/developer/api/mental-models)。
+完整 API 参考请参阅 [Hindsight 心智模型文档](/developer/api/mental-models)。
 
 ---
 
@@ -224,7 +224,7 @@ Hermes 搭配 Hindsight，是唯一能够跨会话累积背景信息的编程工
 
 使用越久，价值越高。第一次会话时，Hermes 对项目一无所知；第五次会话时，它了解技术栈和约定；到了第 30 次会话，它已经了解项目沿革、脆弱环节，以及塑造项目当前形态的决策。此时你不再解释这些内容，并不是因为省略了背景，而是因为再也不必重复说明。心智模型足够丰富后，你面对的不只是一个编程助手，而是一位和你一样了解代码库的智能体。
 
-运行 `hermes memory setup` 即可开始设置，也可以先参阅 [Hindsight 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)。
+运行 `hermes memory setup` 即可开始设置，也可以先参阅 [Hindsight 集成文档](/sdks/integrations/hermes)。
 
 ---
 

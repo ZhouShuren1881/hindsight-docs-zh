@@ -10,7 +10,7 @@ hide_table_of_contents: true
 
 ![将 ChatGPT 和 Perplexity 连接到 Hindsight 记忆](/img/guides/guide-connect-chatgpt-and-perplexity-to-hindsight.webp)
 
-如果你想**将 ChatGPT 和 Perplexity 连接到 Hindsight**，现在两种工具都有清晰的配置文档。新发布的官方集成指南在两个界面中介绍了相同的核心流程：添加远程 MCP 连接器、在浏览器中完成 OAuth，然后明确指示模型存入和召回有用的上下文。配置时请打开[ChatGPT 集成指南](https://hindsight.vectorize.io/sdks/integrations/chatgpt)、[Perplexity 集成指南](https://hindsight.vectorize.io/sdks/integrations/perplexity)、[MCP 服务器文档](/developer/mcp-server)和[文档首页](https://hindsight.vectorize.io)备用。
+如果你想**将 ChatGPT 和 Perplexity 连接到 Hindsight**，现在两种工具都有清晰的配置文档。新发布的官方集成指南在两个界面中介绍了相同的核心流程：添加远程 MCP 连接器、在浏览器中完成 OAuth，然后明确指示模型存入和召回有用的上下文。配置时请打开[ChatGPT 集成指南](/sdks/integrations/chatgpt)、[Perplexity 集成指南](/sdks/integrations/perplexity)、[MCP 服务器文档](/developer/mcp-server)和[文档首页](/)备用。
 
 <!-- truncate -->
 
@@ -22,7 +22,7 @@ hide_table_of_contents: true
 
 ## 文档有哪些变化 {#what-changed-in-the-docs}
 
-最大的改进不是新增了传输方式，而是说明更清楚了。Hindsight 现在分别提供 [ChatGPT](https://hindsight.vectorize.io/sdks/integrations/chatgpt)和 [Perplexity](https://hindsight.vectorize.io/sdks/integrations/perplexity)专用配置页面，其中集中列出了实际 MCP URL、OAuth 流程和自定义指令示例。
+最大的改进不是新增了传输方式，而是说明更清楚了。Hindsight 现在分别提供 [ChatGPT](/sdks/integrations/chatgpt)和 [Perplexity](/sdks/integrations/perplexity)专用配置页面，其中集中列出了实际 MCP URL、OAuth 流程和自定义指令示例。
 
 如果连接器已经配置好，但模型从不调用它，集成就只完成了一半。新文档明确指出：先接好连接器，再教会工具何时存入、何时召回。
 
@@ -53,7 +53,7 @@ Perplexity 最擅长将当前网络搜索与此前研究会话中积累的知识
 1. 为 ChatGPT 和 Perplexity 使用**独立记忆库**。这种方式更简单，也能减少意外混杂。
 2. 如果两个工具正在处理同一个项目，并且需要共享研究、决策和约束，就使用**共享记忆库**。
 
-如果还不确定，就先分开。等有了明确理由，再改为共享设置。[MCP 服务器文档](/developer/mcp-server)和 [Perplexity 指南](https://hindsight.vectorize.io/sdks/integrations/perplexity)中的后续工作流更直接地介绍了共享模式。
+如果还不确定，就先分开。等有了明确理由，再改为共享设置。[MCP 服务器文档](/developer/mcp-server)和 [Perplexity 指南](/sdks/integrations/perplexity)中的后续工作流更直接地介绍了共享模式。
 
 ## 排查首次连接问题 {#troubleshooting-the-first-connection}
 
@@ -83,7 +83,7 @@ Perplexity 最擅长将当前网络搜索与此前研究会话中积累的知识
 ## 后续步骤 {#next-steps}
 
 - [Hindsight Cloud](https://hindsight.vectorize.io)
-- [ChatGPT 集成指南](https://hindsight.vectorize.io/sdks/integrations/chatgpt)
-- [Perplexity 集成指南](https://hindsight.vectorize.io/sdks/integrations/perplexity)
+- [ChatGPT 集成指南](/sdks/integrations/chatgpt)
+- [Perplexity 集成指南](/sdks/integrations/perplexity)
 - [MCP 服务器文档](/developer/mcp-server)
-- [文档首页](https://hindsight.vectorize.io)
+- [文档首页](/)

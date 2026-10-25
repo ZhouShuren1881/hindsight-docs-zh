@@ -180,7 +180,7 @@ def create_agent_for_user(user_id: str) -> AssistantAgent:
 
 **与 AutoGen 聊天记录相比：** 聊天记录会在会话内保存原始消息。它不会提取事实或归纳知识，并会在对话结束时消失。Hindsight 会提取结构化事实、去重，并只检索相关内容；它压缩知识，而不是不断累积 token。
 
-**与原始向量存储（Pinecone、Weaviate、Chroma）相比：** 向量存储提供基于嵌入相似度的搜索。Hindsight 会通过交叉编码器重排序运行四种并行检索策略（语义检索、BM25、图遍历和时间检索），还会提取实体、解析共指并构建知识图谱。它是一套记忆引擎，而非数据库。关于该架构在大规模场景中的表现，可参阅 [Hindsight 在 BEAM 上的表现](https://hindsight.vectorize.io/blog/2026/04/02/beam-sota)所提供的独立基准测试结果。
+**与原始向量存储（Pinecone、Weaviate、Chroma）相比：** 向量存储提供基于嵌入相似度的搜索。Hindsight 会通过交叉编码器重排序运行四种并行检索策略（语义检索、BM25、图遍历和时间检索），还会提取实体、解析共指并构建知识图谱。它是一套记忆引擎，而非数据库。关于该架构在大规模场景中的表现，可参阅 [Hindsight 在 BEAM 上的表现](/blog/2026/04/02/beam-sota)所提供的独立基准测试结果。
 
 **与其他框架集成相比：** 如果你使用的是 LlamaIndex、LangGraph、CrewAI 或 Pydantic AI，而不是 AutoGen，Hindsight 也为这些框架提供了专用集成：[LlamaIndex](/sdks/integrations/llamaindex)、[LangGraph](/sdks/integrations/langgraph)、[CrewAI](/sdks/integrations/crewai)、[Pydantic AI](/sdks/integrations/pydantic-ai)。
 
@@ -195,5 +195,5 @@ def create_agent_for_user(user_id: str) -> AssistantAgent:
 
 - **本地试用：** 安装 `pip install hindsight-all hindsight-autogen autogen-agentchat "autogen-ext[openai]"`，然后运行上面的示例。
 - **使用 Hindsight Cloud：** 通过[免费账户](https://ui.hindsight.vectorize.io)免去自行托管。
-- **查看基准测试结果：** [为什么 Hindsight 在 10M token 规模的 BEAM 测试中领先](https://hindsight.vectorize.io/blog/2026/04/02/beam-sota)
+- **查看基准测试结果：** [为什么 Hindsight 在 10M token 规模的 BEAM 测试中领先](/blog/2026/04/02/beam-sota)
 - **探索其他集成：** [LlamaIndex](/sdks/integrations/llamaindex)、[LangGraph](/sdks/integrations/langgraph)、[Pydantic AI](/sdks/integrations/pydantic-ai)、[CrewAI](/sdks/integrations/crewai)

@@ -19,7 +19,7 @@ hide_table_of_contents: true
 
 ## 概览 {#tldr}
 
-- **DeepSeek Harness 现在拥有长期记忆**，通过 [Hindsight 编程智能体集成](https://hindsight.vectorize.io/sdks/integrations/coding-agents)实现。
+- **DeepSeek Harness 现在拥有长期记忆**，通过 [Hindsight 编程智能体集成](/sdks/integrations/coding-agents)实现。
 - 只需一条命令：`npx @vectorize-io/hindsight-coding-agents install dsh`。它会作为 **原生 Cordis 插件**安装，因此无需运行 MCP 服务器。
 - 它会**全自动运行**：仓库的 git 历史和对话会在后台流入记忆库；Harness 开始任务时，会召回相关上下文。
 - 它还会构建并读取**知识页**：一部自我修复的 wiki，记录架构、约定和决策，供后续会话开始时参考。
@@ -63,19 +63,19 @@ npx @vectorize-io/hindsight-coding-agents install dsh
 
 ## 超越召回：自我修复的 wiki {#beyond-recall-a-self-healing-wiki}
 
-这项集成不只会存入和召回单条事实。在一个全新的仓库中，它会进行只读巡查，为架构、约定和正在进行的项目创建知识页；之后也会随着你的工作持续更新这些页面。Harness 开始工作前会先读取这些页面，并把新工作记录为可追踪的页面，让文档能够自行编写和修复。详情请参阅[面向编程智能体的知识页](https://hindsight.vectorize.io/blog/2026/08/13/knowledge-pages-coding-agents)。
+这项集成不只会存入和召回单条事实。在一个全新的仓库中，它会进行只读巡查，为架构、约定和正在进行的项目创建知识页；之后也会随着你的工作持续更新这些页面。Harness 开始工作前会先读取这些页面，并把新工作记录为可追踪的页面，让文档能够自行编写和修复。详情请参阅[面向编程智能体的知识页](/blog/2026/08/13/knowledge-pages-coding-agents)。
 
 ## 共享记忆库的优势 {#the-nice-thing-about-a-shared-bank}
 
-记忆保存在 Hindsight 记忆库中，而不是 Harness 内部，因此可以跨工具使用。Harness 写入的同一个记忆库，也能供 Claude Code、Codex、Cursor 以及这项集成支持的其他[十种编程智能体](https://hindsight.vectorize.io/sdks/integrations/coding-agents)召回。教会其中一个，其他工具也能知道这些内容。
+记忆保存在 Hindsight 记忆库中，而不是 Harness 内部，因此可以跨工具使用。Harness 写入的同一个记忆库，也能供 Claude Code、Codex、Cursor 以及这项集成支持的其他[十种编程智能体](/sdks/integrations/coding-agents)召回。教会其中一个，其他工具也能知道这些内容。
 
-DeepSeek 发布了一个以插件为先的编程智能体。我们提供了让它拥有记忆的插件。你可以用一条命令安装，也可以先阅读[集成指南](https://hindsight.vectorize.io/sdks/integrations/coding-agents)。
+DeepSeek 发布了一个以插件为先的编程智能体。我们提供了让它拥有记忆的插件。你可以用一条命令安装，也可以先阅读[集成指南](/sdks/integrations/coding-agents)。
 
 ---
 
 **了解更多：**
-- [编程智能体集成](https://hindsight.vectorize.io/sdks/integrations/coding-agents) — 用一条命令为 DeepSeek Harness 和另外十种智能体接入原生记忆
-- [面向编程智能体的知识页](https://hindsight.vectorize.io/blog/2026/08/13/knowledge-pages-coding-agents) — 智能体构建并读取的自我修复 wiki
+- [编程智能体集成](/sdks/integrations/coding-agents) — 用一条命令为 DeepSeek Harness 和另外十种智能体接入原生记忆
+- [面向编程智能体的知识页](/blog/2026/08/13/knowledge-pages-coding-agents) — 智能体构建并读取的自我修复 wiki
 - [Hindsight on GitHub](https://github.com/vectorize-io/hindsight) — 底层的开源记忆引擎
 
 ---

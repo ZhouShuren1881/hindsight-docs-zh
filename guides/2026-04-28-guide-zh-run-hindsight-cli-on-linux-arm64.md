@@ -10,7 +10,7 @@ hide_table_of_contents: true
 
 ![在 Linux ARM64 上运行 Hindsight CLI，无需额外变通](/img/guides/guide-run-hindsight-cli-on-linux-arm64.webp)
 
-如果您想**在 Linux ARM64 上运行 Hindsight CLI**，现在的设置终于简单了。最新的发布流程已提供正式的 `hindsight-linux-arm64` 资产，因此 Raspberry Pi 设备、Graviton 实例和小型 ARM 服务器不再需要本地重新构建，也不必通过非官方方式复制文件才能运行 CLI。工作时如果还需要查阅相关文档，可以同时打开 [CLI 参考](https://hindsight.vectorize.io/sdks/cli)、[安装指南](/developer/installation)、[快速入门指南](/developer/api/quickstart) 和 [文档首页](https://hindsight.vectorize.io)。
+如果您想**在 Linux ARM64 上运行 Hindsight CLI**，现在的设置终于简单了。最新的发布流程已提供正式的 `hindsight-linux-arm64` 资产，因此 Raspberry Pi 设备、Graviton 实例和小型 ARM 服务器不再需要本地重新构建，也不必通过非官方方式复制文件才能运行 CLI。工作时如果还需要查阅相关文档，可以同时打开 [CLI 参考](/sdks/cli)、[安装指南](/developer/installation)、[快速入门指南](/developer/api/quickstart) 和 [文档首页](/)。
 
 <!-- truncate -->
 
@@ -52,7 +52,7 @@ hindsight configure   --api-url https://api.hindsight.vectorize.io   --api-key Y
 hindsight configure --api-url http://localhost:8888
 ```
 
-如果需要在不同环境之间切换，可以使用 [CLI 参考](https://hindsight.vectorize.io/sdks/cli)中的命名配置文件，不必反复改写同一个共享配置文件：
+如果需要在不同环境之间切换，可以使用 [CLI 参考](/sdks/cli)中的命名配置文件，不必反复改写同一个共享配置文件：
 
 ```bash
 hindsight profile create prod   --api-url https://api.hindsight.vectorize.io   --api-key YOUR_API_KEY
@@ -102,7 +102,7 @@ hindsight memory recall test-bank "How should I update Alice?"
 ## 后续步骤 {#next-steps}
 
 - [Hindsight Cloud](https://hindsight.vectorize.io)
-- [CLI 参考](https://hindsight.vectorize.io/sdks/cli)
+- [CLI 参考](/sdks/cli)
 - [安装指南](/developer/installation)
 - [快速入门指南](/developer/api/quickstart)
-- [文档首页](https://hindsight.vectorize.io)
+- [文档首页](/)

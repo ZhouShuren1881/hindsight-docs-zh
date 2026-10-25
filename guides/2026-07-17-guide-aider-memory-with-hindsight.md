@@ -83,7 +83,7 @@ Aider 没有 MCP 客户端或逐提示钩子，因此包装器会在 Aider 提�
 
 也就是说，如果你在同一个代码库中还使用其他编辑器或编程智能体配合 Hindsight，它们会读取同一份项目记忆。在一种工具中学到的约定，也能在其他工具中使用。
 
-如果你希望采用其他记忆库策略，例如让多个相关代码库共用一个记忆库，请参阅[包的 README](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/aider)，了解完整配置选项。
+如果你希望采用其他记忆库策略，例如让多个相关代码库共用一个记忆库，请参阅[包的 README](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/aider)，了解完整配置选项。
 
 ## 验证记忆是否正常工作 {#verify-that-memory-is-working}
 

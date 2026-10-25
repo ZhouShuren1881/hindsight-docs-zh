@@ -20,7 +20,7 @@ Hindsight 已不再与 Hermes 捆绑。Nous Research 已将所有记忆提供方
 
 [Hermes Agent](https://github.com/NousResearch/hermes-agent) 是一款能够自我改进的助手，提供 40 多种工具，涵盖聊天、研究、语音以及 Telegram、Discord、Slack 等平台的网关集成。开箱即用时，每次对话都从零开始：Hermes 不会记得你昨天聊了什么、正在规划什么项目，也不记得你已经分享过哪些偏好。Hindsight 可以弥补这一缺口。完成配置后，Hermes 会在每次回复前召回相关事实，并在回复后存入本次对话中的内容；这些记忆可跨会话、跨平台、跨重启使用。
 
-本文是适用于 Windows 的通用指南。如果你想要的是能够记住代码库内容的编程助手，请参阅配套文章 [在 Windows 上使用 Hermes 编程助手](https://hindsight.vectorize.io/blog/2026/06/01/hermes-hindsight-windows)。
+本文是适用于 Windows 的通用指南。如果你想要的是能够记住代码库内容的编程助手，请参阅配套文章 [在 Windows 上使用 Hermes 编程助手](/blog/2026/06/01/hermes-hindsight-windows)。
 
 <!-- truncate -->
 
@@ -151,12 +151,12 @@ Hindsight v0.5.5 增加了[嵌入式模式的原生 Windows 支持](/blog/2026/0
 
 Hermes 刚刚原生支持 Windows，Hindsight 早已在此可用。把两者连接起来，你常用的平台上的助手就有了记忆。
 
-运行 `hermes memory setup` 即可开始设置，也可以先阅读 [Hindsight Windows 安装指南](https://hindsight.vectorize.io/developer/installation#windows)。
+运行 `hermes memory setup` 即可开始设置，也可以先阅读 [Hindsight Windows 安装指南](/developer/installation)。
 
 ---
 
 **延伸阅读：**
-- [在 Windows 上使用 Hermes 编程助手](https://hindsight.vectorize.io/blog/2026/06/01/hermes-hindsight-windows) — 本文的代码库记忆配套文章
+- [在 Windows 上使用 Hermes 编程助手](/blog/2026/06/01/hermes-hindsight-windows) — 本文的代码库记忆配套文章
 - [构建能够记住代码库的 Hermes 编程助手](/blog/2026/05/25/hermes-coding-assistant-codebase-memory) — 面向各种平台的编程助手版本
 - [什么是智能体记忆？](https://vectorize.io/what-is-agent-memory/) — 基础概念介绍
 - [Hindsight v0.4.21 — 原生支持 Windows](/blog/2026/03/30/version-0-4-21) — 最初发布的 Windows 版本

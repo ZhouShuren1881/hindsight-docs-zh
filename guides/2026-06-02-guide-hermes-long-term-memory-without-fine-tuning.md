@@ -134,5 +134,5 @@ hermes memory setup           # 选择 "hindsight"
 ## 后续步骤 {#next-steps}
 
 - 阅读[智能体记忆真正意味着什么](/guides/2026/04/23/guide-what-agent-memory-really-means)。
-- 查阅 [Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)。
+- 查阅 [Hermes 集成文档](/sdks/integrations/hermes)。
 - 如果你希望以最短路径获得长期记忆，可以从 [Hindsight Cloud](https://hindsight.vectorize.io) 开始。

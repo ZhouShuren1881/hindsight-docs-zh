@@ -81,7 +81,7 @@ Hindsight 0.10.1 让记忆库可以迁移：你可以复制记忆库、在实例
 
 ## 模板是另一种功能 {#templates-are-a-different-feature}
 
-Hindsight 自 0.5.0 起就支持[记忆库模板](https://hindsight.vectorize.io/blog/2026/04/10/templates-hub-hindsight-050)，很容易让人误以为这次的迁移功能与它是同一回事。其实并不是。
+Hindsight 自 0.5.0 起就支持[记忆库模板](/blog/2026/04/10/templates-hub-hindsight-050)，很容易让人误以为这次的迁移功能与它是同一回事。其实并不是。
 
 模板是可手工编辑的 JSON 清单，包含配置覆盖项、强制指令和心智模型*定义*——也就是模型要回答的问题，而不是答案内容。将模板导入一个新记忆库时，系统会运行 reflect 来重新生成这些模型，这会调用 LLM。模板采用插入或更新方式，因此也可以应用到已有记忆库。
 
@@ -99,7 +99,7 @@ Hindsight 自 0.5.0 起就支持[记忆库模板](https://hindsight.vectorize.io
 
 ## 了解更多 {#learn-more}
 
-- [一个记忆库还是多个？智能体记忆结构指南](https://hindsight.vectorize.io/blog/2026/07/16/bank-strategy-agent-memory)：了解如何决定一个记忆库应代表什么，而现在这个决定可以随时更改。
-- [AI 产品中的按用户记忆](https://hindsight.vectorize.io/blog/2026/08/04/per-user-multi-tenant-agent-memory)：了解租户隔离，以及为何克隆带有配置的种子记忆库未必适合你的场景。
-- [如何将智能体记忆从向量数据库中迁出](https://hindsight.vectorize.io/blog/2026/07/28/migrate-agent-memory-off-vector-database)：了解如何将记忆迁入 Hindsight，而不是在 Hindsight 记忆库之间移动。
-- [Hindsight 0.10.1 新功能](https://hindsight.vectorize.io/blog/2026/09/21/version-0-10-1)：了解此版本的其他内容，包括 TypeSafe Jev 重排序模型。
+- [一个记忆库还是多个？智能体记忆结构指南](/blog/2026/07/16/bank-strategy-agent-memory)：了解如何决定一个记忆库应代表什么，而现在这个决定可以随时更改。
+- [AI 产品中的按用户记忆](/blog/2026/08/04/per-user-multi-tenant-agent-memory)：了解租户隔离，以及为何克隆带有配置的种子记忆库未必适合你的场景。
+- [如何将智能体记忆从向量数据库中迁出](/blog/2026/07/28/migrate-agent-memory-off-vector-database)：了解如何将记忆迁入 Hindsight，而不是在 Hindsight 记忆库之间移动。
+- [Hindsight 0.10.1 新功能](/blog/2026/09/21/version-0-10-1)：了解此版本的其他内容，包括 TypeSafe Jev 重排序模型。

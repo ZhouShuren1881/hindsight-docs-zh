@@ -137,7 +137,7 @@ HindsightProvider(bank_id=f"user-{current_user.id}")
 
 ## 它做对的三件事 {#three-things-it-gets-right}
 
-**无需调用工具。** 记忆通过生命周期钩子接入，不会作为工具暴露给模型。模型不会忘记使用记忆，也不会产生工具调用延迟。[Cline 集成](https://hindsight.vectorize.io/blog/2026/06/09/cline-persistent-memory)同样使用钩子而非 MCP，原因也在于此：确定性胜过寄希望于模型自行调用。
+**无需调用工具。** 记忆通过生命周期钩子接入，不会作为工具暴露给模型。模型不会忘记使用记忆，也不会产生工具调用延迟。[Cline 集成](/blog/2026/06/09/cline-persistent-memory)同样使用钩子而非 MCP，原因也在于此：确定性胜过寄希望于模型自行调用。
 
 **绝不会阻塞智能体。** 记忆召回和存入都采用尽力而为的方式。如果 Hindsight 暂时无法访问，集成会吞掉故障并记录日志；智能体仍可正常运行，只是这一轮不使用记忆。记忆服务短暂故障不会导致智能体停摆。
 
@@ -159,5 +159,5 @@ HindsightProvider(bank_id=f"user-{current_user.id}")
 
 - **Hindsight Cloud：**[ui.hindsight.vectorize.io](https://ui.hindsight.vectorize.io)
 - **集成文档：**[Microsoft Agent Framework + Hindsight](/sdks/integrations/agent-framework)
-- **源代码：**[vectorize-io/hindsight/hindsight-integrations/agent-framework](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/agent-framework)
-- **了解钩子为何优于工具：**[Cline 持久记忆](https://hindsight.vectorize.io/blog/2026/06/09/cline-persistent-memory)
+- **源代码：**[vectorize-io/hindsight/hindsight-integrations/agent-framework](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/agent-framework)
+- **了解钩子为何优于工具：**[Cline 持久记忆](/blog/2026/06/09/cline-persistent-memory)

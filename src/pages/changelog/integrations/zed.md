@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 Changelog for [`hindsight-zed`](https://pypi.org/project/hindsight-zed/).
 
-For the source code, see [`hindsight-integrations/zed`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/zed).
+For the source code, see [`hindsight-integrations/zed`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/zed).
 
 ← [Back to main changelog](/changelog)
 

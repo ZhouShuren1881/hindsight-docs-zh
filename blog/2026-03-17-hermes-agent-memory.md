@@ -253,4 +253,4 @@ Hermes 的插件系统使用标准 Python 入口点，因此任何 pip 程序包
 - **为每位用户使用独立记忆库。** 按用户设置 `HINDSIGHT_BANK_ID`，使每个人的记忆彼此隔离。
 - **探索 MCP 方案。** Hermes 原生支持 MCP 服务器。你可以直接连接 Hindsight 的 MCP 服务器（`http://localhost:8888/mcp`），而不使用插件，无需安装 `hindsight-hermes` 程序包。两种方式的差别在于：插件会使用 Hermes 原生模式注册工具，而 MCP 工具需要先发现。
 - **通过手动注册获得更多控制。** 如果你想设置标签、Recall 筛选条件，或跳过插件系统，可以直接使用 `hindsight-hermes` 提供的 `register_tools()` 和 `memory_instructions()` 函数。
-- **阅读文档。** 请参阅[完整集成参考](https://hindsight.vectorize.io/sdks/integrations/hermes)。
+- **阅读文档。** 请参阅[完整集成参考](/sdks/integrations/hermes)。

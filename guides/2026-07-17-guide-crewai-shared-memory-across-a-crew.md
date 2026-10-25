@@ -14,7 +14,7 @@ hide_table_of_contents: true
 
 这是一个策略选择，而不是安装步骤。CrewAI 已通过 `ExternalMemory` 提供存储边界，Hindsight 的 `HindsightStorage` 可以接入其中：`search()` 在每项任务开始时对应记忆召回，`save()` 在每项任务完成后对应记忆存入。`bank_id` 和 `per_agent_banks` 的取值决定团队表现得像共用一本笔记的队伍，还是像各自使用私人文件的专家小组。
 
-本指南介绍何时适合让团队共用一个记忆库、何时更适合按智能体隔离、一次启动过程中记忆实际上如何在智能体间流动，以及如何通过混合模式兼顾两者。如果你还没有接入集成，请先按照 [CrewAI 接入指南](https://hindsight.vectorize.io/guides/2026/05/04/guide-crewai-memory-with-hindsight)完成设置，再回来选择范围策略。
+本指南介绍何时适合让团队共用一个记忆库、何时更适合按智能体隔离、一次启动过程中记忆实际上如何在智能体间流动，以及如何通过混合模式兼顾两者。如果你还没有接入集成，请先按照 [CrewAI 接入指南](/guides/2026/05/04/guide-crewai-memory-with-hindsight)完成设置，再回来选择范围策略。
 
 <!-- truncate -->
 
@@ -80,7 +80,7 @@ storage = HindsightStorage(bank_id="research-crew", per_agent_banks=True)
 
 如果你还没有安装并接通集成，请参阅专门的接入指南。该指南介绍了 `pip install hindsight-crewai`、面向 Cloud 或自托管服务的 `configure(...)`，以及如何将 `HindsightStorage` 接入 `ExternalMemory`：
 
-- [指南：使用 Hindsight 为 CrewAI 添加持久记忆](https://hindsight.vectorize.io/guides/2026/05/04/guide-crewai-memory-with-hindsight)
+- [指南：使用 Hindsight 为 CrewAI 添加持久记忆](/guides/2026/05/04/guide-crewai-memory-with-hindsight)
 
 团队开始使用记忆后，本指南的其余内容将帮助你选择合适的记忆范围。
 
@@ -157,7 +157,7 @@ crew = Crew(agents=[researcher, analyst, writer], tasks=[...],
 
 ## 后续步骤 {#next-steps}
 
-- 先按照 [CrewAI 接入指南](https://hindsight.vectorize.io/guides/2026/05/04/guide-crewai-memory-with-hindsight)设置集成。
+- 先按照 [CrewAI 接入指南](/guides/2026/05/04/guide-crewai-memory-with-hindsight)设置集成。
 - 如果想使用托管记忆后端，请从 [Hindsight Cloud](https://hindsight.vectorize.io)开始。
 - 阅读[完整的 Hindsight 文档](/)。
 - 按照[快速入门指南](/developer/api/quickstart)操作。

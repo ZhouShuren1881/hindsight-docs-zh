@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 Changelog for [`@vectorize-io/n8n-nodes-hindsight`](https://www.npmjs.com/package/@vectorize-io/n8n-nodes-hindsight).
 
-For the source code, see [`hindsight-integrations/n8n`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/n8n).
+For the source code, see [`hindsight-integrations/n8n`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/n8n).
 
 ## [0.1.3](https://github.com/vectorize-io/hindsight/tree/integrations/n8n/v0.1.3)
 

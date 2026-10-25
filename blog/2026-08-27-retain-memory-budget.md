@@ -11,7 +11,7 @@ hide_table_of_contents: true
 
 ![Hindsight 如何按预算而不是按文档大小限制 Retain 的内存：按窗口计算大小、流式分块和流式拆分子批次，让不同大小文档的峰值内存保持稳定](/img/blog/retain-memory-budget.png)
 
-过去，将一份大文档通过 Retain（存入）操作写入 [Hindsight](https://hindsight.vectorize.io) 所需的内存与*文档*大小成正比，而不是与实际处理的工作量成正比。输入 90 MB 的正文，峰值内存分配就会随之增长；对于需要规划容量并安排并发任务的工作进程来说，这正是我们不希望看到的增长方式。Hindsight 0.9.2 重构了 Retain 管道的前半段，让处理 4 MB 到 90 MB 的正文时峰值内存都保持稳定，并增加了一个明确预算，便于据此规划工作进程容量。
+过去，将一份大文档通过 Retain（存入）操作写入 [Hindsight](/) 所需的内存与*文档*大小成正比，而不是与实际处理的工作量成正比。输入 90 MB 的正文，峰值内存分配就会随之增长；对于需要规划容量并安排并发任务的工作进程来说，这正是我们不希望看到的增长方式。Hindsight 0.9.2 重构了 Retain 管道的前半段，让处理 4 MB 到 90 MB 的正文时峰值内存都保持稳定，并增加了一个明确预算，便于据此规划工作进程容量。
 
 有意思的是，内存实际消耗在了哪里？答案和大家原先猜想的不同。
 
@@ -139,6 +139,6 @@ Retain 开始时有两个操作会在任何事实生成之前，各自构造一�
 ---
 
 **了解更多：**
-- [Hindsight 0.9.2 新增内容](https://hindsight.vectorize.io/blog/2026/08/24/version-0-9-2) — 本文改进随该版本发布
-- [我们如何构建 4 路并行混合搜索](https://hindsight.vectorize.io/blog/2026/03/27/parallel-hybrid-search) — 管道的另一侧：Recall 路径
+- [Hindsight 0.9.2 新增内容](/blog/2026/08/24/version-0-9-2) — 本文改进随该版本发布
+- [我们如何构建 4 路并行混合搜索](/blog/2026/03/27/parallel-hybrid-search) — 管道的另一侧：Recall 路径
 - [Hindsight on GitHub](https://github.com/vectorize-io/hindsight) — 开源记忆引擎

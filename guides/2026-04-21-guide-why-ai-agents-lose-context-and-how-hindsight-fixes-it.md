@@ -208,7 +208,7 @@ Hindsight 并不是一个更大的对话缓冲区，而是一个专为智能体�
 
 真实的智能体会在数周、数月的时间里，或通过多个工具不断积累记忆。最终，选择性检索不再是可选项。
 
-这正是 [Hindsight 在 BEAM 上排名第一](https://hindsight.vectorize.io/blog/2026/04/02/beam-sota)这类基准测试工作的意义：它在上下文填充已不可行的规模下测试记忆能力。
+这正是 [Hindsight 在 BEAM 上排名第一](/blog/2026/04/02/beam-sota)这类基准测试工作的意义：它在上下文填充已不可行的规模下测试记忆能力。
 
 ## 一个简单的架构测试 {#a-simple-architecture-test}
 

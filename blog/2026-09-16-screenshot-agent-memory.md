@@ -27,7 +27,7 @@ hide_table_of_contents: true
 
 ## 这不是文件上传 {#this-isnt-file-upload}
 
-Hindsight Cloud 从三月起就[支持文件上传](https://hindsight.vectorize.io/blog/2026/03/09/hindsight-document-upload)：上传 PDF、提取文本，再存入记忆。如果文件本身就是处理单位，这仍然是合适的工具。
+Hindsight Cloud 从三月起就[支持文件上传](/blog/2026/03/09/hindsight-document-upload)：上传 PDF、提取文本，再存入记忆。如果文件本身就是处理单位，这仍然是合适的工具。
 
 在对话中途粘贴的截图不是一份文档。把它当成文档处理，就会丢掉最值得保留的关系：截图是在*那里*、那句话之后附上的，用来支持那项陈述。
 
@@ -157,7 +157,7 @@ Recall 结果不包含字节，只包含一个引用：
 
 ## 了解更多 {#learn-more}
 
-- [深入了解 retain()](https://hindsight.vectorize.io/blog/2026/07/13/inside-retain-agent-memory)：本文扩展的是这条写入路径。
-- [Hindsight 0.10.0 新功能](https://hindsight.vectorize.io/blog/2026/09/14/version-0-10-0)：了解此版本的其他更新。
-- [交叉编码器重排序](https://hindsight.vectorize.io/blog/2026/08/28/cross-encoder-reranking-agent-memory)：了解事实检索后的处理过程。
-- [停止扩充常驻上下文](https://hindsight.vectorize.io/blog/2026/09/16/stop-growing-your-system-prompt)：说明为何应在每轮对话中按需检索证据。
+- [深入了解 retain()](/blog/2026/07/13/inside-retain-agent-memory)：本文扩展的是这条写入路径。
+- [Hindsight 0.10.0 新功能](/blog/2026/09/14/version-0-10-0)：了解此版本的其他更新。
+- [交叉编码器重排序](/blog/2026/08/28/cross-encoder-reranking-agent-memory)：了解事实检索后的处理过程。
+- [停止扩充常驻上下文](/blog/2026/09/16/stop-growing-your-system-prompt)：说明为何应在每轮对话中按需检索证据。

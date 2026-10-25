@@ -157,7 +157,7 @@ Hindsight v0.5.5 增加了[嵌入式模式的原生 Windows 支持](/blog/2026/0
 
 Hermes 刚刚推出了原生 Windows 支持，Hindsight 早已支持 Windows。将两者结合起来，你的代码库记忆就会在你日常使用的平台上持续积累。
 
-运行 `hermes memory setup` 完成设置，或从 [Hindsight Windows 安装指南](https://hindsight.vectorize.io/developer/installation#windows)开始。
+运行 `hermes memory setup` 完成设置，或从 [Hindsight Windows 安装指南](/developer/installation)开始。
 
 ---
 

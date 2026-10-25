@@ -266,14 +266,14 @@ memory = HindsightVapiWebhook(bank_id="vapi-reception")
 - **运行本地示例**：在 `hindsight-integrations/vapi/` 中运行 `python examples/interactive_webhook.py --bank demo-user`，即可端到端模拟 Vapi 事件（支持 `:script`、`:end <transcript>`、`:call <number>` 和 `:memories` 命令）。
 - **调整 `recall_budget`**：从 `"mid"` 开始；如果要优化首次响应延迟，可以降到 `"low"`。
 - **选择符合客户模型的记忆库范围策略**：每位来电者、每个助手或每个账户分别使用记忆库。
-- **浏览[完整集成列表](https://hindsight.vectorize.io/integrations/)**：Hermes、OpenAI Agents、n8n、Paperclip 等 30 多种集成都使用相同的底层记忆层。
+- **浏览[完整集成列表](/integrations)**：Hermes、OpenAI Agents、n8n、Paperclip 等 30 多种集成都使用相同的底层记忆层。
 
 ---
 
 **延伸阅读：**
 
 - [什么是智能体记忆？](https://vectorize.io/what-is-agent-memory/)——基础概念。
-- [Hindsight Vapi 集成文档](https://hindsight.vectorize.io/integrations/vapi)——完整配置参考。
+- [Hindsight Vapi 集成文档](/sdks/integrations/vapi)——完整配置参考。
 - [2026 年最佳 AI 智能体记忆系统](https://vectorize.io/articles/best-ai-agent-memory-systems/)——全面比较。
 
 ---

@@ -101,7 +101,7 @@ Hindsight 补上了缺少的这一层：
 
 ## 同一个记忆库，供界面和 API 共用 {#one-bank-ui-and-api}
 
-有个容易忽略但很重要的细节：聊天面板和外部自动化会访问**同一个带有相同标签的记忆库**。从 Obsidian 同步的库也可以通过 n8n 工作流、[Hermes](https://hindsight.vectorize.io/blog/2026/03/17/hermes-agent-memory) 智能体、直接 API 调用或其他 Hindsight 集成读取；它们看到的范围视图都相同。
+有个容易忽略但很重要的细节：聊天面板和外部自动化会访问**同一个带有相同标签的记忆库**。从 Obsidian 同步的库也可以通过 n8n 工作流、[Hermes](/blog/2026/03/17/hermes-agent-memory) 智能体、直接 API 调用或其他 Hindsight 集成读取；它们看到的范围视图都相同。
 
 这样，你的笔记就不再局限于一个应用。夜间自动化可以针对 `folder:Meetings updated:2026-06` 进行 Reflect，并将摘要发布到 Slack；它使用的正是你在聊天面板中提出相同问题时能够看到的笔记。
 
@@ -168,4 +168,4 @@ hindsight-api  # http://localhost:8888
 - **集成文档：**[Obsidian + Hindsight](/sdks/integrations/obsidian)
 - **安装（Obsidian 商店）：**[community.obsidian.md/plugins/hindsight](https://community.obsidian.md/plugins/hindsight)
 - **源码：**[vectorize-io/hindsight/hindsight-integrations/obsidian](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/obsidian)
-- **让每种工具共用同一份记忆：**[One Memory for Every AI Tool](https://hindsight.vectorize.io/blog/2026/04/07/one-memory-for-every-ai-tool)
+- **让每种工具共用同一份记忆：**[One Memory for Every AI Tool](/blog/2026/04/07/one-memory-for-every-ai-tool)

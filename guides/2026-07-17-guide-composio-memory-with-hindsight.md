@@ -76,7 +76,7 @@ tools = register_hindsight_tools(
 )
 ```
 
-自托管配置请参阅[安装指南](https://hindsight.vectorize.io/developer/installation)。
+自托管配置请参阅[安装指南](/developer/installation)。
 
 ## 步骤 3：在会话中注册工具 {#step-3-register-the-tools-on-a-session}
 

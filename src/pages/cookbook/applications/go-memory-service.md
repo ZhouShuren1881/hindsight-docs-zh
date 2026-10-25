@@ -98,5 +98,5 @@ go func() {
 
 ## 了解更多 {#learn-more}
 
-- [Go SDK 文档](https://hindsight.vectorize.io/sdks/go)
-- [Hindsight 文档](https://hindsight.vectorize.io)
+- [Go SDK 文档](/sdks/go)
+- [Hindsight 文档](/)

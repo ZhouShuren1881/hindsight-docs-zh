@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 Changelog for [`hindsight-agno`](https://pypi.org/project/hindsight-agno/).
 
-For the source code, see [`hindsight-integrations/agno`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/agno).
+For the source code, see [`hindsight-integrations/agno`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/agno).
 
 ← [Back to main changelog](/changelog)
 

@@ -135,7 +135,7 @@ Hindsight 的原始记忆层有意采用只追加的方式。两份文档用不�
 
 ## 了解更多 {#learn-more}
 
-- [如何将智能体记忆从向量数据库迁出](https://hindsight.vectorize.io/blog/2026/07/28/migrate-agent-memory-off-vector-database)：了解如何迁入一段历史。
-- [记忆库现在可以随身迁移](https://hindsight.vectorize.io/blog/2026/09/22/move-a-memory-bank)：了解 0.10.1 中的克隆、转移和重命名。
-- [智能体记忆中的整合问题](https://hindsight.vectorize.io/blog/2026/05/21/agent-memory-consolidation)：了解重要性、合并、衰减和淘汰这一框架。
-- [一个记忆库还是多个？智能体记忆结构指南](https://hindsight.vectorize.io/blog/2026/07/16/bank-strategy-agent-memory)：了解如何避免不同归档相互影响。
+- [如何将智能体记忆从向量数据库迁出](/blog/2026/07/28/migrate-agent-memory-off-vector-database)：了解如何迁入一段历史。
+- [记忆库现在可以随身迁移](/blog/2026/09/22/move-a-memory-bank)：了解 0.10.1 中的克隆、转移和重命名。
+- [智能体记忆中的整合问题](/blog/2026/05/21/agent-memory-consolidation)：了解重要性、合并、衰减和淘汰这一框架。
+- [一个记忆库还是多个？智能体记忆结构指南](/blog/2026/07/16/bank-strategy-agent-memory)：了解如何避免不同归档相互影响。

@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 Changelog for [`hindsight-dify`](https://pypi.org/project/hindsight-dify/).
 
-For the source code, see [`hindsight-integrations/dify`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/dify).
+For the source code, see [`hindsight-integrations/dify`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/dify).
 
 ## [0.1.1](https://github.com/vectorize-io/hindsight/tree/integrations/dify/v0.1.1)
 

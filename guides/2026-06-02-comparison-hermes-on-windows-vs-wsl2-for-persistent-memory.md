@@ -111,4 +111,4 @@ hide_table_of_contents: true
 
 - 阅读[Windows 上的 Hermes Agent：使用 Hindsight 配置持久记忆](/blog/2026/06/01/hermes-hindsight-windows-setup)
 - 阅读[构建能记住代码库的 Windows Hermes 编码助手](/blog/2026/06/01/hermes-hindsight-windows)
-- 从 [Hermes 集成文档](https://hindsight.vectorize.io/sdks/integrations/hermes)开始
+- 从 [Hermes 集成文档](/sdks/integrations/hermes)开始

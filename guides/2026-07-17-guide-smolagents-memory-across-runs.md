@@ -81,7 +81,7 @@ SmolAgents 智能体在一次运行**内部**拥有记忆：推理步骤、工�
 pip install hindsight-smolagents
 ```
 
-将它指向 Hindsight Cloud 或本地服务器，然后即可继续。完整的安装和连接流程（包括 `configure()` 和自托管方式），请参阅**[指南：使用 Hindsight 为 SmolAgents 添加持久记忆](https://hindsight.vectorize.io/guides/2026/05/04/guide-smolagents-memory-with-hindsight)**。
+将它指向 Hindsight Cloud 或本地服务器，然后即可继续。完整的安装和连接流程（包括 `configure()` 和自托管方式），请参阅**[指南：使用 Hindsight 为 SmolAgents 添加持久记忆](/guides/2026/05/04/guide-smolagents-memory-with-hindsight)**。
 
 ## 智能体可以直接调用的记忆工具 {#drop-in-memory-tools-your-agent-can-call}
 
@@ -161,7 +161,7 @@ tools = create_hindsight_tools(
 
 ## 后续步骤 {#next-steps}
 
-- 从完整的 [SmolAgents 设置指南](https://hindsight.vectorize.io/guides/2026/05/04/guide-smolagents-memory-with-hindsight)开始
+- 从完整的 [SmolAgents 设置指南](/guides/2026/05/04/guide-smolagents-memory-with-hindsight)开始
 - 试用托管记忆后端 [Hindsight Cloud](https://hindsight.vectorize.io)
 - 阅读[完整的 Hindsight 文档](/)
 - 查看[快速入门指南](/developer/api/quickstart)

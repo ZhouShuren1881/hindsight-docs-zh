@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 Changelog for [`hindsight-zcode`](https://pypi.org/project/hindsight-zcode/).
 
-For the source code, see [`hindsight-integrations/zcode`](https://github.com/vectorize-io/hindsight/tree/v0.10.3/hindsight-integrations/zcode).
+For the source code, see [`hindsight-integrations/zcode`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-integrations/zcode).
 
 ← [Back to main changelog](/changelog)
 

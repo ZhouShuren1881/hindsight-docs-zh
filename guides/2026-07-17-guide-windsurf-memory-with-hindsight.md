@@ -136,7 +136,7 @@ Hindsight Cloud 需要密钥。请传入 `--api-token`，或设置 `HINDSIGHT_AP
 
 ### 这与其他编码智能体集成类似吗？ {#is-this-similar-to-other-coding-agent-integrations}
 
-理念相似。Windsurf 使用 MCP 服务器和始终启用的规则，而不是包装器命令，但“先召回、后存入”的模式相同。请参阅集成文档中的[完整配置选项](https://hindsight.vectorize.io/docs/integrations/windsurf)。
+理念相似。Windsurf 使用 MCP 服务器和始终启用的规则，而不是包装器命令，但“先召回、后存入”的模式相同。请参阅集成文档中的[完整配置选项](/sdks/integrations/devin-desktop)。
 
 ## 后续步骤 {#next-steps}
 
@@ -145,4 +145,4 @@ Hindsight Cloud 需要密钥。请传入 `--api-token`，或设置 `HINDSIGHT_AP
 - 按照[快速入门指南](/developer/api/quickstart)操作
 - 查看 [Hindsight 的 Recall API](/developer/api/recall)
 - 查看 [Hindsight 的 Retain API](/developer/api/retain)
-- 阅读 [Windsurf 集成文档](https://hindsight.vectorize.io/docs/integrations/windsurf)
+- 阅读 [Windsurf 集成文档](/sdks/integrations/devin-desktop)
