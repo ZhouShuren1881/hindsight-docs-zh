@@ -6,6 +6,8 @@ description: "将 Meta Muse 连接到其他 AI 工具写入的 Hindsight 记忆�
 
 # Meta Muse {#meta-muse}
 
+[查看更新日志 →](/changelog/integrations/meta-muse)
+
 将其他 AI 工具中的记忆带入 [Meta Muse](https://muse.ai)，这是 Meta 的个人 AI 智能体。Muse 通过 MCP 连接到你的 [Hindsight](https://vectorize.io/hindsight) 记忆库。你告诉 Claude、ChatGPT、Claude Code、Hermes 或 OpenClaw 的内容也能在 Muse 中使用；你告诉 Muse 的内容也能供它们使用。
 
 Muse 会获取你所有的记忆库，而不只是一个。它会保留自己的 `muse` 记忆库，用来记录你和它共同完成的事；当问题涉及其他记忆库时，它也会读取那些记忆库。

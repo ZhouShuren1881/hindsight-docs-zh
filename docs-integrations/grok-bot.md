@@ -16,11 +16,27 @@ description: "为 Grok Bot 和 Cursor 提供长期记忆。每个 Bot 都有自�
 
 ## 安装 {#install}
 
-1. 在 Grok Bot 中，选择消息框下方的 **Connect apps**，打开 **Marketplace**。搜索 **Hindsight**，打开后选择 **Add**。
-2. Grok Bot 会提示你连接 Hindsight。请在 Hindsight 自己的页面登录，并选择要授权的组织。
-3. 让任意 Bot“设置 Hindsight 记忆”。`memory-setup` 技能会检查连接并创建下方列出的记忆库。请先为 Bot 命名：它的名称会成为记忆库 ID，因此名称仍为“Grok Bot”的 Bot 会先要求你提供名称，然后才继续设置。
+:::info Marketplace 上架审核中
+Hindsight 尚未进入 Grok Bot 或 Cursor 的 Marketplace。上架获批前，请手动完成设置。上架后，本页面会更新。
+:::
 
-同一插件也适用于 Cursor：从 Cursor Marketplace 安装即可。
+### Grok Bot {#grok-bot-1}
+
+将 [`connect-prompt.md`](https://github.com/vectorize-io/hindsight/blob/main/hindsight-integrations/grok-bot/connect-prompt.md) 粘贴给任意 Bot。该提示会指导 Bot 将 Hindsight 添加为自定义连接器，引导你完成 OAuth 登录，并包含与各项技能相同的规则：写入哪个记忆库、何时召回、如何将工作交接给其他 Bot，以及绝不能调用哪些工具。
+
+请先为 Bot 命名。它的名称会成为记忆库 ID，因此名称仍为“Grok Bot”的 Bot 会先要求你提供名称，然后才继续设置。
+
+### Cursor {#cursor}
+
+将插件复制到 Cursor 的本地插件目录，然后重新加载：
+
+```bash
+git clone https://github.com/vectorize-io/hindsight
+mkdir -p ~/.cursor/plugins/local
+cp -r hindsight/hindsight-integrations/grok-bot ~/.cursor/plugins/local/hindsight
+```
+
+重启 Cursor，或运行 **Developer: Reload Window**。
 
 ## 记忆库 {#memory-banks}
 

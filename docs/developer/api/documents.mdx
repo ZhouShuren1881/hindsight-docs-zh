@@ -177,10 +177,14 @@ import documentsGo from '!!raw-loader!@site/examples/api/documents.go';
 
 | 参数 | 说明 |
 |---|---|
-| `q` | 对文档 ID 进行不区分大小写的子字符串匹配。`report` 可匹配 `report-2024`、`annual-report` 等。 |
+| `q` | 在文档 ID 或文档文本中执行不区分大小写的子字符串匹配。`report` 可匹配 `report-2024`、`annual-report`，以及文本中包含 `report` 的任何文档。此搜索未建立索引，适用于浏览和检查记忆库，不适合大批量或对延迟敏感的查询（这类查询请使用 Recall）。 |
 | `tags` | 按文档标签筛选。可接受多个值。 |
 | `tags_match` | 指定标签的匹配方式（默认值：`any_strict`）。见下文。 |
 | `limit` / `offset` | 分页。默认 `limit` 为 100。 |
+
+设置 `q` 时，每个返回行都带有 `matched_fields`：值为 `["id"]`、`["original_text"]` 或两者兼有，便于调用方判断文档因何匹配。
+
+`q` 搜索最多统计 1,000 个匹配项。超过此数量后，`total` 是下限，`total_is_estimate` 为 `true`，分页也会在上限处停止。可缩小搜索范围，或添加标签或时间筛选条件，以找到其余结果。某些存储后端对 `q` 的匹配是近似的；`matched_fields` 始终会说明实际匹配的字段。
 
 **`tags_match` 的模式：**
 
@@ -190,6 +194,67 @@ import documentsGo from '!!raw-loader!@site/examples/api/documents.go';
 | `any` | 与 `any_strict` 相同，但也包括未添加标签的文档。 |
 | `all_strict` | 文档必须包含所有指定标签。排除未添加标签的文档。 |
 | `all` | 与 `all_strict` 相同，但也包括未添加标签的文档。 |
+
+## 文档历史 {#document-history}
+
+系统会记录每次文档变更及其影响：每次 Retain、追加和重新处理（添加及移除的事实）、每次事实编辑、标记失效、恢复和删除、逐条清除观测、每次标签变更，以及每次整合运行（创建、更新和移除的观测会归入其来源事实所属的每份文档）。
+
+观测会重新构建，而不是保留版本。因此，变更删除某条观测后，这份历史是仍记录其 ID 的唯一位置。每个事件只保存 ID 和计数，不保存文本；每个 ID 列表最多包含 100 项。控制台会在文档的 **History（历史）** 标签页中显示这些记录。
+
+这份历史是根据记忆库的[操作](./operations)（其中包含这些事件）重建的，因此有两个限制：
+
+- 历史范围不会早于操作记录的保留期限（`HINDSIGHT_API_OPERATION_RETENTION_DAYS`；默认不设期限）。
+- 未通过操作运行的变更不会出现在历史中：同步 Retain（`async: false`），以及自动整合关闭时进行的事实编辑、删除或标签变更。事实编辑、删除或标签变更会记录在其排队触发的整合操作中，与该操作执行的重建一同列出。清除记忆库中的所有观测不会列出。
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={documentsPy} section="document-history" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={documentsMjs} section="document-history" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={documentsSh} section="document-history" language="bash" />
+</TabItem>
+<TabItem value="go" label="Go">
+<CodeSnippet code={documentsGo} section="document-history" language="go" />
+</TabItem>
+</Tabs>
+
+```json
+{
+  "document_id": "call-2026-10-01",
+  "total": 2,
+  "limit": 50,
+  "offset": 0,
+  "items": [
+    {
+      "document_id": "call-2026-10-01",
+      "kind": "consolidation",
+      "created_at": "2026-10-19T10:02:11Z",
+      "operation_id": "ce29121a-…",
+      "fact_id": null,
+      "facts_added": 0,
+      "facts_removed": 0,
+      "observations_created": { "count": 0, "ids": [] },
+      "observations_updated": { "count": 2, "ids": ["9545…", "c51c…"] },
+      "observations_removed": { "count": 0, "ids": [] }
+    },
+    {
+      "document_id": "call-2026-10-01",
+      "kind": "fact_edited",
+      "created_at": "2026-10-19T10:01:50Z",
+      "operation_id": "ce29121a-…",
+      "fact_id": "41ab…",
+      "facts_added": 0,
+      "facts_removed": 0,
+      "observations_created": { "count": 0, "ids": [] },
+      "observations_updated": { "count": 0, "ids": [] },
+      "observations_removed": { "count": 1, "ids": ["2098…"] }
+    }
+  ]
+}
+```
 
 ## 文档响应格式 {#document-response-format}
 

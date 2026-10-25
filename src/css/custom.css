@@ -1609,6 +1609,74 @@ html.docs-wrapper article strong {
 
 /* ===== Blog Styling ===== */
 
+/* Blog headings: plain text, no gradient or display font. */
+html.blog-post-page article h1,
+html.blog-post-page article h2,
+html.blog-post-page article h3 {
+  font-family: var(--ifm-font-family-base);
+  letter-spacing: -0.015em;
+}
+
+/* !important: undoes the site-wide gradient title rule, which is !important. */
+html.blog-post-page article h1 {
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  margin-bottom: 1rem;
+  background-image: none !important;
+  -webkit-text-fill-color: currentColor !important;
+  color: var(--ifm-heading-color) !important;
+}
+
+/* Post header: subtitle, then an author/date row over a hairline. */
+html.blog-post-page article p.hs-blog-header__description {
+  font-family: var(--ifm-font-family-base);
+  font-size: 1.15rem;
+  line-height: 1.6;
+  letter-spacing: normal;
+  color: var(--ifm-color-emphasis-700);
+  margin: 0 0 1.75rem;
+}
+
+.hs-blog-header__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding-bottom: 1rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--ifm-toc-border-color);
+  font-size: 0.85rem;
+  color: var(--ifm-color-emphasis-700);
+}
+
+.hs-blog-header__authors {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hs-blog-header__avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* !important: upstream Info carries Infima's margin-vert--md, which is !important. */
+.hs-blog-header__info > div {
+  margin: 0 !important;
+  font-size: inherit;
+  color: inherit;
+}
+
+html.blog-post-page article h2 {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-top: 2.5rem;
+}
+
 /* Blog author text visible in light mode */
 [class*="blogPostAuthor"],
 [class*="blogPostAuthor"] *,
@@ -1730,19 +1798,10 @@ html.docs-wrapper article strong {
   animation-duration: 200ms;
 }
 
-/* On mobile the single-post 2.5rem Space Grotesk title was overwhelming —
-   use the body (paragraph) font at a calmer size instead. */
+/* On mobile the 2.5rem title was overwhelming — a calmer size instead. */
 @media (max-width: 640px) {
-  html.blog-post-page article h1,
-  html.blog-post-page article h2,
-  html.blog-post-page article h3 {
-    font-family: var(--ifm-font-family-base);
-  }
-
   html.blog-post-page article h1 {
-    font-size: 1.5rem;
-    font-weight: 700;
-    line-height: 1.3;
+    font-size: 1.75rem;
   }
 
   html.blog-post-page article h2 {
@@ -1792,19 +1851,69 @@ html.blog-post-page {
     --hs-hero-height: 32rem;
   }
 
+  /* Measure <main> itself: the doc column is capped and centred inside it. */
+  html.docs-doc-id-developer\/index main {
+    container-type: inline-size;
+    --hs-home-container-width: var(--ifm-container-width);
+  }
+
   html.docs-doc-id-developer\/index .hs-full-bleed {
-    /* The doc container is centred to the right of the sidebar and capped
-       on wide screens. Use the measured width excluding the scrollbar and
-       shift its centre left by half the sidebar to reach both page edges. */
-    width: var(--hs-viewport-width, 100%);
-    margin-left: calc(50% - var(--hs-viewport-width, 100%) / 2 - var(--doc-sidebar-width) / 2);
+    --hs-home-centering-gap: max(
+      0px,
+      calc((100cqw - var(--hs-home-container-width)) / 2)
+    );
+    width: calc(100cqw + var(--doc-sidebar-width));
+    /* Back to the window's left edge: sidebar, column centring gap and padding. */
+    margin-left: calc(
+      -1 *
+        (
+          var(--doc-sidebar-width) +
+            var(--hs-home-centering-gap) +
+            var(--ifm-spacing-horizontal)
+        )
+    );
     /* Keeps the content on the same 1240px centre line as the hero's grid
        while the surface itself reaches the window edges. */
-    padding-inline: max(1.5rem, calc((var(--hs-viewport-width, 100%) - 1240px) / 2));
+    padding-inline: max(
+      1.5rem,
+      calc((100cqw + var(--doc-sidebar-width) - 1240px) / 2)
+    );
   }
 
   /* Keeps the theme's own pull under the navbar; only the hero is added. */
   html.docs-doc-id-developer\/index .theme-doc-sidebar-container {
     margin-top: calc(var(--hs-hero-height, 0px) - var(--ifm-navbar-height));
+  }
+}
+
+/* Infima switches the centred document container to its XL width here. */
+@media (min-width: 1440px) {
+  html.docs-doc-id-developer\/index main {
+    --hs-home-container-width: var(--ifm-container-width-xl);
+  }
+}
+
+/* Blog visuals can grow into the right gutter so diagram text stays legible. */
+.post-wide {
+  margin: 1.5rem 0 2rem;
+}
+.post-wide img,
+.post-wide giotto-player {
+  display: block;
+  width: 100%;
+}
+@media (min-width: 997px) {
+  .post-wide {
+    width: calc(100% + clamp(0px, 100vw - 1000px, 260px));
+    max-width: none;
+  }
+
+  /* Our seven-column post has a two-column right rail. Reserve room for its
+     back-to-top button instead of extending across the whole rail. */
+  html.blog-post-page main.col--7 .post-wide {
+    max-width: max(
+      100%,
+      calc(100% + (100% + 2 * var(--ifm-spacing-horizontal)) * 2 / 7 - 8rem)
+    );
   }
 }

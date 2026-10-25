@@ -1,0 +1,482 @@
+{
+  "title": "Memlake：Recall",
+  "speed": 2600,
+  "elements": [
+    {
+      "id": "root",
+      "type": "group",
+      "x": 0,
+      "y": 0,
+      "children": [
+        "col-left",
+        "col-bucket",
+        "col-bg"
+      ],
+      "layout": {
+        "direction": "row",
+        "gap": 56,
+        "align": "start"
+      }
+    },
+    {
+      "id": "hs",
+      "type": "rectangle",
+      "tone": "blue",
+      "content": [
+        {
+          "type": "title",
+          "text": "Hindsight API"
+        },
+        {
+          "type": "chips",
+          "items": [
+            "retain",
+            "recall",
+            "reflect"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "col-servers",
+      "type": "group",
+      "label": {
+        "title": "Memlake 服务器"
+      },
+      "children": [
+        "sA",
+        "sB"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 24,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "sA",
+      "type": "rectangle",
+      "tone": "gray",
+      "content": [
+        {
+          "type": "title",
+          "text": "服务器 A"
+        },
+        {
+          "type": "chips",
+          "items": [
+            "内存缓存",
+            "NVMe 缓存"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sB",
+      "type": "rectangle",
+      "tone": "gray",
+      "content": [
+        {
+          "type": "title",
+          "text": "服务器 B"
+        },
+        {
+          "type": "chips",
+          "items": [
+            "内存缓存",
+            "NVMe 缓存"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "col-bucket",
+      "type": "group",
+      "label": {
+        "title": "你的存储桶 · 租户 / 记忆库"
+      },
+      "children": [
+        "log",
+        "segs",
+        "manifest"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 28,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "log",
+      "type": "rectangle",
+      "tone": "orange",
+      "content": [
+        {
+          "type": "title",
+          "text": "日志"
+        },
+        {
+          "type": "text",
+          "text": "每次写入生成一个对象"
+        }
+      ]
+    },
+    {
+      "id": "segs",
+      "type": "rectangle",
+      "tone": "green",
+      "content": [
+        {
+          "type": "title",
+          "text": "段"
+        },
+        {
+          "type": "text",
+          "text": "不可变索引"
+        }
+      ]
+    },
+    {
+      "id": "manifest",
+      "type": "rectangle",
+      "tone": "purple",
+      "content": [
+        {
+          "type": "title",
+          "text": "清单 + head 指针"
+        },
+        {
+          "type": "text",
+          "text": "仅这两个对象会变化"
+        }
+      ]
+    },
+    {
+      "id": "col-bg",
+      "type": "group",
+      "label": {
+        "title": "后台处理"
+      },
+      "children": [
+        "arch",
+        "backup",
+        "idx"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 36,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "idx",
+      "type": "rectangle",
+      "tone": "gray",
+      "content": [
+        {
+          "type": "title",
+          "text": "索引器"
+        },
+        {
+          "type": "text",
+          "text": "日志 → 段"
+        }
+      ]
+    },
+    {
+      "id": "arch",
+      "type": "rectangle",
+      "tone": "gray",
+      "content": [
+        {
+          "type": "title",
+          "text": "归档器"
+        },
+        {
+          "type": "text",
+          "text": "持续备份"
+        }
+      ]
+    },
+    {
+      "id": "backup",
+      "type": "cylinder",
+      "tone": "gray",
+      "label": {
+        "title": "备份存储桶",
+        "lines": [
+          "另一个账户"
+        ]
+      }
+    },
+    {
+      "id": "hs-sA",
+      "type": "arrow",
+      "start": {
+        "id": "hs"
+      },
+      "end": {
+        "id": "sA"
+      },
+      "route": "curved",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "hs-sB",
+      "type": "arrow",
+      "start": {
+        "id": "hs"
+      },
+      "end": {
+        "id": "sB"
+      },
+      "route": "curved",
+      "quiet": true
+    },
+    {
+      "id": "sA-log",
+      "type": "arrow",
+      "start": {
+        "id": "sA"
+      },
+      "end": {
+        "id": "log"
+      },
+      "route": "curved",
+      "quiet": true
+    },
+    {
+      "id": "sA-segs",
+      "type": "arrow",
+      "start": {
+        "id": "sA"
+      },
+      "end": {
+        "id": "segs"
+      },
+      "route": "curved"
+    },
+    {
+      "id": "sA-manifest",
+      "type": "arrow",
+      "start": {
+        "id": "sA"
+      },
+      "end": {
+        "id": "manifest"
+      },
+      "route": "curved",
+      "quiet": true
+    },
+    {
+      "id": "sB-segs",
+      "type": "arrow",
+      "start": {
+        "id": "sB"
+      },
+      "end": {
+        "id": "segs"
+      },
+      "route": "curved"
+    },
+    {
+      "id": "sB-manifest",
+      "type": "arrow",
+      "start": {
+        "id": "sB"
+      },
+      "end": {
+        "id": "manifest"
+      },
+      "route": "curved",
+      "quiet": true
+    },
+    {
+      "id": "idx-log",
+      "type": "arrow",
+      "start": {
+        "id": "log"
+      },
+      "end": {
+        "id": "idx"
+      },
+      "route": "curved",
+      "quiet": true
+    },
+    {
+      "id": "idx-segs",
+      "type": "arrow",
+      "start": {
+        "id": "idx"
+      },
+      "end": {
+        "id": "segs"
+      },
+      "route": "curved",
+      "quiet": true
+    },
+    {
+      "id": "idx-manifest",
+      "type": "arrow",
+      "start": {
+        "id": "idx"
+      },
+      "end": {
+        "id": "manifest"
+      },
+      "route": "curved",
+      "quiet": true
+    },
+    {
+      "id": "arch-log",
+      "type": "arrow",
+      "start": {
+        "id": "log"
+      },
+      "end": {
+        "id": "arch"
+      },
+      "route": "curved",
+      "quiet": true
+    },
+    {
+      "id": "arch-backup",
+      "type": "arrow",
+      "start": {
+        "id": "arch"
+      },
+      "end": {
+        "id": "backup"
+      },
+      "route": "curved",
+      "quiet": true
+    },
+    {
+      "id": "col-left",
+      "type": "group",
+      "children": [
+        "hs",
+        "col-servers"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 44,
+        "align": "stretch"
+      }
+    }
+  ],
+  "scenes": [
+    {
+      "label": "Recall",
+      "beats": [
+        {
+          "edges": {
+            "edge": "hs-sA",
+            "data": "recall(query)"
+          },
+          "show": {
+            "hs": [
+              {
+                "tag": "recall",
+                "tone": "blue",
+                "text": "+ 排序策略：融合 · 重排序 · 预算"
+              }
+            ]
+          },
+          "say": "Hindsight 发送 Recall 请求，并附上排序策略。"
+        },
+        {
+          "edges": {
+            "edge": "sA-manifest",
+            "data": "最新 head？"
+          },
+          "say": "服务器检查最新写入——热查询始终只需发出这一次请求。"
+        },
+        {
+          "edges": [
+            {
+              "edge": "sA-segs",
+              "data": "范围读取"
+            },
+            {
+              "edge": "sA-log",
+              "data": "未索引的日志尾部"
+            }
+          ],
+          "show": {
+            "sA": [
+              {
+                "tag": "cache",
+                "tone": "green",
+                "text": "段区块：缓存命中"
+              },
+              {
+                "tag": "tail",
+                "tone": "orange",
+                "text": "已扫描 wal/43"
+              }
+            ]
+          },
+          "say": "它只读取所需区块（大部分来自缓存），并扫描日志中尚未索引的部分。",
+          "ms": 3200
+        },
+        {
+          "show": {
+            "sA": [
+              {
+                "tag": "vector",
+                "tone": "blue",
+                "text": "语义"
+              },
+              {
+                "tag": "关键词",
+                "tone": "blue",
+                "text": "BM25"
+              },
+              {
+                "tag": "graph",
+                "tone": "blue",
+                "text": "实体 · 连接"
+              },
+              {
+                "tag": "time",
+                "tone": "blue",
+                "text": "时间窗口"
+              }
+            ]
+          },
+          "light": [
+            "sA"
+          ],
+          "say": "四种搜索同时处理同一批记忆……",
+          "ms": 2800
+        },
+        {
+          "show": {
+            "sA": [
+              {
+                "tag": "ranked",
+                "tone": "green",
+                "text": "已融合 · 已重排序 · 符合预算"
+              }
+            ]
+          },
+          "say": "……随后在数据所在处应用 Hindsight 的排序策略。"
+        },
+        {
+          "edges": {
+            "edge": "hs-sA",
+            "back": true,
+            "data": "排名靠前的记忆"
+          },
+          "say": "只有通过筛选的记忆会离开服务器。"
+        }
+      ]
+    }
+  ],
+  "view": {
+    "width": 1280,
+    "height": 760
+  }
+}

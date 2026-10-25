@@ -223,6 +223,8 @@ export HINDSIGHT_API_LLM_MODEL=your-local-model
 export HINDSIGHT_API_LLM_PROVIDER=minimax
 export HINDSIGHT_API_LLM_API_KEY=your-minimax-api-key
 export HINDSIGHT_API_LLM_MODEL=MiniMax-M3  # or MiniMax-M2.7 for the previous generation
+# MiniMax-M3.1-* 始终启用思考（Hindsight 会发送 thinking=adaptive），且默认使用 max effort；
+# 可通过以下设置降低推理强度：export HINDSIGHT_API_LLM_REASONING_EFFORT=low
 
 # DeepSeek (https://api.deepseek.com)
 export HINDSIGHT_API_LLM_PROVIDER=deepseek
@@ -312,6 +314,70 @@ export HINDSIGHT_API_LLM_MODEL=gpt-5.6-terra
 
 ---
 
+### 设置 ChatGPT（使用 ChatGPT 登录） {#chatgpt-setup-sign-in-with-chatgpt}
+
+`chatgpt` 提供方通过 OpenAI 为开源应用提供的[使用 ChatGPT 登录流程](https://developers.openai.com/siwc/token-sharing-open-source)，使用你的 ChatGPT 套餐执行 Hindsight 的 LLM 调用。
+首次登录时，Hindsight 会为自身注册 OAuth 客户端；每次调用都会携带 OAuth 访问令牌，发送到公开的
+`https://api.openai.com/v1/responses` 端点。此方式不使用 API 密钥。
+
+它与 `openai-codex` 的区别是：后者复用 Codex CLI 的登录状态，并调用 ChatGPT 的私有
+`chatgpt.com/backend-api/codex` 端点。`chatgpt` 使用受支持的访问路径并自行管理凭据，不会与 Codex CLI 共享或轮换令牌。
+
+**前提条件：**
+- 允许在第三方应用中使用套餐用量的 ChatGPT 套餐
+- 登录操作所在的计算机上有浏览器
+
+**在有浏览器的计算机上设置（例如笔记本电脑）：**
+
+1. **登录：**
+   ```bash
+   hindsight-admin chatgpt login
+   ```
+   此命令会打开浏览器，并等待 `http://127.0.0.1:1455/auth/callback` 上的回调
+   （`--port` 可更改端口；`--no-browser` 会打印 URL，而不打开浏览器）。请批准请求，包括使用 ChatGPT 套餐用量。
+   命令会验证 ID 令牌和已授权的 scope，然后将凭据写入 `~/.hindsight/chatgpt/credentials.json`（权限模式 `0600`），
+   并与此主机的 `host_id` 放在一起。
+   如果你拒绝了套餐用量授权，请运行 `login --enable-plan-usage` 再次确认。
+
+2. **配置 Hindsight：**
+   ```bash
+   export HINDSIGHT_API_LLM_PROVIDER=chatgpt
+   # export HINDSIGHT_API_LLM_MODEL=gpt-6-luna       # 默认值
+   # export HINDSIGHT_API_LLM_REASONING_EFFORT=medium  # 作为 reasoning.effort 发送
+   ```
+
+3. **检查已保存的会话**（会显示账户、客户端 ID、scope 和到期时间，不会显示令牌值）：
+   ```bash
+   hindsight-admin chatgpt status
+   ```
+
+**自托管服务器或虚拟机（没有浏览器）：** `127.0.0.1` 回调会到达运行浏览器的计算机，因此请在笔记本电脑上登录，再将凭据文件传到服务器。
+
+1. 在笔记本电脑上按上述步骤运行 `login`。
+2. 使用 SSH 复制文件，并在服务器上以运行 Hindsight 的用户身份执行 `login --from-file` 安装凭据（如果服务器设置了 `HINDSIGHT_API_LLM_CHATGPT_HOME`，请在 `login` 前添加 `--home <dir>`）。
+   `--from-file` 会保留服务器自己的 `host_id`（首次使用时会创建），而不是使用笔记本电脑的 ID：
+   ```bash
+   scp ~/.hindsight/chatgpt/credentials.json server:/tmp/chatgpt.json
+   ssh server 'hindsight-admin chatgpt login --from-file /tmp/chatgpt.json && rm /tmp/chatgpt.json'
+   ```
+3. 在笔记本电脑上停止使用该凭据副本，但不要撤销它：
+   ```bash
+   hindsight-admin chatgpt logout --local-only
+   ```
+   刷新令牌会轮换，因此复制完成后，只有服务器可以使用并刷新此会话。普通的 `logout` 会撤销会话，也会终止服务器上的会话。
+   `--local-only` 会清除笔记本电脑上的令牌，但保留客户端注册，以便之后再次 `login`。
+   如果服务器上已注册的是另一个账户，`--from-file` 会拒绝替换，除非传入 `--force`。
+
+之后由服务器负责刷新令牌。若你之后也想在笔记本电脑上使用 Hindsight，请在该电脑上重新登录。
+
+**重要说明：**
+- 访问令牌有效期为一小时，并会自动刷新（到期前五分钟刷新；收到 HTTP 401 时也会刷新一次）。刷新令牌会轮换；刷新时会取得文件锁并重新读取文件，因此多个 Hindsight 进程可以共用一个凭据目录。
+- 刷新令牌失效后，调用会失败，并提示需要运行的 `login` 命令。
+- 在 ChatGPT Plus 上，五小时用量限额由所有使用你套餐的应用共享，包括 Codex。达到限额后，Hindsight 会延后 Retain 和整合工作，并在 30 分钟后重试，而不是直接失败。可在 [ChatGPT 设置 → 用量](https://chatgpt.com/settings/usage)查看用量及各应用限额。
+- 此访问路径仍处于预览阶段：Hindsight 会发送 `store: false` 和 `stream: true`，省略该端点不接受的字段（包括 `temperature`、`max_output_tokens`、`user` 等），并将系统提示作为 developer 消息发送。
+- `logout` 会撤销会话并清除本地令牌，但保留客户端注册和主机 ID，以便下次 `login`。`logout --local-only` 只清除令牌，不会撤销会话。
+- `HINDSIGHT_API_LLM_CHATGPT_HOME` 可更改凭据目录。每个 ChatGPT 账户应使用独立目录。该目录必须可写，因为每次刷新都会将轮换后的令牌写回；在容器中，请在此处挂载可写卷。如果写入失败，进程会在内存中保留新令牌，但其他进程和重启后的进程无法读取它们。
+
 ### 设置 OpenAI Codex（ChatGPT Plus/Pro） {#openai-codex-setup-chatgpt-pluspro}
 
 使用 ChatGPT Plus 或 Pro 订阅运行 Hindsight，无需额外支付 OpenAI Platform API 费用。
@@ -341,7 +407,7 @@ export HINDSIGHT_API_LLM_MODEL=gpt-5.6-terra
 4. **配置 Hindsight：**
    ```bash
    export HINDSIGHT_API_LLM_PROVIDER=openai-codex
-   # export HINDSIGHT_API_LLM_MODEL=gpt-5.6-luna  # 默认值为 gpt-5.4-mini
+   # export HINDSIGHT_API_LLM_MODEL=gpt-5.6-luna  # 默认值
    # 无需 API 密钥——会自动读取 ~/.codex/auth.json
    ```
 
@@ -540,7 +606,7 @@ Muse Spark **总是在回复前进行推理**。以下所有设置都由这一�
    # 无需 API 密钥——使用 claude auth login 的凭据
    ```
 
-   **服务器持有的令牌（建议用于无头/Docker/Linux 主机）**：不依赖主机上的 `claude auth login` 会话，而是生成一个长期有效的令牌并提供给 Hindsight：
+   **由服务器持有的令牌（可选，适用于没有浏览器登录的个人计算机）**：你可以生成一个长期有效的令牌并交给 Hindsight，而不依赖主机上的 `claude auth login` 会话。这仍属于订阅访问，因此上文的服务条款说明完全适用：此方式不适用于服务器、Docker 部署或共享主机。对于这些环境，请使用带 API 密钥的 `anthropic` 提供方。
    ```bash
    claude setup-token            # 输出 sk-ant-oat01-...
    export HINDSIGHT_API_LLM_API_KEY=sk-ant-oat01-...
@@ -785,6 +851,7 @@ Google Cloud 的 Vertex AI 通过原生 Google GenAI SDK 提供 Gemini 模型。
 | `google` | Google 嵌入（Gemini API 或 Vertex AI） | 生产环境、多语言、高质量 |
 | `tei` | HuggingFace Text Embeddings Inference | 生产环境、自托管 |
 | `zeroentropy` | ZeroEntropy zembed-1 | 生产环境、高质量检索 |
+| `nvidia` | NVIDIA NIM 检索嵌入（根据 `input_type` 区分） | 使用 NVIDIA NIM / build.nvidia.com 的用户 |
 | `litellm` | LiteLLM 代理（统一网关） | 多提供方配置 |
 | `litellm-sdk` | LiteLLM SDK（直接调用 API，无需代理） | 多提供方、配置更简单 |
 
@@ -875,6 +942,11 @@ export HINDSIGHT_API_EMBEDDINGS_ZEROENTROPY_API_KEY=your-api-key
 export HINDSIGHT_API_EMBEDDINGS_ZEROENTROPY_MODEL=zembed-1
 export HINDSIGHT_API_EMBEDDINGS_ZEROENTROPY_DIMENSIONS=1280
 
+# NVIDIA NIM
+export HINDSIGHT_API_EMBEDDINGS_PROVIDER=nvidia
+export HINDSIGHT_API_EMBEDDINGS_NVIDIA_API_KEY=nvapi-your-key
+export HINDSIGHT_API_EMBEDDINGS_NVIDIA_MODEL=nvidia/llama-nemotron-embed-vl-1b-v2  # 默认值，可省略
+
 # LiteLLM proxy
 export HINDSIGHT_API_EMBEDDINGS_PROVIDER=litellm
 export HINDSIGHT_API_LITELLM_API_BASE=http://localhost:4000
@@ -929,11 +1001,13 @@ export HINDSIGHT_API_EMBEDDINGS_LITELLM_SDK_MODEL_ID=arn:aws:bedrock:eu-west-1:1
 | `openrouter` | OpenRouter rerank API（兼容 Cohere 的网关） | 多提供方配置 |
 | `zeroentropy` | ZeroEntropy rerank API（zerank-2） | 生产环境、最先进的准确率 |
 | `siliconflow` | SiliconFlow rerank API（兼容 Cohere 的 `/rerank` 端点） | 中国用户或任何使用 SiliconFlow 平台的用户 |
+| `nvidia` | NVIDIA NIM 重排 API（原生 `/retrieval/{model}/reranking` 端点） | 使用 NVIDIA NIM / build.nvidia.com 的用户 |
 | `typesafe` | TypeSafe 类型化决策 API（Jev）——通过一道问题对整个候选池排序 | 生产环境、最高排序质量；也可仅返回相关候选项 |
 | `alibaba` | 阿里云 DashScope rerank API（qwen3-rerank） | 阿里云/DashScope 用户 |
 | `google` | Google Discovery Engine 排序 API（REST + Google 身份验证） | 生产环境、GCP 集成 |
 | `tei` | HuggingFace Text Embeddings Inference | 生产环境、自托管 |
 | `flashrank` | FlashRank（轻量、快速） | 资源受限环境 |
+| `onnx` | 任意导出为 ONNX 的交叉编码器，通过 ONNX Runtime 在进程内运行 | 无需 PyTorch 或 TEI 服务器的自定义模型 |
 | `litellm` | LiteLLM 代理（统一网关） | 多提供方配置 |
 | `litellm-sdk` | LiteLLM SDK（直接调用 API，无需代理） | 多提供方、配置更简单 |
 | `jina-mlx` | 通过 Apple Silicon MLX 本地运行 Jina rerank v3（无需 API 密钥） | Apple Silicon（M1+）本地推理 |
@@ -1034,6 +1108,11 @@ export HINDSIGHT_API_RERANKER_ZEROENTROPY_MODEL=zerank-2  # default, can omit
 export HINDSIGHT_API_RERANKER_PROVIDER=siliconflow
 export HINDSIGHT_API_RERANKER_SILICONFLOW_API_KEY=your-api-key
 export HINDSIGHT_API_RERANKER_SILICONFLOW_MODEL=BAAI/bge-reranker-v2-m3  # default, can omit
+
+# NVIDIA NIM（原生重排 API，与 Cohere 不兼容）
+export HINDSIGHT_API_RERANKER_PROVIDER=nvidia
+export HINDSIGHT_API_RERANKER_NVIDIA_API_KEY=nvapi-your-key
+export HINDSIGHT_API_RERANKER_NVIDIA_MODEL=nvidia/llama-nemotron-rerank-vl-1b-v2  # 默认值，可省略
 
 # TypeSafe (typed-decision API, ranks the whole pool in one question)
 export HINDSIGHT_API_RERANKER_PROVIDER=typesafe

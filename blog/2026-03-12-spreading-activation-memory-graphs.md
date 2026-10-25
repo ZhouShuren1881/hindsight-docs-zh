@@ -4,6 +4,7 @@ authors: [chrislatimer]
 date: 2026-03-12T12:00
 tags: [retrieval, graph, temporal, spreading-activation, memory, deep-dive]
 image: /img/blog/spreading-activation-memory-graphs.webp
+description: "Hindsight 如何从指定时间窗口出发，沿关联遍历周边事件来回答某段时间内的问题，而非仅按日期筛选。"
 ---
 
 ![Hindsight——故事，而非一行行记录](/img/blog/spreading-activation-memory-graphs.webp)

@@ -5,6 +5,7 @@ date: 2026-03-25T12:00
 tags: [strands, aws, agents, python, memory, tutorial]
 image: /img/blog/strands-persistent-memory.webp
 hide_table_of_contents: true
+description: "AWS Strands 智能体每次会话都从空白状态开始。hindsight-strands 提供记忆工具，并在智能体启动前加载相关记忆。"
 ---
 
 ![为什么 AWS Strands 智能体总是从头开始（以及如何解决）](/img/blog/strands-persistent-memory.webp)

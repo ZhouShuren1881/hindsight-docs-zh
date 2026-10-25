@@ -4,6 +4,7 @@ authors: [benfrank241]
 date: 2026-03-09T12:00
 tags: [hindsight-cloud, release, memory]
 hide_table_of_contents: true
+description: "Hindsight Cloud 现已支持 PDF、Word、PowerPoint、Excel、图片和文本文件，可将其转化为智能体能够召回的记忆。"
 ---
 
 [Hindsight Cloud](https://ui.hindsight.vectorize.io) 现在支持将文件直接上传到任意记忆库。支持 PDF、Word 文档、PowerPoint 演示文稿、Excel 电子表格、图像和纯文本文件。

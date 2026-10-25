@@ -5,6 +5,7 @@ date: 2026-03-17T12:00
 tags: [streamlit, tutorial, python, memory, chatbot, web-ui]
 slug: python-chatbot-memory-streamlit
 image: /img/blog/streamlit-chatbot-memory.webp
+description: "用约 80 行 Python 代码，借助 Streamlit 和 Hindsight 构建网页聊天机器人。它在重启后仍保留记忆，并在侧栏展示已知内容。"
 ---
 
 ![我用 80 行 Python 构建了一个永远不会忘记的聊天机器人](/img/blog/streamlit-chatbot-memory.webp)

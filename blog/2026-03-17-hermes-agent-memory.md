@@ -4,6 +4,7 @@ authors: [benfrank241]
 date: 2026-03-17T12:00
 tags: [hermes, agents, python, memory, tutorial, plugin]
 image: /img/blog/hermes-agent-memory.webp
+description: "只需一次 pip 安装，即可用 Hindsight 替换 Hermes Agent 基于文件的记忆。该插件现已弃用，请改用 Hermes 插件目录。"
 ---
 
 ![如何为 Hermes Agent 添加持久记忆](/img/blog/hermes-agent-memory.webp)

@@ -6,6 +6,7 @@ date: 2026-03-04T12:00
 tags: [mcp, memory, agents, docker, tutorial]
 image: /img/blog/mcp-agent-memory.webp
 hide_table_of_contents: true
+description: "用一条 Docker 命令运行 Hindsight，为任何 MCP 客户端提供可存入、检索并用于推理的记忆。"
 ---
 
 AI 智能体会忘记不同会话之间的一切。Hindsight 通过 MCP 为它们提供持久、结构化的记忆。只需一条 Docker 命令，就能在本地运行完整堆栈；再连接任意兼容 MCP 的客户端即可。它提供三个核心操作：`retain`（存入）、`recall`（召回）和 `reflect`（反思），以及会随着记忆增长而自动更新的心智模型。

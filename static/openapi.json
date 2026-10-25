@@ -10,7 +10,7 @@
       "name": "Apache 2.0",
       "url": "https://www.apache.org/licenses/LICENSE-2.0.html"
     },
-    "version": "0.10.3"
+    "version": "1.1.0"
   },
   "paths": {
     "/health": {
@@ -175,8 +175,10 @@
                   "type": "null"
                 }
               ],
+              "description": "对记忆文本和上下文进行不区分大小写的子串筛选。此字段未建立索引：系统会扫描整个记忆库，因此库越大，查询越慢。此筛选适用于浏览和检查，不适用于高吞吐量或对延迟敏感的工作负载；这类场景请使用 recall。",
               "title": "Q"
-            }
+            },
+            "description": "对记忆文本和上下文进行不区分大小写的子串筛选。此字段未建立索引：系统会扫描整个记忆库，因此库越大，查询越慢。此筛选适用于浏览和检查，不适用于高吞吐量或对延迟敏感的工作负载；这类场景请使用 recall。"
           },
           {
             "name": "tags",
@@ -202,6 +204,13 @@
             "in": "query",
             "required": false,
             "schema": {
+              "enum": [
+                "any",
+                "all",
+                "any_strict",
+                "all_strict",
+                "exact"
+              ],
               "type": "string",
               "default": "all_strict",
               "title": "标签匹配方式"
@@ -289,7 +298,7 @@
           "Memory"
         ],
         "summary": "列出记忆单元",
-        "description": "分页列出记忆单元，可选择进行全文检索。支持按类型、来源文档、关联实体 ID 和时间窗口筛选。除非时间窗口选择了其他时间轴，否则结果按最近时间优先排序（mentioned_at DESC，然后 created_at DESC）。",
+        "description": "分页列出记忆单元，并可选择使用子串筛选（`q`）。支持按类型、来源文档、关联实体 ID 和时间窗口筛选。除非时间窗口指定了另一种时间轴，否则结果按最近时间优先排序（mentioned_at DESC，然后 created_at DESC）。",
         "operationId": "list_memories",
         "parameters": [
           {
@@ -330,8 +339,10 @@
                   "type": "null"
                 }
               ],
+              "description": "对记忆文本和上下文进行不区分大小写的子串筛选。此字段未建立索引：系统会扫描整个记忆库，因此库越大，查询越慢。此筛选适用于浏览和检查，不适用于高吞吐量或对延迟敏感的工作负载；这类场景请使用 recall。",
               "title": "Q"
-            }
+            },
+            "description": "对记忆文本和上下文进行不区分大小写的子串筛选。此字段未建立索引：系统会扫描整个记忆库，因此库越大，查询越慢。此筛选适用于浏览和检查，不适用于高吞吐量或对延迟敏感的工作负载；这类场景请使用 recall。"
           },
           {
             "name": "consolidation_state",
@@ -1936,6 +1947,18 @@
             }
           },
           {
+            "name": "exclude_knowledge_pages",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "排除用于存放知识页内容的心智模型（仅列出独立心智模型）。",
+              "default": false,
+              "title": "排除知识页"
+            },
+            "description": "排除用于存放知识页内容的心智模型（仅列出独立心智模型）。"
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -2343,7 +2366,7 @@
           "Mental Models"
         ],
         "summary": "刷新心智模型",
-        "description": "提交异步任务，通过 reflect 重新运行来源查询并更新内容。",
+        "description": "提交异步任务，通过 reflect 重新运行来源查询并更新内容。不提供请求体时，刷新会使用模型自身的 `trigger.mode`。发送 `{\"mode\": \"full\"}` 可执行一次完整刷新：本次会从头重新生成内容（以消除多次增量编辑累积的偏差），但已存储的触发器仍保留原模式。与先清空模型再刷新不同，完整刷新失败时会保留之前的内容。",
         "operationId": "refresh_mental_model",
         "parameters": [
           {
@@ -2381,6 +2404,23 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/RefreshMentalModelRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "请求"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功响应",
@@ -3658,10 +3698,10 @@
                   "type": "null"
                 }
               ],
-              "description": "按文档 ID 进行不区分大小写的子串筛选（如 'report' 匹配 'report-2024'）",
+              "description": "对文档 ID 或文档文本进行不区分大小写的子串筛选（例如，`report` 可匹配 `report-2024` 或任何包含 `report` 的文档）。此筛选适用于浏览和检查，不适用于高吞吐量或对延迟敏感的工作负载；这类场景请使用 recall。匹配结果有数量上限：超过上限后，`total` 是下限，且 `total_is_estimate` 为 true。由存储层管理的后端可能采用近似匹配；每个条目的 `matched_fields` 会指出匹配字段。",
               "title": "Q"
             },
-            "description": "按文档 ID 进行不区分大小写的子串筛选（如 'report' 匹配 'report-2024'）"
+            "description": "对文档 ID 或文档文本进行不区分大小写的子串筛选（例如，`report` 可匹配 `report-2024` 或任何包含 `report` 的文档）。此筛选适用于浏览和检查，不适用于高吞吐量或对延迟敏感的工作负载；这类场景请使用 recall。匹配结果有数量上限：超过上限后，`total` 是下限，且 `total_is_estimate` 为 true。由存储层管理的后端可能采用近似匹配；每个条目的 `matched_fields` 会指出匹配字段。"
           },
           {
             "name": "tags",
@@ -3689,12 +3729,19 @@
             "in": "query",
             "required": false,
             "schema": {
+              "enum": [
+                "any",
+                "all",
+                "any_strict",
+                "all_strict",
+                "exact"
+              ],
               "type": "string",
-              "description": "标签匹配方式：'any'、'all'、'any_strict'、'all_strict'",
+              "description": "标签匹配方式：'any'、'all'、'any_strict'、'all_strict'、'exact'",
               "default": "any_strict",
               "title": "标签匹配方式"
             },
-            "description": "标签匹配方式：'any'、'all'、'any_strict'、'all_strict'"
+            "description": "标签匹配方式：'any'、'all'、'any_strict'、'all_strict'、'exact'"
           },
           {
             "name": "time_field",
@@ -3915,6 +3962,101 @@
         }
       }
     },
+    "/v1/default/banks/{bank_id}/documents/{document_id}/history": {
+      "get": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "获取文档变更历史",
+        "description": "按时间倒序列出文档的各项变更及其效果：每次 retain、append 和 reprocess（添加和移除的事实），每次事实编辑、标记失效、恢复、删除、重新标记，以及按事实清除观测（移除的观测），还有每次整合运行（创建、更新和移除的观测）。观测会重建而不保留版本，因此此处是唯一能查到变更所移除观测的记录。仅返回 ID 和计数；每个 ID 列表最多包含 100 项。\n\n此历史根据记忆库的异步操作重建，操作中会记录这些事件。历史范围受操作保留期限限制（由 HINDSIGHT_API_OPERATION_RETENTION_DAYS 控制，默认无限期保留）；未关联操作的变更不会列入其中，例如同步 retain（async=false），或自动整合关闭时执行的事实编辑、删除或重新标记。事实编辑、删除或重新标记会记录在其排队触发的整合操作中。清除记忆库中的所有观测不会列入此历史。total、limit 和 offset 统计的是操作数，而非事件数。",
+        "operationId": "get_document_history",
+        "parameters": [
+          {
+            "name": "bank_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "记忆库 ID"
+            }
+          },
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "文档 ID"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "description": "最多读取的操作数",
+              "default": 100,
+              "title": "数量上限"
+            },
+            "description": "最多读取的操作数"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "分页偏移量（按操作计）",
+              "default": 0,
+              "title": "偏移量"
+            },
+            "description": "分页偏移量（按操作计）"
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "授权"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功响应",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentHistoryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "验证错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/default/banks/{bank_id}/documents/{document_id}/reprocess": {
       "post": {
         "tags": [
@@ -4055,7 +4197,7 @@
           "Documents"
         ],
         "summary": "更新文档",
-        "description": "更新文档的可变字段，不重新处理其内容。\n\n**标签**（`tags`）：该数组会替换文档标签，而非合并；请发送文档最终应拥有的完整标签集合，遗漏的标签会被删除。因此，空数组（`[]`）会清空所有标签；只有完全省略该字段才会被拒绝（422）。\n\n新标签会传播到所有关联记忆单元。从这些单元派生的观测会被标记失效，并排队在新标签下重新整合。来自其他文档、与它们共享这些观测的共同来源记忆也会重置。标签按集合比较，因此重新发送文档已有标签（任意顺序）不会改变任何内容，也不会安排重新整合。\n\n必须至少提供一个字段。",
+        "description": "更新文档的可变字段，不重新处理其内容。\n\n**标签**（`tags`）：该数组会替换文档的标签，而非与之合并。请发送文档最终应具有的完整标签集合；未包含的标签会被移除。因此，空数组（`[]`）会清空所有标签；完全省略此字段会被拒绝（422）。\n\n新标签会传播到所有关联的记忆单元。\n\n**观测范围**（`observation_scopes`）：替换整合期间文档记忆的范围划分方式，可使用与 retain 相同的值。若记忆库中的文档此前按单次会话标签存入，可用此字段将其移至 `shared`，无需重新提取。之后重新处理此文档时也会使用该设置。\n\n仅当变更导致记忆解析出的观测范围发生变化时，才会重新整合该记忆：其观测会被删除，记忆会重新排队；其他文档中与这些观测共享来源的记忆也会一并处理。若变更解析出的范围相同（例如在 `shared` 下更改标签、单个标签对应的 `combined` 与 `[[that tag]]` 等价，或重新发送当前值），则保留所有观测，不会排队。\n\n必须至少提供一个字段。",
         "operationId": "update_document",
         "parameters": [
           {
@@ -4663,7 +4805,7 @@
           "Operations"
         ],
         "summary": "重试失败的异步操作",
-        "description": "将失败的异步操作重新入队，让工作进程再次领取",
+        "description": "将失败或已取消的异步操作重新入队，让工作进程再次处理。对于已延后执行的操作（状态为 pending，且 next_retry_at 在未来），此操作会使其立即运行。",
         "operationId": "retry_operation",
         "parameters": [
           {
@@ -7858,6 +8000,77 @@
         }
       }
     },
+    "/v1/default/banks/{bank_id}/audit-logs/{log_id}": {
+      "get": {
+        "tags": [
+          "Audit"
+        ],
+        "summary": "获取审计日志条目",
+        "description": "获取一条审计日志及其完整请求和响应正文。",
+        "operationId": "get_audit_log",
+        "parameters": [
+          {
+            "name": "bank_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "记忆库 ID"
+            }
+          },
+          {
+            "name": "log_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "日志 ID"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "授权"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功响应",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditLogEntry"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "未找到记忆库或审计日志条目"
+          },
+          "422": {
+            "description": "验证错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/default/banks/{bank_id}/llm-requests": {
       "get": {
         "tags": [
@@ -7929,6 +8142,30 @@
               "title": "范围"
             },
             "description": "按调用范围筛选"
+          },
+          {
+            "name": "call_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "llm",
+                    "embedding",
+                    "rerank",
+                    "decision"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "按模型调用类型筛选，根据 scope 区分：embedding（embedding_*）、rerank、decision（decision_*）或 llm（其他所有 scope）。",
+              "title": "调用类型"
+            },
+            "description": "按模型调用类型筛选，根据 scope 区分：embedding（embedding_*）、rerank、decision（decision_*）或 llm（其他所有 scope）。"
           },
           {
             "name": "provider",
@@ -8158,6 +8395,30 @@
             "description": "按操作筛选"
           },
           {
+            "name": "call_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "llm",
+                    "embedding",
+                    "rerank",
+                    "decision"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "按模型调用类型筛选：llm、embedding、rerank 或 decision。",
+              "title": "调用类型"
+            },
+            "description": "按模型调用类型筛选：llm、embedding、rerank 或 decision。"
+          },
+          {
             "name": "period",
             "in": "query",
             "required": false,
@@ -8323,6 +8584,11 @@
             "title": "持续时间（毫秒）",
             "description": "服务器计算的持续时间，单位为毫秒（started_at 到 ended_at）。尚未完成时为 Null。"
           },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "元数据"
+          },
           "request": {
             "anyOf": [
               {
@@ -8346,11 +8612,6 @@
               }
             ],
             "title": "响应"
-          },
-          "metadata": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "元数据"
           }
         },
         "type": "object",
@@ -8361,12 +8622,12 @@
           "bank_id",
           "started_at",
           "ended_at",
+          "metadata",
           "request",
-          "response",
-          "metadata"
+          "response"
         ],
         "title": "AuditLogEntry",
-        "description": "单条审计日志记录。"
+        "description": "单条包含完整请求/响应正文的审计日志记录。"
       },
       "AuditLogListResponse": {
         "properties": {
@@ -8388,10 +8649,11 @@
           },
           "items": {
             "items": {
-              "$ref": "#/components/schemas/AuditLogEntry"
+              "$ref": "#/components/schemas/AuditLogSummary"
             },
             "type": "array",
-            "title": "条目"
+            "title": "条目",
+            "description": "不包含请求/响应正文的条目；如需查看正文，请按 ID 获取单条记录。"
           }
         },
         "type": "object",
@@ -8468,6 +8730,84 @@
         ],
         "title": "AuditLogStatsResponse",
         "description": "审计日志统计端点的响应模型。"
+      },
+      "AuditLogSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "ID"
+          },
+          "action": {
+            "type": "string",
+            "title": "操作"
+          },
+          "transport": {
+            "type": "string",
+            "title": "传输方式"
+          },
+          "bank_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "记忆库 ID"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "开始时间"
+          },
+          "ended_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "结束时间"
+          },
+          "duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "耗时（毫秒）",
+            "description": "服务器根据 started_at → ended_at 计算的时长，单位为毫秒。尚未完成时为 null。"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "元数据"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "action",
+          "transport",
+          "bank_id",
+          "started_at",
+          "ended_at",
+          "metadata"
+        ],
+        "title": "AuditLogSummary",
+        "description": "不含请求/响应正文的审计日志条目，即列表接口返回的内容。"
       },
       "BackgroundResponse": {
         "properties": {
@@ -9194,6 +9534,42 @@
             "title": "启用重排序",
             "description": "控制 recall 中的交叉编码器重排序"
           },
+          "reflect_use_decision_model": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reflect 使用决策模型",
+            "description": "服务器配置了决策模型时，reflect 会让该模型筛选证据并决定何时停止。"
+          },
+          "mental_model_refresh_use_decision_model": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "心智模型刷新使用决策模型",
+            "description": "同样适用于知识页刷新。"
+          },
+          "mental_model_delta_use_decision_model": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "心智模型增量更新使用决策模型",
+            "description": "服务器配置了决策模型时，知识页增量刷新会让该模型判断哪些新记忆可能改变页面，而不是运行 reflect。"
+          },
           "disposition_skepticism": {
             "anyOf": [
               {
@@ -9390,6 +9766,33 @@
             ],
             "title": "观测范围限额",
             "description": "已弃用，请使用同时携带任务说明的 consolidation_strategies。此设置仍生效，但仅在 consolidation_strategies 之后考虑。按范围覆盖 max_observations_per_scope：[{\"scope\": [\"run_*\", \"shared\"], \"limit\": 1}]。每个 scope 是 fnmatch 标签通配模式列表；整合范围按精确覆盖匹配（每个标签都被某个通配模式匹配，每个通配模式也都匹配某个标签）。首个匹配规则生效；未匹配的范围回退到 max_observations_per_scope。"
+          },
+          "default_observation_scopes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "per_tag",
+                  "combined",
+                  "all_combinations",
+                  "shared"
+                ]
+              },
+              {
+                "items": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "默认观测范围",
+            "description": "应用于 retain 请求中未提供 observation_scopes 的输入项（未配置时为 'combined'）。标签列表的列表可使用 glob，例如 [['topic:*']] 会按每条记忆自身的 topic 标签划分范围。"
           },
           "consolidation_strategies": {
             "anyOf": [
@@ -9614,6 +10017,18 @@
             "title": "启用自动整合",
             "description": "retain 后自动整合观测"
           },
+          "consolidation_use_decision_model": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "整合使用决策模型",
+            "description": "服务器配置了决策模型时，整合会让该模型在调用 LLM 前处理重复表述、新增方面和无关内容。"
+          },
           "consolidation_max_memories_per_round": {
             "anyOf": [
               {
@@ -9649,6 +10064,18 @@
             ],
             "title": "recall 包含文本分块",
             "description": "在 recall 结果中包含原始文本分块"
+          },
+          "recall_prefer_observations": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recall 优先使用观测",
+            "description": "请求未提供 recall_prefer_observations 时，Recall 使用的默认值。"
           },
           "recall_max_tokens": {
             "anyOf": [
@@ -10551,7 +10978,7 @@
           "alias": {
             "type": "string",
             "title": "别名",
-            "description": "额外记忆库 ID。规则与记忆库 ID 相同（非空、最多 192 字节的 UTF-8、无控制字符），且不得已用于某个记忆库或另一别名。"
+            "description": "额外的记忆库 ID。规则与记忆库 ID 相同（非空、最多 192 字节 UTF-8、不得包含控制字符或以下划线开头），且不得与已有记忆库或其他别名重名。"
           },
           "primary": {
             "type": "boolean",
@@ -11405,6 +11832,89 @@
           "skepticism": 3
         }
       },
+      "DocumentEvent": {
+        "properties": {
+          "document_id": {
+            "type": "string",
+            "title": "文档 ID"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/DocumentEventKind"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "创建时间"
+          },
+          "operation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "操作 ID",
+            "description": "记录此事件的操作（读取时填充）。"
+          },
+          "fact_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "事实 ID",
+            "description": "fact_* 事件所更改的事实。"
+          },
+          "facts_added": {
+            "type": "integer",
+            "title": "新增事实",
+            "default": 0
+          },
+          "facts_removed": {
+            "type": "integer",
+            "title": "移除事实",
+            "default": 0
+          },
+          "observations_created": {
+            "$ref": "#/components/schemas/ObservationIdSample"
+          },
+          "observations_updated": {
+            "$ref": "#/components/schemas/ObservationIdSample"
+          },
+          "observations_removed": {
+            "$ref": "#/components/schemas/ObservationIdSample"
+          }
+        },
+        "type": "object",
+        "required": [
+          "document_id",
+          "kind"
+        ],
+        "title": "DocumentEvent",
+        "description": "文档的一项变更，以及该变更对据此生成的事实和观测造成的影响。"
+      },
+      "DocumentEventKind": {
+        "type": "string",
+        "enum": [
+          "retain",
+          "append",
+          "reprocess",
+          "retag",
+          "fact_edited",
+          "fact_invalidated",
+          "fact_restored",
+          "fact_deleted",
+          "observations_cleared",
+          "consolidation"
+        ],
+        "title": "DocumentEventKind",
+        "description": "变更的类型。这是一个具名枚举，而非 Literal：生成的 Rust 客户端会以内联枚举所在字段命名；而 ``kind`` 已用于命名其中的知识库节点枚举。"
+      },
       "DocumentExportSubmitResponse": {
         "properties": {
           "operation_id": {
@@ -11423,6 +11933,43 @@
         ],
         "title": "DocumentExportSubmitResponse",
         "description": "异步文档导出端点的响应（202）。\n\n导出在后台运行；请轮询 operations 端点获取状态。完成后，操作的 ``result_metadata`` 包含 ``download_url``（从 GET /v1/default/files/download/{key} 获取 ZIP）、``storage_key``、``byte_size`` 和 ``filename``。"
+      },
+      "DocumentHistoryResponse": {
+        "properties": {
+          "document_id": {
+            "type": "string",
+            "title": "文档 ID"
+          },
+          "total": {
+            "type": "integer",
+            "title": "总数"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "数量上限"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "偏移量"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DocumentEvent"
+            },
+            "type": "array",
+            "title": "条目"
+          }
+        },
+        "type": "object",
+        "required": [
+          "document_id",
+          "total",
+          "limit",
+          "offset",
+          "items"
+        ],
+        "title": "DocumentHistoryResponse",
+        "description": "文档的变更历史，按时间倒序排列。``total``、``limit`` 和 ``offset`` 统计操作数：一次操作可能包含同一文档的多个事件（例如，超大 retain 被拆分处理）。"
       },
       "DocumentImportSubmitResponse": {
         "properties": {
@@ -11525,6 +12072,19 @@
             "type": "array",
             "title": "标签",
             "description": "与此文档关联的标签",
+            "default": []
+          },
+          "matched_fields": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "id",
+                "original_text"
+              ]
+            },
+            "type": "array",
+            "title": "匹配字段",
+            "description": "`q` 搜索匹配的字段：'id'、'original_text' 或两者。未提供 `q` 时为空。",
             "default": []
           }
         },
@@ -12908,7 +13468,7 @@
                 "type": "null"
               }
             ],
-            "description": "仅页面：页面的刷新设置，即何时自动重建（`refresh_after_consolidation` 或 `refresh_cron`）、使用何种模式及基于哪些事实。这是实际生效的策略：页面从未存储的设置按默认值报告，因此应比较关注的字段，而非将整个对象与发送的补丁比较。文件夹没有底层心智模型，不含此字段；未存储触发器的页面也不含此字段。"
+            "description": "仅页面具有此字段：页面的刷新设置，包括何时重建自身（`refresh_after_consolidation`、`refresh_cron`，以及任何 `full_refresh_cron`）、使用何种模式以及基于哪些事实。这是实际生效的策略：页面从未存储的设置会按默认值报告，因此应比较所关注的字段，而不是将整个对象与曾发送的补丁进行比较。文件夹没有底层心智模型，因此不含此字段；未存储触发器的页面也不含此字段。"
           },
           "children": {
             "items": {
@@ -13735,6 +14295,12 @@
           "offset": {
             "type": "integer",
             "title": "偏移量"
+          },
+          "total_is_estimate": {
+            "type": "boolean",
+            "title": "总数为估算值",
+            "description": "`q` 搜索达到匹配上限时为 true，此时 `total` 是下限而非精确计数。未提供 `q` 时始终为 false。",
+            "default": false
           }
         },
         "type": "object",
@@ -14499,7 +15065,7 @@
               }
             ],
             "title": "ObservationScopes",
-            "description": "整合期间观测的范围划分方式。'per_tag' 为每个单独标签运行一轮整合，为每个标签创建独立观测。'combined'（默认）将所有标签一起运行一轮。'shared' 对一个全局无标签范围运行一轮，因此无论标签为何，记忆一起整合；适用于在易变的逐调用来源追溯标签（如逐会话 ID）之间去重，同时保留来源事实上的这些标签。标签列表的列表会为每个内层列表运行一轮，可完全控制使用哪些组合。"
+            "description": "整合期间观测的范围划分方式。'per_tag' 会针对每个单独标签分别运行一轮整合，为每个标签创建独立观测。'combined'（默认值）会将所有标签放在一起运行一轮。'shared' 会在一个全局无标签范围内运行一轮，因此不论标签如何，所有记忆都会一起整合；这适用于在易变的逐调用来源追溯标签（例如逐会话 ID）之间去重，同时保留来源事实上的这些标签。标签列表的列表会针对每个内层列表运行一轮，可完全控制要组合使用的标签。条目中的 '*' 是 glob 模式，会与记忆自身的标签匹配。例如，[['topic:*', 'user:*']] 会按记忆的 topic 和 user 标签划分范围（包括 retain 时由实体标签添加的标签），并忽略其他标签；glob 未匹配到任何内容的范围会被跳过。省略此字段时使用记忆库的 default_observation_scopes（除非另行配置，否则为 'combined'）。"
           },
           "strategy": {
             "anyOf": [
@@ -15452,7 +16018,19 @@
               }
             ],
             "title": "最近刷新失败时间",
-            "description": "此模型最近一次刷新失败的时间，采用 ISO 格式；上次成功则为 null。设置此值期间，自动触发器（`refresh_after_consolidation`、`refresh_cron`）跳过该模型，避免每次触发都重试无法成功的刷新。显式刷新仍会运行，成功后清除此值。失败本身及原因位于模型历史记录中。"
+            "description": "此模型最近一次刷新失败的时间，采用 ISO 格式；上次刷新成功时为 null。此字段有值期间，自动触发器（`refresh_after_consolidation`、`refresh_cron`、`full_refresh_cron`）会跳过该模型，避免每次触发都重试无法成功的刷新。显式刷新仍会运行，成功后会清除此字段。失败记录及原因可在模型历史中查看。"
+          },
+          "last_full_refreshed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "最近一次完整刷新时间",
+            "description": "此模型最近一次以完整模式运行刷新的时间，采用 ISO 格式。触发方式可能是显式请求（`mode: 'full'`）、`full_refresh_cron` 定时触发、模型本身使用完整模式，或增量刷新回退为完整刷新。`trigger.full_refresh_cron` 根据此字段判断是否到期，而非 `last_refreshed_at`（每次增量刷新都会更新该字段）。从开始跟踪此字段以来尚未完成完整刷新时为 null。"
           },
           "created_at": {
             "anyOf": [
@@ -15464,6 +16042,18 @@
               }
             ],
             "title": "创建时间"
+          },
+          "is_knowledge_page": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "是否为知识页",
+            "description": "若此模型存储的是知识页内容，而非独立心智模型，则为 true。由列表和获取端点设置。"
           },
           "reflect_response": {
             "anyOf": [
@@ -15667,6 +16257,18 @@
             "title": "刷新 Cron 表达式",
             "description": "用于定时刷新此心智模型的 Cron 表达式（UTC，标准 5 字段语法，例如 '0 3 * * *' 表示每日 03:00 UTC）。与 refresh_after_consolidation 互斥，模型要么在整合后刷新，要么按 Cron 调度刷新，不能同时使用。定时刷新仅在模型待更新时运行（自上次刷新后，其范围内出现新记忆）；若无变化，则跳过该次调度，以免浪费 LLM 调用。null = 无调度。"
           },
+          "full_refresh_cron": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "完整刷新 Cron 表达式",
+            "description": "定时执行完整刷新的 Cron 表达式（UTC，标准 5 字段语法，例如 '0 3 * * 0' 表示每周日 UTC 03:00）。到达计划时间时，无论模型的 `mode` 设置为何，都会以 'full' 模式刷新模型，从头生成内容，以清除多次增量编辑累积的偏差。它独立于 `refresh_cron` 和 `refresh_after_consolidation`：增量模式的模型可在整合后刷新，同时每周执行一次完整刷新；此设置不会改变 `mode`。自上次完整刷新以来若没有运行过刷新（即无须修正），则跳过本次触发。与 `refresh_cron` 一样，此设置遵守 `min_refresh_interval_seconds`，并会在最近一次刷新失败期间暂停。null 表示不安排计划。"
+          },
           "min_refresh_interval_seconds": {
             "anyOf": [
               {
@@ -15678,7 +16280,7 @@
               }
             ],
             "title": "最小刷新间隔（秒）",
-            "description": "此心智模型两次自动刷新之间的最小秒数。过早到达的刷新触发不会被丢弃，而是入队并等待至窗口结束；其间后续触发全部合并至该排队刷新，因此一批连续 retain 只消耗一次刷新，而非每次 retain 一次。同时适用于 refresh_after_consolidation 和 refresh_cron。显式刷新（API、MCP、控制台）忽略此设置并立即运行。0 为此模型禁用下限；null 回退至记忆库/全局 mental_model_min_refresh_interval_seconds 设置（其默认值也为 0，即无下限）。"
+            "description": "此心智模型两次自动刷新之间的最短间隔（秒）。过早到达的刷新触发不会被丢弃，而是入队并等待窗口结束；此期间的后续触发都会合并到同一个排队刷新中，因此一批连续 retain 只触发一次刷新，而不是每次 retain 各触发一次。适用于所有自动触发器：refresh_after_consolidation、refresh_cron 和 full_refresh_cron。显式刷新（API、MCP、控制台）忽略此设置并立即运行。设为 0 可对此模型禁用最短间隔；设为 null 时回退到记忆库/全局 mental_model_min_refresh_interval_seconds 设置（该设置默认也是 0，即无最短间隔）。"
           },
           "fact_types": {
             "anyOf": [
@@ -15894,6 +16496,18 @@
             "title": "刷新 Cron 表达式",
             "description": "用于定时刷新此心智模型的 Cron 表达式（UTC，标准 5 字段语法，例如 '0 3 * * *' 表示每日 03:00 UTC）。与 refresh_after_consolidation 互斥，模型要么在整合后刷新，要么按 Cron 调度刷新，不能同时使用。定时刷新仅在模型待更新时运行（自上次刷新后，其范围内出现新记忆）；若无变化，则跳过该次调度，以免浪费 LLM 调用。null = 无调度。"
           },
+          "full_refresh_cron": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "完整刷新 Cron 表达式",
+            "description": "定时执行完整刷新的 Cron 表达式（UTC，标准 5 字段语法，例如 '0 3 * * 0' 表示每周日 UTC 03:00）。到达计划时间时，无论模型的 `mode` 设置为何，都会以 'full' 模式刷新模型，从头生成内容，以清除多次增量编辑累积的偏差。它独立于 `refresh_cron` 和 `refresh_after_consolidation`：增量模式的模型可在整合后刷新，同时每周执行一次完整刷新；此设置不会改变 `mode`。自上次完整刷新以来若没有运行过刷新（即无须修正），则跳过本次触发。与 `refresh_cron` 一样，此设置遵守 `min_refresh_interval_seconds`，并会在最近一次刷新失败期间暂停。null 表示不安排计划。"
+          },
           "min_refresh_interval_seconds": {
             "anyOf": [
               {
@@ -15905,7 +16519,7 @@
               }
             ],
             "title": "最小刷新间隔（秒）",
-            "description": "此心智模型两次自动刷新之间的最小秒数。过早到达的刷新触发不会被丢弃，而是入队并等待至窗口结束；其间后续触发全部合并至该排队刷新，因此一批连续 retain 只消耗一次刷新，而非每次 retain 一次。同时适用于 refresh_after_consolidation 和 refresh_cron。显式刷新（API、MCP、控制台）忽略此设置并立即运行。0 为此模型禁用下限；null 回退至记忆库/全局 mental_model_min_refresh_interval_seconds 设置（其默认值也为 0，即无下限）。"
+            "description": "此心智模型两次自动刷新之间的最短间隔（秒）。过早到达的刷新触发不会被丢弃，而是入队并等待窗口结束；此期间的后续触发都会合并到同一个排队刷新中，因此一批连续 retain 只触发一次刷新，而不是每次 retain 各触发一次。适用于所有自动触发器：refresh_after_consolidation、refresh_cron 和 full_refresh_cron。显式刷新（API、MCP、控制台）忽略此设置并立即运行。设为 0 可对此模型禁用最短间隔；设为 null 时回退到记忆库/全局 mental_model_min_refresh_interval_seconds 设置（该设置默认也是 0，即无最短间隔）。"
           },
           "fact_types": {
             "anyOf": [
@@ -16134,6 +16748,25 @@
         "type": "object",
         "title": "MinScores",
         "description": "recall 可选的逐阶段分数下限。所有下限均包含边界（``>=``）。\n\n四个下限作用于两个不同层级，这一区别决定了返回结果必定满足什么条件。\n\n``semantic`` 和 ``keyword`` 是下推到各自 SQL 分支的**检索层**截断条件（为本请求覆盖全局 ``semantic_min_similarity`` / ``bm25_min_score`` 配置），在融合前剪除弱匹配。各自**仅约束其命名的分支**。Recall 融合语义、关键词、图和时间四个分支，只要*任一*分支检出结果，它就可能进入响应，因此返回结果对于未检出它的阶段可以合理地携带 ``null``；通过图或时间分支到达的结果既无 ``semantic`` 也无 ``keyword``。*非 null* 分数始终达到相应下限，缺口始终仅为 ``null``。同时设置两者**不会**将响应限定为同时达到两个下限的结果：它们并非针对每个融合结果的判断条件。这是有意设计，取交集会丢弃混合检索本来要寻找的强单分支匹配（无词汇重叠的改述，或嵌入模型评分低的精确标识符）。\n\n``reranker`` 和 ``final`` 是融合和重排序后应用于每个已评分结果的**查询后**筛选条件，因此它们*确实*是逐结果判断条件：返回结果始终达到这两个下限。要使 recall 在低置信度查询时不返回结果，应使用它们，而非检索下限。\n\n任何设为 None 的字段都不施加下限；全部为 None（默认）表示不按分数筛选。"
+      },
+      "ObservationIdSample": {
+        "properties": {
+          "count": {
+            "type": "integer",
+            "title": "数量",
+            "default": 0
+          },
+          "ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "ID 列表"
+          }
+        },
+        "type": "object",
+        "title": "ObservationIdSample",
+        "description": "事件影响的观测数量，以及受影响观测的 ID（最多 ``MAX_IDS`` 个）。"
       },
       "ObservationScope": {
         "properties": {
@@ -16957,10 +17590,16 @@
             "description": "要召回的事实类型列表：'world'、'experience'、'observation'。未指定时默认为所有事实类型。"
           },
           "prefer_observations": {
-            "type": "boolean",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "优先使用观测",
-            "description": "同时召回原始事实（'world'/'experience'）和 'observation' 时，丢弃结果中某条观测整合所依据的原始事实，使观测取代该事实，避免重复内容。空出的位置由后续结果补齐，保持所请求预算对应的结果数量。默认禁用；设为 true 启用。除非同时请求 'observation' 和至少一种原始类型，否则无效。",
-            "default": false
+            "description": "同时召回原始事实（'world'/'experience'）和 'observation' 时，会丢弃结果中已被某条观测整合的原始事实，由观测取代它，避免内容重复。空出的名额由后续结果补齐，使结果数量仍达到请求的预算。省略此字段时，使用记忆库/全局 recall_prefer_observations 配置（除非另行配置，否则为 false）。只有同时请求 'observation' 和至少一种原始类型时，此设置才生效。"
           },
           "budget": {
             "$ref": "#/components/schemas/Budget",
@@ -18260,6 +18899,26 @@
         "title": "RefreshMentalModelOperationDetails",
         "description": "refresh_mental_model 操作所做的事，直接记录于操作记录本身。\n\n在异步操作的 ``details`` 下报告，以 ``operation_type`` 为键：每种需要报告有类型结果的操作类型在此提供自己的结构，而不是将所有类型字段平铺到操作上。目前仅刷新有此结构。\n\n此字段存在的原因是 ``result_metadata``（唯一无限期保留的逐刷新记录）无法说明刷新做了什么（#3274），且其文档说明仅用于调试、结构不稳定，因此调用方不能以其为基础构建功能。"
       },
+      "RefreshMentalModelRequest": {
+        "properties": {
+          "mode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "full"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "模式",
+            "description": "'full' 表示仅本次刷新从头重新生成内容，不受 `trigger.mode` 设置影响；已存储的触发器不会改变。null 表示使用模型自身的模式。"
+          }
+        },
+        "type": "object",
+        "title": "RefreshMentalModelRequest",
+        "description": "POST /mental-models/{id}/refresh 的可选请求体。"
+      },
       "ReprocessDocumentResponse": {
         "properties": {
           "success": {
@@ -19069,6 +19728,33 @@
             ],
             "title": "标签",
             "description": "文档及其记忆单元的新标签完整集合，会替换已有标签，而非添加，因此遗漏标签就会删除它，`[]` 会清空全部标签。触发观测失效和重新整合。"
+          },
+          "observation_scopes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "per_tag",
+                  "combined",
+                  "all_combinations",
+                  "shared"
+                ]
+              },
+              {
+                "items": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "更新文档观测范围",
+            "description": "为文档中的记忆设置新的观测范围，取值与 retain 接受的值相同（发送 'combined' 可按每条记忆的完整标签集合划分范围）。可用它将按一种方式存入的记忆迁移到另一种范围，例如将逐会话文档改为 'shared'，而无需重新提取。解析出的范围发生变化的记忆会失去其观测并重新整合；其余记忆保留现有观测。之后重新处理此文档时也会使用该范围设置。"
           }
         },
         "type": "object",
@@ -19142,6 +19828,18 @@
             ],
             "title": "发生时间终点",
             "description": "新的发生时间范围终点（ISO 8601）。'' 清空；省略则不变。"
+          },
+          "mentioned_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "提及时间",
+            "description": "新的提及时间，即事实被说出或写下的时间（ISO 8601）。'' 表示清除；省略则保持不变。"
           },
           "fact_type": {
             "anyOf": [
@@ -19547,6 +20245,17 @@
           "id": {
             "type": "string",
             "title": "ID"
+          },
+          "event_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "事件 ID"
           },
           "webhook_id": {
             "anyOf": [

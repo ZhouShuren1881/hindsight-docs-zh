@@ -86,7 +86,7 @@ import recallGo from '!!raw-loader!@site/examples/api/recall.go';
 
 观测由原始事实整合而成，因此同时召回 `observation`、`world` 和 `experience` 时，可能会两次返回相同信息：一次是原始事实，一次是整合进观测后的内容。启用 `prefer_observations` 后，两者兼得：仍会召回所有类型，但如果结果中的某条观测是由某条原始事实形成的，就会舍弃该原始事实，让观测取代它。腾出的名额会用次优结果补齐，因此覆盖范围不会减少。
 
-这样就可以一次请求全部内容，无需在“仅原始事实”（不做整合）和“仅观测”（整合赶不上最新存入内容时可能滞后）之间二选一。**默认禁用**；将其设为 `true` 即可启用。只有当 `types` 同时包含 `observation` 和至少一种 `world`/`experience` 时，此选项才生效。
+这样就可以一次请求全部内容，无需在“仅原始事实”（不做整合）和“仅观测”（整合赶不上最新存入内容时可能滞后）之间二选一。除非请求或记忆库配置启用，否则此功能处于关闭状态。请求未提供该参数时，由记忆库的 `recall_prefer_observations` 配置决定（环境变量 `HINDSIGHT_API_RECALL_PREFER_OBSERVATIONS`；未配置时为 `false`），因此部署可以为从不传入该参数的客户端（例如 MCP 连接器）启用此功能。只有当 `types` 同时包含 `observation` 和至少一种 `world`/`experience` 时，此选项才生效。
 
 ### budget {#budget}
 

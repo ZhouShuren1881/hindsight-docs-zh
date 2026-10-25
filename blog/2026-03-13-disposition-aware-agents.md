@@ -4,6 +4,7 @@ authors: [chrislatimer]
 date: 2026-03-13T12:00
 tags: [disposition, personality, skepticism, empathy, reflect, agents, deep-dive]
 image: /img/blog/disposition-aware-agents.webp
+description: "怀疑倾向、字面解读倾向和共情倾向这三个数值，无需添加多页提示文本，即可改变 Hindsight 智能体的推理方式。"
 ---
 
 ![Hindsight — 性格倾向感知智能体](/img/blog/disposition-aware-agents.webp)
@@ -39,23 +40,23 @@ image: /img/blog/disposition-aware-agents.webp
 
 我们希望只用三个数字，就能表达“这个记忆库中的智能体持怀疑态度、倾向按字面解读、共情程度较低”，然后让系统架构完成其余工作。
 
-## 三维性格倾向模型
+## 三维性格倾向模型 {#the-three-trait-disposition-model}
 
 最终确定了三个维度，每个维度的取值范围都是 1–5：
 
-### 怀疑倾向（1–5）
+### 怀疑倾向（1–5） {#skepticism-1-5}
 
 - **1 – 信任**：照单全收，相信对方出于善意。
 - **3 – 均衡**：具备通常水平的批判性思维。
 - **5 – 高度怀疑**：寻找不一致之处，更倾向于参考多个来源，不轻易接受主张。（相关内容：[Hindsight 如何解决记忆冲突](/blog/2026/02/09/resolving-memory-conflicts)。）
 
-### 字面解读倾向（1–5）
+### 字面解读倾向（1–5） {#literalism-1-5}
 
 - **1 – 偏重解读**：善于理解言外之意，也愿意推断。
 - **3 – 均衡**：兼顾字面理解与推断。
 - **5 – 高度按字面解读**：严格依据明确陈述的内容，避免作出假设。
 
-### 共情倾向（1–5）
+### 共情倾向（1–5） {#empathy-1-5}
 
 - **1 – 超然**：以正确性为先，不优先考虑感受。
 - **3 – 均衡**：同时考虑事实和情绪背景。
@@ -63,7 +64,7 @@ image: /img/blog/disposition-aware-agents.webp
 
 这三个数字保存在[记忆库配置文件](/developer/api/memory-banks#disposition_skepticism)中，不会以“做 X，不要做 Y”这样的规则形式出现。
 
-## 为什么选择这三个维度和 1–5 的量表？
+## 为什么选择这三个维度和 1–5 的量表？ {#why-these-three-traits-and-a-1-5-scale}
 
 我们尝试过更丰富的个性空间（包括完整的[大五人格](https://en.wikipedia.org/wiki/Big_Five_personality_traits)向量），但发现，对于我们实际需要的推理控制，几乎所有差异都可以归结为三个维度：
 

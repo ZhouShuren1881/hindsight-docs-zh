@@ -209,7 +209,7 @@ import retainGo from '!!raw-loader!@site/examples/api/retain.go';
 - ✓ 无标签观测会匹配所有召回请求，无论标签筛选条件是什么
 - 消除每次调用所带临时标签的重复：如果每个会话存入时都带有唯一的 `session-id:…` 标签，`combined` 和 `per_tag` 会在每个会话创建一个新观测（标签不会重复），而 `shared` 会将它们全部归入同一个观测。
 
-**适用场景**：标签用于记录每次调用的来源信息（例如会话 ID），你希望用它们筛选召回结果和调试，但不希望它们成为整合边界。此时应将标签留在 `tags` 中，并设置 `observation_scopes: "shared"`。
+**适用场景**：标签用于记录每次调用的来源信息（例如会话 ID），你希望用它们筛选召回结果和调试，但不希望它们成为整合边界。此时应将标签留在 `tags` 中，并设置 `observation_scopes: "shared"`。对于已经存入且未使用该设置的文档，可以通过[文档 PATCH](../observations#changing-scopes) 原地迁移。
 
 :::caution `shared`、`[[]]` 与 `[]` 的区别
 `shared` 等价于显式指定范围 `[[]]`，也就是包含一个空范围的列表。**不要**将它与 `[]`（空列表）混淆：后者声明了**零个**范围，并会静默回退到 `combined`。
@@ -253,6 +253,31 @@ import retainGo from '!!raw-loader!@site/examples/api/retain.go';
 - ✗ *“不论老师是谁，课程 s1 中发生了什么？”* — 列表中没有单独的 `["session-id:s1"]`
 
 **适用场景**：你清楚哪些组合有意义，并希望避免不必要的处理轮次。
+
+#### 自定义范围中的标签通配符 {#tag-globs-in-custom-scopes}
+
+包含 `*` 的标签是通配符，会与记忆自身的标签匹配：`topic:*` 表示该记忆所带的任意 `topic:` 标签。这样，即使发送请求时还不知道标签值，也可以按该标签划分范围；这类标签通常由提取过程中设置了 `tag: true` 的[实体标签](./memory-banks#entity-labels)添加。
+
+例如，某条记忆带有标签 `["topic:billing", "user:alice", "source:agent-a", "session:7"]`：
+
+| `observation_scopes` | 创建的观测 |
+|---|---|
+| `[["topic:*"]]` | `["topic:billing"]` |
+| `[["topic:*", "user:*"]]` | `["topic:billing", "user:alice"]` |
+| `[["topic:*"], ["user:*"]]` | `["topic:billing"]` · `["user:alice"]` |
+| `[["topic:*", "team:x"]]` | `["team:x", "topic:billing"]` |
+
+- 一个通配符若匹配多个标签，这些标签都会纳入该范围。
+- 通配符没有匹配到任何标签的范围会被跳过。如果所有范围都被跳过，该记忆会回退到 `combined`；它不会因此变成无标签记忆。
+- 未纳入范围的标签（上例中的 `source:`、`session:`）仍保留在记忆上，供召回筛选；它们只是不用于拆分观测。因此，来自不同智能体或会话、但主题相同的记忆会一起整合，而且会在同一次 LLM 调用中处理，使整合成本与主题数量成比例，而非记忆数量。
+
+:::caution 未纳入范围的标签不会出现在观测上
+使用 `[["topic:*"]]` 时，Alice 和 Bob 的账单事实会共同生成一个仅带有 `topic:billing` 标签的观测。按 `user:alice` 筛选的召回请求不会匹配该观测；任何能查看 `topic:billing` 的人都能读取两人的内容。若要隔离不同用户，请将 `user:*` 加入范围。
+:::
+
+#### 记忆库默认范围 {#bank-default}
+
+如果输入项没有发送 `observation_scopes`，则使用记忆库的 [`default_observation_scopes`](./memory-banks#default_observation_scopes)（未设置时为 `combined`）。该默认值接受上述任一种形式，因此可以设置为 `[["topic:*"]]`，让所有客户端的记忆按主题分组，无需修改客户端。默认值会在 Retain 时保存到每条记忆中；之后更改默认值不会重新划分已存入记忆的范围（重新处理文档时会应用当前默认值）。如需迁移已有文档，请使用[文档 PATCH](../observations#changing-scopes)。
 
 ### 响应 {#response}
 

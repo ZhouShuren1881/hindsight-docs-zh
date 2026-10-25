@@ -5,6 +5,7 @@ date: 2026-03-05T12:00
 tags: [memory, openai, python, docker, rag, llm, vector, embedding, tutorial]
 image: /img/blog/add-memory-to-openai-application.webp
 hide_table_of_contents: true
+description: "通过三种 Hindsight 调用构建基于 OpenAI SDK 的聊天机器人，无需向量数据库，重启后仍能记住用户。"
 ---
 
 使用 OpenAI SDK 和 Hindsight，构建一个具有持久记忆的 ChatGPT 式聊天机器人。只需调用三个 API：`retain()`、`recall()` 和 `reflect()`，应用重启后仍能记住用户，无需向量数据库或 RAG 流程。

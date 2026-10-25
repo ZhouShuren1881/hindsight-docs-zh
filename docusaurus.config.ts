@@ -222,7 +222,11 @@ const config: Config = {
   ],
 
   themeConfig: {
-    image: 'img/logo.webp',
+    image: 'img/social-card.webp',
+    // 页面未单独设置描述时使用此默认值；页面自身的描述优先。
+    metadata: [
+      {name: 'description', content: '为智能体提供先进的长期记忆。Hindsight 让 AI 智能体拥有能够跨会话持续学习的记忆。'},
+    ],
     colorMode: {
       defaultMode: 'dark',
       respectPrefersColorScheme: true,

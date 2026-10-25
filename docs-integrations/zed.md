@@ -17,11 +17,11 @@ Zed 尚无预提示钩子，但它支持本集成所用的两项功能：
 - **MCP 上下文服务器：** Zed 会运行在 `settings.json` 的 `context_servers` 中配置的 MCP 服务器，并在智能体面板中提供这些服务器的工具。`hindsight-zed` 会在此处注册 Hindsight MCP 服务器，为智能体提供 `recall` / `retain` / `reflect` 工具。
 - **全局指令文件**（`~/.config/zed/AGENTS.md`）：Zed 会在每次对话中载入该文件。集成会在其中添加一条简短规则，指导智能体先召回记忆，再存入它学到的内容。
 
-Zed 目前尚不支持原生 HTTP-MCP 传输，因此本集成通过 `npx` 运行 [`mcp-remote`](https://www.npmjs.com/package/mcp-remote) 这一 stdio 桥接程序来连接服务器；这意味着必须安装 Node.js。
+Zed 可通过 URL 原生连接 Hindsight MCP 端点，并在 Bearer 请求头中传递 API 密钥，因此无需运行桥接进程。
 
 ## 设置 {#setup}
 
-`hindsight-zed` 是一个零依赖的 Node.js CLI；唯一的前提是安装 Node.js（运行 `mcp-remote` 桥接程序也需要它）。你可以通过 `npx` 直接从 npm 运行：
+`hindsight-zed` 是一个零依赖的 Node.js CLI；运行此设置工具时才需要 Node.js。你可以通过 `npx` 直接从 npm 运行：
 
 ```bash
 npx @vectorize-io/hindsight-zed init --api-token YOUR_HINDSIGHT_API_KEY --bank-id my-memory

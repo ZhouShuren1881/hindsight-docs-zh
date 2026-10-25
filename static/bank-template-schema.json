@@ -159,6 +159,45 @@
           "description": "启用或禁用记忆召回中的交叉编码器重排序",
           "title": "启用重排序"
         },
+        "reflect_use_decision_model": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "服务器配置了决策模型时，reflect 可让它筛除证据并决定何时停止。",
+          "title": "反思是否使用决策模型"
+        },
+        "mental_model_refresh_use_decision_model": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "知识页刷新也采用相同设置。",
+          "title": "心智模型刷新是否使用决策模型"
+        },
+        "mental_model_delta_use_decision_model": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "服务器配置了决策模型时，心智模型的增量刷新会让它判断哪些新记忆可能改变页面，而不运行 reflect。",
+          "title": "心智模型增量刷新是否使用决策模型"
+        },
         "disposition_skepticism": {
           "anyOf": [
             {
@@ -370,6 +409,34 @@
           "default": null,
           "description": "已弃用：请使用同时支持任务目标的 consolidation_strategies。本字段仍有效，但仅在 consolidation_strategies 之后查询。按范围覆盖 max_observations_per_scope，例如 [{\"scope\": [\"run_*\", \"shared\"], \"limit\": 1}]。每个范围是一组 fnmatch 标签通配模式；整合范围必须满足精确覆盖，即每个标签都被某个通配模式匹配，且每个通配模式都匹配某个标签。采用首条匹配规则；没有匹配规则的范围使用 max_observations_per_scope。",
           "title": "观察范围限制"
+        },
+        "default_observation_scopes": {
+          "anyOf": [
+            {
+              "enum": [
+                "per_tag",
+                "combined",
+                "all_combinations",
+                "shared"
+              ],
+              "type": "string"
+            },
+            {
+              "items": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "存入时，对未提供 observation_scopes 的项目应用此设置（未设置时为 'combined'）。标签列表构成的数组可以使用 glob 模式，例如 [['topic:*']] 会按每条记忆自身的主题标签划分范围。",
+          "title": "默认观测范围"
         },
         "consolidation_strategies": {
           "anyOf": [
@@ -612,6 +679,19 @@
           "description": "在记忆存储后自动整合观察",
           "title": "启用自动整合"
         },
+        "consolidation_use_decision_model": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "服务器配置了决策模型时，观测整合会让它在调用 LLM 前处理重复表述、新出现的侧面和闲谈。",
+          "title": "观测整合是否使用决策模型"
+        },
         "consolidation_max_memories_per_round": {
           "anyOf": [
             {
@@ -650,6 +730,19 @@
           "default": null,
           "description": "在记忆召回结果中包含原始分块",
           "title": "记忆召回包含分块"
+        },
+        "recall_prefer_observations": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "请求未提供 prefer_observations 时，召回操作使用的默认值。",
+          "title": "召回优先使用观测"
         },
         "recall_max_tokens": {
           "anyOf": [
@@ -1047,6 +1140,19 @@
           "description": "用于按固定时间表刷新心智模型的 Cron 表达式（UTC，标准 5 字段语法，例如 '0 3 * * *' 表示每天 UTC 03:00）。与 refresh_after_consolidation 互斥：模型只能在整合后刷新或按 Cron 时间表刷新，不能同时使用。定时刷新仅在模型过时时运行，即自上次刷新后其范围内有新记忆；没有变化时跳过本次触发，以免浪费 LLM 调用。null 表示不设置时间表。",
           "title": "刷新 Cron 表达式"
         },
+        "full_refresh_cron": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "按此 Cron 表达式（UTC，标准 5 字段语法，例如 '0 3 * * 0' 表示每周日 UTC 03:00）定时执行完整刷新：无论 mode 的值是什么，模型都会以 'full' 模式刷新，从头重新生成内容，以消除多次增量编辑累积的偏差。此设置独立于 refresh_cron 和 refresh_after_consolidation；采用 delta 模式的模型可以在整合后刷新，同时仍按周执行完整刷新。它不会更改 mode。自上次完整刷新后若没有执行过任何刷新（也就没有需要纠正的偏差），则跳过本次触发。与 refresh_cron 一样，此设置遵守 min_refresh_interval_seconds；上次刷新失败时会暂停。null 表示不设置时间表。",
+          "title": "完整刷新 Cron 表达式"
+        },
         "min_refresh_interval_seconds": {
           "anyOf": [
             {
@@ -1058,7 +1164,7 @@
             }
           ],
           "default": null,
-          "description": "此心智模型两次自动刷新之间的最短秒数。提前到达的刷新触发不会被丢弃，而是排队等待间隔结束；等待期间的后续触发合并到同一次排队刷新中，因此一批记忆存储只触发一次刷新，而不是每次存储都刷新。适用于 refresh_after_consolidation 和 refresh_cron。显式刷新（API、MCP、控制平面）忽略此限制并立即运行。0 表示禁用此模型的间隔下限；null 使用记忆库或全局 mental_model_min_refresh_interval_seconds 设置，该设置默认也是 0，即不设下限。",
+          "description": "此心智模型两次自动刷新之间的最短秒数。提前到达的刷新触发不会被丢弃，而是排队等待间隔结束；等待期间的后续触发合并到同一次排队刷新中，因此一批记忆存储只触发一次刷新，而不是每次存储都刷新。适用于所有自动触发方式：refresh_after_consolidation、refresh_cron 和 full_refresh_cron。显式刷新（API、MCP、控制台）忽略此限制并立即运行。0 表示禁用此模型的间隔下限；null 使用记忆库或全局 mental_model_min_refresh_interval_seconds 设置，该设置默认也是 0，即不设下限。",
           "title": "最短刷新间隔（秒）"
         },
         "fact_types": {

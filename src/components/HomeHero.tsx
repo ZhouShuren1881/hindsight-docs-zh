@@ -50,11 +50,6 @@ export default function HomeHero(): ReactNode {
     const bleeds = Array.from(document.querySelectorAll('.hs-full-bleed'));
     let syncFrame: number | null = null;
     const sync = () => {
-      // Unlike 100vw, clientWidth excludes a classic vertical scrollbar.
-      const nextWidth = `${root.clientWidth}px`;
-      if (root.style.getPropertyValue('--hs-viewport-width') !== nextWidth) {
-        root.style.setProperty('--hs-viewport-width', nextWidth);
-      }
       const last = bleeds[bleeds.length - 1] ?? el;
       const height =
         last.getBoundingClientRect().bottom - el.getBoundingClientRect().top;
@@ -78,7 +73,6 @@ export default function HomeHero(): ReactNode {
       ro.disconnect();
       if (syncFrame !== null) cancelAnimationFrame(syncFrame);
       root.style.removeProperty('--hs-hero-height');
-      root.style.removeProperty('--hs-viewport-width');
     };
   }, []);
 

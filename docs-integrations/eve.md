@@ -25,6 +25,12 @@ Eve 会为每个回合解析并锁定一个范围，然后在固定时机调用�
 ## 安装 {#install}
 
 ```bash
+eve add memory/hindsight
+```
+
+此命令会安装 `@vectorize-io/hindsight-eve`，并写入下方所示的记忆槽位配置。若要手动接入：
+
+```bash
 npm install @vectorize-io/hindsight-eve
 ```
 
@@ -32,7 +38,7 @@ npm install @vectorize-io/hindsight-eve
 
 ## 快速开始 {#quick-start}
 
-创建一个文件：
+以下是 `eve add` 会写入的单个文件：
 
 ```ts
 // agent/memory/hindsight.ts
@@ -112,6 +118,8 @@ Eve 0.51.0 不再向 `turn.completed` 传递该回合的历史记录（这是相
 在 Eve 提供记忆提供者接口之前，0.2 版本通过两个由用户编写的文件接入记忆：`agent/instructions/hindsight.ts` 中的 `hindsightMemory()`，以及 `agent/hooks/hindsight.ts` 中的 `hindsightRetainHook()`。请将二者替换为上文的单个文件 `agent/memory/hindsight.ts`。旧入口仍以 `hindsightAutoRecall()` 和 `hindsightRetainHook()` 的形式提供，但已弃用，并会在下一个版本中移除；现在 `hindsightMemory()` 会返回提供者。
 
 变化包括：Recall 改为使用当前用户消息，而不是固定的宽泛查询；记忆改为按范围隔离，而不是所有人共用一个记忆库；召回的上下文改为作为注明槽位来源的消息传入，而不是作为系统指令传入。
+
+registry 中的安装项也随之迁移：现在应使用 `eve add memory/hindsight`，而不是 `eve add extension/hindsight`（参见 [vercel/eve#4963](https://github.com/vercel/eve/pull/4963)）。旧路径仍可解析；但如果此前通过旧路径安装，请先删除 `agent/instructions/hindsight.ts` 和 `agent/hooks/hindsight.ts`。残留的 0.2 版 instructions 文件会导致 `eve build` 报错：`Unknown key "recall"`。
 
 ## 链接 {#links}
 

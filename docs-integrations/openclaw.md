@@ -86,8 +86,6 @@ openclaw gateway
 
 **自动召回：** 每次智能体回复前，系统都会将相关记忆自动注入上下文（默认最多 1024 个 token）。智能体无需调用工具，即可利用先前的上下文。
 
-**手动知识工具：** 启用 `enableKnowledgeTools` 后，插件会提供 `agent_knowledge_*` 工具，供智能体显式查找记忆、进行反思、摄取文档和管理知识页。普通查找使用 `agent_knowledge_recall`；只有需要 Hindsight 根据记忆综合生成答案时，才使用 `agent_knowledge_reflect`。自动注入仍由 `recallMaxTokens` 控制，并可选用 `recallTopK` 限制注入数量。
-
 **防止反馈循环：** 插件会在存储对话前自动移除注入的记忆标签（`<hindsight_memories>`），避免召回的记忆再次被提取为新事实，从而导致记忆数量指数增长并产生重复条目。
 
 传统记忆系统会给智能体提供 `search_memory` 工具，但模型未必会稳定地调用它。自动召回通过在每轮对话前自动注入记忆来解决这个问题。
@@ -150,15 +148,10 @@ openclaw gateway
 - `recallPromptPreamble` - 放在召回记忆上方的自定义前导文本，用于覆盖内置指导文本。
 - `recallInjectionPosition` - 召回内容的注入位置：`"user"`（默认值）、`"prepend"` 或 `"append"`。默认在用户消息前注入，并保留系统提示缓存。当记忆需要系统级上下文时，使用 `"prepend"` 或 `"append"`。
 - `recallRoles` - 组合上下文 Recall 查询时要纳入的消息角色（默认值：`["user", "assistant"]`）。
-- `retainEveryNTurns` - 每隔 N 轮存储一次（默认值：`1`，即每轮都存储）。值大于 `1` 时启用分块存储。
+- `retainEveryNTurns` - 每隔 N 轮存储一次（默认值：`1`，即每轮都存储）。值大于 `1` 时启用分块存储。会话结束时（`/new`、`/reset` 或网关停止），上次存储后尚未存入的轮次会被刷新；使用 SQLite 的 OpenClaw 需要 2026.10.1 或更高版本。
 - `senderPrefixPattern` - 用于匹配部分频道添加到用户文本前的人类可读名称前缀的正则表达式（例如 `Alice: today weather?`）。只提供名称部分，例如 `Alice|Bob` 或 `[A-Za-z ]{1,20}`；插件会添加 `:` 分隔符和锚定符。设置后，前缀会从 Recall 查询和存储的对话记录中移除，避免发送者名称干扰向量搜索或被提取为事实。未设置（默认值）时不会移除任何内容；无效的正则表达式会被忽略。
 - `retainOverlapTurns` - 触发分块存储时额外纳入的先前轮数（默认值：`0`）。
-- `enableKnowledgeTools` - 注册 `agent_knowledge_*` 工具，以供智能体显式查找、反思、摄取内容和管理知识页（默认值：`false`）。
 - `debug` - 启用调试日志（默认值：`false`）。
-
-手动使用 `agent_knowledge_recall` 时，传入 `max_tokens` 以控制 Recall 响应可包含的记忆文本量。该工具没有 `max_results` 参数；若要限制自动注入的记忆数量，请改用自动 Recall 的 `recallTopK`。如果答案需要原文措辞或精确数字，而非提取出的事实，请传入 `include_chunks: true`，以同时获取这些记忆对应的原始文本，并用 `max_chunk_tokens` 限制其长度（默认值：`8192`）。
-
-使用 `agent_knowledge_reflect` 时，除非确实需要更深入的综合生成，否则请保留较保守的默认设置：`budget` 默认为 `low`，`max_tokens` 默认为 `1024`，`fact_types` 默认为 `world`、`experience` 和 `observation`。Reflect 调用可能比 Recall 成本更高，因为它会先检索记忆，再调用配置的 Reflect LLM 生成答案。在生产环境中，请为记忆库设置有限的 `reflect_source_facts_max_tokens` 值（例如 `4096` 或 `8192`），不要让它不受限制，以免临时 Reflect 将无界数量的来源事实载入 LLM 上下文。
 
 ### 记忆隔离 {#memory-isolation}
 
@@ -441,7 +434,7 @@ uvx hindsight-embed@latest -p openclaw ui
 ## OpenClaw 兼容性 {#openclaw-compatibility}
 
 该插件已针对当前及旧版 OpenClaw 进行测试。
-0.12.0 及更高版本适用于 **OpenClaw 2026.7.x 至 2026.9.x**。
+0.12.0 及更高版本适用于 **OpenClaw 2026.7.x 至 2026.10.x**。
 
 **如果你使用 OpenClaw 2026.8.1 或更高版本，请升级到插件 0.12.0。**OpenClaw
 2026.8.1 更改了附加到每条消息的会话元数据标签。旧版插件无法再识别这些标签，
@@ -530,6 +523,15 @@ openclaw config get plugins.entries.hindsight-openclaw.config.llmProvider
 
 如果你在快速入门中使用了 `--ref-source env`，请确认被引用的环境变量
 （例如 `OPENAI_API_KEY`）已导出到运行 `openclaw gateway` 的 shell 中。
+
+## OpenClaw 的记忆页、状态与搜索 {#openclaws-memory-page-status-and-search}
+
+OpenClaw 2026.10 或更高版本中，该插件会注册为 OpenClaw 的原生记忆提供方。随后，OpenClaw 自带的记忆界面会从 Hindsight 读取信息，不再显示“memory plugin unavailable”：
+
+- `memory.status` 和 Memory 页面会报告 Hindsight 的健康状态。
+- 网关的 `memory.search`（使用 `version: 2`）和 `memory.get` 会返回 Hindsight 记忆。
+
+搜索为只读操作，且仅向有权查看整个记忆库的调用方提供结果：运维人员或智能体所有者的私有会话。当智能体的记忆库仅由智能体自身决定时，搜索可用：例如 `dynamicBankGranularity: ["agent"]`、静态 `bankId`，或 `agentBankMap` 条目。若记忆库按用户或频道划分（默认粒度），OpenClaw 无法判断应搜索哪个用户的记忆库，因此会拒绝搜索，但状态仍会报告就绪。提示词侧的召回仍由 `autoRecall` 控制，启用此功能不会重复注入记忆。较早版本的 OpenClaw 会忽略此功能。
 
 ## 限制 {#limitations}
 

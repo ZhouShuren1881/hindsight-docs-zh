@@ -103,6 +103,24 @@ console.log(`Created: ${doc.created_at}`);
 // [/docs:document-get]
 
 
+// [docs:document-history]
+// 按时间从新到旧列出每次 Retain、事实编辑和整合对本文档的影响
+const { data: history, error: historyError } = await sdk.getDocumentHistory({
+    client: apiClient,
+    path: { bank_id: 'my-bank', document_id: 'meeting-2024-03-15-section-1' },
+    query: { limit: 50 }
+});
+
+if (historyError) {
+    throw new Error(`Failed to get document history: ${JSON.stringify(historyError)}`);
+}
+
+for (const event of history.items) {
+    console.log(`${event.created_at} ${event.kind}: removed ${event.observations_removed.ids.join(', ')}`);
+}
+// [/docs:document-history]
+
+
 // [docs:document-update-tags]
 // Fix tags on a document retained with the wrong scope
 const { data: updateResult, error: updateError } = await sdk.updateDocument({

@@ -1,0 +1,408 @@
+{
+  "title": "Memlake 架构",
+  "view": {
+    "width": 1280,
+    "height": 760
+  },
+  "speed": 2600,
+  "elements": [
+    {
+      "id": "root",
+      "type": "group",
+      "x": 0,
+      "y": 0,
+      "children": [
+        "col-left",
+        "col-bucket",
+        "col-bg"
+      ],
+      "layout": {
+        "direction": "row",
+        "gap": 56,
+        "align": "start"
+      }
+    },
+    {
+      "id": "hs",
+      "type": "rectangle",
+      "tone": "blue",
+      "content": [
+        {
+          "type": "title",
+          "text": "Hindsight API"
+        },
+        {
+          "type": "chips",
+          "items": [
+            "retain",
+            "recall",
+            "reflect"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "col-servers",
+      "type": "group",
+      "label": {
+        "title": "Memlake 服务器"
+      },
+      "children": [
+        "sA",
+        "sB"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 24,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "sA",
+      "type": "rectangle",
+      "tone": "gray",
+      "content": [
+        {
+          "type": "title",
+          "text": "服务器 A"
+        },
+        {
+          "type": "chips",
+          "items": [
+            "内存缓存",
+            "NVMe 缓存"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sB",
+      "type": "rectangle",
+      "tone": "gray",
+      "content": [
+        {
+          "type": "title",
+          "text": "服务器 B"
+        },
+        {
+          "type": "chips",
+          "items": [
+            "内存缓存",
+            "NVMe 缓存"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "col-bucket",
+      "type": "group",
+      "label": {
+        "title": "你的存储桶 · 租户 / 记忆库"
+      },
+      "children": [
+        "log",
+        "segs",
+        "manifest"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 28,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "log",
+      "type": "rectangle",
+      "tone": "orange",
+      "content": [
+        {
+          "type": "title",
+          "text": "日志"
+        },
+        {
+          "type": "text",
+          "text": "每次写入生成一个对象"
+        }
+      ]
+    },
+    {
+      "id": "segs",
+      "type": "rectangle",
+      "tone": "green",
+      "content": [
+        {
+          "type": "title",
+          "text": "段"
+        },
+        {
+          "type": "text",
+          "text": "不可变索引"
+        }
+      ]
+    },
+    {
+      "id": "manifest",
+      "type": "rectangle",
+      "tone": "purple",
+      "content": [
+        {
+          "type": "title",
+          "text": "清单 + head 指针"
+        },
+        {
+          "type": "text",
+          "text": "仅这两个对象会变化"
+        }
+      ]
+    },
+    {
+      "id": "col-bg",
+      "type": "group",
+      "label": {
+        "title": "后台处理"
+      },
+      "children": [
+        "arch",
+        "backup",
+        "idx"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 36,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "idx",
+      "type": "rectangle",
+      "tone": "gray",
+      "content": [
+        {
+          "type": "title",
+          "text": "索引器"
+        },
+        {
+          "type": "text",
+          "text": "日志 → 段"
+        }
+      ]
+    },
+    {
+      "id": "arch",
+      "type": "rectangle",
+      "tone": "gray",
+      "content": [
+        {
+          "type": "title",
+          "text": "归档器"
+        },
+        {
+          "type": "text",
+          "text": "持续备份"
+        }
+      ]
+    },
+    {
+      "id": "backup",
+      "type": "cylinder",
+      "tone": "gray",
+      "label": {
+        "title": "备份存储桶",
+        "lines": [
+          "另一个账户"
+        ]
+      }
+    },
+    {
+      "id": "hs-sA",
+      "type": "arrow",
+      "start": {
+        "id": "hs"
+      },
+      "end": {
+        "id": "sA"
+      },
+      "route": "curved",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "hs-sB",
+      "type": "arrow",
+      "start": {
+        "id": "hs"
+      },
+      "end": {
+        "id": "sB"
+      },
+      "route": "curved",
+      "quiet": true
+    },
+    {
+      "id": "sA-log",
+      "type": "arrow",
+      "start": {
+        "id": "sA"
+      },
+      "end": {
+        "id": "log"
+      },
+      "route": "curved",
+      "quiet": true
+    },
+    {
+      "id": "sA-segs",
+      "type": "arrow",
+      "start": {
+        "id": "sA"
+      },
+      "end": {
+        "id": "segs"
+      },
+      "route": "curved"
+    },
+    {
+      "id": "sA-manifest",
+      "type": "arrow",
+      "start": {
+        "id": "sA"
+      },
+      "end": {
+        "id": "manifest"
+      },
+      "route": "curved",
+      "quiet": true
+    },
+    {
+      "id": "sB-segs",
+      "type": "arrow",
+      "start": {
+        "id": "sB"
+      },
+      "end": {
+        "id": "segs"
+      },
+      "route": "curved"
+    },
+    {
+      "id": "sB-manifest",
+      "type": "arrow",
+      "start": {
+        "id": "sB"
+      },
+      "end": {
+        "id": "manifest"
+      },
+      "route": "curved",
+      "quiet": true
+    },
+    {
+      "id": "idx-log",
+      "type": "arrow",
+      "start": {
+        "id": "log"
+      },
+      "end": {
+        "id": "idx"
+      },
+      "route": "curved",
+      "quiet": true
+    },
+    {
+      "id": "idx-segs",
+      "type": "arrow",
+      "start": {
+        "id": "idx"
+      },
+      "end": {
+        "id": "segs"
+      },
+      "route": "curved",
+      "quiet": true
+    },
+    {
+      "id": "idx-manifest",
+      "type": "arrow",
+      "start": {
+        "id": "idx"
+      },
+      "end": {
+        "id": "manifest"
+      },
+      "route": "curved",
+      "quiet": true
+    },
+    {
+      "id": "arch-log",
+      "type": "arrow",
+      "start": {
+        "id": "log"
+      },
+      "end": {
+        "id": "arch"
+      },
+      "route": "curved",
+      "quiet": true
+    },
+    {
+      "id": "arch-backup",
+      "type": "arrow",
+      "start": {
+        "id": "arch"
+      },
+      "end": {
+        "id": "backup"
+      },
+      "route": "curved",
+      "quiet": true
+    },
+    {
+      "id": "col-left",
+      "type": "group",
+      "children": [
+        "hs",
+        "col-servers"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 44,
+        "align": "stretch"
+      }
+    }
+  ],
+  "scenes": [
+    {
+      "label": "架构",
+      "beats": [
+        {
+          "edges": {
+            "edge": "hs-sA",
+            "data": "retain · recall · reflect"
+          },
+          "say": "Hindsight API 与 Memlake 服务器通信。任何服务器都能处理任何请求，因此没有主节点。"
+        },
+        {
+          "edges": {
+            "edge": "sA-log",
+            "data": "PUT · if-none-match"
+          },
+          "say": "服务器 A 和 B 各自维护内存与 NVMe 缓存，本身不保存持久状态。"
+        },
+        {
+          "edges": {
+            "edge": "sA-manifest",
+            "data": "head · if-match"
+          },
+          "say": "所有持久数据都按租户和记忆库存放在你的存储桶中：每次写入对应一个对象的日志、不可变的段索引，以及只有 head 指针会变化的清单。"
+        },
+        {
+          "edges": {
+            "edge": "idx-segs",
+            "data": "日志 → 段"
+          },
+          "say": "后台索引器会将日志合并为段，归档器则把日志复制到另一个账户中的备份存储桶。"
+        }
+      ]
+    }
+  ]
+}

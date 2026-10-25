@@ -207,6 +207,12 @@ export HINDSIGHT_API_MCP_INSTRUCTIONS="Use project:<name> tags for project-speci
 | `query_timestamp` | string | 否 | ISO 8601 时间戳；将召回视为在该时间点提出的问题，用于确定相对时间表达和近期性评分的参照点 |
 | `min_scores` | object | 否 | 可选的分阶段分数下限，例如`{"reranker": 0.5}`。键包括 `semantic`/`keyword`（检索阶段的阈值）和 `reranker`/`final`（排序后阈值）。所有下限均包含边界并以 AND 组合；省略表示不过滤。Reranker 分数无法跨查询校准，使用前应先校准 |
 | `temporal_window` | object | 否 | 显式指定`{"start": ISO, "end": ISO}` 时间段，代替从查询文本中读取日期。它会提高窗口内记忆的排名，但不会移除窗口外的记忆，因此不能用来将结果限制在某个时间段内 |
+| `include_chunks` | boolean | 否 | 同时返回事实所依据的来源文本分块。需要提取过程可能改写过的精确字符串（路径、ID、命令）时使用。默认值：`false` |
+| `max_chunk_tokens` | integer | 否 | 设置 `include_chunks` 时，来源文本分块的最大 token 数（默认值：8192） |
+| `include_entities` | boolean | 否 | 同时返回结果中实体的观测。默认值：`false` |
+| `max_entity_tokens` | integer | 否 | 设置 `include_entities` 时，实体观测的最大 token 数（默认值：500） |
+| `include_source_facts` | boolean | 否 | 对观测结果，同时返回构成这些观测的事实。默认值：`false` |
+| `max_source_facts_tokens` | integer | 否 | 设置 `include_source_facts` 时，来源事实的最大 token 数（默认值：4096） |
 
 **示例：**
 ```json
@@ -365,6 +371,7 @@ MCP 工具仅在提供 `tags` 时才会转发 `tags_match`。对于原始事实�
 | `mode` | string | `full` 会在每次刷新时从头生成内容；`delta` 会进行精细编辑，并逐字节保留未变更的章节。如果没有现有内容或来源查询已变更，delta 会回退为 full |
 | `refresh_after_consolidation` | boolean | 每次记忆整合后重建 |
 | `refresh_cron` | string | UTC 时区的五字段 cron 表达式，例如 `0 3 * * *` 表示每天 UTC 03:00 执行。仅当模型内容待更新时才运行，因此范围未变化时不会调用 LLM |
+| `full_refresh_cron` | string | 用于按计划对 delta 模型执行**完整刷新**的 UTC 五字段 cron 表达式，例如 `0 3 * * 0`。它独立于上述两个触发器；自上次完整刷新以来若没有运行过刷新，则会跳过 |
 | `min_refresh_interval_seconds` | integer | 两次*自动*刷新之间的最短间隔。更早到达的触发会合并到一个排队的刷新中，因此一波 retain 调用只会触发一次重建。显式刷新不受此间隔限制 |
 | `fact_types` | list[string] | 刷新时检索 `world`、`experience`、`observation` 中的哪些类型。省略表示全部三种 |
 | `exclude_mental_models` | boolean | 排除**所有**心智模型，避免模型反思其同级模型 |
@@ -625,6 +632,7 @@ MCP 工具仅在提供 `tags` 时才会转发 `tags_match`。对于原始事实�
 - `entity_labels` — 用于实体分类的受控词汇表
 - `entities_allow_free_form` — 是否允许使用 `entity_labels` 以外的标签
 - `recall_include_chunks` — 在召回结果中包含原始文本分块
+- `recall_prefer_observations` — 对未提供 `prefer_observations` 的 recall 调用设置其默认值
 - `recall_max_tokens` — 召回结果的最大 token 数
 - `mcp_enabled_tools` — 此记忆库允许使用的工具列表
 

@@ -32,13 +32,13 @@ API 调用需要后台处理时，请求处理程序会向 `async_operations` �
 
 | 状态 | 含义 |
 |--------|---------|
-| `pending` | 该行已进入队列。可能还没有工作进程领取，也可能是扩展通过未来的 `next_retry_at` 暂缓了它（例如用于背压控制）。 |
+| `pending` | 该行已进入队列。可能还没有工作进程领取，也可能被暂缓至未来的 `next_retry_at`（例如用于背压控制，或等待 LLM 服务提供方报告的配额重置时间）。对处于暂缓状态的操作调用 `POST /…/retry` 会清除 `next_retry_at`，使其立即运行。 |
 | `processing` | 工作进程已领取该行，正在执行处理程序。 |
 | `completed` | 处理程序已成功返回。 |
 | `failed` | 处理程序抛出了异常。`error_message` 中记录原因；可以通过 `POST /…/retry` 重新入队。 |
 | `cancelled` | 操作已通过 `DELETE /…/operations/{id}` 取消。`pending` 和 `processing` 状态的操作都可以取消。 |
 
-工作进程最多会重试失败的操作 `HINDSIGHT_API_WORKER_MAX_RETRIES` 次，之后将其置为 `failed`。确定性故障（例如嵌入维度无效或完整性约束冲突）会跳过重试，因为重新运行也不会成功。
+工作进程最多会重试失败的操作 `HINDSIGHT_API_WORKER_MAX_RETRIES` 次，之后将其置为 `failed`。确定性故障（例如嵌入维度无效、完整性约束冲突、LLM 服务提供方因内容策略拒绝请求，或 LLM 以 HTTP 401/403 拒绝配置的密钥）会跳过重试，因为重新运行也不会成功。修复原因后，再重试该操作。
 
 默认情况下，`completed`、`failed` 和 `cancelled` 操作会无限期保留。将 `HINDSIGHT_API_OPERATION_RETENTION_DAYS` 设为正数天数，可限制这些历史记录的保留时间：随后后台维护循环会按自己的计划，以有界批次清理过期的终态记录，而不是在处理任务时顺带清理。此功能仅适用于 PostgreSQL；Oracle 上不会运行维护循环，因此操作历史不会因保留期限而清理。整行数据共用此 TTL，所以只要操作记录仍被保留，其负载就仍可用——失败和已取消的操作可以重试，已完成的操作可以通过 `include_payload=true` 检查。保留清理绝不会删除 `pending` 和 `processing` 操作。
 

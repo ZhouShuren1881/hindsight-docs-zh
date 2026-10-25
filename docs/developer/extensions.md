@@ -85,6 +85,45 @@ HINDSIGHT_API_MCP_EXTENSION=mypackage.mcp:MyMCPExtension
 
 ---
 
+### LLMRequestExtension {#llmrequestextension}
+
+按每次 LLM 调用决定该调用使用哪个 LLM，以及使用哪些凭据。适用场景包括：
+
+- **让每位客户使用自己的密钥付费。** 通过网关（LiteLLM proxy、Bifrost、OpenRouter、Portkey 等）承接 LLM 费用，由网关向每位客户发放虚拟密钥，再使用该客户的密钥发送其记忆库的调用。
+- **按记忆库或操作选择模型。** 例如，某个记忆库的 Retain 使用低成本模型，而 Reflect 使用能力更强的模型；也可以为不同客户使用不同供应商或云账户。
+
+每次 LLM 调用都会触发一次扩展，并提供租户 schema、记忆库和调用所属的操作——retain、reflect、整合或心智模型刷新；API 进程和工作进程中都会调用它。扩展返回 `LLMRequestOverrides`，或返回 `None` 以使用服务器自己的 LLM。若抛出异常，则该调用会被拒绝。
+
+```bash
+HINDSIGHT_API_LLM_REQUEST_EXTENSION=mypackage.llms:MyLLMs
+```
+
+返回值可以包含以下字段：
+
+| 字段 | 效果 |
+| --- | --- |
+| `llm` | 使用此 LLM 处理调用，而非服务器配置的 LLM：供应商、模型、基础 URL、密钥及其他单个 LLM 设置（`LLMMemberConfig`，即多 LLM 调用链成员的结构）。未设置的字段继承服务器的全局 LLM 默认值，但凭据除外（默认请求头、Vertex 服务账号、Codex home、LiteLLM 路由器配置）；超时和重试设置继承自当前操作。 |
+| `api_key` | 目标 LLM（服务器的 LLM 或 `llm` 字段指定的 LLM）所用的密钥；若 `llm` 自身没有密钥，则由此字段补充。 |
+| `headers` | 额外的请求头，例如网关的客户 ID。 |
+
+注意事项：
+
+- **选择由服务器端决定。** API 调用方提供的内容不会直接决定选择。如果扩展根据调用方可写入的内容（如记忆库配置、元数据）构造返回值，必须先验证这些内容，否则端点或密钥可能来自用户输入。
+- **不指定 `llm` 时，凭据不会创建新客户端。** 密钥和请求头会应用于现有 SDK 客户端的单次调用副本，该副本与原客户端共享连接池。适用端点包括 OpenAI 兼容端点（`openai`、`groq`、`deepseek`、`openrouter`、`fireworks`、`lmstudio`、通过 `base_url` 设置的任意网关等）、`anthropic`，以及路由到带密钥后端的 `litellm`（OpenAI、Anthropic、Azure、Gemini AI Studio、OpenRouter、LiteLLM proxy 等）。如果返回值向其他供应商（`gemini`、`vertexai`、`ollama`、`bedrock`、`litellmrouter`、OAuth/CLI 供应商）提供密钥或请求头，调用会被**拒绝**，绝不会使用已配置的凭据发送。若要更改这些供应商的密钥，必须返回完整的 `llm`。如果服务器默认请求头中包含返回值未覆盖的凭据（如 `Authorization`、`x-api-key`、`x-portkey-api-key` 等），也会拒绝提供密钥，因为 SDK 会优先发送默认请求头中的凭据。
+- **调用链中的每个 LLM 都会单独询问。** 对于多 LLM 调用链或按操作配置供应商的情况，每个 LLM 都会单独触发扩展；发放密钥前请检查 `target.provider`，确认密钥适用于该 LLM。
+- **安装此扩展时，Reflect 提示缓存会关闭。** Gemini 的逐步 Reflect 缓存建立在服务器的 LLM 上，不属于扩展负责选择的调用。
+- **`llm` 返回值会创建一次并重复使用**，每个进程最多缓存 64 个不同的 LLM（最近最少使用的项会被移除）。如果扩展要为大量用户分别返回一个 LLM，应改用网关和 `api_key`。
+- **不支持批量 retain。** 设置 `HINDSIGHT_API_RETAIN_BATCH_ENABLED=true` 并启用此扩展会导致启动失败，因为批处理任务会提交到服务器的 LLM。
+- **仅适用于 LLM 调用。** Embedding 和重排仍使用各自的配置。
+- **生命周期：** 内存引擎初始化时、任何 LLM 调用之前会运行 `on_startup()`；引擎关闭时会运行 `on_shutdown()`。
+- **启动检查：** 启动时的连接检查使用服务器自己的 LLM。如果服务器的 LLM 没有可用密钥（例如网关没有为服务器配置密钥），请设置 `HINDSIGHT_API_SKIP_LLM_VERIFICATION=true`。
+
+请在 API 和每个工作进程中加载同一个扩展：未加载扩展的工作进程会使用服务器自己的 LLM 执行整合和刷新。
+
+社区扩展 [`bank-llm-routing`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-extensions/bank-llm-routing) 根据配置中的记忆库 ID 和操作模式进行路由，可作为该接口的完整示例。
+
+---
+
 ## 编写自定义扩展 {#writing-custom-extensions}
 
 ### 扩展基础知识 {#extension-basics}
@@ -283,6 +322,15 @@ class MyValidator(OperationValidatorExtension):
 - `validate_memory_update(ctx: MemoryUpdateContext)` 在任何处理开始前运行。上下文包含请求的 `text`（编辑时）、请求的 `state` 以及 `edits_fields`。在此处拒绝即可阻止维护操作；返回的 `status_code` 会原样传入 HTTP 响应。
 - `on_memory_update_complete(result: MemoryUpdateResult)` 在变更提交后运行一次。`result.action` 的值为 `edit`、`invalidate`、`revert` 或 `reason`；`result.reembedded_tokens` 表示引擎重新嵌入的文本量（仅失效或仅更新原因时为 0）。编辑或恢复会重新嵌入记忆并重新整合记忆库，因此，如果维护操作的计费应与摄取相同，可据此数值计量。
 
+#### 转移归档导入钩子 {#transfer-archive-import-hooks}
+
+导入转移归档（导入文档或恢复整个记忆库）时，会将已提取的事实导入记忆库，而不会重新运行事实提取：
+
+- `validate_import(ctx: ImportContext)` 在提交时运行，早于归档存储或加入队列。`ctx.documents` 列出归档中的文档（`ImportArchiveDocument`，包含 `document_id` 和原始 `content`），验证器可据此估算导入规模，以进行配额或成本检查。拒绝会直接返回给调用方。默认行为是接受。
+- 随后，每个导入文档都会通过 `on_retain_complete` 上报，其中 `result.source == RetainSource.IMPORT`、LLM token 计数为零，且 `processed_content_tokens=0`。可通过 `source` 区分导入与重新 retain：后者若所有分块都已去重，也会报告 `processed_content_tokens=0`；普通 retain 则报告 `RetainSource.RETAIN`。
+
+在同一实例中克隆记忆库不属于导入：不会经过 `validate_import`，也不会通过 `on_retain_complete` 上报。
+
 #### 将调用方限制在标签范围内 {#confining-a-caller-to-a-tag-scope}
 
 当多人共享一个记忆库，并通过标签划分各自可见的数据时，`resolve_tag_scope` 会将调用方的每项操作限定在标签过滤范围内。请返回调用方可访问数据必须满足的标签组（组间按 AND 组合）；若不限制则返回 `None`：
@@ -356,6 +404,8 @@ class QuotaAwareValidator(OperationValidatorExtension):
 
 `DeferOperation` **仅供工作进程使用**：不要在同步 HTTP 请求路径中的 `validate_recall` 或 `validate_reflect` 里抛出它。此处没有队列可供延后处理，最终会返回 500。
 
+在工作进程中，`ctx.request_context.operation_id` 是当前正在执行的操作 ID（同步请求中为 `None`；合并到一次执行中的多个 retain 共用主操作的 ID）。如果钩子决定完全不运行该操作，而不是让它失败，可以通过 `self.context.get_memory_engine().cancel_operation(...)` 取消操作，然后抛出 `DeferOperation`：该记录会保持 `cancelled` 状态，也不会记录失败。
+
 ### 示例：自定义 MCPExtension {#example-custom-mcpextension}
 
 ```python
@@ -373,6 +423,36 @@ class MyMCPExtension(MCPExtension):
             # ... custom logic
             return f"Results for: {query}"
 ```
+
+### 示例：自定义 LLMRequestExtension {#example-custom-llmrequestextension}
+
+```python
+from hindsight_api.config import LLMMemberConfig
+from hindsight_api.extensions import (
+    LLMRequestExtension,
+    LLMRequestOverrides,
+    LLMRequestRefused,
+    LLMRequestTarget,
+)
+
+
+class PerCustomerLLMs(LLMRequestExtension):
+    def __init__(self, config: dict[str, str]) -> None:
+        super().__init__(config)
+        self.keys = load_keys(config["keys_file"])  # your own store: {(schema, bank_id): key}
+
+    async def resolve(self, target: LLMRequestTarget) -> LLMRequestOverrides | None:
+        key = self.keys.get((target.schema, target.bank_id))
+        if key is None:
+            # Refuse rather than return None: None sends the call on the server's own LLM.
+            raise LLMRequestRefused(f"no LLM key for bank {target.bank_id!r}")
+        if target.operation == "reflect":
+            # A stronger model for reflect, on the customer's own account.
+            return LLMRequestOverrides(llm=LLMMemberConfig(provider="anthropic", model="claude-sonnet-5-5", api_key=key))
+        return LLMRequestOverrides(api_key=key, headers={"x-customer": target.bank_id})
+```
+
+`resolve` 会在每次 LLM 调用时运行，因此应缓存耗时操作的结果。记忆库 ID 只在各自的租户 schema 内唯一——多租户部署必须同时使用 `target.schema` 作为键的一部分，否则某个租户可以将记忆库命名为与另一租户相同的名称，并让调用计入对方的密钥。`LLMRequestOverrides` 会在其 `repr` 中隐藏 LLM 和密钥；也请勿在自己的日志中记录它们。
 
 ---
 

@@ -5,6 +5,7 @@ date: 2026-03-10T12:00
 tags: [ollama, tutorial, python, memory, local, privacy, hindsight, llm, open-source]
 image: /img/blog/run-hindsight-with-ollama.webp
 hide_table_of_contents: true
+description: "使用 Ollama 在自己的机器上运行 Hindsight：无需 API 密钥，没有云服务费用，数据也不会离开你的计算机。"
 ---
 
 使用 Ollama 运行 Hindsight，可以获得完全在本地运行的 AI 记忆系统。无需 API 密钥、无需承担云端费用，也不会有数据离开你的设备。如果你想在自己的硬件上使用开源模型为智能体提供持久记忆，本教程将带你完成整个设置过程。

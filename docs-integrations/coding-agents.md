@@ -62,7 +62,7 @@ npx @vectorize-io/hindsight-coding-agents stats                # 各智能体使
 
 命令相同，只需更改运行环境名称。全局安装软件包后运行。
 
-#### <StaticImage src="/img/harness/claude-code.webp" alt="" width="20" height="20" /> Claude Code
+#### <StaticImage src="/img/harness/claude-code.webp" alt="" width="20" height="20" /> Claude Code {#-claude-code}
 
 ```bash
 npx @vectorize-io/hindsight-coding-agents install claude-code
@@ -70,7 +70,7 @@ npx @vectorize-io/hindsight-coding-agents install claude-code
 
 在 `~/.claude/settings.json` 注册 3 个钩子，通过 `claude mcp add` 注册 MCP（用户范围），并安装配套技能。
 
-#### <StaticImage src="/img/harness/codex.svg" alt="" width="20" height="20" /> Codex CLI
+#### <StaticImage src="/img/harness/codex.svg" alt="" width="20" height="20" /> Codex CLI {#-codex-cli}
 
 ```bash
 npx @vectorize-io/hindsight-coding-agents install codex
@@ -78,7 +78,7 @@ npx @vectorize-io/hindsight-coding-agents install codex
 
 在 `~/.codex/hooks.json` 注册 3 个钩子，并在 `config.toml` 注册 `[mcp_servers]`（需要 `codex_hooks = true`）。
 
-#### <StaticImage src="/img/harness/dcode.svg" alt="" width="20" height="20" /> DeepAgents Dcode
+#### <StaticImage src="/img/harness/dcode.svg" alt="" width="20" height="20" /> DeepAgents Dcode {#-deepagents-dcode}
 
 ```bash
 npx @vectorize-io/hindsight-coding-agents install dcode
@@ -88,7 +88,7 @@ npx @vectorize-io/hindsight-coding-agents install dcode
 
 Dcode 为插件 MCP 工具添加命名空间，因此显示为 `plugin__hindsight-coding-…__hindsight_…`，而非原始名称；智能体都能通过工具指南解析它们。无界面运行（`dcode -n`）时，Dcode 允许只读 Hindsight 工具，但两个写入工具（`hindsight_ingest_document`、`hindsight_capture_initiative`）需要批准，而该模式没有批准界面。请在交互式 TUI 中捕获工作计划或摄取文档。同理，存在其他已安装智能体时，一次性代码库调查会通过那个智能体的 CLI 运行，与 Cursor、Copilot、Devin、Grok Build、Cline、Kilo 和 Prime Agent 相同。
 
-#### <StaticImage src="/img/harness/opencode.png" alt="" width="20" height="20" /> opencode
+#### <StaticImage src="/img/harness/opencode.png" alt="" width="20" height="20" /> opencode {#-opencode}
 
 ```bash
 npx @vectorize-io/hindsight-coding-agents install opencode
@@ -96,7 +96,7 @@ npx @vectorize-io/hindsight-coding-agents install opencode
 
 向 `~/.config/opencode/opencode.json` 添加插件条目，使用原生工具，无需 MCP。
 
-#### <StaticImage src="/img/harness/opencode.png" alt="" width="20" height="20" /> opencode 2
+#### <StaticImage src="/img/harness/opencode.png" alt="" width="20" height="20" /> opencode 2 {#-opencode-2}
 
 ```bash
 npx @vectorize-io/hindsight-coding-agents install opencode2
@@ -106,7 +106,7 @@ opencode v2（`npm @opencode/cli`）除 `opencode` 外还提供 `opencode2` 二�
 
 与 v1 有两处区别，均来自宿主限制：一次性代码库调查通过其他已安装智能体的 CLI 运行（v2 插件无法定义调查所需的只读智能体）；初始数据提示写入插件日志，而非 TUI 通知（v2 插件无法显示通知）。召回、注入、原生 `hindsight_*` 工具和会话回写完全相同。配套技能也相同，但通过 v2 技能 API 在内存中注册，而非复制到技能目录：opencode2 没有自己的技能目录，读取的两个目录属于其他智能体。
 
-#### <StaticImage src="/img/harness/kilo.svg" alt="" width="20" height="20" /> Kilo CLI
+#### <StaticImage src="/img/harness/kilo.svg" alt="" width="20" height="20" /> Kilo CLI {#-kilo-cli}
 
 ```bash
 npx @vectorize-io/hindsight-coding-agents install kilo
@@ -114,7 +114,7 @@ npx @vectorize-io/hindsight-coding-agents install kilo
 
 向 `~/.config/kilo/kilo.json[c]` 添加插件条目。
 
-#### <StaticImage src="/img/harness/cursor-cli.svg" alt="" width="20" height="20" /> Cursor CLI
+#### <StaticImage src="/img/harness/cursor-cli.svg" alt="" width="20" height="20" /> Cursor CLI {#-cursor-cli}
 
 ```bash
 npx @vectorize-io/hindsight-coding-agents install cursor-cli
@@ -122,7 +122,7 @@ npx @vectorize-io/hindsight-coding-agents install cursor-cli
 
 在 `~/.cursor/hooks.json` 注册钩子，配置 `~/.cursor/mcp.json`，并安装配套技能。
 
-#### <StaticImage src="/img/harness/copilot-cli.svg" alt="" width="20" height="20" /> GitHub Copilot CLI
+#### <StaticImage src="/img/harness/copilot-cli.svg" alt="" width="20" height="20" /> GitHub Copilot CLI {#-github-copilot-cli}
 
 ```bash
 npx @vectorize-io/hindsight-coding-agents install copilot-cli
@@ -130,15 +130,15 @@ npx @vectorize-io/hindsight-coding-agents install copilot-cli
 
 配置 `~/.copilot/hooks/`、`mcp-config.json` 和配套技能。
 
-#### <StaticImage src="/img/harness/grok-build.svg" alt="" width="20" height="20" /> Grok Build
+#### <StaticImage src="/img/harness/grok-build.svg" alt="" width="20" height="20" /> Grok Build {#-grok-build}
 
 ```bash
 npx @vectorize-io/hindsight-coding-agents install grok-build
 ```
 
-在 `~/.grok/hooks/hindsight.json` 注册原生钩子，在 `~/.grok/config.toml` 注册 MCP，并安装配套技能。Grok 也会运行 `~/.claude/settings.json` 中的 Claude Code 钩子，但这些钩子在 Grok 中保持静默，因此同时接入两个宿主的机器只会记录每个 Grok 会话一次。
+在 `~/.grok/hooks/hindsight.json` 注册原生钩子，在 `~/.grok/config.toml` 注册 MCP，并安装配套技能。Grok 也会运行 `~/.claude/settings.json` 中的 Claude Code 钩子，但这些钩子在 Grok 中保持静默，因此同时接入两个宿主的机器只会记录每个 Grok 会话一次。Grok 仅会从工具钩子向模型传递钩子上下文，因此每次提示词之后，智能体首次工具调用的结果才会带上会话和提示词上下文（`PostToolUse` 钩子）。
 
-#### <StaticImage src="/img/harness/qwen-code.svg" alt="" width="20" height="20" /> Qwen Code
+#### <StaticImage src="/img/harness/qwen-code.svg" alt="" width="20" height="20" /> Qwen Code {#-qwen-code}
 
 ```bash
 npx @vectorize-io/hindsight-coding-agents install qwen-code
@@ -149,7 +149,7 @@ npx @vectorize-io/hindsight-coding-agents install qwen-code
 > Qwen 钩子的 `timeout` 单位是**毫秒**（其文档原文为“Timeout in milliseconds, default 60000”），与其他受支持智能体不同，因此安装的值为 `30000/30000/60000`。
 > 召回只在真实提交时触发：`UserPromptSubmit` 也会在工具结果续接时触发，因此交互会话每个提示词召回一次，而无界面（`qwen -p`）、`serve`、SDK 和 ACP 会话会初始化并存储记忆，但不进行召回。
 
-#### <StaticImage src="/img/harness/kimi-code.svg" alt="" width="20" height="20" /> Kimi Code
+#### <StaticImage src="/img/harness/kimi-code.svg" alt="" width="20" height="20" /> Kimi Code {#-kimi-code}
 
 ```bash
 npx @vectorize-io/hindsight-coding-agents install kimi-code
@@ -160,7 +160,7 @@ npx @vectorize-io/hindsight-coding-agents install kimi-code
 
 > Kimi 的 SessionStart 钩子无法接触模型，因此会话简报在该阶段保持静默；召回记忆改为在首次提示词时以 `<hook_result>` 块到达。会话从会话目录下每个智能体的 `wire.jsonl` 存储，包括子智能体。
 
-#### <StaticImage src="/img/harness/factory-droid.svg" alt="" width="20" height="20" /> Factory Droid
+#### <StaticImage src="/img/harness/factory-droid.svg" alt="" width="20" height="20" /> Factory Droid {#-factory-droid}
 
 ```bash
 npx @vectorize-io/hindsight-coding-agents install factory-droid
@@ -168,7 +168,7 @@ npx @vectorize-io/hindsight-coding-agents install factory-droid
 
 在 `~/.factory/hooks.json` 注册 4 个钩子（用户范围），包括能安全处理取消的 `Notification` 回写；在 `~/.factory/mcp.json` 的 `mcpServers.hindsight` 下注册 stdio MCP，并在 `~/.factory/skills` 安装配套技能。安装程序只操作 JSON 文件，无需调用 Droid CLI，并拒绝覆盖用户自行管理、已命名为 `hindsight` 的 MCP 服务器。Droid 的钩子协议与 Claude Code 相同（输入 `session_id`/`transcript_path`/`cwd`，输出 `hookSpecificOutput.additionalContext`）。召回和注入使用相同协议；回写也处理 Droid 的取消通知，因为取消一轮后 Droid 不发出 `Stop`。
 
-#### <StaticImage src="/img/harness/zcode.svg" alt="" width="20" height="20" /> ZCode
+#### <StaticImage src="/img/harness/zcode.svg" alt="" width="20" height="20" /> ZCode {#-zcode}
 
 ```bash
 npx @vectorize-io/hindsight-coding-agents install zcode
@@ -180,7 +180,7 @@ npx @vectorize-io/hindsight-coding-agents install zcode
 >
 > ZCode 不保存持久会话记录：`Stop` 仅携带回答和一个只含助手内容的临时文件，钩子返回后立即删除，完全不包含用户提示词。因此这是唯一由插件自行记录对话的智能体：提示词钩子记录问题，`Stop` 钩子记录回答，回写随后像其他智能体一样，将每个新轮次追加到同一会话文档。ZCode 因而不支持 `--import-conversations`，因为磁盘上没有可供回填的历史记录。
 
-#### <StaticImage src="/img/harness/traecode.png" alt="" width="20" height="20" /> TraeCode
+#### <StaticImage src="/img/harness/traecode.png" alt="" width="20" height="20" /> TraeCode {#-traecode}
 
 ```bash
 npx @vectorize-io/hindsight-coding-agents install traecode
@@ -196,7 +196,7 @@ Trae 仅在全局 `trae.mcp.enableWorkspaceMcp` 设置启用时才读取仓库�
 
 > TraeCode 不保留可读的会话记录，会话存储在加密本地数据库或云端。与 ZCode 相同，插件自行记录对话：提示词钩子记录你的问题，`Stop` 钩子使用 `last_assistant_message` 中的回答结束该轮。因此 TraeCode 不支持 `--import-conversations`，磁盘上没有可回填的历史记录。
 
-#### <StaticImage src="/img/harness/antigravity-cli.png" alt="" width="20" height="20" /> Antigravity CLI
+#### <StaticImage src="/img/harness/antigravity-cli.png" alt="" width="20" height="20" /> Antigravity CLI {#-antigravity-cli}
 
 ```bash
 npx @vectorize-io/hindsight-coding-agents install agy
@@ -204,7 +204,7 @@ npx @vectorize-io/hindsight-coding-agents install agy
 
 生命周期钩子、MCP，以及 `Hindsight · <bank>` 状态行。
 
-#### <StaticImage src="/img/harness/devin-cli.svg" alt="" width="20" height="20" /> Devin CLI
+#### <StaticImage src="/img/harness/devin-cli.svg" alt="" width="20" height="20" /> Devin CLI {#-devin-cli}
 
 ```bash
 npx @vectorize-io/hindsight-coding-agents install devin-cli
@@ -212,7 +212,7 @@ npx @vectorize-io/hindsight-coding-agents install devin-cli
 
 在 `~/.config/devin/config.json` 注册钩子，并配置 MCP。需要 Node 22.5+，见下文。
 
-#### <StaticImage src="/img/harness/cline-cli.svg" alt="" width="20" height="20" /> Cline CLI
+#### <StaticImage src="/img/harness/cline-cli.svg" alt="" width="20" height="20" /> Cline CLI {#-cline-cli}
 
 ```bash
 npx @vectorize-io/hindsight-coding-agents install cline-cli
@@ -220,7 +220,7 @@ npx @vectorize-io/hindsight-coding-agents install cline-cli
 
 通过 `cline plugin install` 安装原生插件，并配置 MCP 和配套技能。
 
-#### <StaticImage src="/img/harness/pi.svg" alt="" width="20" height="20" /> pi
+#### <StaticImage src="/img/harness/pi.svg" alt="" width="20" height="20" /> pi {#-pi}
 
 ```bash
 npx @vectorize-io/hindsight-coding-agents install pi
@@ -230,7 +230,7 @@ npx @vectorize-io/hindsight-coding-agents install pi
 
 对于 pi 和下文的 Prime Agent，此命令是唯一受支持的安装方式。有意不支持将我们作为 pi 软件包安装（`pi install npm:@vectorize-io/hindsight-coding-agents`）：两个宿主读取软件包 `package.json` 中相同的 `pi` 键，而该键只能指定一个入口。未被指定的宿主会加载另一宿主的打包代码，将自己报告为错误智能体，采用错误运行环境的配置，并为每个存储文档打上错误归属。因此软件包完全不包含 `pi` 键，上面的安装命令让每个宿主指向自己的打包代码。
 
-#### <StaticImage src="/img/harness/prime-agent.svg" alt="" width="20" height="20" /> Prime Agent
+#### <StaticImage src="/img/harness/prime-agent.svg" alt="" width="20" height="20" /> Prime Agent {#-prime-agent}
 
 ```bash
 npx @vectorize-io/hindsight-coding-agents install prime-agent
@@ -238,7 +238,7 @@ npx @vectorize-io/hindsight-coding-agents install prime-agent
 
 Prime Agent 是 pi 的分支，因此接入方式相同：在 `~/.prime/agent/settings.json` 添加扩展条目，在 `~/.prime/agent/skills` 安装配套技能，使用原生工具，无需 MCP。可以且预期同时安装两者：各宿主从自己的设置文件加载自己的入口，像其他任意两个智能体一样，**每个仓库共享一个记忆库**（默认 `coding-agent::{gitProject}`），所以告诉 pi 的内容在打开 Prime Agent 时同样可用。独立入口确保各自归属正确：自己的 `harnesses.<name>` 配置部分，以及每个存储文档上的智能体标记。
 
-#### <StaticImage src="/img/harness/dsh.svg" alt="" width="20" height="20" /> DeepSeek Harness
+#### <StaticImage src="/img/harness/dsh.svg" alt="" width="20" height="20" /> DeepSeek Harness {#-deepseek-harness}
 
 ```bash
 npx @vectorize-io/hindsight-coding-agents install dsh
@@ -246,7 +246,7 @@ npx @vectorize-io/hindsight-coding-agents install dsh
 
 在 `$DSH_HOME/cordis.patch.yml`（默认 `~/.dsh`）添加 Cordis 插件条目，每个 dsh 配置档都会组合该文件，使用原生工具，无需 MCP。dsh 有两点特殊之处：一个进程服务**多个仓库**（Web UI 可为每个会话选择目录），因此按会话工作区解析记忆库，而非每个进程只解析一次；dsh 没有面向插件的通知渠道，因此初始数据提示写入插件日志而非 UI。所有面向模型的内容——召回记忆、知识前导文本、`hindsight_*` 工具——不受影响。偏好已发布软件包方式时，`dsh plugin --profile web add @vectorize-io/hindsight-coding-agents` 也可用：软件包提供配置档补丁层，无需额外编辑。两种方式都会安装配套技能；通过宿主插件管理器接入时，插件在首次会话自行安装技能，因为此方式不会运行我们的安装程序。
 
-#### <StaticImage src="/img/harness/workbuddy.png" alt="" width="20" height="20" /> WorkBuddy
+#### <StaticImage src="/img/harness/workbuddy.png" alt="" width="20" height="20" /> WorkBuddy {#-workbuddy}
 
 ```bash
 npx @vectorize-io/hindsight-coding-agents install workbuddy
@@ -254,7 +254,7 @@ npx @vectorize-io/hindsight-coding-agents install workbuddy
 
 在 `~/.workbuddy/settings.json` 注册 3 个钩子，在 `~/.workbuddy/mcp.json` 注册 stdio MCP 服务器，并在 `~/.workbuddy/skills` 安装配套技能。WorkBuddy（腾讯 AI 工作台）基于共享 `@genie/agent-cli` 引擎，因此钩子遵循 Claude Code 协议。主要区别是对话记录 schema（`type:"message"` 记录包含顶层 `role`/`content`），由软件包自己的读取器归一化。
 
-#### <StaticImage src="/img/harness/codebuddy.webp" alt="" width="20" height="20" /> CodeBuddy
+#### <StaticImage src="/img/harness/codebuddy.webp" alt="" width="20" height="20" /> CodeBuddy {#-codebuddy}
 
 ```bash
 npx @vectorize-io/hindsight-coding-agents install codebuddy
@@ -435,12 +435,12 @@ npx @vectorize-io/hindsight-coding-agents install claude-code --server cloud --a
 | `reflectToolTimeoutMs`  | `330000`                             | 智能体调用 `hindsight_reflect` 工具的超时：智能体会等待该调用，内容丰富记忆库的高预算综合可能持续数分钟。默认超过服务器自身的反思总时间限制（`HINDSIGHT_API_REFLECT_WALL_TIMEOUT`，300 秒），由服务器决定何时放弃。未设置时会继承显式提高的 `reflectTimeoutMs`，但较短值不会降低它 |
 | `injectTimeoutMs`       | `7000`                               | `autoInject: "pages"` 和 `autoInject: "recall"` 的检索超时，单位毫秒；也是反思超时/5xx 后页面搜索再召回的**共享**预算（召回仅获得搜索后剩余时间）。例如设为 `2000` 限制每轮延迟，较慢的自托管库可用 `15000`。环境变量后备：`HINDSIGHT_INJECT_TIMEOUT_MS`。钩子运行环境中，注入必须在宿主提示词钩子超时内完成（默认 30 秒）；带回退的反思要预留 **`reflectTimeoutMs` + `injectTimeoutMs`**，必要时提高宿主钩子的 `timeout` |
 | `reflectBudget`         | `"high"`                             | `hindsight_reflect` 工具的反思预算：`"low"`、`"mid"` 或 `"high"`。大记忆库的高预算综合超过服务器总时间限制时可降低。自动会话启动反思始终使用 `"low"` 以适应钩子时间窗口，不受此设置影响 |
-| `autoInject`            | `"reflect"`                          | 在会话**第一个提示词**时注入一次的内容：`"reflect"` = 低预算反思综合（超时/5xx 时回退到页面搜索，再召回）；`"pages"` = 搜索匹配提示词的知识页；`"recall"` = 针对提示词召回库中记忆（由 `recallOptions` 指定，默认观测）；`"none"` = 不注入，智能体先搜索知识页，仅页面信息不足时反思。`"pages"` 和 `"recall"` 仅检索、不调用 LLM，时间预算为 `injectTimeoutMs` |
+| `autoInject`            | `"reflect"`                          | 在会话**第一个提示词**时注入一次的内容：`"reflect"` = 低预算反思综合（超时/5xx 时回退到页面搜索，再召回）；`"pages"` = 搜索匹配提示词的知识页；`"recall"` = 针对提示词召回库中记忆（由 `recallOptions` 指定，默认观测）；`"none"` = 不注入，智能体先搜索知识页，仅页面信息不足时反思。`"pages"` 和 `"recall"` 仅检索、不调用 LLM，时间预算为 `injectTimeoutMs`；若某次检索没有找到与提示词相关的内容，会在后续提示词中重试，最多重试 5 次 |
 | `autoReflect`           | `true`                               | **已弃用**，请使用 `autoInject`。仍兼容（`false` = `autoInject: "none"`），设置 `autoInject` 时忽略，并记录弃用警告 |
 | `pageSearchLimit`       | `3`                                  | 一次搜索返回的知识页数。作用于库的所有搜索：`autoInject: "pages"` 注入、反思回退，以及智能体自己的 `hindsight_search_knowledge_pages` 工具，因为限制位于它们共享的客户端中 |
 | `recallOptions`         | 见说明 | 逐键合并到每次召回请求体中的覆盖值，影响 `autoInject: "recall"` 和反思回退。键直接使用 API 召回参数，原样传入，因此无需新增选项就可设置召回接受的任何参数；唯一不可覆盖字段为 `query`。默认请求体是 `{"types": ["observation"], "budget": "low", "max_tokens": 2000, "include": {"entities": null}}`，逐键合并设置；`{"max_tokens": 4000}` 改变预算并保留其余项。观测属于整合层，每 token 的回答价值最高，但**禁用整合的库不会生成观测**，默认召回结果为空：此类库设为 `{"types": ["world", "experience"]}`，或使用 `{"types": null}` 获取所有类型。与 `retainMetadata` 相同，仅文件配置；对象无法扁平化为环境变量 |
 | `toolGuideExtra`        | —                                    | 自定义智能体使用记忆的指导，在内置工具指南**之后**添加（会话启动及每次刷新时），也添加到 `hindsight_search_knowledge_pages` 结果的来源说明之后。只增补内置文本，不替换。与其他键一样可按运行环境或记忆库设置，e.g. "Memory is a past record, not current state: verify any claim against the code before acting on it." |
-| `pageRefreshEveryTurns` | `10`                                 | 每 N 个用户轮次重新获取知识页，并重新注入页面列表及工具指南 |
+| `pageRefreshEveryTurns` | `1`                                  | 每 N 个用户轮次重新获取知识页，并重新注入页面列表及工具指南（`0` 也表示 1） |
 | `pageTriggerType`       | `"cron"`                             | 新知识页何时刷新，即保持最新的成本：`"cron"`（默认）仅按 `pageTriggerCron`，且确实过时时刷新；`"auto-refresh"` 在每次生成新材料的整合后刷新；`"manual"` 从不自行刷新。自动刷新最及时，也最昂贵：每次整合每个页面一次综合。对应 Hindsight API 的页面 `trigger.refresh_cron`，或 `trigger.refresh_after_consolidation`（自动刷新为 `true`，手动为 `false`） |
 | `pageTriggerCron`       | `"H * * * *"`                        | `pageTriggerType: "cron"` 的调度，使用 UTC、标准 5 字段 cron，例如 `"0 3 * * *"`。默认每小时执行，每个页面使用自己的哈希分钟。设置页面的 `trigger.refresh_cron`，API 将其与 `refresh_after_consolidation` 视为互斥；无变化时跳过调度刷新。将字段写为 `H`，可为各页面分配独立值，见下文**使用 `H` 分散刷新** |
 | `pages`                 | 所有页面 | 初始化知识页的逐页面配置，键为页面名称（不区分大小写）：`false` 完全跳过页面，`{"source_query": "..."}` 使用你的问题而非内置问题初始化。省略时全部五页采用内置查询。这是自定义页面措辞的受支持方式：插件会重新同步实际查询与配置不一致的页面，因此通过 API 或控制台编辑的查询会在下次会话被替换。跳过页面**不会删除**已有页面：保留内容，停止重新同步。你的查询也会附加范围限定条款，防止改写后的页面将依赖项决策当成当前项目决策。与 `recallOptions` 相同，仅文件配置；`banks.<id>` 中替换全局映射，而非合并 |
@@ -752,7 +752,7 @@ npx @vectorize-io/hindsight-coding-agents install claude-code --server cloud --a
 
 `autoInject` 指定检索来源而非反思时，该来源会记录自身结果及返回条目数：`"pages"` 使用 `inject_pages`，`"recall"` 使用 `inject_recall`（报错时为 `inject_pages_failed` / `inject_recall_failed`）。这些轮次不写反思事件，因为没有执行反思。
 
-**工具使用情况**（智能体是否使用 Hindsight）：每个已完成用户轮次在 `~/.hindsight/coding-agents-logs/usage.jsonl` 写入一行 JSON（通过 `HINDSIGHT_USAGE_FILE` 覆盖），记录该轮调用的 `hindsight_*` 工具，以及回答是否注明来自 Hindsight 记忆（“From Hindsight memory”）。来源标注率只统计调用了检索工具（搜索、列出、读取、反思）的轮次；保存文档不要求注明来源。会话回写时记录，因此 `retainSessions: false` 范围不记录任何条目。数据始终保留在本机。按智能体汇总：
+**工具使用情况**（智能体是否使用 Hindsight）：每个已完成用户轮次在 `~/.hindsight/coding-agents-logs/usage.jsonl` 写入一行 JSON（通过 `HINDSIGHT_USAGE_FILE` 覆盖），记录该轮调用的 `hindsight_*` 工具，以及回答是否注明来自 Hindsight 记忆（“From Hindsight memory”）。来源标注率只统计调用了检索工具（搜索、列出、读取、反思）的轮次；保存文档不要求注明来源。每轮结束时都会记录，无论 `retainSessions` 是否会回写会话。数据始终保留在本机。按智能体汇总：
 
 ```bash
 npx @vectorize-io/hindsight-coding-agents stats
@@ -771,7 +771,7 @@ npx @vectorize-io/hindsight-coding-agents stats
 两个文档 ID 用于内部记录。两者均可安全忽略或删除：
 
 - `survey-baseline:<sha>`：代码库调查运行时显示“🛰️ researching…”（研究中），发现到达后变为“✅ completed”（已完成）。使用 `survey` 策略存储，其标记规则从状态标记中**不提取任何内容**。它控制重新调查频率（`surveyRefreshCommits`），并提供同步状态中的 `surveyBaseline`。
-- `gitlog:<repo>`：聚合提交消息的初始文档，初始化再次运行时重新更新插入，不产生重复。
+- `gitlog:<repo>`：按提交时间从早到晚排列的聚合提交消息初始文档。初始化后，只会追加其 `gitlog-head:<sha>` 标签所指提交之后的新提交，以保持文档最新；因此新增提交只需提取其自身消息，无需重新提取完整日志。只有追加操作无法反映当前 HEAD 时，才会在 `seedLimit` 限制内完整重写：记录的提交不再是 HEAD 的祖先（例如发生 rebase 或强制推送）、新增提交数超过 `seedLimit`，或服务器无法安全追加时。
 
 ### 感觉记忆缺失时 {#when-memory-seems-to-be-missing}
 

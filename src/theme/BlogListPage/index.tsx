@@ -49,7 +49,7 @@ function cardTransitionName(permalink: string): string {
 
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
-  return date.toLocaleDateString('zh-CN', {month: 'short', day: 'numeric', year: 'numeric'});
+  return date.toLocaleDateString('zh-CN', {month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC'});
 }
 
 // First category (skipping "All") whose tag the post carries, for the card badge.

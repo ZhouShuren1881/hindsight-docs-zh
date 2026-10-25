@@ -30,7 +30,7 @@ import memoriesGo from '!!raw-loader!@site/examples/api/memories.go';
 
 列出记忆库中的记忆单元。响应会包含每个单元的 `fact_type`（`world` | `experience` | `observation`）、`state`（`valid` | `invalidated`）、元数据、实体、发生日期，以及用户编辑过的事实的 `edited_at` 时间戳。默认**包含已标记失效的行**，以便人工维护过程可审计；使用 `state=` 筛选。
 
-使用查询参数缩小结果范围：`type=`（事实类型）、`q=`（在文本和上下文中进行全文搜索）、`document_id=`（单个来源文档）和 `entity_id=`（与指定实体关联的记忆单元）。`entity_id` 筛选器会对已存储的实体关联进行精确反向查找，不按文本或语义匹配；因此无需扫描所有记忆，就能列出某个实体的证据（例如使用 `type=observation` 获取其观测）。由于只有有效单元才有实体关联，同时使用 `entity_id` 和 `state=invalidated` 不会返回任何结果。
+使用查询参数缩小结果范围：`type=`（事实类型）、`q=`（在文本和上下文中进行不区分大小写的子字符串筛选；该筛选未建立索引，因此会扫描整个记忆库，适合浏览和检查；生产环境搜索请使用 Recall）、`document_id=`（单个来源文档）和 `entity_id=`（与指定实体关联的记忆单元）。`entity_id` 筛选器会对已存储的实体关联进行精确反向查找，不按文本或语义匹配；因此无需扫描所有记忆，就能列出某个实体的证据（例如使用 `type=observation` 获取其观测）。由于只有有效单元才有实体关联，同时使用 `entity_id` 和 `state=invalidated` 不会返回任何结果。
 
 ### 时间范围 {#time-window}
 
@@ -120,7 +120,7 @@ import memoriesGo from '!!raw-loader!@site/examples/api/memories.go';
 
 ### 编辑记忆 {#edit-a-memory}
 
-更正 LLM 提取的内容。你可以更改**文本**、**上下文**、**发生日期**、**事实类型**和**实体**，也就是提取器可能弄错的任何内容。Hindsight 会重新嵌入该事实，移除从旧版本派生的观测和关联，再次执行整合，使下游知识反映这项更正。编辑过的事实会带有 `edited_at` 时间戳（控制台中显示为 **Edited** 徽标）。
+更正 LLM 提取的内容。你可以更改**文本**、**上下文**、**发生日期**、**提及时间**（`mentioned_at`）、**事实类型**和**实体**，也就是提取器可能弄错的任何内容。Hindsight 会重新嵌入该事实，移除从旧版本派生的观测和关联，再次执行整合，使下游知识反映这项更正。编辑过的事实会带有 `edited_at` 时间戳（控制台中显示为 **Edited** 徽标）。
 
 更正事实不会丢弃它所参与的**因果关系**：这些关系来自读取原始来源，因此编辑（或先标记失效再恢复）都会保留它们，而不会移除那些无法重新构建的关联。
 
@@ -141,7 +141,7 @@ import memoriesGo from '!!raw-loader!@site/examples/api/memories.go';
 </TabItem>
 </Tabs>
 
-日期、事实类型和实体也可以用同样方式更正。对于 `context`、`occurred_start` 和 `occurred_end`，空字符串 `""` 会清空字段；省略字段则保持原值。对于 `entities`，提供列表会**替换**事实的实体集合，`[]` 会解除所有实体关联；省略该字段则保持原关联不变。
+日期、事实类型和实体也可以用同样方式更正。对于 `context`、`occurred_start`、`occurred_end` 和 `mentioned_at`，空字符串 `""` 会清空字段；省略字段则保持原值。对于 `entities`，提供列表会**替换**事实的实体集合，`[]` 会解除所有实体关联；省略该字段则保持原关联不变。
 
 ### 消解实体名称 {#resolving-entity-names}
 

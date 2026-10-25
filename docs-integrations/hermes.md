@@ -153,14 +153,24 @@ hindsight-embed -p hermes ui start
 
 ## 配置 {#config}
 
-配置文件：`~/.hermes/hindsight/config.json`
+每个 Hermes profile 都有自己的配置文件：`$HERMES_HOME/hindsight/config.json`（默认 profile 使用 `~/.hermes/hindsight/config.json`）。`hermes memory setup` 会写入此文件。插件会依次检查以下来源，并读取第一个存在且非空的配置：
+
+1. `$HERMES_HOME/hindsight/config.json` — 仅对此 profile 生效
+2. `~/.hindsight/config.json` — 所有 profile 共用
+3. 环境变量（见“环境变量”）
+
+每个 profile 只有一个配置文件。若要让同一 profile 按仓库、工作区、平台或用户使用不同记忆库，请使用 `bank_id_template` 或下方的多个记忆库设置；若要完全独立的配置，请使用不同的 Hermes profile。
+
+部分键也接受旧名称：`api_key` 可写作 `apiKey`，`recall_budget` 可写作 `budget`，`recall_prefetch_method` 可写作 `prefetch_method`，`llm_api_key` 可写作 `llmApiKey`。
 
 ### 连接 {#connection}
 
 |参数|默认值|说明|
 |-----|---------|-------------|
 |`mode`|`cloud`|`cloud`、`local_embedded` 或 `local_external`|
-|`api_url`|`https://api.hindsight.vectorize.io`|API URL（用于云端和 `local_external` 模式）|
+|`api_url`|云端为 `https://api.hindsight.vectorize.io`，`local_external` 为 `http://localhost:8888`|API URL。未设置时回退到 `HINDSIGHT_API_URL`。|
+|`api_key`|—|Hindsight API 密钥。云端必需，`local_external` 可选。未设置时回退到 `HINDSIGHT_API_KEY`；设置向导会将密钥存入该环境变量。|
+|`timeout`|`120`|每次 Hindsight API 请求的等待秒数。未设置时回退到 `HINDSIGHT_TIMEOUT`。|
 
 ### 记忆库 {#memory-bank}
 
@@ -172,12 +182,12 @@ hindsight-embed -p hermes ui start
 |`additional_banks`|—|按优先顺序写入并召回的额外记忆库。|
 |`recall_additional_banks`|—|仅用于召回、绝不写入的额外记忆库；在可写记忆库之后搜索。别名为 `recallAdditionalBanks`，这是 Claude Code 集成使用的名称。若某记忆库也列在 `additional_banks` 中，它仍可写入。|
 |`trusted_project_dirs`|—|绝对路径目录；这些目录中的 git 仓库可以通过 `.hindsight/config.toml` 选择自己的记忆库。默认值为空，因此克隆的仓库无法重定向你的记忆。|
-|`bank_mission`|—|Reflect 任务说明（为 Reflect 推理设定身份和框架）。通过 Banks API 应用。|
-|`bank_retain_mission`|—|Retain 任务说明（引导要提取的内容）。通过 Banks API 应用。|
+|`bank_mission`|—|会读取但不会应用到记忆库。要设置记忆库的 Reflect 任务说明，请使用记忆库配置（控制台或 `PATCH /v1/default/banks/{bank_id}/config`）。|
+|`bank_retain_mission`|—|会读取但不会应用到记忆库。要设置记忆库的 Retain 任务说明，请使用上述记忆库配置。|
 
 #### 多个记忆库 {#multiple-banks}
 
-按以下顺序选择主记忆库：受信任仓库中的 `.hindsight/config.toml`、`bank_id_template`，最后是 `bank_id`。写入时依次写入主记忆库、（如果启用了 `mirror_to_own_bank`）`bank_id`，再写入每个 `additional_banks` 条目。召回会同时搜索相同的记忆库，以及每个 `recall_additional_banks` 条目；每个记忆库使用配置的预算和 `recall_max_tokens`。结果按该顺序合并，并按文本去重。Reflect 仅使用主记忆库。
+按以下顺序选择主记忆库：受信任仓库中的 `.hindsight/config.toml`、`bank_id_template`，最后是 `HINDSIGHT_BANK_ID` 或 `bank_id`。写入时依次写入主记忆库、（如果启用了 `mirror_to_own_bank`）`bank_id`，再写入每个 `additional_banks` 条目。召回会同时搜索相同的记忆库，以及每个 `recall_additional_banks` 条目；每个记忆库使用配置的预算和 `recall_max_tokens`。结果按该顺序合并，并按文本去重。Reflect 仅使用主记忆库。
 
 三个列表设置接受 JSON 列表或逗号分隔的文本；值中含逗号时请使用 JSON 格式。
 
@@ -200,8 +210,10 @@ bank_id = "acme-billing"
 |`recall_max_tokens`|`4096`|召回结果的最大 token 数|
 |`recall_max_input_chars`|`800`|自动召回查询的最大输入字符数|
 |`recall_prompt_preamble`|—|召回记忆在上下文中的自定义前言|
-|`recall_tags`|—|搜索记忆时用于筛选的标签|
+|`recall_tags`|—|搜索记忆时用于筛选的标签：可用 JSON 列表（例如 `["project-x", "team"]`）或逗号分隔文本（`"project-x, team"`）|
 |`recall_tags_match`|`any`|标签匹配模式：`any` / `all` / `any_strict` / `all_strict`|
+|`reflect_tags`|—|限定 Reflect 推理范围的标签（适用于 `hindsight_reflect` 工具和 `recall_prefetch_method: reflect`）；可用 JSON 列表或逗号分隔文本。未设置时，Reflect 使用整个记忆库；`recall_tags` 不适用于 Reflect。|
+|`reflect_tags_match`|`any`|`reflect_tags` 的标签匹配模式|
 |`recall_types`|`observation`|召回中显示的事实类型（适用于自动召回和 `hindsight_recall` 工具）。接受逗号分隔的字符串或 JSON 列表。**默认值已缩窄为仅 `observation`**（见下文“行为变更”）。设置为 `observation,world,experience` 也会包含原始事实。|
 |`recall_min_scores`|—|JSON 对象，用于设置每种分数的最低相关性（例如 `{"reranker": 0.25}` 或 `{"semantic": 0.5}`）。适用于自动召回和 `hindsight_recall` 工具。请参阅下方提示。|
 |`auto_recall`|`true`|每轮开始前自动召回记忆|
@@ -223,15 +235,19 @@ bank_id = "acme-billing"
 |参数|默认值|说明|
 |-----|---------|-------------|
 |`auto_retain`|`true`|自动存入对话轮次|
+|`retain_cron`|`false`|也自动存入定时（cron）运行的内容。默认关闭，因此作业输出不会进入用户记忆；cron 运行时仍可使用 `hindsight_retain` 工具。|
 |`retain_async`|`true`|在 Hindsight 服务器上异步处理存入操作|
 |`retain_every_n_turns`|`1`|每 N 轮存入一次（1 = 每轮）|
 |`retain_context`|`conversation between Hermes Agent and the User`|存入记忆的上下文标签|
-|`retain_tags`|—|应用于存入记忆的默认标签；与每次工具调用的标签合并|
+|`retain_tags`|—|应用于存入记忆的默认标签；与每次工具调用的标签合并。可用 JSON 列表或逗号分隔文本。|
+|`observation_scopes`|`shared`|整合时如何按标签对观测分组：`shared`（整个记忆库共用一个范围，因此观测会跨会话合并；`session:` / `parent:` 标签仍保留在事实中供筛选）、`combined`（每个精确标签集合使用一个范围，此处即每个会话一个范围）、`per_tag`（每个标签单独处理一次）、`all_combinations`（处理每个标签子集，开销较大），或自定义范围的标签列表 JSON（例如 `[["user:alice"], ["project-x"]]`）。|
 |`retain_source`|—|选择启用后，将 `metadata.source` 附加到存入的记忆中（用于标识存储客户端，例如 `hermes`）。默认为空——除非你设置此项，否则不会发送归因标签。|
 |`retain_strategy`|—|随每条存储项发送的命名存入策略（`HINDSIGHT_RETAIN_STRATEGY`）。记忆库必须在 `retain_strategies` 下定义该策略；服务器会忽略未知名称。留空时由记忆库决定。|
 |`retain_indicator`|`true`|存入一轮对话时显示 `👁️ Hindsight — saving to memory…` 状态行。面向客户的智能体应关闭此项。|
 |`retain_user_prefix`|`User`|自动存入的对话记录中，用户轮次前使用的标签|
 |`retain_assistant_prefix`|`Assistant`|自动存入的对话记录中，助手轮次前使用的标签|
+|`prefetch_waits_for_retain`|`true`|开始下一轮的后台召回前，等待刚存入的轮次可被检索到，以便召回包含它。此过程在回复路径之外运行，不增加响应时间。|
+|`prefetch_retain_drain_timeout`|`10`|后台召回最多等待上述存入操作的秒数，超时后继续召回。|
 
 ### 集成 {#integration}
 
@@ -248,11 +264,13 @@ bank_id = "acme-billing"
 
 |参数|默认值|说明|
 |-----|---------|-------------|
-|`llm_provider`|`openai`|`openai`，`anthropic`，`gemini`，`groq`，`openrouter`，`minimax`，`ollama`，`lmstudio`，`openai_compatible`|
-|`llm_model`|每个提供商分别设置|模型名称（例如 `gpt-4o-mini`、`qwen/qwen3.5-9b`）|
-|`llm_base_url`|—|`openai_compatible` 的端点 URL（例如 `http://192.168.1.10:8080/v1`）|
-
-LLM API 密钥存储在 `~/.hermes/.env` 中，键名为 `HINDSIGHT_LLM_API_KEY`。
+|`llm_provider`|—|`openai`、`anthropic`、`gemini`、`groq`、`openrouter`、`minimax`、`ollama`、`lmstudio`、`openai_compatible`。设置向导建议使用 `openai`。|
+|`llm_model`|—|模型名称（例如 `gpt-4o-mini`、`qwen/qwen3.5-9b`）。设置向导会按提供商建议模型。|
+|`llm_base_url`|—|`openai_compatible` 的端点 URL（例如 `http://192.168.1.10:8080/v1`）。未设置时回退到 `HINDSIGHT_API_LLM_BASE_URL`。|
+|`llm_api_key`|—|LLM API 密钥。通常不写入配置文件：设置向导会将其存入 `$HERMES_HOME/.env`，变量名为 `HINDSIGHT_LLM_API_KEY`。|
+|`profile`|`hermes`|本地守护进程 profile 名称；其数据、日志和环境文件会以此名称保存在 `~/.hindsight/profiles/` 下。为两个 Hermes profile 设置不同值，可以隔离它们的本地记忆。|
+|`idle_timeout`|`300`|守护进程停止前的闲置秒数；设为 `0` 可保持运行。未设置时回退到 `HINDSIGHT_IDLE_TIMEOUT`。|
+|`port_health_grace_timeout`|`30`|慢速守护进程健康检查在重启前的等待秒数。繁忙或资源有限的机器上可调高。设置 `HINDSIGHT_EMBED_PORT_HEALTH_GRACE_TIMEOUT` 时以该变量为准。|
 
 嵌入式守护进程是一个子进程，无法访问每轮对话的密钥作用域，因此会从 `~/.hindsight/profiles/<profile>.env` 读取密钥（在设置时以及配置变更时以仅所有者可读的权限写入该文件）。密钥的解析顺序为：显式配置 → 密钥作用域 → 磁盘上的 profile 环境文件。重写文件时采用失败关闭策略：如果构建版本没有密钥，绝不会覆盖已经包含密钥的 profile 文件。
 
@@ -270,15 +288,33 @@ LLM API 密钥存储在 `~/.hermes/.env` 中，键名为 `HINDSIGHT_LLM_API_KEY`
 
 ## 环境变量 {#environment-variables}
 
+请在 profile 的 `$HERMES_HOME/.env` 中设置这些变量。除非下文另有说明，`config.json` 中的值优先于对应环境变量。
+
+当对应配置键未设置时，会使用以下变量：
+
 |变量|说明|
 |----------|-------------|
-|`HINDSIGHT_API_KEY`|Hindsight Cloud 的 API 密钥|
-|`HINDSIGHT_LLM_API_KEY`|本地模式的 LLM API 密钥|
-|`HINDSIGHT_API_LLM_BASE_URL`|本地模式的 LLM 基本 URL（例如 OpenRouter）|
-|`HINDSIGHT_API_URL`|覆盖 API 端点|
-|`HINDSIGHT_BANK_ID`|覆盖记忆库名称|
-|`HINDSIGHT_BUDGET`|覆盖召回预算|
-|`HINDSIGHT_MODE`|覆盖模式（`cloud`、`local_embedded`、`local_external`）|
+|`HINDSIGHT_API_KEY`|Hindsight API 密钥（`api_key`）|
+|`HINDSIGHT_API_URL`|API 端点（`api_url`）|
+|`HINDSIGHT_BANK_ID`|记忆库名称；设置后优先于 `config.json` 中的 `bank_id`（但 `bank_id_template` 仍优先）|
+|`HINDSIGHT_TIMEOUT`|API 请求超时秒数（`timeout`）|
+|`HINDSIGHT_LLM_API_KEY`|`local_embedded` 模式的 LLM API 密钥（`llm_api_key`）；也接受 `HINDSIGHT_API_LLM_API_KEY`|
+|`HINDSIGHT_API_LLM_BASE_URL`|`local_embedded` 模式的 LLM 端点（`llm_base_url`）|
+|`HINDSIGHT_IDLE_TIMEOUT`|守护进程闲置超时秒数（`idle_timeout`）|
+|`HINDSIGHT_EMBED_PORT_HEALTH_GRACE_TIMEOUT`|守护进程健康检查宽限秒数；优先于 `port_health_grace_timeout`|
+|`HINDSIGHT_RETAIN_TAGS`|存入记忆的默认标签（`retain_tags`）|
+|`HINDSIGHT_RETAIN_OBSERVATION_SCOPES`|观测范围（`observation_scopes`）|
+|`HINDSIGHT_RETAIN_SOURCE`|存入记忆的 `metadata.source`（`retain_source`）|
+|`HINDSIGHT_RETAIN_STRATEGY`|命名的存入策略（`retain_strategy`）|
+|`HINDSIGHT_RETAIN_USER_PREFIX`|用户轮次前的标签（`retain_user_prefix`）|
+|`HINDSIGHT_RETAIN_ASSISTANT_PREFIX`|助手轮次前的标签（`retain_assistant_prefix`）|
+
+仅当完全没有配置文件时，才会使用以下变量。`hermes memory setup` 写入 `config.json` 后，这些变量会被忽略；请改为设置对应配置键：
+
+|变量|说明|
+|----------|-------------|
+|`HINDSIGHT_MODE`|模式：`cloud`、`local_embedded` 或 `local_external`（`mode`）|
+|`HINDSIGHT_BUDGET`|召回预算（`recall_budget`）|
 |`HINDSIGHT_RETAIN_CONTEXT`|随每次存入的对话一同保存的标签（`retain_context`）|
 |`HINDSIGHT_RETAIN_INDICATOR`|设为 `false` 可隐藏“正在存入记忆”状态行（`retain_indicator`）|
 |`HINDSIGHT_RECALL_INDICATOR`|设为 `false` 可隐藏“已召回 N 条记忆”状态行（`recall_indicator`）|

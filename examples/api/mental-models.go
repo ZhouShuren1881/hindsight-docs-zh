@@ -144,6 +144,16 @@ func main() {
 	fmt.Printf("Refresh operation ID: %s\n", refreshResult.GetOperationId())
 	// [/docs:refresh-mental-model]
 
+	// [docs:full-refresh-mental-model]
+	// 本次从头重写内容；模型会保留原有模式
+	fullReq := hindsight.NewRefreshMentalModelRequest()
+	fullReq.SetMode("full")
+	fullResult, _, _ := client.MentalModelsAPI.RefreshMentalModel(ctx, mmBankID, mentalModelID).
+		RefreshMentalModelRequest(*fullReq).Execute()
+
+	fmt.Printf("Full refresh operation ID: %s\n", fullResult.GetOperationId())
+	// [/docs:full-refresh-mental-model]
+
 	// [docs:clear-mental-model]
 	// Clear a mental model's content, then refresh for a full re-synthesis
 	client.MentalModelsAPI.ClearMentalModel(ctx, mmBankID, mentalModelID).Execute()

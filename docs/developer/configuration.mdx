@@ -233,23 +233,24 @@ Hindsight 提供五种 BM25 关键词检索后端：
 
 | 变量 | 说明 | 默认值 |
 |----------|-------------|---------|
-| `HINDSIGHT_API_LLM_PROVIDER` | 提供方：`openai`、`openai-responses`、`openai-codex`、`claude-code`、`cursor`、`github-copilot`、`anthropic`、`gemini`、`groq`、`minimax`、`deepseek`、`zai`、`opencode-go`、`meta`、`nous`、`xai-oauth`、`fireworks`、`ollama`、`ollama-cloud`、`lmstudio`、`llamacpp`、`vertexai`、`bedrock`、`litellm`、`litellmrouter`、`volcano`、`openrouter`、`requesty`、`none` | `openai` |
-| `HINDSIGHT_API_LLM_API_KEY` | 需要密钥的提供方所用 API 密钥；`github-copilot` 不使用此项 | - |
+| `HINDSIGHT_API_LLM_PROVIDER` | 提供方：`openai`、`openai-responses`、`openai-codex`、`chatgpt`、`claude-code`、`cursor`、`github-copilot`、`anthropic`、`gemini`、`groq`、`minimax`、`deepseek`、`zai`、`opencode-go`、`meta`、`nous`、`xai-oauth`、`fireworks`、`ollama`、`ollama-cloud`、`lmstudio`、`llamacpp`、`vertexai`、`bedrock`、`litellm`、`litellmrouter`、`volcano`、`openrouter`、`requesty`、`none` | `openai` |
+| `HINDSIGHT_API_LLM_API_KEY` | 需要密钥的提供方所用 API 密钥；`github-copilot` 不使用此项。配置了[工作负载身份联合](https://platform.claude.com/docs/en/manage-claude/workload-identity-federation)时，`anthropic` 可不设置此项（见下方 Anthropic 示例）。 | - |
 | `HINDSIGHT_API_LLM_MODEL` | 模型名称 | `gpt-5-mini` |
 | `HINDSIGHT_API_LLM_BASE_URL` | 自定义 LLM 端点 | 提供方默认值 |
-| `HINDSIGHT_API_LLM_MAX_CONCURRENT` | 可同时发出的 LLM 请求数上限 | `32` |
+| `HINDSIGHT_API_LLM_MAX_CONCURRENT` | 可同时发出的 LLM 请求数上限。达到上限时，实时 API 请求会优先于进程内工作进程执行的后台任务（异步存入、整合）获得下一个空闲名额。 | `32` |
 | `HINDSIGHT_API_LLM_MAX_RETRIES` | LLM API 请求的最大重试次数 | `3` |
 | `HINDSIGHT_API_LLM_INITIAL_BACKOFF` | 首次重试前的等待时间（秒），之后按指数增长 | `1.0` |
 | `HINDSIGHT_API_LLM_MAX_BACKOFF` | 重试等待时间的最大上限（秒） | `60.0` |
 | `HINDSIGHT_API_LLM_TIMEOUT` | LLM 请求超时时间，单位秒。所有提供方都把它作为单次请求的**总时限**，其中包括读取流式响应的时间；即使后端持续发送数据，达到时限后也会停止读取。提供方确实较慢时可调高；下方的逐操作设置会覆盖此值。 | `120` |
-| `HINDSIGHT_API_LLM_CONNECT_TIMEOUT` | LLM 请求的**连接阶段**（TCP 和 TLS 握手）最长耗时，单位秒。读取、写入和连接池阶段仍可使用完整的 `HINDSIGHT_API_LLM_TIMEOUT` 时限。单独限制连接时间后，无法访问或卡住的端点会在数秒内失败，不必耗尽整个请求时限。实际生效值为本项和请求超时中较小者。设为 `0` 可取消此限制，让四个阶段共用一个时限。适用于 Hindsight 创建 HTTP 客户端的提供方：所有兼容 OpenAI 的后端、`openai-responses`、`anthropic`、`openai-codex`、`xai-oauth`、`fireworks`、`nous`、`llamacpp`。`litellm`/`litellmrouter` 以及 `gemini`/`vertexai` 使用自己的传输层，只采用单一总时限；`claude-code`/`cursor`/`github-copilot` 则运行 CLI，不使用 socket。 | `10` |
+| `HINDSIGHT_API_LLM_CONNECT_TIMEOUT` | LLM 请求的**连接阶段**（TCP 和 TLS 握手）最长耗时，单位秒。读取、写入和连接池阶段仍可使用完整的 `HINDSIGHT_API_LLM_TIMEOUT` 时限。单独限制连接时间后，无法访问或卡住的端点会在数秒内失败，不必耗尽整个请求时限。实际生效值为本项和请求超时中较小者。设为 `0` 可取消此限制，让四个阶段共用一个时限。适用于 Hindsight 创建 HTTP 客户端的提供方：所有兼容 OpenAI 的后端、`openai-responses`、`chatgpt`、`anthropic`、`openai-codex`、`xai-oauth`、`fireworks`、`nous`、`llamacpp`。`litellm`/`litellmrouter` 以及 `gemini`/`vertexai` 使用自己的传输层，只采用单一总时限；`claude-code`/`cursor`/`github-copilot` 则运行 CLI，不使用 socket。 | `10` |
 | `HINDSIGHT_API_LLM_HTTP_LOG_LEVEL` | `httpx` 和 `httpcore` 日志记录器的级别。设为 `DEBUG` 可查看每个 LLM 请求经历的传输阶段（`connect_tcp`、`send_request_headers`、`receive_response_headers`），帮助区分请求尚未发出就卡住，还是发出后一直没有响应。输出很详细，仅用于诊断。 | `WARNING` |
-| `HINDSIGHT_API_LLM_REASONING_EFFORT` | 对支持此项的提供方和模型指定推理强度，例如 `none`、`low`、`medium`、`high`、`xhigh`。设置后会按原值发送，不受模型名称影响，因此可控制 vLLM、Ollama、llama.cpp、TGI 等自托管推理模型消耗的思考 token；对这类模型而言，`none` 往往是唯一能移除思考内容块的取值。留空时完全不发送推理参数，各模型采用自己的默认强度。`openai` 及所有兼容 OpenAI 的提供方、`openai-responses`、`openai-codex`、`xai`、`llamacpp` 和 `litellm`/`litellmrouter`（会按目标提供方转换）均支持此项。原生 `gemini`/`vertexai`、`anthropic`、`claude-code` 和 `cursor` 不提供推理强度控制；设置时会在启动阶段记录警告。要对这些模型应用此参数，可通过 `litellm` 调用。 | 未设置（采用模型默认值） |
+| `HINDSIGHT_API_LLM_REASONING_EFFORT` | 对支持此项的提供方和模型指定推理强度，例如 `none`、`low`、`medium`、`high`、`xhigh`。设置后会按原值发送，不受模型名称影响，因此可控制 vLLM、Ollama、llama.cpp、TGI 等自托管推理模型消耗的思考 token；对这类模型而言，`none` 往往是唯一能移除思考内容块的取值。留空时完全不发送推理参数，各模型采用自己的默认强度。`openai` 及所有兼容 OpenAI 的提供方、`openai-responses`、`chatgpt`、`openai-codex`、`xai`、`llamacpp` 和 `litellm`/`litellmrouter`（会按目标提供方转换）均支持此项。原生 `gemini`/`vertexai`、`anthropic`、`claude-code` 和 `cursor` 不提供推理强度控制；设置时会在启动阶段记录警告。要对这些模型应用此参数，可通过 `litellm` 调用。 | 未设置（采用模型默认值） |
 | `HINDSIGHT_API_LLM_TEMPERATURE` | 对内部 LLM 调用的采样温度进行全局覆盖。可设为 `[0.0, 2.0]` 范围内的数字，也可设为 `none`（`default`、`off` 和空值也等价），以**省略**温度参数。拒绝显式温度的模型必须省略此参数，例如只接受默认温度的 Azure `gpt-5.5`。下方的逐操作变量会覆盖本项。 | 各操作的默认值 |
 | `HINDSIGHT_API_LLM_TEMPERATURE_VERIFICATION` | 启动连接检查所用的温度。可填 `[0.0, 2.0]` 范围内的数字，或 `none` 以省略。覆盖 `HINDSIGHT_API_LLM_TEMPERATURE`。 | `0.0` |
 | `HINDSIGHT_API_LLM_TEMPERATURE_RETAIN` | Retain 事实提取所用的温度。可填 `[0.0, 2.0]` 范围内的数字，或 `none` 以省略。覆盖 `HINDSIGHT_API_LLM_TEMPERATURE`。 | `0.1` |
 | `HINDSIGHT_API_LLM_TEMPERATURE_REFLECT` | Reflect 思考步骤所用的温度。可填 `[0.0, 2.0]` 范围内的数字，或 `none` 以省略。覆盖 `HINDSIGHT_API_LLM_TEMPERATURE`。 | `0.9` |
-| `HINDSIGHT_API_LLM_TEMPERATURE_CONSOLIDATION` | 整合所用的温度（心智模型增量更新和去重）。可填 `[0.0, 2.0]` 范围内的数字，或 `none` 以省略。覆盖 `HINDSIGHT_API_LLM_TEMPERATURE`。 | `0.0` |
+| `HINDSIGHT_API_LLM_TEMPERATURE_CONSOLIDATION` | 整合（去重）以及心智模型刷新的增量更新和撤回调用所用温度，除非设置了 `HINDSIGHT_API_LLM_TEMPERATURE_MENTAL_MODEL_REFRESH`。可填 `[0.0, 2.0]` 范围内的数字，或 `none` 以省略。覆盖 `HINDSIGHT_API_LLM_TEMPERATURE`。 | `0.0` |
+| `HINDSIGHT_API_LLM_TEMPERATURE_MENTAL_MODEL_REFRESH` | 心智模型刷新结构化编辑调用（增量更新和撤回）所用温度。可填 `[0.0, 2.0]` 范围内的数字，或 `none` 以省略。当刷新使用独立模型（`HINDSIGHT_API_MENTAL_MODEL_REFRESH_LLM_*`），且其建议温度不同于整合时，可设置此项。 | 回退到 `HINDSIGHT_API_LLM_TEMPERATURE_CONSOLIDATION` |
 | `HINDSIGHT_API_LLM_VISION` | 指定配置的 LLM 是否能读取图像，并覆盖提供方自身的能力报告。留空时由各提供方自行报告：Anthropic、Gemini 和 OpenAI 表示支持；`none` 表示不支持；LiteLLM、Ollama、LM Studio、OpenRouter 和兼容 OpenAI 的代理等网关后端报告为*未知*，因为它们的模型目录中既有视觉模型，也有纯文本模型。携带[内嵌附件](#inline-attachments-in-retain)的 Retain 请求若能力为不支持或未知，都会返回 `422` 并拒绝处理。静默丢掉附件会使文档看起来已存入，却丢失调用方关心的信息。通过网关运行视觉模型时设为 `true`；如果某端点虽然模型名称看似支持图像、实际上却拒绝图像请求，可设为 `false`。 | 由提供方决定 |
 | `HINDSIGHT_API_VLM_PROVIDER` | **视觉槽位**使用的提供方，仅处理带有[内嵌附件](#inline-attachments-in-retain)的 Retain 文本块。纯文本块仍交给 Retain LLM，因此文档大多为文本的记忆库无需为全部内容支付视觉模型费用。未设置时，附件也使用 Retain LLM。 | Retain LLM |
 | `HINDSIGHT_API_VLM_API_KEY` | 视觉槽位的 API 密钥。 | Retain LLM 的密钥 |
@@ -270,7 +271,8 @@ Hindsight 提供五种 BM25 关键词检索后端：
 | `HINDSIGHT_API_LLM_SUPPORTS_MAX_ITEMS` | 指定 LLM 后端是否接受结构化输出 schema 中 JSON Schema 的 `maxItems` / `minItems`。对于 Bedrock Converse 等会拒绝这些关键字的后端，设为 `false`；整合在解析后仍会执行观测数量上限。 | `true` |
 | `HINDSIGHT_API_LLM_SUPPORTS_STRING_PATTERN` | 指定 LLM 后端是否接受结构化输出 schema 中的 JSON Schema `pattern`。设为 `true` 后，Retain 会将 `occurred_start` / `occurred_end` 限制为 ISO 时间戳，防止语法约束模型在时间戳字符串中推理而损坏日期，也避免未结束的响应消耗完整 completion 预算。默认关闭，因为支持范围有限，而且后端拒绝时会在请求阶段直接报 400：Bedrock 根据不包含此关键字的允许列表校验 schema，OpenAI 在 strict 模式下也会报不支持的关键字。对既不执行也不拒绝此项的后端，启用它没有收益。 | `false` |
 | `HINDSIGHT_API_LLM_STRUCTURED_OUTPUT_FORCED_TOOL` | 对 LiteLLM 后端（`litellm`、`litellmrouter`、`bedrock`），可改用强制单个工具调用来请求结构化输出，并将响应 schema 作为工具参数，而不是使用 `response_format`。对于直接拒绝 `response_format` 的后端，设为 `true`。Bedrock Claude 是否需要此项取决于区域：`ap-southeast-2`（`au.*` 推理配置）会以 `Extra inputs are not permitted` 拒绝转换后的 Converse `outputConfig`；同一模型在 `us-east-1`（`us.*`）可以接受，无需设置。两种情况都已验证。如果模型未调用工具而是直接回答，系统仍按以前的方式将回复当作文本解析。其他提供方会忽略此项。 | `false` |
-| `HINDSIGHT_API_LLM_OPENAI_COMPATIBLE_JSON_MODE` | 指定兼容 OpenAI 的后端在宽松（非 strict）结构化输出流程中是否支持 `response_format={"type": "json_object"}`。留空时由提供方决定：LM Studio、Ollama 和 Volcano 只在提示词中提供 schema；llama.cpp 遵循 `HINDSIGHT_API_LLAMACPP_NO_GRAMMAR`；其他提供方会发送 `json_object`。若 `provider=openai` 指向无法约束输出的本地服务器，可设为 `false`。一些服务器会改写提示词，而思考模型可能不断围绕改写后的内容循环，直到 LLM 超时。关闭此项不会让模型自动生成 JSON，只会删除服务器处理不当的请求字段；模型仍须遵循提示词中的 schema。设为 `true` 可强制向默认会跳过此字段的后端发送 `json_object`。 | 由提供方决定 |
+| `HINDSIGHT_API_LLM_OPENAI_COMPATIBLE_JSON_MODE` | 指定兼容 OpenAI 的后端在宽松（非 strict）结构化输出流程中是否支持 `response_format={"type": "json_object"}`。留空时由提供方决定：LM Studio、Ollama、Volcano 和 z.ai 只在提示词中提供 schema；llama.cpp 遵循 `HINDSIGHT_API_LLAMACPP_NO_GRAMMAR`；其他提供方会发送 `json_object`。z.ai 会跳过此模式，因为它会从生成文本中删除字面 token `json`，导致 `latest.json` 变成 `latest.`：JSON 仍有效，但内容已被悄悄篡改。若 `provider=openai` 指向无法约束输出的本地服务器，可设为 `false`。一些服务器会改写提示词，而思考模型可能不断围绕改写后的内容循环，直到 LLM 超时。关闭此项不会让模型自动生成 JSON，只会删除服务器处理不当的请求字段；模型仍须遵循提示词中的 schema。设为 `true` 可强制向默认会跳过此字段的后端发送 `json_object`。 | 由提供方决定 |
+| `HINDSIGHT_API_LLM_CHATGPT_HOME` | `chatgpt` 提供方的凭据目录：包含 `credentials.json`（由 `hindsight-admin chatgpt login` 或无头服务器上的 `login --from-file` 写入）以及此主机的 `host_id`。仅限服务器级设置。参见 [ChatGPT 设置](./models#chatgpt-setup-sign-in-with-chatgpt)。 | `~/.hindsight/chatgpt` |
 | `HINDSIGHT_API_LLM_CODEX_HOME` | `openai-codex` 提供方的凭据目录，内含其用于认证的 `auth.json`。这会覆盖 Hindsight 自身 LLM 调用所用的进程级 `CODEX_HOME`。因为 `CODEX_HOME` 是进程级设置，可将此项与按成员设置的 `HINDSIGHT_API_LLM_<n>_CODEX_HOME` 配合，在一个进程中运行两个独立授权的 ChatGPT 配置档。这样由两个 Codex 成员组成的[多 LLM 链](#multi-llm-strategies-failover--round-robin)便可在不同账户间故障转移。 | 未设置（否则使用 `CODEX_HOME`，再否则使用 `~/.codex`） |
 | `HINDSIGHT_API_LLM_OLLAMA_NUM_CTX` | 可选的 Ollama 原生 `num_ctx` 覆盖值。留空时采用模型或服务器默认值；需要更大上下文窗口时才设置为正整数。设置后，包括启动连接探测在内的自由格式调用也会经由原生 `/api/chat` API，因为兼容 OpenAI 的端点不能表达上下文大小；详见下文。 | 未设置 |
 | `HINDSIGHT_API_LLM_GEMINI_SAFETY_SETTINGS` | Gemini/VertexAI 内容安全过滤器所用的 `{category, threshold}` 字典列表，以 JSON 编码 | `null` |
@@ -326,6 +328,12 @@ export HINDSIGHT_API_LLM_MODEL=gemini-2.0-flash
 export HINDSIGHT_API_LLM_PROVIDER=anthropic
 export HINDSIGHT_API_LLM_API_KEY=sk-ant-xxxxxxxxxxxx
 export HINDSIGHT_API_LLM_MODEL=claude-sonnet-4-20250514
+# 或不使用固定密钥，改用工作负载身份联合。取消设置 HINDSIGHT_API_LLM_API_KEY，
+# Anthropic SDK 会用平台身份 token 换取短期访问 token，并自行刷新。
+# export ANTHROPIC_FEDERATION_RULE_ID=fdrl_xxxxxxxxxxxx
+# export ANTHROPIC_ORGANIZATION_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+# export ANTHROPIC_SERVICE_ACCOUNT_ID=svac_xxxxxxxxxxxx
+# export ANTHROPIC_IDENTITY_TOKEN_FILE=/var/run/secrets/anthropic/token  # 例如投射的 k8s 服务账号 token
 
 # Vertex AI (Google Cloud - uses native genai SDK)
 export HINDSIGHT_API_LLM_PROVIDER=vertexai
@@ -371,7 +379,7 @@ export HINDSIGHT_API_LLM_MODEL=your-model-name
 
 # OpenAI Codex (ChatGPT Plus/Pro subscription - uses OAuth, no API key needed)
 export HINDSIGHT_API_LLM_PROVIDER=openai-codex
-export HINDSIGHT_API_LLM_MODEL=gpt-5.4-mini
+export HINDSIGHT_API_LLM_MODEL=gpt-5.6-luna
 # No API key needed - uses OAuth tokens from ~/.codex/auth.json
 # For long-running services, set CODEX_HOME to a dedicated auth directory so
 # Hindsight doesn't share (and lose) its refresh token with another Codex process.
@@ -416,6 +424,14 @@ export HINDSIGHT_API_LLM_MODEL=qwen/qwen3.5-9b
 # provider.require_parameters=true, so OpenRouter only routes them to upstreams
 # that support response_format. Any "provider" keys you set in
 # HINDSIGHT_API_LLM_EXTRA_BODY (e.g. "only") are kept and take precedence.
+# 这也意味着发送的每个参数（包括 temperature）都必须受支持。拒绝 temperature
+# 的模型（如 anthropic/claude-haiku-5.5）会报 "No endpoints found that can handle the requested parameters"；
+# 解决方法是省略它：
+# export HINDSIGHT_API_LLM_TEMPERATURE=none
+# Reflect 会强制调用工具：首次搜索后使用 tool_choice "required"，强制步骤使用
+# 指定工具。部分上游只接受 "auto"，并会因此失败（若干 gpt-oss-120b 主机出现过此问题，#5832）。
+# 可将请求限定到支持这些参数的上游：
+# export HINDSIGHT_API_LLM_EXTRA_BODY='{"provider": {"only": ["deepinfra", "cerebras"]}}'
 
 # Requesty (OpenAI-compatible gateway)
 export HINDSIGHT_API_LLM_PROVIDER=requesty
@@ -506,7 +522,7 @@ export HINDSIGHT_API_LLM_PROVIDER=none
 ```
 
 :::tip OpenAI Codex、Claude Code 与 Vertex AI 配置
-**OpenAI Codex**（ChatGPT Plus/Pro）、**Claude Code**（Claude Pro/Max）和 **Vertex AI**（Google Cloud）的详细配置说明，请参阅[模型文档](./models#openai-codex-setup-chatgpt-pluspro)。
+**ChatGPT 方案**（[使用 ChatGPT 登录](./models#chatgpt-setup-sign-in-with-chatgpt)）、**OpenAI Codex**（ChatGPT Plus/Pro）、**Claude Code**（Claude Pro/Max）和 **Vertex AI**（Google Cloud）的详细配置说明，请参阅[模型文档](./models#openai-codex-setup-chatgpt-pluspro)。
 :::
 
 ### SuperGrok OAuth（`xai-oauth`） {#supergrok-oauth-xai-oauth}
@@ -569,6 +585,8 @@ export HINDSIGHT_API_LLM_LITELLMROUTER_CONFIG='{
 | `HINDSIGHT_API_LLM_<n>_MAX_RETRIES` | 成员专用的重试次数上限。未设置时回退到操作的 `MAX_RETRIES`；`0` 是有效值，表示立即故障转移。 | 操作的 `MAX_RETRIES` |
 | `HINDSIGHT_API_LLM_STRATEGY` | 用于在链中进行路由的 JSON 策略。未设置 = 仅使用主 LLM（行为不变）。 | - |
 
+**冷却时间。**在 `failover` 和 `round-robin` 模式下，某个成员在自身重试后仍然失败时，会被移到顺序末尾，并进入 `cooldown_seconds` 冷却期（默认 `60`）。这样后续请求不会继续等待它报错或超时，适合成员用完每日或每周配额时使用。冷却期结束后若再次失败，冷却时间会加倍，最长一小时；成员下次成功后冷却时间清零。处于冷却期的成员只是优先级降低，不会被移除：其他所有成员都失败时，仍会尝试它。将 `"cooldown_seconds"` 设为 `0`，即可让每个请求都按顺序尝试所有成员。冷却状态按进程保存在内存中，重启后清除。
+
 策略 JSON 支持三种模式：
 
 - `{"mode": "failover"}` — 按顺序尝试成员（先尝试主 LLM）；某成员经过自身重试后仍失败，就切换到下一成员。
@@ -587,6 +605,9 @@ export HINDSIGHT_API_LLM_STRATEGY='{"mode": "failover"}'
 
 # Weighted round-robin: serve the primary 3x as often as member 1
 export HINDSIGHT_API_LLM_STRATEGY='{"mode": "round-robin", "weights": [3, 1]}'
+
+# 故障切换：5 分钟后重新探测失败成员（之后为 10、20 分钟……最长 1 小时）
+export HINDSIGHT_API_LLM_STRATEGY='{"mode": "failover", "cooldown_seconds": 300}'
 ```
 
 #### 元数据路由 {#metadata-routing}
@@ -618,7 +639,7 @@ export HINDSIGHT_API_LLM_STRATEGY='{
 - **`update_mode: "append"` 会根据追加调用时提供的元数据进行路由**，而不是根据已存储文档的元数据。追加操作会将已存储的正文与新文本一起重新提取，因此若要继续使用同一成员，请重新提供相同的元数据。
 - 此模式**不支持批量存入**。`HINDSIGHT_API_RETAIN_BATCH_ENABLED=true` 会将一次操作中的所有项目作为单个任务提交给一个成员，无法满足逐项目路由，因此启动时会拒绝此组合。
 
-**按操作配置链。** 每项操作都可以通过 `RETAIN` / `REFLECT` / `CONSOLIDATION` / `MENTAL_MODEL_REFRESH` 前缀配置各自的成员和策略（例如 `HINDSIGHT_API_RETAIN_LLM_1_PROVIDER`、`HINDSIGHT_API_RETAIN_LLM_STRATEGY`）。若某项操作未配置索引成员或未设置策略，就会继承全局链；但 `MENTAL_MODEL_REFRESH` 会继承 reflect 链。
+**按操作配置链。** 每项操作都可以通过 `RETAIN` / `REFLECT` / `CONSOLIDATION` / `MENTAL_MODEL_REFRESH` 前缀配置各自的成员和策略（例如 `HINDSIGHT_API_RETAIN_LLM_1_PROVIDER`、`HINDSIGHT_API_RETAIN_LLM_STRATEGY`）。若某项操作未配置索引成员或未设置策略，就会继承全局链；但 `MENTAL_MODEL_REFRESH` 会继承 Reflect 链；若 Reflect 未声明链，则继承全局链。
 
 索引成员属于凭据字段，不会由银行配置 API 返回，而且只能在服务器级别配置（不能按银行单独配置）。**批量存入**会按声明顺序选择首个支持批处理的成员，该成员不一定是主 LLM。因此，即使主 LLM 没有批量 API，只要链中的某个成员支持，就仍可启用 `HINDSIGHT_API_RETAIN_BATCH_ENABLED=true`。整个批次都会由该成员处理（提交、轮询和取回操作都使用持有该批次的账户），因此批处理不会像交互式存入、反思和整合调用那样故障转移。正在执行的批次会绑定到提交它的账户，因此即使工作进程在批次处理中重启，也会继续使用该账户，即便此时链的顺序已改变或成员已扩充。如果批次仍在运行时移除了该成员或轮换了它的 API 密钥，操作会明确报错，而不会改为轮询其他账户。
 
@@ -720,6 +741,8 @@ llama.cpp 服务器由所有 LLM 操作共享（存入、反思、整合）。�
 
 **自动刷新心智模型。** 整合完成后运行的后台刷新会驱动与交互式反思相同的智能体，因此默认使用反思 LLM，无需设置上文提到的变量。之所以提供 `MENTAL_MODEL_REFRESH_LLM_*` 变量组，是因为在单 GPU 自托管环境中，两者的取舍方向相反：交互式反思优先考虑推理能力（因为有人正等待高质量结果），而后台刷新更适合使用快速、无需思考的模型，以免超过墙钟超时时限、耗尽推理链的 completion token 预算，或因同时运行而使交互式解码速度减半。每个字段都会回退到对应的 `REFLECT_LLM_*` 字段，而后者再回退到全局 `LLM_*` 设置；全部不设置时，行为与之前完全相同。
 
+有一项刷新设置单独配置：结构化编辑调用（增量更新和撤回）使用 `HINDSIGHT_API_LLM_TEMPERATURE_MENTAL_MODEL_REFRESH` 指定的温度；未设置时回退到 `HINDSIGHT_API_LLM_TEMPERATURE_CONSOLIDATION`。
+
 :::tip 适合使用按操作配置的场景
 - **存入**：使用结构化输出能力强的模型（例如 GPT-4o、Claude），以准确提取事实。
 - **反思**：使用更快或成本更低的模型（例如 GPT-4o-mini、Groq）进行推理和回答生成。
@@ -775,7 +798,7 @@ export HINDSIGHT_API_RETAIN_LLM_MAX_BACKOFF=120.0    # Cap at 2min instead of 1m
 
 | 变量 | 说明 | 默认值 |
 |----------|-------------|---------|
-| `HINDSIGHT_API_EMBEDDINGS_PROVIDER` | 提供方：`local`、`onnx`、`tei`、`openai`、`openai-codex`、`openrouter`、`requesty`、`cohere`、`google`、`zeroentropy`、`litellm` 或 `litellm-sdk` | `local` |
+| `HINDSIGHT_API_EMBEDDINGS_PROVIDER` | 提供方：`local`、`onnx`、`tei`、`openai`、`openai-codex`、`openrouter`、`requesty`、`cohere`、`google`、`zeroentropy`、`nvidia`、`litellm` 或 `litellm-sdk` | `local` |
 | `HINDSIGHT_API_EMBEDDINGS_MAX_INPUT_TOKENS` | 适用于**所有**提供方：嵌入前将每段文本截断为此 token 数（使用 `HINDSIGHT_API_TOKENIZER_ENCODING` 近似计数），避免内容过长导致嵌入调用永久失败。预算涵盖整个载荷，包括非对称模型所需的客户端前缀。默认值与几乎所有远程嵌入模型的输入上限相符（OpenAI `text-embedding-3-*`、Bedrock Titan V2、Cohere v3、标准 llama.cpp 上下文）；若你的模型上限不同，请设为实际限制；设为 `0` 则不限制文本长度。**此上限按 Hindsight 的 token 计数，而非提供方的 token。** 如果模型使用不同的分词器（例如 `BAAI/bge-m3`、`nomic-embed-text`，或通过 TEI / 兼容 OpenAI 的端点使用的大多数开源模型），同一文本在提供方侧的 token 数可能多出约一倍，尤其是代码、日志或压缩文本。文本若恰好截断到 8192 个 token，仍可能超过模型上限，导致嵌入调用返回 400。对于这些模型，请按比例换算：用模型的实际上限除以模型侧每个 Hindsight token 对应的 token 数。例如，嵌入代码时，对于 8192 token 上限的模型，应设为 `4096`。（已弃用的别名：`HINDSIGHT_API_EMBEDDINGS_LITELLM_SDK_MAX_INPUT_TOKENS`。） | `8192` |
 | `HINDSIGHT_API_EMBEDDINGS_QUERY_PREFIX` | 每次搜索在嵌入前加到文本前面的内容。端点提供的非对称模型要求搜索指令时请设置，例如 `google/embeddinggemma-300m` 使用 `task: search result | query: `，E5 使用 `query: `。适用于仅接受纯文本的提供方（`tei`、`openai`、`openai-codex`、`openrouter`、`requesty`、`litellm`、`litellm-sdk`）；无需设置的提供方见下方说明。末尾空格会按原样保留。 | -（无前缀） |
 | `HINDSIGHT_API_EMBEDDINGS_PASSAGE_PREFIX` | 每条已存储记忆/文档在嵌入前加到文本前面的内容，例如 `google/embeddinggemma-300m` 使用 `title: none | text: `，E5 使用 `passage: `。适用的提供方同上。末尾空格会按原样保留。 | -（无前缀） |
@@ -805,7 +828,12 @@ export HINDSIGHT_API_RETAIN_LLM_MAX_BACKOFF=120.0    # Cap at 2min instead of 1m
 | `HINDSIGHT_API_EMBEDDINGS_OPENAI_BATCH_SIZE` | `openai` / `openrouter` 提供方每次 `embeddings.create` 调用的输入数上限。上游端点限制更严格时请调低（例如 DashScope 上限为 10）。 | `100` |
 | `HINDSIGHT_API_EMBEDDINGS_OPENAI_DIMENSIONS` | 为 OpenAI `text-embedding-3` 模型指定的可选输出维度（例如设为 `384` 以匹配现有 pgvector schema） | - |
 | `HINDSIGHT_API_EMBEDDINGS_MAX_CONCURRENT_REQUESTS` | 一次 `encode()` 调用中，远程提供方允许同时处理的嵌入请求数。此项可提高嵌入服务的吞吐量：同一 TEI 服务器在一个并发请求时约为 903 条文本/秒，在八个并发请求时约为 2080 条。适用于所有远程提供方（`tei`、`openai`、`cohere`、`zeroentropy`、`litellm`、`litellm-sdk`、`google` 等）；不影响进程内的 `local` / `onnx` 后端。若嵌入服务或提供方配额无法承受当前并发，请调低。 | `8` |
-| `HINDSIGHT_API_EMBEDDINGS_MAX_RETRIES` | 远程嵌入调用遇到暂时性失败（5xx、超时、连接错误）时，在首次尝试后继续重试的次数。设为 `0` 可禁用重试。适用于自身不重试的 `litellm`、`litellm-sdk`、`google`（Gemini API / Vertex AI）、`cohere` 和 `zeroentropy` 提供方，也包括 Gemini `429 RESOURCE_EXHAUSTED` 配额响应；认证/校验类 4xx 错误绝不重试。（`tei` 和 `openai` 系列使用内置重试。） | `4` |
+| `HINDSIGHT_API_EMBEDDINGS_MAX_RETRIES` | 远程嵌入调用遇到暂时性失败（5xx、超时、连接错误）时，在首次尝试后继续重试的次数。设为 `0` 可禁用重试。适用于自身不重试的 `litellm`、`litellm-sdk`、`google`（Gemini API / Vertex AI）、`cohere` 和 `zeroentropy` 提供方，也包括 Gemini `429 RESOURCE_EXHAUSTED` 配额响应；认证/校验类 4xx 错误绝不重试。`openai`、`openai-codex`、`openrouter` 和 `requesty` 会将此值作为 OpenAI SDK 的重试次数；若 OpenAI 返回 `429 insufficient_quota`（额度用尽），任务会暂停 15 分钟后再试，而不是失败。（`tei` 使用自身内置重试。） | `4` |
+| `HINDSIGHT_API_EMBEDDINGS_NVIDIA_API_KEY` | 用于嵌入的 NVIDIA NIM API 密钥（`nvapi-...`） | - |
+| `HINDSIGHT_API_EMBEDDINGS_NVIDIA_MODEL` | 嵌入模型 | `nvidia/llama-nemotron-embed-vl-1b-v2` |
+| `HINDSIGHT_API_EMBEDDINGS_NVIDIA_BASE_URL` | 基础 URL；请求发送到 `{base}/embeddings`（可指向自托管 NIM） | `https://integrate.api.nvidia.com/v1` |
+| `HINDSIGHT_API_EMBEDDINGS_NVIDIA_DIMENSIONS` | 每次请求传入的输出维度。必须是模型支持的大小（`nvidia/nemotron-3-embed-1b` 仅支持 `2048`，且需要 `pgvector` 之外的向量扩展）。 | `1024` |
+| `HINDSIGHT_API_EMBEDDINGS_NVIDIA_BATCH_SIZE` | 每次 NVIDIA 嵌入请求的最大输入数 | `100` |
 | `HINDSIGHT_API_EMBEDDINGS_INITIAL_BACKOFF` | 嵌入重试之间的初始退避时间（秒）；每次尝试后加倍，并加入随机抖动 | `0.5` |
 | `HINDSIGHT_API_EMBEDDINGS_MAX_BACKOFF` | 嵌入重试之间退避时间的上限（秒） | `4.0` |
 | `HINDSIGHT_API_EMBEDDINGS_RETRY_BUDGET` | 一次 `encode()` 调用用于重试的总墙钟时间上限（秒），包括失败尝试和退避等待。避免性能退化的提供方阻塞同步召回。 | `15.0` |
@@ -1033,6 +1061,12 @@ export HINDSIGHT_API_EMBEDDINGS_ZEROENTROPY_DIMENSIONS=1280
 # export HINDSIGHT_API_EMBEDDINGS_ZEROENTROPY_ENCODING_FORMAT=base64  # optional
 # export HINDSIGHT_API_EMBEDDINGS_ZEROENTROPY_LATENCY=fast  # optional
 
+# NVIDIA NIM - 非对称检索嵌入（发送 input_type=query/passage）
+export HINDSIGHT_API_EMBEDDINGS_PROVIDER=nvidia
+export HINDSIGHT_API_EMBEDDINGS_NVIDIA_API_KEY=nvapi-your-key
+# export HINDSIGHT_API_EMBEDDINGS_NVIDIA_MODEL=nvidia/llama-nemotron-embed-vl-1b-v2  # 默认值
+# export HINDSIGHT_API_EMBEDDINGS_NVIDIA_DIMENSIONS=1024                            # 默认值
+
 # Cohere - cloud-based embeddings
 export HINDSIGHT_API_EMBEDDINGS_PROVIDER=cohere
 export HINDSIGHT_API_EMBEDDINGS_COHERE_API_KEY=your-api-key
@@ -1112,9 +1146,9 @@ ZeroEntropy 的 `zembed-1` 支持 Matryoshka 维度：`2560`、`1280`、`640`、
 
 | 变量 | 说明 | 默认值 |
 |----------|-------------|---------|
-| `HINDSIGHT_API_RERANKER_PROVIDER` | 提供方：`local`、`tei`、`cohere`、`openrouter`、`zeroentropy`、`siliconflow`、`typesafe`、`alibaba`、`google`、`flashrank`、`litellm`、`litellm-sdk`、`jina-mlx` 或 `rrf` | `local` |
+| `HINDSIGHT_API_RERANKER_PROVIDER` | 提供方：`local`、`tei`、`cohere`、`openrouter`、`zeroentropy`、`siliconflow`、`nvidia`、`typesafe`、`alibaba`、`google`、`flashrank`、`onnx`、`litellm`、`litellm-sdk`、`jina-mlx` 或 `rrf` | `local` |
 | `HINDSIGHT_API_RERANKER_MAX_TOKENS_PER_CANDIDATE` | 适用于**所有**提供方。设置后，在重排前将每个候选项截断为此 token 数（使用 tiktoken 近似计数）。应设为低于模型上下文窗口（例如，1024 token 模型设为 `900`）；若文档可能很长，也可调低以限制请求大小，避免仅用 CPU 的重排服务器耗尽内存。每个故障转移成员也可单独设置 `HINDSIGHT_API_RERANKER_<n>_MAX_TOKENS_PER_CANDIDATE`。默认关闭。（已弃用的别名：`HINDSIGHT_API_RERANKER_LITELLM_MAX_TOKENS_PER_DOC`。） | - |
-| `HINDSIGHT_API_RERANKER_MAX_RETRIES` | 远程重排调用发生暂时性失败（5xx、超时、连接错误、`429` 配额）时，在首次尝试后继续重试的次数。设为 `0` 可禁用重试。适用于除 `tei` 外的所有远程提供方；`tei` 有自己的重试循环。进程内提供方（`local`、`flashrank`、`jina-mlx`、`rrf`）不受影响。认证/校验类 4xx 错误绝不重试。 | `3` |
+| `HINDSIGHT_API_RERANKER_MAX_RETRIES` | 远程重排调用发生暂时性失败（5xx、超时、连接错误、`429` 配额）时，在首次尝试后继续重试的次数。设为 `0` 可禁用重试。适用于除 `tei` 外的所有远程提供方；`tei` 有自己的重试循环。进程内提供方（`local`、`flashrank`、`onnx`、`jina-mlx`、`rrf`）不受影响。认证/校验类 4xx 错误绝不重试。 | `3` |
 | `HINDSIGHT_API_RERANKER_INITIAL_BACKOFF` | 重排重试之间的初始退避时间（秒）；每次尝试后加倍，并加入随机抖动 | `0.5` |
 | `HINDSIGHT_API_RERANKER_MAX_BACKOFF` | 重排重试之间退避时间的上限（秒） | `4.0` |
 | `HINDSIGHT_API_RERANKER_RETRY_BUDGET` | 一次重排可用于重试的墙钟时间上限（秒），包括失败尝试和退避等待。由于重排发生在检索已消耗部分请求时间之后，此上限比嵌入重试预算更紧。若配置了故障转移链，每个成员都会先耗尽自己的预算，然后才会切换到下一成员。 | `10.0` |
@@ -1139,6 +1173,7 @@ ZeroEntropy 的 `zembed-1` 支持 Matryoshka 维度：`2560`、`1280`、`640`、
 | `HINDSIGHT_API_RERANKER_COHERE_MODEL` | Cohere 重排模型 | `rerank-english-v3.0` |
 | `HINDSIGHT_API_RERANKER_COHERE_BASE_URL` | 任意兼容 Cohere `/rerank` 端点的自定义基础 URL（Azure AI Foundry、Jina、Voyage、自托管 BGE 等）。设置后，`cohere` 提供方会绕过 Cohere SDK，直接通过 HTTP 调用端点。 | - |
 | `HINDSIGHT_API_RERANKER_COHERE_TIMEOUT` | Cohere 重排器的请求超时时间（秒）。同时适用于原生 Cohere SDK 和通过 `HINDSIGHT_API_RERANKER_COHERE_BASE_URL` 启用的兼容 Cohere HTTP 路径。 | `60.0` |
+| `HINDSIGHT_API_RERANKER_COHERE_MAX_CONCURRENT` | 所有召回请求共享的每进程并行重排请求上限。其余请求会先在进程内排队，因此上方超时只统计服务器耗时，不包含排队时间。多个进程共用端点时，应按进程数分配端点承载能力。 | `16` |
 | `HINDSIGHT_API_RERANKER_LITELLM_API_BASE` | 用于重排的 LiteLLM 代理基础 URL（回退到 `HINDSIGHT_API_LITELLM_API_BASE`） | `http://localhost:4000` |
 | `HINDSIGHT_API_RERANKER_LITELLM_API_KEY` | 用于重排的 LiteLLM 代理 API 密钥（可选，取决于代理配置；回退到 `HINDSIGHT_API_LITELLM_API_KEY`） | - |
 | `HINDSIGHT_API_RERANKER_LITELLM_MODEL` | LiteLLM **代理**重排模型（使用提供方前缀，例如 `cohere/rerank-english-v3.0`） | `cohere/rerank-english-v3.0` |
@@ -1168,6 +1203,22 @@ ZeroEntropy 的 `zembed-1` 支持 Matryoshka 维度：`2560`、`1280`、`640`、
 | `HINDSIGHT_API_RERANKER_GOOGLE_MODEL` | Google Discovery Engine 排序模型 | `semantic-ranker-default-004` |
 | `HINDSIGHT_API_RERANKER_GOOGLE_SERVICE_ACCOUNT_KEY` | 服务账号 JSON 密钥的路径（回退到 `HINDSIGHT_API_LLM_VERTEXAI_SERVICE_ACCOUNT_KEY`）。未设置时使用 ADC。 | - |
 | `HINDSIGHT_API_RERANKER_GOOGLE_TIMEOUT` | Google Discovery Engine 重排器的 HTTP 请求超时时间（秒） | `60.0` |
+| `HINDSIGHT_API_RERANKER_NVIDIA_API_KEY` | 用于重排的 NVIDIA NIM API 密钥（`nvapi-...`） | - |
+| `HINDSIGHT_API_RERANKER_NVIDIA_MODEL` | NVIDIA 重排模型，需带命名空间（它属于请求路径的一部分） | `nvidia/llama-nemotron-rerank-vl-1b-v2` |
+| `HINDSIGHT_API_RERANKER_NVIDIA_BASE_URL` | 基础 URL；请求发送到 `{base}/retrieval/{model}/reranking` | `https://ai.api.nvidia.com/v1` |
+| `HINDSIGHT_API_RERANKER_NVIDIA_TIMEOUT` | NVIDIA 重排器的 HTTP 请求超时时间（秒） | `60.0` |
+| `HINDSIGHT_API_RERANKER_NVIDIA_BATCH_SIZE` | 每次重排请求的最大段落数（托管 API 上限为 512） | `512` |
+| `HINDSIGHT_API_RERANKER_NVIDIA_MAX_CONCURRENT` | NVIDIA 重排请求的最大并发数 | `8` |
+| `HINDSIGHT_API_RERANKER_ONNX_MODEL_ID` | `onnx` 提供方使用的 Hugging Face 仓库。Hindsight 会从中下载 `HINDSIGHT_API_RERANKER_ONNX_FILE`，并将其用作分词器回退值。 | `cross-encoder/ms-marco-MiniLM-L-6-v2` |
+| `HINDSIGHT_API_RERANKER_ONNX_MODEL_PATH` | ONNX 交叉编码器计算图的本地路径。仓库未提供 ONNX 文件的模型可自行导出后使用。 | - |
+| `HINDSIGHT_API_RERANKER_ONNX_TOKENIZER_NAME_OR_PATH` | Hugging Face 分词器仓库或本地分词器目录。与 `HINDSIGHT_API_RERANKER_ONNX_MODEL_PATH` 配合设置。 | 回退到 `HINDSIGHT_API_RERANKER_ONNX_MODEL_ID` |
+| `HINDSIGHT_API_RERANKER_ONNX_FILE` | Hugging Face 仓库内 ONNX 文件的路径（若存在，也会下载其 `_data` sidecar 文件）。 | `onnx/model.onnx` |
+| `HINDSIGHT_API_RERANKER_ONNX_MAX_TOKENS` | 每个（查询、文档）对的最大 token 数；超长内容会被截断。 | `512` |
+| `HINDSIGHT_API_RERANKER_ONNX_BATCH_SIZE` | 每次前向计算评分的文本对数。与上方 FlashRank 设置一样，此项用于限制峰值内存。 | `32` |
+| `HINDSIGHT_API_RERANKER_ONNX_THREADS` | 单次前向计算可使用的 CPU 线程数。`0` 使用原生线程上限（`OMP_NUM_THREADS`，默认 `min(16, available CPUs)`）。笔记本电脑可设为 `2`–`4`，避免召回占满 CPU。 | `0` |
+| `HINDSIGHT_API_RERANKER_ONNX_MAX_CONCURRENT` | 允许同时执行的前向计算次数。并发召回会依次排队，因此 CPU 使用量不会超过 `THREADS` 指定的核心数。 | `1` |
+| `HINDSIGHT_API_RERANKER_ONNX_CPU_MEM_ARENA` | 启用 ONNX Runtime CPU 内存 arena。arena 不会归还已释放的内存，因此 RSS 会保持在历史峰值。 | `false` |
+| `HINDSIGHT_API_RERANKER_ONNX_TIMEOUT` | 为一次召回的候选项评分设置墙钟时间上限，与 `HINDSIGHT_API_RERANKER_LOCAL_TIMEOUT` 相同：超时后，未评分候选项保留重排前的顺序并排在已评分项之后。设为 `0` 可禁用。 | `300` |
 | `HINDSIGHT_API_RERANKER_FLASHRANK_MODEL` | 用于快速 CPU 重排的 FlashRank 模型 | `ms-marco-MiniLM-L-12-v2` |
 | `HINDSIGHT_API_RERANKER_FLASHRANK_CACHE_DIR` | FlashRank 模型的缓存目录 | 系统默认值 |
 | `HINDSIGHT_API_RERANKER_FLASHRANK_CPU_MEM_ARENA` | 为 FlashRank 启用 ONNX Runtime CPU 内存 arena。设为 `true` 时，ONNX 会预分配永不缩小的内存 arena，导致 RSS 持续增长；设为 `false` 会略微降低每次调用的分配速度，但可限制 RSS。 | `false` |
@@ -1285,6 +1336,11 @@ export HINDSIGHT_API_RERANKER_SILICONFLOW_API_KEY=your-api-key
 export HINDSIGHT_API_RERANKER_SILICONFLOW_MODEL=BAAI/bge-reranker-v2-m3
 # export HINDSIGHT_API_RERANKER_SILICONFLOW_BASE_URL=https://api.siliconflow.cn/v1  # default
 
+# NVIDIA NIM - 原生重排 API（POST {base}/retrieval/{model}/reranking）
+export HINDSIGHT_API_RERANKER_PROVIDER=nvidia
+export HINDSIGHT_API_RERANKER_NVIDIA_API_KEY=nvapi-your-key
+# export HINDSIGHT_API_RERANKER_NVIDIA_MODEL=nvidia/llama-nemotron-rerank-vl-1b-v2  # 默认值
+
 # TypeSafe - relevance judged by a typed-decision model (Jev), not a /rerank endpoint
 export HINDSIGHT_API_RERANKER_PROVIDER=typesafe
 export HINDSIGHT_API_RERANKER_TYPESAFE_API_KEY=your-api-key
@@ -1359,6 +1415,64 @@ Choice 最多接受 255 个选项，因此候选池较大时会分轮排序，�
 :::note 许可证
 `jina-reranker-v3-mlx` 使用 CC BY-NC 4.0 许可证。商业用途请联系 Jina AI。
 :::
+
+#### 本地 ONNX 重排器 {#local-onnx-reranker}
+
+`onnx` 提供方可在进程内通过 ONNX Runtime 运行任意导出为 ONNX 的交叉编码器。FlashRank 目录之外的模型无需 PyTorch 或 TEI 服务器。它需要安装 `local-onnx` 扩展（`pip install 'hindsight-api-slim[local-onnx]'`）。评分是模型原始 logits，与 `local` 提供方相同，因此切换二者不会改变排序。单个评分输出和二分类 `[irrelevant, relevant]` 输出头均受支持。
+
+未设置时，会从默认仓库 `cross-encoder/ms-marco-MiniLM-L-6-v2` 下载 `onnx/model.onnx`。若模型仓库不提供 ONNX 文件，可先导出一次，再配置文件路径：
+
+```bash
+uvx --from "optimum-onnx[onnxruntime]" optimum-cli export onnx \\
+  --model nlpai-lab/KURE-Reranker-nano --task text-classification ./models/kure-reranker-nano
+export HINDSIGHT_API_RERANKER_PROVIDER=onnx
+export HINDSIGHT_API_RERANKER_ONNX_MODEL_PATH=./models/kure-reranker-nano/model.onnx
+export HINDSIGHT_API_RERANKER_ONNX_TOKENIZER_NAME_OR_PATH=./models/kure-reranker-nano
+```
+
+一次只运行一个前向计算，最多使用 `HINDSIGHT_API_RERANKER_ONNX_THREADS` 指定的核心数（默认使用原生线程上限），因此并发召回会排队，不会造成 CPU 超额调度。笔记本电脑可将线程数设为 `2`–`4`；如果召回延迟比排序质量更重要，也可调低 `HINDSIGHT_API_RERANKER_MAX_CANDIDATES`，因为重排开销会随候选项数量线性增长。
+
+:::note 在 Apple Silicon 上，`local` 通常更快
+PyTorch 使用 Apple Accelerate 矩阵单元，而 ONNX Runtime 的 CPU 后端不使用这些单元。在 M3 Max 上，使用相同模型和分数时，`local` 提供方的重排速度比 `onnx` 快 2–4 倍。`onnx` 更适合 Linux 和 x86 服务器，以及希望不安装 PyTorch 的场景。
+:::
+
+### 决策模型 {#decision-model}
+
+决策模型可在不到一秒内回答类型化问题（例如从选项中选一个，或判断某种情况的可能性）。支持该模型的操作可将原本需要由 LLM 完成的中间判断交给它处理，并继续使用 LLM 写作。可在此处统一配置；所有支持决策模型的操作都会共享该配置，除非操作本身覆盖或关闭它。这与 `typesafe` [重排器](#reranker)相互独立，后者使用自己的 `HINDSIGHT_API_RERANKER_TYPESAFE_*` 设置。
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_DECISION_MODEL_PROVIDER` | 提供方：`none`、`typesafe`、`cloudflare` 或 `openai`（见下文）。 | `none` |
+| `HINDSIGHT_API_DECISION_MODEL_API_KEY` | API 密钥（Cloudflare 需要具有 Workers AI 权限的 API token）。提供方不是 `none` 时必填。 | - |
+| `HINDSIGHT_API_DECISION_MODEL_MODEL` | 模型名称。 | 提供方默认值 |
+| `HINDSIGHT_API_DECISION_MODEL_BASE_URL` | API 基础 URL。`cloudflare` 必填。 | 提供方默认值 |
+| `HINDSIGHT_API_DECISION_MODEL_TIMEOUT` | 请求超时时间（秒）。 | `60` |
+| `HINDSIGHT_API_DECISION_MODEL_MAX_CONCURRENT` | 每个使用决策模型的操作所允许的最大并发请求数。 | `24` |
+| `HINDSIGHT_API_DECISION_MODEL_MAX_REQUEST_TOKENS` | 单次请求可携带的最大 token 数，按整个请求正文计数。较大的请求会拆分发送。此值应低于服务模型的上下文窗口，并留出余量。 | `26000` |
+
+每个请求遇到速率限制（429）或暂时性故障时，都会单独重试。
+
+| 提供方 | API | 默认模型 | 默认基础 URL |
+|----------|-----|---------------|------------------|
+| `typesafe` | [TypeSafe](https://typesafe.ai) System One（`/v1/systemone`） | `jev-latest` | `https://api.typesafe.ai` |
+| `cloudflare` | Workers AI 上的 [Clef](https://blog.cloudflare.com/clef-decision-models)（System One 请求体，`/@cf/cloudflare/<model>`） | `clef`（或 `clef-flash`） | 无；设置为 `https://api.cloudflare.com/client/v4/accounts/<account_id>/ai/run`，或 AI Gateway 的 `https://gateway.ai.cloudflare.com/v1/<account_id>/<gateway>/workers-ai` |
+| `openai` | [OpenAI Decisions API](https://developers.openai.com/api/docs/guides/decisions)（`/v1/decisions`，公开测试版） | `gpt-6-luna` | `https://api.openai.com` |
+
+**按操作覆盖。** `HINDSIGHT_API_{RECALL,REFLECT,CONSOLIDATION}_DECISION_MODEL_{PROVIDER,API_KEY,MODEL,BASE_URL}` 可仅替换对应操作的全局值。只有操作仍使用全局提供方时，密钥、模型和 URL 才会回退到全局值；切换到其他提供方时，会采用该提供方的默认值，并需要为操作单独设置密钥。将操作的提供方设为 `none` 可关闭该操作的决策模型；即使未配置全局决策模型，也可只为一个操作配置。
+
+```bash
+export HINDSIGHT_API_DECISION_MODEL_PROVIDER=typesafe
+export HINDSIGHT_API_DECISION_MODEL_API_KEY=your-typesafe-key
+export HINDSIGHT_API_REFLECT_DECISION_MODEL_MODEL=jev-preview        # 仅 Reflect
+export HINDSIGHT_API_CONSOLIDATION_DECISION_MODEL_PROVIDER=openai    # 整合使用 OpenAI
+export HINDSIGHT_API_CONSOLIDATION_DECISION_MODEL_API_KEY=your-openai-key
+```
+
+**Recall。** 配置决策模型后，Recall 会用它替代[重排器](#reranker)。模型会判断每个候选项是否有助于回答问题；系统会告知它问题日期（Recall 的问题日期；若未提供，则使用今天），并据此排列候选项。排序结果就是最终顺序：Recall 会跳过原本应用于交叉编码器的近期性、时间和证据数量加权，不会公开重排分数，因此 `min_scores.reranker` 不可用。若要让 Recall 保留交叉编码器，同时让其他操作使用决策模型，请将 `HINDSIGHT_API_RECALL_DECISION_MODEL_PROVIDER=none`。
+
+**整合。** 配置决策模型后，它会判断每条新事实与 Recall 找到的观测之间的关系：是否重述其中一条、是否新增且与现有观测无关、是否改变观测，或是否只是闲聊。重述内容会成为相应观测的证据；新事实会按原样成为观测；闲聊会被跳过。这些情况都不需要调用 LLM；其余情况仍会交给整合 LLM。在整合评估中，LLM 调用量减少约 40%，通过率不变。可通过 [`HINDSIGHT_API_CONSOLIDATION_USE_DECISION_MODEL`](#observations) 按记忆库关闭，或将 `HINDSIGHT_API_CONSOLIDATION_DECISION_MODEL_PROVIDER=none` 设为所有记忆库关闭。
+
+**知识页。** 配置决策模型后，知识页的增量刷新会跳过 Reflect。系统会读取上次刷新后新增的记忆，并逐条询问决策模型它们是否可能改变知识页；只有可能改变的记忆会交给编辑页面的 LLM，并附上记忆库指令。如果没有任何记忆可能改变页面，就不会调用 LLM。被决策模型排除的记忆不会再次提交。新增记忆超过 200 条或决策模型失败时，刷新仍会像以前一样运行 Reflect。在刷新成本评估中，20 条新记忆的刷新从 3 次 LLM 调用减为 1 次，输入 token 减少约 70%。目前仅支持 `typesafe` 提供方。可通过 [`HINDSIGHT_API_MENTAL_MODEL_DELTA_USE_DECISION_MODEL`](#reflect) 关闭此功能。
 
 ### 身份验证 {#authentication}
 
@@ -1521,6 +1635,12 @@ Webhook 发送有意忽略所有这些设置：它的 SSRF 防护会验证已解
 关闭全部四个阶段后，召回只剩一次向量查询，这是延迟最低的配置。
 
 禁用文本搜索不会影响写入路径：`search_vector` 及其索引仍会维护，因此无需重新建索引即可重新启用该功能。原本要使用的[文本搜索后端](#text-search-extension)只是不再读取。
+
+##### 默认 `prefer_observations` {#default-prefer_observations}
+
+| 变量 | 说明 | 默认值 |
+|----------|-------------|---------|
+| `HINDSIGHT_API_RECALL_PREFER_OBSERVATIONS` | REST 或 MCP 请求未指定时，Recall 的 [`prefer_observations`](./api/recall#prefer_observations) 默认值。启用后，若返回某条观测，会移除该观测整合所依据的原始事实，避免结果重复。请求中显式传入的值优先。支持分层配置，可按记忆库覆盖。适用于无法控制的调用方（如 MCP 连接器、通用智能体）始终不传入此标志的场景。 | `false` |
 
 ##### 与存入侧配合：纯检索（“RAG”）银行 {#pairing-with-the-retain-side-plain-retrieval-rag-banks}
 
@@ -2010,6 +2130,8 @@ export HINDSIGHT_API_FILE_STORAGE_AZURE_ACCOUNT_KEY=base64encodedkey==
 
 | 变量 | 说明 | 默认值 |
 |----------|-------------|---------|
+| `HINDSIGHT_API_CONSOLIDATION_USE_DECISION_MODEL` | 配置整合决策模型（见[决策模型](#decision-model)）后，由其在调用整合 LLM 前处理简单事实：重述观测的事实会附加为证据；新增实体或属性会按原样记录为观测；闲聊会跳过。无法判定的事实（会改变观测内容、答案相互矛盾或请求失败）仍交给 LLM。若记忆库有自己的观测任务，新事实只有在任务允许且措辞不违反规则（如不提姓名、只记录趋势）时才会照原样记录；闲聊交给 LLM 按任务处理。设为 `false` 会将所有事实交给 LLM。可按记忆库配置。 | `true` |
+| `HINDSIGHT_API_DEFAULT_OBSERVATION_SCOPES` | Retain 项目未传入 `observation_scopes` 时使用的值：`combined`、`per_tag`、`all_combinations`、`shared` 或标签列表组成的 JSON 数组；标签中的 `*` 会匹配记忆自身标签（例如 `[ ["topic:*"] ]` 只按主题标签对记忆分组）。此值保存在每条记忆中，更改后不会重新划分已存入的记忆，除非重新处理其文档。参见 [`observation_scopes`](./api/retain#observation_scopes)。可按记忆库配置。 | `combined` |
 | `HINDSIGHT_API_ENABLE_OBSERVATIONS` | 启用观测整合 | `true` |
 | `HINDSIGHT_API_ENABLE_AUTO_CONSOLIDATION` | 存入、删除和更新操作后自动触发整合。设为 `false` 时，仅能通过[整合端点](/developer/api/operations#consolidation)显式触发。可按银行配置。 | `true` |
 | `HINDSIGHT_API_CONSOLIDATION_WALL_TIMEOUT` | 工作进程中单个整合任务在**未取得进展**时允许运行的时间上限（秒）。每次提交一个批次都会重新计时，因此不会截断大型积压任务，只会终止真正停滞的任务。停滞的整合会被取消并标记为 `failed`（API 会重试，而不会像 `processing` 状态那样卡住；协调扫描也会据此重新安排该银行），而不是一直占用保留的工作进程槽位直到进程重启。设为 `0` 可禁用。 | `7200` |
@@ -2095,6 +2217,9 @@ export HINDSIGHT_API_OBSERVATIONS_MISSION="Observations are recurring patterns i
 | 变量 | 说明 | 默认值 |
 |---|---|---|
 | `HINDSIGHT_API_REFLECT_MAX_ITERATIONS` | 强制生成回答前的最大工具调用轮数 | `10` |
+| `HINDSIGHT_API_REFLECT_USE_DECISION_MODEL` | 配置 Reflect 决策模型（见[决策模型](#decision-model)）后，Reflect 会采用决策编排：先由 LLM 将请求改写为搜索查询（或判断无需搜索，此时立即返回空答案），再用该查询并行运行各检索层。决策模型会筛选证据并判断其是否已足以回答请求；若足够，下一次 LLM 调用便生成答案；否则由 LLM 编写下一条查询，再进行一轮并行检索和判断。与逐轮调用 LLM 的智能体循环相比，LLM 调用更少、成本更低。决策模型失败时会回退到智能体循环。目前这里只支持 `typesafe` 提供方；使用其他提供方时会记录警告并继续采用智能体循环。设为 `false` 可保留智能体循环（每个检索层各用一轮 LLM 编写查询）。可按记忆库配置。 | `true` |
+| `HINDSIGHT_API_MENTAL_MODEL_REFRESH_USE_DECISION_MODEL` | 对刷新知识页时使用的 Reflect 启用相同的决策编排。可按记忆库配置。 | `true` |
+| `HINDSIGHT_API_MENTAL_MODEL_DELTA_USE_DECISION_MODEL` | 配置 Reflect 决策模型（见[决策模型](#decision-model)）后，知识页增量刷新会跳过 Reflect：决策模型会筛选上次刷新以来新增且可能改变页面的记忆，编辑只依据这些记忆进行。若没有符合条件的记忆，则不会调用 LLM。设为 `false` 可让增量刷新也运行 Reflect。可按记忆库配置。 | `true` |
 | `HINDSIGHT_API_REFLECT_MAX_CONTEXT_TOKENS` | 反思循环中强制最终综合前可累计的上下文 token 上限，避免大型银行出现 `context_length_exceeded`。若 LLM 上下文窗口小于 128K，请调低。 | `100000` |
 | `HINDSIGHT_API_REFLECT_WALL_TIMEOUT` | 整个反思操作的墙钟超时时间（秒）。超时会使请求返回 HTTP 504；也限制工作进程中整个心智模型刷新任务，超时任务会取消并标记失败。 | `300` |
 | `HINDSIGHT_API_REFLECT_MISSION` | 全局反思任务说明（身份与推理框架）。可通过配置 API 按银行覆盖。 | - |
@@ -2228,6 +2353,15 @@ HINDSIGHT_API_WORKER_CONSOLIDATION_BANK_PRIORITY="shadow-*:10,staging-*:5,*:1"
 |---|---|---|
 | `HINDSIGHT_API_SKIP_LLM_VERIFICATION` | 跳过启动时的 LLM 连接检查 | `false` |
 
+#### 记忆库别名缓存 {#bank-alias-cache}
+
+记忆库别名是记忆库可响应的额外 ID，便于调用方在不中断服务的情况下切换到新 ID。每个记忆库请求都会解析别名，并按 `(schema, alias)` 缓存结果，包括未命中结果，因为大多数请求使用的都是实际存在的记忆库 ID。因此，TTL 决定了新添加的别名在其他 API 副本上需要多久才可见，以及被移除的别名会继续路由多久。
+
+| 变量 | 说明 | 默认值 |
+|---|---|---|
+| `HINDSIGHT_API_BANK_ALIAS_CACHE_TTL_SECONDS` | 已解析别名的生存时间（秒）。`0` 会禁用缓存，并在每次请求时查询数据库。 | `10` |
+| `HINDSIGHT_API_BANK_ALIAS_CACHE_MAX_ENTRIES` | LRU 淘汰前可缓存的 `(schema, alias)` 项数上限。 | `2048` |
+
 #### 银行统计缓存 {#bank-stats-cache}
 
 `get_bank_stats` 会聚合 `memory_links`（联接 `memory_units`）；对于包含数百万行的银行，扫描可能耗时数秒。结果本来就是近似值，用于界面小组件和 `reflect` 中的新鲜度提示，因此会按 `(schema, bank)` 缓存数十秒，并将并发缓存未命中合并到同一个在途查询。高并发或大型银行可调整以下参数：
@@ -2241,13 +2375,15 @@ HINDSIGHT_API_WORKER_CONSOLIDATION_BANK_PRIORITY="shadow-*:10,staging-*:5,*:1"
 
 本地嵌入或重排在进程内运行时，底层 BLAS/ML 库（OpenBLAS、OpenMP、MKL）各自会启动按主机 CPU 数量配置的线程池。Hindsight 已通过自身线程池执行器并行处理请求，因此这些原生线程池会导致 CPU 过度分配；多核主机上的原生线程总数可能超过 100。这会增加内存用量，并在竞争时降低吞吐量。因此 Hindsight 默认将每个原生线程池限制为**最多 16 个线程**（或可用 CPU 数量，以较小者为准），避免大型主机上线程数失控，同时保留单次调用内部的并行能力。
 
-“可用”CPU 指进程实际获准使用的 CPU 预算，即 CPU 亲和性集合、cgroup CPU 配额（`--cpus` / cpuset）和主机核心数三者中的最小值。容器环境中这一点很重要：BLAS 库否则会按*主机*核心数设置线程池，即便容器只分配了几个 CPU。例如，64 核主机上限制为 `--cpus=4` 的容器会启动远多于其可用数量的 BLAS 线程。
+“可用”CPU 指进程实际获准使用的 CPU 预算，即 CPU 亲和性集合、cgroup CPU 配额（`--cpus` / cpuset）和主机核心数三者中的最小值。容器环境中这一点很重要：BLAS 库否则会按*主机*核心数设置线程池，即便容器只分配了几个 CPU。例如，64 核主机上限制为 `--cpus=4` 的容器会启动远多于其可用数量的 BLAS 线程。配额会从进程自身及其父级 cgroup 读取，因此 systemd 单元中的 `CPUQuota=` 也会计入，不只容器限制。启动日志会显示计算出的线程数和检测到的配额（`Native threads: ...`）。
+
+ONNX Runtime（FlashRank 和 `onnx` 重排器、ONNX 嵌入）不会读取 `OMP_NUM_THREADS`，因此 Hindsight 会将相同线程数直接传给每个 ONNX 会话，并将会话间线程数设为 1、关闭忙等待。
 
 如需调整，将以下任一变量设为所需线程数；只要设置了变量，指定值就会生效（仅当变量未设置时才使用默认值）：
 
 | 变量 | 说明 | 默认值 |
 |---|---|---|
-| `OMP_NUM_THREADS` | OpenMP 工作线程（torch、ONNX Runtime、部分 BLAS 构建） | `min(16, available CPUs)` |
+| `OMP_NUM_THREADS` | OpenMP 工作线程（torch、部分 BLAS 构建）；也会作为线程数传给每个 ONNX Runtime 会话 | `min(16, available CPUs)` |
 | `OPENBLAS_NUM_THREADS` | OpenBLAS 工作线程（numpy 默认 BLAS） | `min(16, available CPUs)` |
 | `MKL_NUM_THREADS` | Intel MKL 工作线程（使用 MKL 后端的 numpy/torch） | `min(16, available CPUs)` |
 | `NUMEXPR_NUM_THREADS` | numexpr 表达式引擎线程 | `min(16, available CPUs)` |
@@ -2270,7 +2406,7 @@ HINDSIGHT_API_WORKER_CONSOLIDATION_BANK_PRIORITY="shadow-*:10,staging-*:5,*:1"
 
 ### 审计日志 {#audit-logging}
 
-审计日志会将更改数据的操作（存入、召回、反思、银行配置更新、[Memory Defense](memory-defense/index.md) 脱敏/拦截操作等）记录到 `audit_log` 表中，并可通过 `/audit-logs` 端点查询。
+审计日志会将更改数据的操作（存入、召回、反思、记忆库配置更新、[Memory Defense](memory-defense/index.md) 脱敏/拦截操作等）记录到 `audit_log` 表中，并可通过 `/audit-logs` 端点查询。列表只返回日志条目，不含请求和响应正文；`GET /audit-logs/{log_id}` 则会返回包含这两项内容的单条记录。
 
 **审计日志默认关闭。** 当 `HINDSIGHT_API_AUDIT_LOG_ENABLED=false` 时，`audit_log` 表保持为空，且无论发生何种操作，`/audit-logs` 都会返回 `{"total": 0, "items": []}`。若要开始记录事件，请将此标志设为 `true` 并重启 API。
 
@@ -2288,6 +2424,19 @@ HINDSIGHT_API_WORKER_CONSOLIDATION_BANK_PRIORITY="shadow-*:10,staging-*:5,*:1"
 
 LLM 请求追踪会将 Hindsight 发出的每次 LLM 调用（用于存入、反思和整合）记录到 `llm_requests` 表中，并可按银行通过 `/llm-requests` 端点查询。每行记录输入消息、模型输出、token 用量（输入/输出/缓存/总计，取自提供方响应）、结束原因、提供方/模型、耗时及调用方元数据。**失败的调用也会记录**（`status = "error"` 并包含错误消息），因此该表有助于调试 LLM 的行为和调用失败原因。记录功能接入 OpenTelemetry GenAI 记录路径（即用于导出 OTLP span 的同一个 `record_llm_call` 钩子），因此数据与提供方报告的请求详情保持一致。
 
+该表还会记录 Hindsight 发起的其他模型调用，并通过调用范围区分类型：
+
+| 类型（`call_type`） | 范围 | 记录内容 |
+|---|---|---|
+| 嵌入 | `embedding_document`（存入、整合）、`embedding_query`（召回、反思） | 提供方、模型、耗时、`llm_info.input_count`（嵌入的文本数），以及提供方有报告时的输入 token 数（兼容 OpenAI、Cohere）。输入是待嵌入文本（`{"texts": [...]}`），同其他载荷一样会截断。 |
+| 重排 | `rerank` | 提供方、模型、耗时、`llm_info.input_count`（评分的文档数）。输入是查询和文档（`{"queries": [...], "documents": [...]}`），输出是各文档的分数（`{"scores": [...]}`）。 |
+| 决策模型 | `decision_*`（例如 `decision_recall_rerank`、`decision_consolidation_triage`、`decision_rank`、`decision_cut`、`decision_evidence_sufficiency`、`decision_page_impact`） | 请求、回答、输入 token 和耗时；每个请求一行。 |
+| LLM | 其他所有范围 | 同上文所述。 |
+
+可在 `/llm-requests` 和 `/llm-requests/stats` 上使用 `?call_type=embedding|rerank|decision|llm` 按类型筛选。每次调用都会关联到所属操作的运行记录（`retain`、`recall`、`reflect`、`consolidation`、`refresh_mental_model`），因此 Reflect 内部搜索也会显示在该 Reflect 记录下。直接创建或编辑知识页（不属于刷新操作）时，嵌入调用会关联到单独的 `mental_model_write` 运行记录。
+
+追踪行会先缓存在内存中，再批量写入（最多每 0.5 秒一次，或积累 500 行时写入），因此追踪一次 Recall 不会在请求路径上额外产生数据库往返。进程被强制结束时，缓冲区内尚未写入的行会丢失；正常关闭会先写入这些行。
+
 **LLM 请求追踪默认启用**，追踪记录保留 1 天。若要完全禁用，请将 `HINDSIGHT_API_LLM_TRACE_ENABLED=false` 并重启 API；之后 `llm_requests` 表会保持为空，且无论发生何种操作，`/llm-requests` 都会返回 `{"total": 0, "items": []}`。
 
 > **注意**：追踪记录包含完整提示和模型输出，可能包含敏感记忆内容且占用空间较大。可通过 `HINDSIGHT_API_LLM_TRACE_MAX_CHARS` 限制存储的每段载荷长度、缩短 `HINDSIGHT_API_LLM_TRACE_RETENTION_DAYS` 保留期限，或设置 `HINDSIGHT_API_LLM_TRACE_ENABLED=false`，以便在敏感环境中关闭追踪。
@@ -2295,7 +2444,8 @@ LLM 请求追踪会将 Hindsight 发出的每次 LLM 调用（用于存入、反
 | 变量 | 说明 | 默认值 |
 |---|---|---|
 | `HINDSIGHT_API_LLM_TRACE_ENABLED` | LLM 请求追踪总开关。只有设为 `true` 才会记录调用。 | `true` |
-| `HINDSIGHT_API_LLM_TRACE_SCOPES` | 以逗号分隔的追踪调用范围允许列表（例如 `retain_extract_facts,reflect`；空值表示全部范围） | `""` |
+| `HINDSIGHT_API_LLM_TRACE_SCOPES` | 以逗号分隔的追踪调用范围允许列表（例如 `retain_extract_facts,reflect`；空值表示全部范围）。以 `*` 结尾的条目会匹配此前缀（例如 `decision_*`）。 | `""` |
+| `HINDSIGHT_API_LLM_TRACE_EXCLUDE_SCOPES` | 永不追踪的调用范围，以逗号分隔，在允许列表之后应用；支持上述 `*` 前缀模式（例如 `embedding_*,rerank` 会只保留 LLM 和决策模型调用）。 | `""` |
 | `HINDSIGHT_API_LLM_TRACE_RETENTION_DAYS` | 追踪记录的保留天数。`-1` = 永久保留。 | `1` |
 | `HINDSIGHT_API_LLM_TRACE_MAX_CHARS` | 输入/输出超过此字符数时截断存储（保留该行，但只保存截断预览）。 | `50000` |
 

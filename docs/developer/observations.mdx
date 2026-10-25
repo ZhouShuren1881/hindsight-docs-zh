@@ -164,6 +164,19 @@ import observationsFigure from '@site/figures/observations.json';
 
 若要查看某个记忆库中已有的范围，请调用 `GET /v1/default/banks/{bank_id}/observations/scopes`。响应会列出每个精确标签集合及其观测数量；空标签列表表示全局范围。列表采用分页方式（`limit` 默认为 100，另有 `offset`）；`total` 表示该记忆库包含的不同范围总数。需要筛选某个精确观测范围、且不匹配带有额外标签的观测时，可将返回的范围作为 `tags`，并设置 `tags_match: "exact"`。若要**仅召回**全局范围——即通过 `observation_scopes: "shared"` 写入的无标签观测——请传入空列表并使用精确匹配：`tags: []`、`tags_match: "exact"`。
 
+### 修改现有文档的范围 {#changing-scopes}
+
+范围配置会在存入记忆时保存在每条记忆上。若要移动记忆库中已有的文档，例如某个记忆库原先在默认的 `combined` 范围模式下按会话标签存入，现在希望跨会话整合，请在文档上发送新的取值：
+
+<CodeSnippet code={observationsPy} section="change-document-scopes" language="python" />
+
+这里可使用与 Retain 相同的取值（`"combined"` 表示恢复默认值）。系统不会重新提取记忆，记忆上的标签也会保留。只有当修改改变了记忆所解析到的范围时，才会重新整合该记忆。在这种情况下，该记忆的观测会被删除，并在下次整合时于新范围中重建；其他文档的记忆与它共享的观测也会一并处理。如果修改前后解析到的范围相同，则不会删除任何观测，也不会加入整合队列。例如，对单个标签而言，`combined` 和 `[["that-tag"]]` 解析到的范围相同；重新发送当前取值也是如此。新取值还会保存到文档上，因此之后重新处理文档时仍会使用它。
+
+若要移动整个记忆库，请列出其中的文档（必要时按标签筛选），并为每个文档发送一次 PATCH。开始前请注意两点：
+
+- **先更新客户端。** 向文档追加内容的 Retain 请求也会发送它自己的 `observation_scopes`。如果客户端仍不带新取值执行 Retain，下一次追加就会把该文档改回原范围。
+- **需要重建观测。** 每条被移动的记忆都会暂时失去其观测，直到再次运行整合。对于大型记忆库，这意味着要对大部分事实进行一次 LLM 处理；此期间 Recall 返回的观测会减少。引用了已删除观测的心智模型会照常刷新。分批移动文档可以分摊处理成本。
+
 ---
 
 ## 观测任务说明 {#observations-mission}
@@ -269,7 +282,9 @@ import observationsFigure from '@site/figures/observations.json';
 
 ---
 
-## 观测的生命周期与失效 {#observation-lifecycle-invalidation}
+<a id="observation-lifecycle-invalidation"></a>
+
+## 观测的生命周期与失效 {#observation-lifecycle--invalidation}
 
 ### 删除记忆时 {#when-memories-are-deleted}
 

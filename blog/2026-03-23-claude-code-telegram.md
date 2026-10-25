@@ -5,6 +5,7 @@ date: 2026-03-23T12:00
 tags: [claude-code, telegram, hindsight, memory, mcp, agents, tutorial]
 image: /img/blog/claude-code-telegram.webp
 hide\_table\_of\_contents: true
+description: "在 Telegram 上运行 Claude Code 并连接 Hindsight，让你通过手机交流的智能体记住过往对话。"
 ---
 
 ![OpenClaude：构建具有长期记忆的 Claude Code 智能体，并随时随地使用它](/img/blog/claude-code-telegram.webp)

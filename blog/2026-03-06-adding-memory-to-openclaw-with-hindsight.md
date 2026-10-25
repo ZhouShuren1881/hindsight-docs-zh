@@ -5,6 +5,7 @@ date: 2026-03-06T12:00
 tags: [openclaw, memory, agents, persistent-memory, knowledge-graph, tutorial]
 image: /img/blog/adding-memory-to-openclaw-with-hindsight.webp
 hide_table_of_contents: true
+description: "OpenClaw 只会记住智能体主动选择保存的内容。Hindsight 插件会保存每段对话，并在每次回复前召回相关上下文。"
 ---
 
 OpenClaw 的内置记忆依赖智能体自行决定要保存什么，而模型并不能始终如一地做好这件事。[Hindsight](https://github.com/vectorize-io/hindsight) 通过自动提取和自动召回取代这套机制：每段对话都会被捕获，事实和实体会在后台提取，并且每次响应前都会自动注入相关上下文。只需安装一个插件、运行一次设置向导，无需 Docker。

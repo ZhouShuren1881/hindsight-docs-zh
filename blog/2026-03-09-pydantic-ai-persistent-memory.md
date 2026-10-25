@@ -5,6 +5,7 @@ date: 2026-03-09T12:00
 tags: [memory, openai, anthropic, gemini, python, rust, agents, rag, vector, pydantic-ai, knowledge-graph, tutorial]
 image: /img/blog/pydantic-ai-persistent-memory.webp
 hide_table_of_contents: true
+description: "Pydantic AI 智能体每次运行都会从零开始。hindsight-pydantic-ai 只需五行 Python 代码即可添加长期记忆。"
 ---
 
 如果你使用 [Pydantic AI](https://ai.pydantic.dev/) 构建过 AI 智能体，就会知道它擅长处理类型化输出、依赖注入和异步工作流。但它有一项缺失：无法在多次运行之间记住信息。每次调用 `agent.run()` 都从空白状态开始。智能体不知道用户昨天说过什么、分享了哪些偏好，也不知道自己已经研究过什么。

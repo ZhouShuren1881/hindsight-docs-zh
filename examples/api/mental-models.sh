@@ -77,6 +77,11 @@ if [ -n "$MENTAL_MODEL_ID" ]; then
   hindsight mental-model refresh "$BANK_ID" "$MENTAL_MODEL_ID"
   # [/docs:refresh-mental-model]
 
+  # [docs:full-refresh-mental-model]
+  # 本次从头重写内容；模型会保留原有模式
+  hindsight mental-model refresh "$BANK_ID" "$MENTAL_MODEL_ID" --full
+  # [/docs:full-refresh-mental-model]
+
   # [docs:clear-mental-model]
   # Clear a mental model's content, then refresh for a full re-synthesis
   curl -s -X POST "${HINDSIGHT_URL}/v1/default/banks/${BANK_ID}/mental-models/${MENTAL_MODEL_ID}/clear"

@@ -116,6 +116,7 @@ import refreshModes from '@site/figures/refresh-modes.json';
 | `mode` | `"full"` \| `"delta"` | `"full"` | 刷新策略。参阅下文[刷新模式](#refresh-mode)。 |
 | `refresh_after_consolidation` | bool | false | 观测整合后自动刷新 |
 | `refresh_cron` | string \| null | null | 定时刷新的 UTC 五字段 cron 表达式，例如 `"0 3 * * *"` 表示每天 UTC 03:00 |
+| `full_refresh_cron` | string \| null | null | 定时对增量模式模型执行**完整刷新**的 UTC 五字段 cron 表达式，例如 `"0 3 * * 0"` 表示每周日 UTC 03:00。可与上述任一触发器同时使用。参阅[定时完整刷新](#scheduled-full-refresh)。 |
 | `min_refresh_interval_seconds` | int \| null | null | 此模型两次*自动*刷新之间的最小秒数。参阅下文[限制自动刷新频率](#rate-limiting-automatic-refreshes)。`null` 使用记忆库级或全局默认值。 |
 | `tags_match` | string \| null | null | 刷新时模型的 `tags` 如何筛选来源记忆：`any`、`all`、`any_strict`、`all_strict` 或 `exact`。设为 `null` 时，**有标签**的模型默认采用 `all_strict`，即记忆必须携带模型的每一个标签。设为 `"any"` 可匹配携带*任一*标签的记忆，参阅[标签与可见范围](#tags-and-visibility)。 |
 | `tag_groups` | list \| null | null | 高级布尔标签表达式，完全覆盖扁平的 `tags`/`tags_match` 条件。参阅 [Recall 标签参考](./recall#tags)。 |
@@ -137,7 +138,7 @@ import refreshModes from '@site/figures/refresh-modes.json';
 
 模型上的 `last_refresh_failed_at`（知识树中的页面也有此字段）记录刷新失败的时间，因此列表视图无需逐个读取历史记录，就能显示哪些模型已停止自动刷新。
 
-**刷新失败会暂停自动刷新。** 工作进程会重试失败的刷新，次数由 `HINDSIGHT_API_WORKER_MAX_RETRIES` 控制，默认 3 次，之后停止。在一次刷新成功之前，`refresh_after_consolidation` 和 `refresh_cron` 都不会再次将该模型入队。因此，无法成功的刷新——例如提示词超出模型容量、账户余额耗尽或增量编辑无法应用——只消耗几次尝试的成本，而不会在每个检查周期都产生 LLM 费用。失败会显示在模型的[历史记录](#history)中。修复原因后，请手动刷新模型；成功刷新会恢复自动刷新。`HINDSIGHT_API_REFLECT_WALL_TIMEOUT` 像限制 Reflect 一样限制整个刷新的运行时间，因该限制被中断的刷新也算失败。
+**刷新失败会暂停自动刷新。** 工作进程会重试失败的刷新，次数由 `HINDSIGHT_API_WORKER_MAX_RETRIES` 控制，默认 3 次，之后停止。在一次刷新成功之前，`refresh_after_consolidation`、`refresh_cron` 和 `full_refresh_cron` 都不会再次将该模型入队。因此，无法成功的刷新——例如提示词超出模型容量、账户余额耗尽或增量编辑无法应用——只消耗几次尝试的成本，而不会在每个检查周期都产生 LLM 费用。失败会显示在模型的[历史记录](#history)中。修复原因后，请手动刷新模型；成功刷新会恢复自动刷新。`HINDSIGHT_API_REFLECT_WALL_TIMEOUT` 像限制 Reflect 一样限制整个刷新的运行时间，因该限制被中断的刷新也算失败。
 
 ### 限制自动刷新频率 {#rate-limiting-automatic-refreshes}
 
@@ -156,7 +157,7 @@ import refreshModes from '@site/figures/refresh-modes.json';
 
 间隔内触发的刷新**不会被丢弃**。它会入队并等待间隔结束；期间后续触发都会合并到同一个待执行刷新。因此，连续 20 次存入只产生一次刷新费用，而这次刷新仍会读取这 20 次存入添加的全部内容。唯一的取舍是即时性：模型内容相对其记忆的滞后最多可达到这个间隔。
 
-此间隔限制适用于两种自动触发器：`refresh_after_consolidation` 和 `refresh_cron`。它绝不限制你主动请求的刷新；刷新端点、MCP 工具和控制台的刷新按钮都会立即执行，并解除已有等待刷新的暂停状态。
+此间隔限制适用于所有自动触发器：`refresh_after_consolidation`、`refresh_cron` 和 `full_refresh_cron`。它绝不限制你主动请求的刷新；刷新端点、MCP 工具和控制台的刷新按钮都会立即执行，并解除已有等待刷新的暂停状态。
 
 可以通过 `mental_model_min_refresh_interval_seconds` 在记忆库级设置，或通过 `HINDSIGHT_API_MENTAL_MODEL_MIN_REFRESH_INTERVAL_SECONDS` 在服务器全局设置。两者与模型级设置同时存在时，模型级值优先。因此，`min_refresh_interval_seconds: 0` 可以让必须及时更新的某个模型不受库级间隔限制。所有层级的默认值均为 `0`，即不设置最小间隔。
 
@@ -209,7 +210,7 @@ import refreshModes from '@site/figures/refresh-modes.json';
 - **`delta` 模式只读取新内容。** 增量刷新将检索范围限定为上次刷新以来创建的记忆，因此 LLM 读取的是新信息，无需重新读取整个记忆库。
 - **依据持续累积。** 即便使用增量模式，`reflect_response.based_on` 也会累积：本次刷新的事实与此前所有刷新依赖的事实合并，并按 ID 去重。文档建立在全部这些事实之上，而不仅是最新一批。
 - **没有相关内容时不修改。** 刷新没有找到与主题相关的记忆时，会保持内容不变，只推进水位，避免同一个空窗口反复触发刷新。
-- **没有内容可读时完全不调用 LLM。** 智能体循环开始前，刷新会按模型自己的设置检查是否有可读取内容：即在其将读取的窗口内，是否有范围内的记忆（`tags`/`tags_match`、`tag_groups`、`fact_types` 都会收窄范围）；`full` 模式读取整个记忆库，`delta` 模式读取 `last_memory_seen_at` 之后的内容。除非 `exclude_mental_models` 禁止使用其他心智模型，否则其他模型也属于可读取内容。没有任何内容时，刷新立即完成，文档保持不变，不产生费用。这常见于刚创建的记忆库：页面在创建后立即刷新，此时尚未存入任何内容。
+- **没有内容可读时完全不调用 LLM。** 智能体循环开始前，刷新会按模型自己的设置检查是否有可读取内容：即在其将读取的窗口内，是否有范围内的记忆（`tags`/`tags_match`、`tag_groups`、`fact_types` 都会收窄范围）；`full` 模式读取整个记忆库，`delta` 模式读取 `last_memory_seen_at` 之后的内容；或者是否有本次刷新可读取的同标签、未列入 `exclude_mental_model_ids` 的其他心智模型，且 `exclude_mental_models` 未禁止读取其他模型。仅有其他心智模型时，只有尚无内容可失去的文档才会将其视为可读内容：文档为空，或此前没有任何刷新根据范围内的记忆写入内容。已经基于记忆构建的文档，在自身记忆范围为空时绝不会仅根据其他模型重写。没有任何内容时，刷新立即完成，文档保持不变，不产生费用。这常见于刚创建的记忆库：页面在创建后立即刷新，此时尚未存入任何内容。
 - **检索失败不等于没有结果。** 检索步骤抛出异常，例如数据库、嵌入模型或重排序模型不可用时，刷新会**失败**，不会把模型在没有检索结果时自行生成的内容写入。内容、`structured_output` 和水位均保持不变，重试会再次读取同一窗口。这里必须区分：“已查找，但没有这个主题的内容”是可写入的答案；“无法查找”是失败，应保留原内容。若不区分，检索器故障就可能悄悄将积累数月的文档替换为泛泛的“我没有这方面的信息”。
 
 ### 刷新模式 {#refresh-mode}
@@ -250,6 +251,30 @@ Hindsight 为文档维护一份具有权威性的**结构化**表示：有序的
 | 入职摘要 | `delta` | 添加团队成员不应重组文档 |
 | 实时仪表板 | `full` | 每次刷新都是一份新快照 |
 | 简短 FAQ 摘要 | `full` | 全文重新生成成本低，行为明确 |
+
+### 定时完整刷新 {#scheduled-full-refresh}
+
+`delta` 模式会按原字节保留未修改的章节，这正是它的优点；但经过数月的小幅编辑后，文档可能逐渐偏离从头生成时的内容：措辞受历次增量影响，某些章节也难以淘汰。`full_refresh_cron` 会增加第二个独立计划，让模型按计划以 `full` 模式刷新，而其他刷新仍使用 `delta`：
+
+```json
+{
+  "trigger": {
+    "mode": "delta",
+    "refresh_after_consolidation": true,
+    "min_refresh_interval_seconds": 21600,
+    "full_refresh_cron": "0 3 * * 0"
+  }
+}
+```
+
+该模型在每次整合后就地编辑（最多每 6 小时一次），并在每周日 UTC 03:00 从头重写。之后仍会继续以 `delta` 模式运行；此计划不会改变 `mode`。
+
+- **独立于其他触发器。** 可与 `refresh_after_consolidation` 或 `refresh_cron` 组合。如果两个 cron 在同一轮检查中都到期，只执行一次刷新，并采用完整模式。
+- **独立计时。** 到期时间依据 `last_full_refreshed_at`，而不是 `last_refreshed_at`，因此频繁的增量刷新不会推迟它。
+- **无须修正时跳过。** 自上次完整刷新以来没有运行过刷新，就跳过本次计划。与 `refresh_cron` 不同，它不要求有新记忆；安静的记忆库中，过去编辑造成的偏移仍然存在。
+- **沿用自动刷新的安全规则。** 遵循 `min_refresh_interval_seconds`；上次刷新失败时会暂停；完整刷新失败会保留当前内容。
+
+如需立即执行一次完整刷新，请向[刷新端点](#refresh-a-mental-model)发送 `{"mode": "full"}`。
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -297,6 +322,8 @@ Hindsight 为文档维护一份具有权威性的**结构化**表示：有序的
 <CodeSnippet code={mentalModelsGo} section="list-mental-models" language="go" />
 </TabItem>
 </Tabs>
+
+[知识页](./knowledge-pages)会将内容保存在心智模型中，因此列表也包含知识页背后的模型。每个条目都带有 `is_knowledge_page` 用于区分；设置 `exclude_knowledge_pages=true` 后只列出独立心智模型（条目和 `total` 均如此）。
 
 ---
 
@@ -367,6 +394,7 @@ MCP 工具 `get_mental_model` 支持 `detail` 参数。MCP 工具 `list_mental_m
 | `tags` | list | metadata | 用于筛选的标签 |
 | `last_refreshed_at` | string | metadata | 上次刷新结束的实际时间。每次刷新完成都会推进，包括未找到新内容的刷新。回答“我是否已经刷新过？” |
 | `last_memory_seen_at` | string | metadata | 上次刷新看到的范围内最新记忆。回答“模型是否落后于数据？”；可与统计端点的 `last_memory_write_at` 比较。 |
+| `last_full_refreshed_at` | string \| null | metadata | 上次以完整模式运行刷新的时间，包括主动请求、定时执行或增量刷新回退到完整模式的情况。`full_refresh_cron` 根据此字段判断是否到期。 |
 | `created_at` | string | metadata | 心智模型的创建时间 |
 | `source_query` | string | content | 用于生成内容的查询 |
 | `content` | string | content | 生成的心智模型文本 |
@@ -400,7 +428,24 @@ MCP 工具 `get_mental_model` 支持 `detail` 参数。MCP 工具 `list_mental_m
 - 观测已更新
 - 希望确保心智模型反映当前知识
 
-**刷新会合并。** 同一个模型同一时刻最多有一个等待执行的刷新。如果已有刷新入队但尚未开始，此调用会返回*该*操作，而不会再加入第二个相同刷新；待执行刷新会读取运行时的模型状态，因此已涵盖你刚提出的请求。照常轮询返回的 `operation_id` 即可。已经*运行*的刷新不会被复用，因为它可能在你最新修改之前就读取了模型；此时会在其后加入新操作。
+**按需执行完整刷新。** 在请求正文中发送 `{"mode": "full"}`，即可本次从头重写内容，不受模型 `mode` 设置影响。模型会保留原有模式；`delta` 模型下次刷新时仍会继续就地编辑。可用它消除增量模型多次编辑后逐渐积累的偏移；如需按计划执行，请设置 [`full_refresh_cron`](#scheduled-full-refresh)。
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={mentalModelsPy} section="full-refresh-mental-model" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={mentalModelsMjs} section="full-refresh-mental-model" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={mentalModelsSh} section="full-refresh-mental-model" language="bash" />
+</TabItem>
+<TabItem value="go" label="Go">
+<CodeSnippet code={mentalModelsGo} section="full-refresh-mental-model" language="go" />
+</TabItem>
+</Tabs>
+
+**刷新会合并。** 同一个模型同一时刻最多有一个等待执行的刷新。如果已有刷新入队但尚未开始，此调用会返回*该*操作，而不会再加入第二个相同刷新；待执行刷新会读取运行时的模型状态，因此已涵盖你刚提出的请求。照常轮询返回的 `operation_id` 即可。已经*运行*的刷新不会被复用，因为它可能在你最新修改之前就读取了模型；此时会在其后加入新操作。如果完整刷新加入了一个已排队的普通刷新，该刷新会转为完整刷新。
 
 **刷新也会逐个执行。** 同一模型的刷新绝不会重叠：排在正在运行的刷新之后的操作，要等前者完成才开始。因此，模型一次只由一个刷新写入，不会由恰巧最后结束的刷新决定内容。这是模型级限制；不同模型仍可并行刷新，并行数取决于记忆库可用的工作进程数。
 
@@ -451,7 +496,7 @@ MCP 工具 `get_mental_model` 支持 `detail` 参数。MCP 工具 `list_mental_m
 
 ### 保留执行追踪：记录每次刷新 {#keep-traces-record-every-refresh-as-it-happens}
 
-试运行只能解释你主动执行的刷新。由 `refresh_after_consolidation` 或 `refresh_cron` 驱动的刷新可能在无人查看时发生；等你发现文档有问题，生成它的那次运行已经结束。
+试运行只能解释你主动执行的刷新。由 `refresh_after_consolidation`、`refresh_cron` 或 `full_refresh_cron` 驱动的刷新可能在无人查看时发生；等你发现文档有问题，生成它的那次运行已经结束。
 
 设置 `trigger.keep_trace` 后，会在 `reflect_response.trace` 中记录该模型每次刷新的相同推理信息，定时刷新也包括在内：
 
@@ -521,7 +566,7 @@ MCP 工具 `get_mental_model` 支持 `detail` 参数。MCP 工具 `list_mental_m
 清空是同步操作，会将内容重置为空字符串。模型配置，包括名称、来源查询和触发器设置，保持不变。由于内容已为空，下一次 `/refresh` 调用始终会进行完整重建，即使触发器模式设为 `delta` 也是如此。
 
 :::tip
-对长期使用的增量模式心智模型，可以考虑定期清空并刷新，例如每 48 小时一次。这样既能保持内容准确，也能在两次完整重建之间继续利用增量更新。
+要消除增量模型逐渐积累的偏移，建议执行[完整刷新](#refresh-a-mental-model)（`{"mode": "full"}`），或设置 [`full_refresh_cron`](#scheduled-full-refresh) 按计划刷新。完整刷新失败时会保留当前内容，而先清空再刷新则不会。
 :::
 
 ---

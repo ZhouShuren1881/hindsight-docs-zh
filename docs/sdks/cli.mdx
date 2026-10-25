@@ -165,6 +165,8 @@ export HINDSIGHT_API_KEY=your-api-key
 
 <CodeSnippet code={cliSh} section="cli-audit" language="bash" />
 
+列表中的每条记录均不包含请求和响应内容，因为这些内容可能很大。要查看它们，请将列表中某条记录的 ID 传给 `hindsight audit get <bank_id> <log_id>`。
+
 ## 输出格式 {#output-formats}
 
 <CodeSnippet code={cliSh} section="cli-output" language="bash" />

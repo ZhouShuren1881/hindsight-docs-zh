@@ -243,6 +243,10 @@ e.g. Always include technical decisions, API design choices, and architectural t
 
 当你需要完全控制整合时机时，这项设置会很有用。例如，可以先批量存入多条记忆，再统一整合；也可以针对特定范围运行[定向整合](/developer/observations#targeted-consolidation)。
 
+### default_observation_scopes {#default_observation_scopes}
+
+对未指定 `observation_scopes` 的存入项应用的范围（参见 [`observation_scopes`](./retain#observation_scopes)）。默认值为 `combined`，即按每条记忆的完整标签集分组。设为 `[["topic:*"]]`，即可仅按记忆自身的 `topic:` 标签分组，例如由[实体标签](#entity-labels)添加的标签（需启用 `tag: true`）。这样，来自不同智能体或会话、但涉及同一主题的记忆就能整合到一起，而无需更改任何客户端。该值会在存入时写入每条记忆；更改默认值不会重新划分已存入的记忆，除非重新处理其文档，届时会应用当前默认值。
+
 ### observations_mission {#observations_mission}
 
 定义此记忆库应综合生成哪些持久观测。此设置会完全替换内置整合规则；留空则使用服务器默认值。
@@ -782,7 +786,7 @@ import.zip
 |------------|-------------|
 |`text`|必填。将被召回的记忆内容。|
 |`fact_type`|必填。`world` 或 `experience`。|
-|`chunk_index`|可选。 中的块 `chunks`这个事实来自。|
+|`chunk_index`|可选。此事实来源于 `chunks` 中的文本分块。|
 |`context`、`metadata`、`tags`、`observation_scopes`|可选。含义与 Retain 项目中的相同，并按事实分别设置。|
 |`mentioned_at`、`occurred_start`、`occurred_end`|可选的 ISO 8601 日期。若这些字段均未设置，则以导入时间作为事实日期。|
 |`entities`|可选的实体名称，会根据记忆库中已有的实体进行解析。|
@@ -920,6 +924,157 @@ Webhook 属于记忆库配置，因此使用默认标志创建的克隆会调用
 |----------|-------|
 |`HINDSIGHT_API_ENABLE_DOCUMENT_EXPORT_API`|`POST …/document-transfer/export` 和 `GET …/files/download/{key}`|
 |`HINDSIGHT_API_ENABLE_DOCUMENT_IMPORT_API`|`POST …/document-transfer`|
+
+## 在原实例中拆分记忆库 {#splitting-a-bank-in-place}
+
+当一个记忆库需要拆分为两个用途（例如两个团队、租户或产品）时，你可能希望记忆也随之拆分。本操作手册会在**同一实例**中，将一部分文档从一个记忆库迁移到另一个记忆库，**无需让 LLM 重新提取，也无需重新分块**：系统会使用目标记忆库的模型重新生成事实嵌入，并根据目标库重新解析实体，但不会让模型从文本中重新推导内容。
+
+若要将整个记忆库迁移到使用不同嵌入模型、向量扩展或文本搜索后端的实例，请改用[将记忆库迁移到新实例](#migrating-a-bank-to-a-new-instance)。
+
+:::note 此处不应使用 Admin CLI
+`hindsight-admin export-bank` / `import-bank` 针对的是**整个记忆库**，且导入不是合并：如果目标记忆库已存在，导入会失败。因此，蓝绿迁移手册不适用于拆分。请改用下文的 [`/transfer/export` 和 `/transfer/import`](#bank-transfer-export--import) 端点。
+:::
+
+### 文档子集包含的内容 {#what-a-document-subset-carries}
+
+导出文档子集所包含的内容少于整个记忆库归档；这一区别会影响后续三个步骤。
+
+| | 文档子集是否包含 |
+|---|---|
+| 文档、原始文本分块 | 是 |
+| 提取出的事实、实体名称、因果链接 | 是 |
+| 整合后的观测 | **否**——目标库会根据导入的事实重新整合 |
+| 心智模型、知识页 | **否**——需在目标库重建 |
+| 记忆库配置、强制指令、Webhook | **否**——指定 `document_id` 时传入 `include_bank_config` 会返回 `400` |
+| `audit_log`、`llm_requests` | **否**——指定 `document_id` 时传入 `include_history` 会返回 `400` |
+
+观测无法携带并非疏漏，而是由其生成方式决定：一条观测可能由多个文档中的事实整合而成，其中包括子集之外的文档。若携带该观测，就会悄悄丢弃所有跨文档观测，因此导出接口会拒绝这种组合。每条事实的整合生命周期也会一并丢弃，这使目标库能够从头整合该子集。
+
+### 操作步骤 {#the-runbook}
+
+先设置 `HINDSIGHT_URL` 和 `API_KEY`。`SOURCE` 是要拆分的记忆库，`TARGET` 是新记忆库。
+
+**1. 确定拆分范围，并将其固定为文档 ID 列表。**
+
+在 1.0 版本中，文档集合只能按 ID、标签或时间指定，因此拆分范围必须能用其中一种方式表示：
+
+```bash
+curl -s -H "Authorization: Bearer $API_KEY" \
+  "$HINDSIGHT_URL/v1/default/banks/$SOURCE/documents?tags=project-x&tags_match=all_strict&limit=1000" \
+  | tee /tmp/listing.json | jq -r '.items[].id' > move.txt
+wc -l move.txt
+jq .total /tmp/listing.json
+```
+
+响应采用分页格式（`items`、`total`、`limit`、`offset`）。请核对 `total` 与行数；若拆分范围超过一页，则使用 `offset=` 获取后续页面。`tags_match` 可取 `any_strict`（默认值）、`any`、`all_strict` 或 `all`；`start_date` / `end_date` 配合 `time_field=created_at|updated_at` 可按左闭右开的时间窗口缩小范围。
+
+将列表保存到文件，后续步骤都使用同一个 `move.txt`。这样即使操作中断，拆分也可审计并重复执行。
+
+:::warning 不要通过修改标签来标记文档子集
+看似简洁，却会带来最高成本。修改文档标签会使所有由其记忆派生的观测失效，**还会重置其他文档共同来源记忆的 `consolidated_at`**。因此，记忆库会重新整合与该文档记忆共同来源的记忆，其规模可能达到该文档自身记忆数量的多倍；在共同来源密集的记忆库中尤其如此。设置标签时要付出一次成本，在步骤 7 删除文档时还要再付一次。普通 ID 列表则没有这项成本。
+:::
+
+**2. 使用独立配置创建目标记忆库。**
+
+```bash
+hindsight bank create "$TARGET" --mission "Memory for project X"
+```
+
+应创建新库，而不是克隆源库：[克隆](#clone-a-bank)会复制整个记忆库，包括指向源库消费者的 Webhook。
+
+**3. 从源记忆库导出子集。**
+
+`document_id` 可重复指定。不要启用 `include_bank_config` 或 `include_history`；与 `document_id` 一起使用时，接口会拒绝这些选项。
+
+```bash
+ARGS=$(sed 's/^/document_id=/' move.txt | paste -sd'&' -)
+OPERATION_ID=$(curl -s -X POST -H "Authorization: Bearer $API_KEY" \
+  "$HINDSIGHT_URL/v1/default/banks/$SOURCE/transfer/export?$ARGS" | jq -r .operation_id)
+```
+
+导出会作为后台操作运行。轮询操作状态后，从 `result_metadata` 中的 `download_url` 下载归档：
+
+```bash
+curl -s -H "Authorization: Bearer $API_KEY" \
+  "$HINDSIGHT_URL/v1/default/banks/$SOURCE/operations/$OPERATION_ID" | jq .status
+
+DOWNLOAD_URL=$(curl -s -H "Authorization: Bearer $API_KEY" \
+  "$HINDSIGHT_URL/v1/default/banks/$SOURCE/operations/$OPERATION_ID" \
+  | jq -r .result_metadata.download_url)
+curl -sf -H "Authorization: Bearer $API_KEY" "$HINDSIGHT_URL$DOWNLOAD_URL" -o split.zip
+```
+
+此时源库仍是只读状态，尚未发生任何更改。
+
+**4. 将归档合并到目标记忆库。**
+
+```bash
+curl --fail-with-body -H "Authorization: Bearer $API_KEY" -F "file=@split.zip" \
+  "$HINDSIGHT_URL/v1/default/banks/$TARGET/transfer/import?mode=merge&document_conflict=skip"
+```
+
+`mode=merge` 会将归档中的文档合并到 URL 指定的记忆库。`document_conflict` 决定如何处理已存在的文档 ID：`skip`（默认值）、`replace` 或 `new-id`。合并模式下，`target_bank_id` 和 include 标志均不适用；传入会返回 `400`。合并只会导入归档中的文档。
+
+轮询**目标**记忆库的操作端点，检查状态和 `result_metadata` 中各组件的计数。
+
+**5. 删除源库中的内容前，先验证目标库。**
+
+这是回滚点，也是唯一的回滚点。源库此时仍然完整；若发现问题，可删除目标库后重新开始。
+
+```bash
+curl -s -H "Authorization: Bearer $API_KEY" \
+  "$HINDSIGHT_URL/v1/default/banks/$TARGET/documents?limit=1000" | jq '{total, ids: [.items[].id]}'
+```
+
+核对 `total` 是否与 `wc -l move.txt` 一致，并确认 ID 都符合预期；然后运行两三个结果已知的召回查询。
+
+**6. 重建子集未包含的内容。**
+
+先处理观测。如果目标记忆库启用了 `enable_auto_consolidation`，导入的事实已排队，只需等待整合完成；否则请手动触发：
+
+```bash
+curl --fail-with-body -X POST -H "Authorization: Bearer $API_KEY" \
+  "$HINDSIGHT_URL/v1/default/banks/$TARGET/consolidate"
+```
+
+整合完成前，目标库只有事实，没有观测层。召回仍会有结果，这正是容易跳过此步骤的原因；但此时只能从原始事实中召回，因此目标库会显得比源库浅，而不易察觉原因。
+
+之后，手动重建记忆库级综合内容：心智模型、其强制指令，以及知识页树都不会随子集迁移。
+
+**7. 从源记忆库中删除已迁移的文档。**
+
+```bash
+while read -r DOC; do
+  curl --fail-with-body -X DELETE -H "Authorization: Bearer $API_KEY" \
+    "$HINDSIGHT_URL/v1/default/banks/$SOURCE/documents/$DOC"
+done < move.txt
+```
+
+删除文档会移除其记忆单元和关联链接，删除引用这些记忆的观测，并重置其他文档共同来源记忆的 `consolidated_at`。因此，源库会重新排队整合剩余来源，不会使其滞留。此操作无法撤销：步骤 5 是回滚点。
+
+**8. 等待源记忆库完成后续处理。**
+
+如果源库启用了自动整合，共同来源记忆会自动重新整合；否则请调用 `POST /banks/$SOURCE/consolidate`。之后重新检查源库的心智模型：其 `based_on` 证据曾引用现已迁移的事实，因此建议在其他人再次查看前刷新模型。
+
+### 验证拆分结果 {#verifying-the-split-was-clean}
+
+| 检查项 | 方法 |
+|---|---|
+| 所有预期文档均已到达 | 目标库列表中的 `total` 与 `wc -l move.txt` 一致 |
+| 没有导入意外文档 | 目标库的每个 `.items[].id` 都出现在 `move.txt` 中 |
+| 目标库已建立观测层 | 导入事实已有观测，而不只是记忆 |
+| 源库不再包含子集 | `move.txt` 中的每个 ID 在源库均返回 `404` |
+| 源库观测状态一致 | 没有 `consolidated_at` 已重置且仍未处理的记忆，也没有正在运行的队列 |
+| 心智模型已重建 | 目标库中的模型已创建，且引用目标库中的事实 |
+
+### 常见误区 {#common-wrong-turns}
+
+- **通过改标签标记子集**（步骤 1）——为标签付出两次共同来源记忆重新整合的成本，而 ID 列表无需成本。
+- **指定 `include_bank_config=true` 和 `document_id`**——接口会返回 `400`，不会复制记忆库。文档子集不等于整个记忆库。
+- **期待归档包含观测**——按设计，`include_observations` 仅适用于整个记忆库；目标库会自行整合。
+- **验证目标库前就从源库删除文档**——步骤 5 是回滚点，步骤 7 的操作不可撤销。
+- **认为导入完成就大功告成**——若尚未整合，目标库只有事实、没有观测；而且表面上看起来一切正常。
+- **克隆源库作为目标库**——会携带源库的 Webhook，之后也会为新库触发。
 
 ## 将记忆库迁移到新实例 {#migrating-a-bank-to-a-new-instance}
 

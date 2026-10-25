@@ -6,6 +6,7 @@ image: /img/reflect-operation.webp
 date: 2026-01-28T12:00
 hide_table_of_contents: true
 tags: [release]
+description: "Hindsight 0.4.0 为智能体新增两种学习方式：自动合并事实的观测，以及由你编写并持续更新的心智模型。"
 ---
 
 今天我们发布了 Hindsight 0.4.0，为 AI 智能体带来两种强大的学习能力：用于自动整合知识的**观测**，以及由用户维护摘要的**心智模型**。

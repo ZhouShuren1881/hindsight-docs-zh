@@ -23,6 +23,8 @@ const IGNORED_PATHS = [
   'build',
   '.docusaurus',
   'versioned_docs', // 跳过版本化文档
+  'src-mono-repo', // 源仓库不属于中文站检查范围
+  'temp', // 跳过临时文档和诊断文件
 ];
 
 /**

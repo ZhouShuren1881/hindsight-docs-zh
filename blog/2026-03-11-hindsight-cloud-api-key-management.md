@@ -4,6 +4,7 @@ authors: [benfrank241]
 date: 2026-03-11T12:00
 tags: [hindsight-cloud, release, api]
 hide_table_of_contents: true
+description: "Hindsight Cloud 密钥现在可以直接通过 API 创建、列出和撤销仅限特定记忆库使用的子密钥。"
 ---
 
 [Hindsight Cloud](https://ui.hindsight.vectorize.io) 现已支持通过 API 管理密钥。具备 **Key Creator** 权限的 API 密钥可以创建、列出和撤销限定到特定记忆库的子密钥，无需管理员权限或访问 UI。

@@ -277,18 +277,40 @@ const sidebars: SidebarsConfig = {
     },
     {
       "type": "category",
-      "label": "托管",
+      "label": "云与企业",
       "collapsible": false,
       "items": [
         {
-          "type": "link",
-          "href": "https://ui.hindsight.vectorize.io",
-          "label": "云服务",
+          "type": "doc",
+          "id": "cloud-enterprise/overview",
+          "label": "概览",
           "customProps": {
-            "icon": "lu-cloud",
-            "iconAfter": "lu-arrow-up-right"
+            "icon": "lu-compare"
           }
         },
+        {
+          "type": "doc",
+          "id": "cloud-enterprise/hindsight-cloud",
+          "label": "Hindsight Cloud",
+          "customProps": {
+            "icon": "lu-cloud"
+          }
+        },
+        {
+          "type": "doc",
+          "id": "cloud-enterprise/enterprise",
+          "label": "企业版",
+          "customProps": {
+            "icon": "lu-server"
+          }
+        }
+      ]
+    },
+    {
+      "type": "category",
+      "label": "托管",
+      "collapsible": false,
+      "items": [
         {
           "type": "doc",
           "id": "developer/installation",
