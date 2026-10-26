@@ -2,10 +2,6 @@
 
 本表依据英文 Hindsight 文档制定，用于二次翻译。既有中文译文不作为译法依据。本文统一中文是翻译约定；英文原文决定具体行为。
 
-“来源”列中的文章路径相对于 `temp/docs-en/versioned_docs/version-0.10/developer/`；`figures/`、`src/` 路径相对于 `temp/docs-en/`。同一条目列出的是可核对定义的主要来源，不是所有出现位置。
-
-v1.1.0 增量条目中以 `src-mono-repo/` 开头的来源路径相对于项目根目录，指向本次对齐版本的本地英文源文件。
-
 ## 使用约定
 
 - 中文正文、标题、表格和图表统一使用“统一译法”。单复数不产生新译法。
@@ -19,7 +15,7 @@ v1.1.0 增量条目中以 `src-mono-repo/` 开头的来源路径相对于项目�
 | 英文 | 统一译法 | 不采用/边界 | 来源 |
 | --- | --- | --- | --- |
 | agent / AI agent | 智能体 / AI 智能体 | 示例中的用户不等于智能体 | `index.mdx`, `retain.md` |
-| agent swarm / swarm | 智能体集群 / 集群 | 指扇出并行执行的多个工作智能体，不等于单个智能体；记忆范围可以共享或隔离 | `src-mono-repo/hindsight-docs/blog/2026-10-20-agent-swarm-memory.md` |
+| agent swarm / swarm | 智能体集群 / 集群 | 指扇出并行执行的多个工作智能体，不等于单个智能体；记忆范围可以共享或隔离 | `blog/2026-10-20-agent-swarm-memory.md` |
 | agent memory | 智能体记忆 | memory 在系统意义下不是内存 | `index.mdx` |
 | long-term memory | 长期记忆 | 不写长效内存 | `index.mdx` |
 | persistent memory / persistent state | 持久记忆 / 持久状态 | persistence 为持久化 | `rag-vs-hindsight.md` |
@@ -182,7 +178,7 @@ v1.1.0 增量条目中以 `src-mono-repo/` 开头的来源路径相对于项目�
 | retry / exponential backoff / jitter | 重试 / 指数退避 / 随机抖动 | 保留重试次数、间隔和范围 | `configuration.mdx` |
 | failover / fallback / round-robin | 故障切换 / 回退 / 轮询调度 | 调度的 round-robin 与任务 polling 区分 | `configuration.mdx` |
 | LLM / LLM provider | 大语言模型（LLM） / LLM 服务提供方 | 模型名、服务 ID 原样保留 | `models.mdx` |
-| decision model | 决策模型 | 回答类型化中间判断，可参与 Recall 排序、Reflect 证据筛选、观测整合及知识页刷新；不等同于生成正文的 LLM 或交叉编码器 | `src-mono-repo/hindsight-docs/docs/developer/configuration.mdx` |
+| decision model | 决策模型 | 回答类型化中间判断，可参与 Recall 排序、Reflect 证据筛选、观测整合及知识页刷新；不等同于生成正文的 LLM 或交叉编码器 | `docs/developer/configuration.mdx` |
 | memory provider | 记忆提供方 | 集成中提供记忆能力的后端或适配层，不写记忆供应商；与 LLM 服务提供方区分 | `src/data/integrations.json`（Eve、Right Agent、Hermes Desktop） |
 | reasoning effort / inference | 推理强度 / 推断 | LLM 的资源配置与业务推理区分 | `configuration.mdx`, `performance.md` |
 | tool calling / structured-output support | 工具调用 / 结构化输出支持 | 原生支持与通过提示模拟不同 | `models.mdx`, `configuration.mdx` |
@@ -191,8 +187,8 @@ v1.1.0 增量条目中以 `src-mono-repo/` 开头的来源路径相对于项目�
 | bare metal / horizontal scaling | 裸机 / 水平扩展 | 保留部署方式，不写原生金属 | `installation.md`, `services.md` |
 | tenant / tenant extension | 租户 / 租户扩展 | 租户与记忆库不是同一隔离层 | `extensions.md` |
 | authentication / authorization | 身份认证 / 授权 | API key 校验与访问权限分别描述 | `configuration.mdx`, `api/memory-banks.mdx` |
-| Workload Identity Federation | 工作负载身份联合 | Anthropic 身份认证中用平台身份 token 换取短期访问 token；不等于固定 API 密钥 | `src-mono-repo/hindsight-docs/docs/developer/configuration.mdx` |
-| principal | 主体 | Eve 身份认证语境中的用户或服务身份；不等于记忆库或租户 | `src-mono-repo/hindsight-docs/blog/2026-10-16-eve-memory-provider.md` |
+| Workload Identity Federation | 工作负载身份联合 | Anthropic 身份认证中用平台身份 token 换取短期访问 token；不等于固定 API 密钥 | `docs/developer/configuration.mdx` |
+| principal | 主体 | Eve 身份认证语境中的用户或服务身份；不等于记忆库或租户 | `blog/2026-10-16-eve-memory-provider.md` |
 | allowlist / credentials / secret | 允许列表 / 凭据 / 敏感凭据 | webhook 签名 secret 具体写“签名密钥” | `configuration.mdx`, `memory-defense/index.md`, `api/webhooks.mdx` |
 | config override / resolved config | 配置覆盖项 / 解析后的最终配置 | 导出覆盖项不等于导出所有有效默认值 | `api/bank-templates.mdx` |
 | hierarchical configuration | 分层配置 | 全局 → 租户 → 记忆库，覆盖能力逐字段核对 | `configuration.mdx` |
