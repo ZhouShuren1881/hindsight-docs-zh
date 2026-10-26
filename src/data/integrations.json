@@ -176,7 +176,7 @@
       "description": "借助 Hindsight 钩子为 ZCode（Z.ai 的 GLM 桌面编程智能体）提供无需 MCP 的长期记忆。每次提示前召回相关上下文，每轮结束后存入对话。",
       "type": "official",
       "by": "hindsight",
-      "category": "coding-agent",
+      "category": "legacy",
       "link": "/sdks/integrations/zcode",
       "icon": "/img/icons/zcode.svg"
     },
@@ -679,6 +679,16 @@
       "category": "tool",
       "link": "https://github.com/Nyrest/notion-to-hindsight-sync",
       "icon": "/img/icons/notion.svg"
+    },
+    {
+      "id": "hindsight-ingestion",
+      "name": "Hindsight Ingestion",
+      "description": "将 Notion、思源笔记、S3、WebDAV、Google Drive、OneDrive、电子邮件、SQL、文件系统等来源的文档同步到 Hindsight。通过 Docker 自托管，支持增量同步和多模态同步。",
+      "type": "community",
+      "by": "Nyrest",
+      "category": "tool",
+      "link": "https://github.com/Nyrest/hindsight-ingestion",
+      "icon": "/img/icons/hindsight-ingestion.svg"
     }
   ]
 }

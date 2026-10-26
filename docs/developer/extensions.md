@@ -115,12 +115,31 @@ HINDSIGHT_API_LLM_REQUEST_EXTENSION=mypackage.llms:MyLLMs
 - **`llm` 返回值会创建一次并重复使用**，每个进程最多缓存 64 个不同的 LLM（最近最少使用的项会被移除）。如果扩展要为大量用户分别返回一个 LLM，应改用网关和 `api_key`。
 - **不支持批量 retain。** 设置 `HINDSIGHT_API_RETAIN_BATCH_ENABLED=true` 并启用此扩展会导致启动失败，因为批处理任务会提交到服务器的 LLM。
 - **仅适用于 LLM 调用。** Embedding 和重排仍使用各自的配置。
-- **生命周期：** 内存引擎初始化时、任何 LLM 调用之前会运行 `on_startup()`；引擎关闭时会运行 `on_shutdown()`。
+- **生命周期：** 记忆引擎初始化时、任何 LLM 调用之前会运行 `on_startup()`；引擎关闭时会运行 `on_shutdown()`。
 - **启动检查：** 启动时的连接检查使用服务器自己的 LLM。如果服务器的 LLM 没有可用密钥（例如网关没有为服务器配置密钥），请设置 `HINDSIGHT_API_SKIP_LLM_VERIFICATION=true`。
 
 请在 API 和每个工作进程中加载同一个扩展：未加载扩展的工作进程会使用服务器自己的 LLM 执行整合和刷新。
 
 社区扩展 [`bank-llm-routing`](https://github.com/vectorize-io/hindsight/tree/main/hindsight-extensions/bank-llm-routing) 根据配置中的记忆库 ID 和操作模式进行路由，可作为该接口的完整示例。
+
+---
+
+### ModelCallExtension {#modelcallextension}
+
+服务器发出的每次模型调用完成后，都会将其作为 `ModelCall` 交给此扩展，包括 LLM、Embedding、重排和决策模型调用，无论成功还是失败。记录内容包括调用所用的租户 schema、记忆库、操作和追踪记录、范围、服务提供方和模型、输入 / 缓存 / 输出 / 思考 token 数、耗时，以及请求和响应本身（如果模型请求了工具，也包括工具调用）。可用它在 `llm_requests` 表之外按次留存模型调用信息，以便核算模型费用并保存调用内容，还可以存入对象存储、数据仓库或可观测性产品。
+
+```bash
+HINDSIGHT_API_MODEL_CALL_EXTENSION=mypackage.calls:MyRecorder
+```
+
+注意事项：
+
+- **`record()` 在调用路径中同步运行。** 此处只能缓冲数据：不要执行 I/O 或任何阻塞操作。请从后台任务发送数据。此方法抛出的异常不会导致调用失败；异常会被吞掉，且只以 DEBUG 级别记录日志，因此请自行捕获并报告错误。
+- **生命周期：** 记忆引擎初始化时、任何模型调用之前会运行 `on_startup()`；引擎关闭时、工作进程停止后会运行 `on_shutdown()`，因此缓冲数据可以完整写出。
+- **它能看到 `llm_requests` 追踪记录的相同调用，** 无论是否写入该表，并且在 API 和工作进程中都能看到。请在两者中加载此扩展。
+- **`input` 和 `output` 是调用内容本身**（包括提示和记忆）。存储这些数据时请妥善处理。
+- **操作运行（可选）：** 可重写 `record_operation(run)`，以便在每次 Retain、Recall、Reflect、整合或心智模型刷新结束时接收一个 `OperationRun`，无论操作从何处启动（HTTP、MCP 或排队任务）。它包含操作的总耗时、成功或错误状态、所发起模型调用的数量及累计耗时和 token 数、对记忆存储的调用数量及累计耗时（在存储接口处测量）、引擎各阶段的计时信息；如果是排队任务，还包含其 ID 和入队时间。一次操作运行中的每个 `ModelCall` 都会带有该运行的 ID，填入 `operation_id`，以便关联两类记录。在另一个运行内部启动的运行（例如心智模型刷新中的 Reflect 阶段）会作为独立运行，其 `parent_id` 会指向父运行，并且只统计自身的数据。与 `record()` 相同：只缓冲数据，然后立即返回。
+- **`current_operation_id()`**（位于 `hindsight_api.operation_runs`）会返回正在进行的运行，供希望为自身请求添加运行 ID 的记忆存储使用。
 
 ---
 
@@ -453,6 +472,50 @@ class PerCustomerLLMs(LLMRequestExtension):
 ```
 
 `resolve` 会在每次 LLM 调用时运行，因此应缓存耗时操作的结果。记忆库 ID 只在各自的租户 schema 内唯一——多租户部署必须同时使用 `target.schema` 作为键的一部分，否则某个租户可以将记忆库命名为与另一租户相同的名称，并让调用计入对方的密钥。`LLMRequestOverrides` 会在其 `repr` 中隐藏 LLM 和密钥；也请勿在自己的日志中记录它们。
+
+---
+
+### 示例：自定义 ModelCallExtension {#example-custom-modelcallextension}
+
+```python
+import asyncio
+
+from hindsight_api.extensions import ModelCall, ModelCallExtension
+
+
+class JsonlFileRecorder(ModelCallExtension):
+    """将每次模型调用追加到 JSONL 文件；每秒在调用路径之外写入一次。"""
+
+    def __init__(self, config: dict[str, str]) -> None:
+        super().__init__(config)
+        self.path = config.get("path", "model_calls.jsonl")
+        self.buffer: list[str] = []
+        self.task: asyncio.Task | None = None
+
+    def record(self, call: ModelCall) -> None:
+        self.buffer.append(call.model_dump_json())  # 仅缓冲
+
+    async def on_startup(self) -> None:
+        self.task = asyncio.create_task(self._flush_forever())
+
+    async def on_shutdown(self) -> None:
+        if self.task:
+            self.task.cancel()
+        self._flush()
+
+    async def _flush_forever(self) -> None:
+        while True:
+            await asyncio.sleep(1)
+            self._flush()
+
+    def _flush(self) -> None:
+        lines, self.buffer = self.buffer, []
+        if lines:
+            with open(self.path, "a") as f:
+                f.write("\n".join(lines) + "\n")
+```
+
+API 和每个工作进程都会记录调用，且调用可能来自不同的事件循环。因此，生产环境中的记录器应使用 `threading.Lock` 保护缓冲区，并由专用任务负责写入。
 
 ---
 

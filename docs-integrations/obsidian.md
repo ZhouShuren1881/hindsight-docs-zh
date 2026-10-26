@@ -67,6 +67,7 @@ hindsight-api
 | 记忆库名称 | `obsidian` | 所有笔记库共用的记忆库；通过 `vault:` 标签区分 |
 | 包含/排除文件夹 | — | 限制同步哪些笔记 |
 | 编辑时同步 | 开启 | 编辑笔记时自动重新摄取 |
+| 事实日期依据 | 创建时间 | 使用最后编辑时间时，会优先读取 frontmatter 中的 `updated` / `modified`；若无此字段，则使用文件修改时间 |
 | 默认聊天深度 | 低 | 聊天答案的 Reflect 推理预算 |
 | 记住对话 | **关闭** | 开启后，聊天轮次会存入 Hindsight（这会在笔记库之外创建记忆） |
 
@@ -92,6 +93,6 @@ hindsight-obsidian-sync reconcile \
 hindsight-obsidian-sync reconcile --vault ~/Vaults/Brain --bank my-vault --watch
 ```
 
-如果未指定 `--api-url` / `--api-token`，CLI 会分别回退到 `HINDSIGHT_API_URL` / `HINDSIGHT_API_TOKEN`。其他选项包括可重复指定的 `--include` / `--exclude`、`--vault-name`、`--prefix-doc-id` 和 `--index`。
+如果未指定 `--api-url` / `--api-token`，CLI 会分别回退到 `HINDSIGHT_API_URL` / `HINDSIGHT_API_TOKEN`。其他选项包括可重复指定的 `--include` / `--exclude`、`--vault-name`、`--prefix-doc-id`、`--timestamp-from <created|updated>` 和 `--index`。`--timestamp-from` 用于指定事实日期依据：`created`（默认值）使用笔记的创建时间，`updated` 使用最后编辑时间；对于会持续编辑的笔记，建议使用 `updated`。
 
 同步索引（CLI 中相当于插件的 `data.json`）默认位于 `~/.hindsight/obsidian/<vault>.json`，特意放在笔记库**之外**，这样 Obsidian Sync 就不会传播该文件。如果 CLI 和插件使用同一个记忆库与笔记库，请让两边的范围设置保持一致（包含/排除规则、笔记库名称、`prefix-doc-id`）。两边分别维护自己的索引；每次协调同步只会清理各自索引跟踪的内容。因此，范围设置不一致时，一方可能删除另一方管理的文档。

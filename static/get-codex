@@ -62,9 +62,14 @@ print_banner() {
     echo -e "  ${BOLD}HINDSIGHT 的 Codex CLI 集成${NC}"
     echo -e "  ${DIM}为 Codex 智能体提供持久记忆${NC}"
     echo ""
+    echo -e "  ${YELLOW}已停用：${NC} 此安装器不再维护。请改用 Coding Agents 插件："
+    echo -e "    ${CYAN}npx @vectorize-io/hindsight-coding-agents install codex --import-conversations${NC}"
+    echo ""
 }
 
-GITHUB_RAW="https://raw.githubusercontent.com/vectorize-io/hindsight/main/hindsight-integrations/codex"
+# 已停用：Codex 钩子已由 Coding Agents 插件取代，源码也已从 main 删除。
+# 因此安装和卸载均固定使用删除前最后一个版本的提交。
+GITHUB_RAW="https://raw.githubusercontent.com/vectorize-io/hindsight/8674354f35adb1249c6d80cc1359aab8078858c4/hindsight-integrations/codex"
 INSTALL_DIR="${HOME}/.hindsight/codex"
 SCRIPTS_DIR="${INSTALL_DIR}/scripts"
 CODEX_DIR="${HOME}/.codex"

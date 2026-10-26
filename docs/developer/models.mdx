@@ -110,7 +110,7 @@ Gemini 调用达到上限时，Hindsight 会记录 `truncated at max_output_toke
 | **OpenAI** | `gpt-5-mini` |
 | **OpenAI** | `gpt-5-nano` |
 | **OpenAI** | `gpt-4.1-mini` |
-| **OpenAI** | `gpt-4.1-nano` |
+| **OpenAI** | `gpt-6-luna` |
 | **OpenAI** | `gpt-4o-mini` |
 | **Anthropic** | `claude-sonnet-4-20250514` |
 | **Anthropic** | `claude-3-5-sonnet-20241022` |
@@ -283,6 +283,54 @@ export HINDSIGHT_API_LLM_VERTEXAI_PROJECT_ID=your-gcp-project-id
 ```
 
 **注意**：LLM 是存入操作的主要性能瓶颈。优化策略请参阅[性能](./performance)。
+
+---
+
+### 低成本记忆模型与故障切换 {#cheap-memory-model-with-failover}
+
+Hindsight 只会使用自己的凭据调用 LLM 来处理记忆：在 Retain 时提取事实、整合观测、刷新心智模型，以及回答 Reflect 请求。你的智能体仍会调用它原本使用的模型，Hindsight 不会看到或更改该模型。因此，记忆模型可以选择成本较低、吞吐量较高的模型，优先满足处理量需求，而不必与智能体的推理模型相同。
+
+常见的生产配置是将低成本模型设为首选，并在其后配置能力更强、价格更高的模型，仅在低成本模型失败时使用。相关配置方法见[多 LLM 策略](./configuration#multi-llm-strategies-failover--round-robin)和[按操作配置 LLM](./configuration#per-operation-llm-configuration)：
+
+```bash
+# 成员 0（主模型）：低成本主力模型，处理几乎所有调用
+export HINDSIGHT_API_LLM_PROVIDER=groq
+export HINDSIGHT_API_LLM_API_KEY=<groq-key>
+export HINDSIGHT_API_LLM_MODEL=<cheap-model>
+
+# 成员 1：中档回退模型
+export HINDSIGHT_API_LLM_1_PROVIDER=openai
+export HINDSIGHT_API_LLM_1_API_KEY=<openai-key>
+export HINDSIGHT_API_LLM_1_MODEL=<mid-model>
+
+# 成员 2：最后使用的高端模型，使用独立的重试预算
+export HINDSIGHT_API_LLM_2_PROVIDER=anthropic
+export HINDSIGHT_API_LLM_2_API_KEY=<anthropic-key>
+export HINDSIGHT_API_LLM_2_MODEL=<top-model>
+export HINDSIGHT_API_LLM_2_MAX_RETRIES=3
+
+export HINDSIGHT_API_LLM_MAX_RETRIES=0   # 立即切换到回退模型，不重试当前成员
+export HINDSIGHT_API_LLM_STRATEGY='{"mode": "failover"}'
+# 也可以分摊负载：'{"mode": "round-robin", "weights": [4, 1, 1]}'
+```
+
+若要让某项操作使用更强的模型，只需覆盖该操作的主模型。其回退链仍会使用上方的全局成员：
+
+```bash
+# 整合从中档模型开始；Retain 和 Reflect 仍使用低成本模型
+export HINDSIGHT_API_CONSOLIDATION_LLM_PROVIDER=openai
+export HINDSIGHT_API_CONSOLIDATION_LLM_API_KEY=<openai-key>
+export HINDSIGHT_API_CONSOLIDATION_LLM_MODEL=<mid-model>
+```
+
+若要为某项操作配置完全独立的模型链，可为其设置独立的索引成员和策略（例如 `HINDSIGHT_API_RETAIN_LLM_1_PROVIDER`、`HINDSIGHT_API_RETAIN_LLM_STRATEGY` 等）。
+
+需要注意：
+
+- **成员编号从 1 开始且不能跳号。** Hindsight 遇到第一个缺少 `HINDSIGHT_API_LLM_<n>_PROVIDER` 的编号时就会停止读取。例如，设置了 `_1_` 和 `_3_` 时，会忽略成员 3。
+- **如果某项操作没有配置自己的成员或策略，就会使用全局配置。** 心智模型刷新会先使用 Reflect 的模型链，然后使用全局模型链。
+- **批量 Retain 不会执行故障切换。** 设置 `HINDSIGHT_API_RETAIN_BATCH_ENABLED=true` 时，整个批次会使用第一个提供方支持 Batch API 的成员。请在该位置配置可靠的提供方。
+- **启动时会向每个已配置的模型发送测试调用。** 如果模型不可用，系统只会记录警告，服务器仍会启动。设置 `HINDSIGHT_API_SKIP_LLM_VERIFICATION=true` 可跳过这些检查，例如回退模型按调用收费或响应缓慢时。
 
 ---
 

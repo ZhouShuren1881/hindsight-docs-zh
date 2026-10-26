@@ -244,7 +244,7 @@ Prime Agent 是 pi 的分支，因此接入方式相同：在 `~/.prime/agent/se
 npx @vectorize-io/hindsight-coding-agents install dsh
 ```
 
-在 `$DSH_HOME/cordis.patch.yml`（默认 `~/.dsh`）添加 Cordis 插件条目，每个 dsh 配置档都会组合该文件，使用原生工具，无需 MCP。dsh 有两点特殊之处：一个进程服务**多个仓库**（Web UI 可为每个会话选择目录），因此按会话工作区解析记忆库，而非每个进程只解析一次；dsh 没有面向插件的通知渠道，因此初始数据提示写入插件日志而非 UI。所有面向模型的内容——召回记忆、知识前导文本、`hindsight_*` 工具——不受影响。偏好已发布软件包方式时，`dsh plugin --profile web add @vectorize-io/hindsight-coding-agents` 也可用：软件包提供配置档补丁层，无需额外编辑。两种方式都会安装配套技能；通过宿主插件管理器接入时，插件在首次会话自行安装技能，因为此方式不会运行我们的安装程序。
+在 `$DSH_HOME/cordis.patch.yml`（默认 `~/.dsh`）添加 Cordis 插件条目，每个 dsh 配置档都会组合该文件，使用原生工具，无需 MCP。dsh 有两点特殊之处：一个进程服务**多个仓库**（Web UI 可为每个会话选择目录），因此按会话工作区解析记忆库，而非每个进程只解析一次；dsh 没有面向插件的通知渠道，因此初始数据提示写入插件日志而非 UI。**分叉会话**只保存分叉后新增的轮次；它继承的部分已在父会话的对话中。所有面向模型的内容——召回记忆、知识前导文本、`hindsight_*` 工具——不受影响。偏好已发布软件包方式时，`dsh plugin --profile web add @vectorize-io/hindsight-coding-agents` 也可用：软件包提供配置档补丁层，无需额外编辑。两种方式都会安装配套技能；通过宿主插件管理器接入时，插件在首次会话自行安装技能，因为此方式不会运行我们的安装程序。
 
 #### <StaticImage src="/img/harness/workbuddy.png" alt="" width="20" height="20" /> WorkBuddy {#-workbuddy}
 
@@ -446,7 +446,7 @@ npx @vectorize-io/hindsight-coding-agents install claude-code --server cloud --a
 | `pages`                 | 所有页面 | 初始化知识页的逐页面配置，键为页面名称（不区分大小写）：`false` 完全跳过页面，`{"source_query": "..."}` 使用你的问题而非内置问题初始化。省略时全部五页采用内置查询。这是自定义页面措辞的受支持方式：插件会重新同步实际查询与配置不一致的页面，因此通过 API 或控制台编辑的查询会在下次会话被替换。跳过页面**不会删除**已有页面：保留内容，停止重新同步。你的查询也会附加范围限定条款，防止改写后的页面将依赖项决策当成当前项目决策。与 `recallOptions` 相同，仅文件配置；`banks.<id>` 中替换全局映射，而非合并 |
 | `customPages`           | —                                    | 自定义知识页，与上面五页一起初始化，以页面名称为键：`{"Security posture": {"source_query": "...", "tags": ["knowledge:decision"]}}`。`source_query` 必需；`tags` 可选，用于选择提供给页面的事实，省略时使用库内全部内容。有意独立于 `pages`，让该处未知名称保持为拼写警告，而非静默创建页面。仅文件配置，在 `banks.<id>` 中替换而非合并 |
 | `autoSeed`              | `true`                               | SessionStart：根据 git 历史自动初始化尚未使用仓库的记忆库 |
-| `seedLimit`             | `300`                                | 自动初始化：最近 N 次提交上限 |
+| `seedLimit`             | `300`                                | git-log 文档大小：完整写入时保留最新提交，数量介于该值的一半至该值之间；保留窗口每次按该值的一半移动，并记录丢弃的较早提交数 |
 | `codebaseSurvey`        | `true`                               | SessionStart：对尚未使用仓库结构进行无界面调查，通过当前运行环境自己的 CLI（claude/codex/antigravity/opencode）运行，回退到任意可用智能体 |
 | `surveyModel`           | `haiku`                              | 调查模型，仅适用于 Claude 方案（`claude -p --model`）；其他智能体使用其配置的默认模型 |
 | `surveyBudgetUsd`       | `2`                                  | 调查费用上限，仅适用于 Claude 方案（`claude -p --max-budget-usd`）；其他智能体依靠只读沙箱 |
@@ -678,6 +678,8 @@ npx @vectorize-io/hindsight-coding-agents install claude-code --server cloud --a
 
 默认 `"coding-agent::{gitProject}"` **不区分运行环境**，因此 opencode、Claude Code 和 Codex 在每个仓库共享一个记忆库。要按智能体拆分，使用 `"{harness}-{gitProject}"`。
 
+每轮都会根据智能体当前工作的目录解析记忆库。会话进入解析到另一个记忆库的目录时（例如 `cd` 跨过 `mapPathToBank` 前缀），从该轮起就会跟随目录切换：新记忆库接收切换后的轮次，不会收到此前已保存到别处的轮次；切回原目录后，则会将后续内容追加到原记忆库已有的对话中。每次切换都会在 `plugin.log` 中记为一条警告。
+
 ### 记录记忆来源 {#recording-where-a-memory-came-from}
 
 每个仓库一个记忆库时，库本身就是“来自哪里”的答案。刻意使用**共享**库时则不是：一个库保存跨项目知识，让事实可在任何地方召回，每条记忆看起来都一样。`retainTags` 和 `retainMetadata` 为对话、git 历史和差异、调查生命周期文档、工作计划标记，以及通过 `hindsight_ingest_document` 保存的文档添加来源：
@@ -760,7 +762,7 @@ npx @vectorize-io/hindsight-coding-agents stats
 
 ### 记忆是否已就绪？ {#is-the-memory-ready-yet}
 
-面向智能体的工具 `hindsight_sync_status`（脚本使用 `dist/status.js`）专门回答这个问题：`"synced": true` 表示初始化的记忆已可查询。它还报告 gitlog 新鲜度、逐提交深化进度、代码库调查状态（`surveyBaseline` 是上次调查起点的 HEAD，`surveyDocs` 统计已到达的发现文档数，0–4；没有发现的基线会自动重试），以及仍在执行的提取操作。
+面向智能体的工具 `hindsight_sync_status`（脚本使用 `dist/status.js`）专门回答这个问题：`"synced": true` 表示初始化的记忆已可查询。它还报告 gitlog 新鲜度、逐提交深化进度、代码库调查状态（`surveyBaseline` 是上次调查起点的 HEAD，`surveyDocs` 统计已到达的发现文档数，0–4；没有发现的基线会自动重试，每个提交最多重试三次），以及仍在执行的提取操作。每个未找到、启动失败或出错退出的调查智能体都会在插件日志中留下一条 `[survey]` 记录。
 
 ### 重置仓库记忆 {#resetting-a-repos-memory}
 

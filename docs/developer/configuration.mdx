@@ -1438,6 +1438,10 @@ PyTorch 使用 Apple Accelerate 矩阵单元，而 ONNX Runtime 的 CPU 后端�
 
 ### 决策模型 {#decision-model}
 
+:::warning 实验性功能
+决策模型支持目前处于实验阶段。其设置、行为和支持的提供方可能在任何版本中变更或移除，且不提供弃用期。除非正在测试，否则生产环境请将 `HINDSIGHT_API_DECISION_MODEL_PROVIDER` 保持为 `none`。
+:::
+
 决策模型可在不到一秒内回答类型化问题（例如从选项中选一个，或判断某种情况的可能性）。支持该模型的操作可将原本需要由 LLM 完成的中间判断交给它处理，并继续使用 LLM 写作。可在此处统一配置；所有支持决策模型的操作都会共享该配置，除非操作本身覆盖或关闭它。这与 `typesafe` [重排器](#reranker)相互独立，后者使用自己的 `HINDSIGHT_API_RERANKER_TYPESAFE_*` 设置。
 
 | 变量 | 说明 | 默认值 |
@@ -2130,7 +2134,7 @@ export HINDSIGHT_API_FILE_STORAGE_AZURE_ACCOUNT_KEY=base64encodedkey==
 
 | 变量 | 说明 | 默认值 |
 |----------|-------------|---------|
-| `HINDSIGHT_API_CONSOLIDATION_USE_DECISION_MODEL` | 配置整合决策模型（见[决策模型](#decision-model)）后，由其在调用整合 LLM 前处理简单事实：重述观测的事实会附加为证据；新增实体或属性会按原样记录为观测；闲聊会跳过。无法判定的事实（会改变观测内容、答案相互矛盾或请求失败）仍交给 LLM。若记忆库有自己的观测任务，新事实只有在任务允许且措辞不违反规则（如不提姓名、只记录趋势）时才会照原样记录；闲聊交给 LLM 按任务处理。设为 `false` 会将所有事实交给 LLM。可按记忆库配置。 | `true` |
+| `HINDSIGHT_API_CONSOLIDATION_USE_DECISION_MODEL` | **实验性。** 配置整合决策模型（见[决策模型](#decision-model)）后，由其在调用整合 LLM 前处理简单事实：重述观测的事实会附加为证据；新增实体或属性会按原样记录为观测；闲聊会跳过。无法判定的事实（会改变观测内容、答案相互矛盾或请求失败）仍交给 LLM。若记忆库有自己的观测任务，新事实只有在任务允许且措辞不违反规则（如不提姓名、只记录趋势）时才会照原样记录；闲聊交给 LLM 按任务处理。设为 `false` 会将所有事实交给 LLM。可按记忆库配置。 | `true` |
 | `HINDSIGHT_API_DEFAULT_OBSERVATION_SCOPES` | Retain 项目未传入 `observation_scopes` 时使用的值：`combined`、`per_tag`、`all_combinations`、`shared` 或标签列表组成的 JSON 数组；标签中的 `*` 会匹配记忆自身标签（例如 `[ ["topic:*"] ]` 只按主题标签对记忆分组）。此值保存在每条记忆中，更改后不会重新划分已存入的记忆，除非重新处理其文档。参见 [`observation_scopes`](./api/retain#observation_scopes)。可按记忆库配置。 | `combined` |
 | `HINDSIGHT_API_ENABLE_OBSERVATIONS` | 启用观测整合 | `true` |
 | `HINDSIGHT_API_ENABLE_AUTO_CONSOLIDATION` | 存入、删除和更新操作后自动触发整合。设为 `false` 时，仅能通过[整合端点](/developer/api/operations#consolidation)显式触发。可按银行配置。 | `true` |
@@ -2217,14 +2221,14 @@ export HINDSIGHT_API_OBSERVATIONS_MISSION="Observations are recurring patterns i
 | 变量 | 说明 | 默认值 |
 |---|---|---|
 | `HINDSIGHT_API_REFLECT_MAX_ITERATIONS` | 强制生成回答前的最大工具调用轮数 | `10` |
-| `HINDSIGHT_API_REFLECT_USE_DECISION_MODEL` | 配置 Reflect 决策模型（见[决策模型](#decision-model)）后，Reflect 会采用决策编排：先由 LLM 将请求改写为搜索查询（或判断无需搜索，此时立即返回空答案），再用该查询并行运行各检索层。决策模型会筛选证据并判断其是否已足以回答请求；若足够，下一次 LLM 调用便生成答案；否则由 LLM 编写下一条查询，再进行一轮并行检索和判断。与逐轮调用 LLM 的智能体循环相比，LLM 调用更少、成本更低。决策模型失败时会回退到智能体循环。目前这里只支持 `typesafe` 提供方；使用其他提供方时会记录警告并继续采用智能体循环。设为 `false` 可保留智能体循环（每个检索层各用一轮 LLM 编写查询）。可按记忆库配置。 | `true` |
-| `HINDSIGHT_API_MENTAL_MODEL_REFRESH_USE_DECISION_MODEL` | 对刷新知识页时使用的 Reflect 启用相同的决策编排。可按记忆库配置。 | `true` |
-| `HINDSIGHT_API_MENTAL_MODEL_DELTA_USE_DECISION_MODEL` | 配置 Reflect 决策模型（见[决策模型](#decision-model)）后，知识页增量刷新会跳过 Reflect：决策模型会筛选上次刷新以来新增且可能改变页面的记忆，编辑只依据这些记忆进行。若没有符合条件的记忆，则不会调用 LLM。设为 `false` 可让增量刷新也运行 Reflect。可按记忆库配置。 | `true` |
+| `HINDSIGHT_API_REFLECT_USE_DECISION_MODEL` | **实验性。** 配置 Reflect 决策模型（见[决策模型](#decision-model)）后，Reflect 会采用决策编排：先由 LLM 将请求改写为搜索查询，再用该查询并行运行各检索层。决策模型会筛选证据并判断其是否已足以回答请求；若足够，下一次 LLM 调用便生成答案；否则由 LLM 编写下一条查询，再进行一轮并行检索和判断。与逐轮调用 LLM 的智能体循环相比，LLM 调用更少、成本更低。决策模型失败时会回退到智能体循环。目前这里只支持 `typesafe` 提供方；使用其他提供方时会记录警告并继续采用智能体循环。设为 `false` 可保留智能体循环（每个检索层各用一轮 LLM 编写查询）。可按记忆库配置。 | `true` |
+| `HINDSIGHT_API_MENTAL_MODEL_REFRESH_USE_DECISION_MODEL` | **实验性。** 对刷新知识页时使用的 Reflect 启用相同的决策编排。可按记忆库配置。 | `true` |
+| `HINDSIGHT_API_MENTAL_MODEL_DELTA_USE_DECISION_MODEL` | **实验性。** 配置 Reflect 决策模型（见[决策模型](#decision-model)）后，知识页增量刷新会跳过 Reflect：决策模型会筛选上次刷新以来新增且可能改变页面的记忆，编辑只依据这些记忆进行。若没有符合条件的记忆，则不会调用 LLM。设为 `false` 可让增量刷新也运行 Reflect。可按记忆库配置。 | `true` |
 | `HINDSIGHT_API_REFLECT_MAX_CONTEXT_TOKENS` | 反思循环中强制最终综合前可累计的上下文 token 上限，避免大型银行出现 `context_length_exceeded`。若 LLM 上下文窗口小于 128K，请调低。 | `100000` |
 | `HINDSIGHT_API_REFLECT_WALL_TIMEOUT` | 整个反思操作的墙钟超时时间（秒）。超时会使请求返回 HTTP 504；也限制工作进程中整个心智模型刷新任务，超时任务会取消并标记失败。 | `300` |
 | `HINDSIGHT_API_REFLECT_MISSION` | 全局反思任务说明（身份与推理框架）。可通过配置 API 按银行覆盖。 | - |
 | `HINDSIGHT_API_REFLECT_SOURCE_FACTS_MAX_TOKENS` | 反思时 `search_observations` 中源事实的 token 预算。`-1` 禁用（默认），`0` 启用且不限量，大于 `0` 时按指定预算启用。可通过配置 API 按银行覆盖。 | `-1` |
-| `HINDSIGHT_API_REFLECT_DEFAULT_OPTIONS` | JSON 对象形式的反思默认选项，在请求未指定时应用。心智模型刷新从自己的触发器读取设置，触发器默认值按银行由 `knowledge_page_default_trigger` 提供。`reflect_search_observations_max_tokens` 设置 `search_observations` 工具预算；较小的预算会剔除排名较低的观测并缩小反思上下文。`reflect_search_observations_include_entities` 可省略附加到观测的已消解实体名称（可能超过工具载荷的一半）。例如 `{"reflect_search_observations_max_tokens": 3000, "reflect_search_observations_include_entities": false}`。可通过配置 API 按银行覆盖。 | - |
+| `HINDSIGHT_API_REFLECT_DEFAULT_OPTIONS` | JSON 对象形式的反思默认选项，在请求未指定时应用。心智模型刷新从自己的触发器读取设置，触发器默认值按记忆库由 `knowledge_page_default_trigger` 提供，并且始终只会完整获取排名最高的心智模型。`reflect_search_observations_max_tokens` 设置 `search_observations` 工具预算；较小的预算会剔除排名较低的观测并缩小反思上下文。`reflect_search_observations_include_entities` 可省略附加到观测的已消解实体名称（可能超过工具载荷的一半）；`reflect_search_mental_models_max_tokens` 设置 `search_mental_models` 完整返回心智模型的预算（默认值为 16000；排名最高的结果始终完整返回，其他超出预算的结果会以片段形式返回，供模型读取）。例如 `{"reflect_search_observations_max_tokens": 3000, "reflect_search_observations_include_entities": false}`。可通过配置 API 按记忆库覆盖。 | - |
 
 #### 内部召回（供反思和心智模型刷新使用） {#internal-recall-used-by-reflect-and-mental-model-refresh}
 
@@ -2414,6 +2418,8 @@ ONNX Runtime（FlashRank 和 `onnx` 重排器、ONNX 嵌入）不会读取 `OMP_
 
 操作类型允许列表和保留期限仍是服务器级设置：保留扫描会跨所有租户执行，无法限定到单个银行。
 
+**无论审计设置如何，破坏性操作始终会写入日志。** 删除或清空记忆库、其中的记忆、文档、心智模型、指令、别名、webhook 或观测，以及向记忆库导入数据时，API 都会在应用日志中写入一条 INFO 级日志；HTTP 和 MCP 请求均适用，例如 `destructive_op action=delete_bank bank=… transport=mcp tenant=… schema=… api_key_id=… status=ok duration_ms=…`。即使 `audit_log` 表已关闭，这条日志仍会记录操作执行者、对象和时间。每次 MCP 工具调用也会写入一条 `mcp tool=… bank=… status=… duration_ms=…` 日志。
+
 | 变量 | 说明 | 默认值 |
 |---|---|---|
 | `HINDSIGHT_API_AUDIT_LOG_ENABLED` | 是否写入审计事件。支持分层配置，可通过配置 API 按银行覆盖。 | `false` |
@@ -2439,7 +2445,7 @@ LLM 请求追踪会将 Hindsight 发出的每次 LLM 调用（用于存入、反
 
 **LLM 请求追踪默认启用**，追踪记录保留 1 天。若要完全禁用，请将 `HINDSIGHT_API_LLM_TRACE_ENABLED=false` 并重启 API；之后 `llm_requests` 表会保持为空，且无论发生何种操作，`/llm-requests` 都会返回 `{"total": 0, "items": []}`。
 
-> **注意**：追踪记录包含完整提示和模型输出，可能包含敏感记忆内容且占用空间较大。可通过 `HINDSIGHT_API_LLM_TRACE_MAX_CHARS` 限制存储的每段载荷长度、缩短 `HINDSIGHT_API_LLM_TRACE_RETENTION_DAYS` 保留期限，或设置 `HINDSIGHT_API_LLM_TRACE_ENABLED=false`，以便在敏感环境中关闭追踪。
+> **注意**：追踪记录包含完整提示和模型输出，可能包含敏感记忆内容且占用空间较大。可通过 `HINDSIGHT_API_LLM_TRACE_MAX_CHARS` 限制存储的每段载荷长度、缩短 `HINDSIGHT_API_LLM_TRACE_RETENTION_DAYS` 保留期限，或设置 `HINDSIGHT_API_LLM_TRACE_ENABLED=false`，以便在敏感环境中关闭追踪。删除记忆库时，其中的追踪记录也会一并删除。
 
 | 变量 | 说明 | 默认值 |
 |---|---|---|

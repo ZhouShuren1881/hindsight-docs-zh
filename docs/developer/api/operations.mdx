@@ -36,7 +36,7 @@ API 调用需要后台处理时，请求处理程序会向 `async_operations` �
 | `processing` | 工作进程已领取该行，正在执行处理程序。 |
 | `completed` | 处理程序已成功返回。 |
 | `failed` | 处理程序抛出了异常。`error_message` 中记录原因；可以通过 `POST /…/retry` 重新入队。 |
-| `cancelled` | 操作已通过 `DELETE /…/operations/{id}` 取消。`pending` 和 `processing` 状态的操作都可以取消。 |
+| `cancelled` | 操作已通过 `DELETE /…/operations/{id}` 取消。`pending` 和 `processing` 状态的操作都可以取消。当某个观测整合遇到暂时性错误，且同一记忆库已有另一个观测整合在等待时，该操作也会以此状态结束：等待中的操作会执行相同工作，因此当前操作不会重试。其 `result_metadata.superseded_by` 会标明等待中的操作，`error_message` 则保留当前操作遇到的错误。 |
 
 工作进程最多会重试失败的操作 `HINDSIGHT_API_WORKER_MAX_RETRIES` 次，之后将其置为 `failed`。确定性故障（例如嵌入维度无效、完整性约束冲突、LLM 服务提供方因内容策略拒绝请求，或 LLM 以 HTTP 401/403 拒绝配置的密钥）会跳过重试，因为重新运行也不会成功。修复原因后，再重试该操作。
 

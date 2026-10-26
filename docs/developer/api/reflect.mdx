@@ -206,7 +206,11 @@ MCP `reflect` 工具仅在提供 `tags` 时才会传递 `tags_match`。若要通
 
 用于控制 `search_observations` 是否为每条观测附加已消解的实体名称。如果表层文本使用了别名（例如用“Bob”指代规范名称“Robert Smith”），这些名称会很有帮助；但它们在序列化后的工具负载中可能占一半以上。设为 `false` 可在保留相同观测和排序结果的同时，大幅缩小上下文。默认值为 `true`。
 
-可以通过记忆库的 `reflect_default_options` 配置键为这两个选项设置默认值（参见[配置](../configuration.mdx)）；请求中显式提供的值始终优先。心智模型刷新使用单独的配置，**不会**读取 `reflect_default_options`。请改为设置触发器中的同名字段，或记忆库的 `knowledge_page_default_trigger`（参见[心智模型](./mental-models.mdx)）。
+### reflect_search_mental_models_max_tokens {#reflect_search_mental_models_max_tokens}
+
+用于设置智能体 `search_mental_models` 工具返回完整心智模型（知识页）的 token 预算，并按排名顺序打包。排名最高的页面始终完整返回，即使它本身就超出预算；其他放不下的页面会以简短片段返回，模型可以通过 `read_mental_models` 打开这些页面。记忆库中的页面较长，或答案分散在多个页面时，可以调高此值；若要缩小 Reflect 上下文，则可以调低。默认值为 `16000`。
+
+可以通过记忆库的 `reflect_default_options` 配置键为这三个选项设置默认值（参见[配置](../configuration.mdx)）；请求中显式提供的值始终优先。心智模型刷新使用单独的配置，**不会**读取 `reflect_default_options`。请改为设置触发器中的同名字段，或记忆库的 `knowledge_page_default_trigger`（参见[心智模型](./mental-models.mdx)）。为控制成本，刷新时始终只完整返回排名最高的页面，其他页面均以简短片段返回。
 
 ---
 

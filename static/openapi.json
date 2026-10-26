@@ -18461,6 +18461,19 @@
             "title": "reflect 检索观测包含实体",
             "description": "search_observations 是否向每条观测附加消解后的实体名称。实体可能占序列化工具载荷的一半以上；关闭后保留相同观测和排名，同时大幅缩小上下文。None 表示启用。"
           },
+          "reflect_search_mental_models_max_tokens": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reflect 心智模型搜索 token 上限",
+            "description": "search_mental_models 按排名顺序装入并全文返回心智模型的 token 预算。排名最高的心智模型始终全文返回；其余放不下的模型会返回片段，模型可通过 read_mental_models 读取。记忆库中的页面较长或答案分散在多个页面时可提高预算；降低预算可缩小 reflect 上下文。None 表示使用内置默认值（16000）。"
+          },
           "query": {
             "type": "string",
             "title": "查询"

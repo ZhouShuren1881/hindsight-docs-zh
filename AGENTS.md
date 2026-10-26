@@ -5,7 +5,13 @@
 - 临时文件及 Computer Use/Browser Snapshot 的截图放入 `temp/` 目录中，`temp/`中的文件不会进入 git 历史
 - 执行样式修改、正文文本修正等简单任务时，使用 dev 热更新快速验证而不是 build 构建生产级产物验证
 - 项目适配的媒体宽度只需要验证 800,1024,1440,2048px
-- `src-mono-repo/` 用于存放源 hindsight 项目，已加入 git ignore
+- `src-mono-repo/` 用于存放上游项目 hindsight，已加入 git ignore
+
+## 执行对齐任务
+
+上游项目更新时，用户会要求你执行对齐任务。对齐要求见 `translation-rules/alignment.md` 文档。
+
+执行工程代码对齐时，subagent 要使用和主代理一致的 model & effort。执行文档对齐时，你就是 Leader，负责组织翻译团队。
 
 ## 组织团队翻译任务
 

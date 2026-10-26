@@ -135,6 +135,8 @@ openclaw gateway
 - `dynamicBankGranularity` - 用于推导记忆库 ID 的字段：`agent`、`channel`、`user`、`provider`（默认值：`["agent", "channel", "user"]`）。
 - `excludeProviders` - 在 recall / retain 时跳过的消息提供商（例如 `["slack"]`、`["telegram"]` 或 `["discord"]`）。
 - `autoRecall` - 在每轮前自动注入记忆（默认值：`true`）。当智能体有自己的召回工具时，可设为 `false`。
+- `memoryMode` - `hybrid`（默认值）：自动召回，并提供 `hindsight_retain` / `hindsight_recall` / `hindsight_reflect` 工具。`context`：仅自动召回。`tools`：仅提供工具，不自动召回。参见[智能体工具](#agent-tools)。
+- `allowKnowledgeDelete` - 是否提供 `hindsight_delete_knowledge_node`，用于删除知识文件夹或页面及其所有下级内容。此操作无法撤销。默认值为 `false`。参见[智能体工具](#agent-tools)。
 - `autoRetain` - 在每轮后自动存储对话（默认值：`true`）。
 - `retainRoles` - 要纳入存储内容的消息角色（默认值：`["user", "assistant"]`）。可选值：`user`、`assistant`、`system`、`tool`。
 - `recallBudget` - Recall 的检索力度：`"low"`、`"mid"` 或 `"high"`（默认值：`"mid"`）。预算越高，使用的检索策略越多，有助于提高结果质量。
@@ -523,6 +525,34 @@ openclaw config get plugins.entries.hindsight-openclaw.config.llmProvider
 
 如果你在快速入门中使用了 `--ref-source env`，请确认被引用的环境变量
 （例如 `OPENAI_API_KEY`）已导出到运行 `openclaw gateway` 的 shell 中。
+
+## 智能体工具 {#agent-tools}
+
+该插件会向智能体提供与 Hermes 集成相同的三种记忆工具：
+
+- `hindsight_retain` 用于存入智能体希望记住的内容（`content`，以及可选的 `context`、`tags` 和 `occurred_at`）。配置的 `retainTags` 也会添加到这些标签中。
+- `hindsight_recall` 使用与自动召回相同的设置搜索记忆（`recallBudget`、`recallMaxTokens`、`recallTypes`、`preferObservations`、`recallMinScores`）。
+- `hindsight_reflect` 根据记忆进行推理并回答问题。
+
+该插件还会向智能体提供 Hindsight 的知识库工具，与 Hindsight MCP 服务器提供的工具相同：
+
+- `hindsight_get_knowledge_base_tree`、`hindsight_search_knowledge_base` 和 `hindsight_get_knowledge_page` 用于浏览、搜索和阅读知识页。
+- `hindsight_create_knowledge_folder`、`hindsight_create_knowledge_page` 和 `hindsight_update_knowledge_node` 用于整理知识页、创建新页面；Hindsight 会根据记忆写入并持续更新这些页面。
+- `hindsight_delete_knowledge_node` 会删除文件夹或页面及其所有下级内容。此操作无法撤销，因此只有在 `allowKnowledgeDelete: true` 时才会提供此工具。
+
+这些工具都不接收记忆库参数。每次调用都会使用本会话自动召回和自动存储所用的记忆库，因此 `agentBankMap` 以及按智能体、频道和用户划分的记忆库规则同样适用，智能体无法访问其他智能体或用户的记忆。如果自动召回会跳过某个会话（例如按用户划分记忆库时，会话没有稳定的发送者），工具会报错，而不会猜测应使用哪个记忆库。
+
+会话过滤规则也适用于这些工具：匹配 `ignoreSessionPatterns` 的会话不会获得任何工具；匹配 `statelessSessionPatterns` 的会话在 `skipStatelessSessions` 启用时不会获得任何工具，关闭时则只能获得读取工具（`hindsight_recall`、`hindsight_reflect` 和知识库读取工具）。
+
+`memoryMode` 决定提供给智能体的能力，与 Hermes 的 `memory_mode` 类似：
+
+- `hybrid`（默认值）：自动召回并提供工具。
+- `context`：仅自动召回，不提供工具。
+- `tools`：仅提供工具，不自动召回。
+
+```bash
+openclaw config set plugins.entries.hindsight-openclaw.config.memoryMode tools
+```
 
 ## OpenClaw 的记忆页、状态与搜索 {#openclaws-memory-page-status-and-search}
 
