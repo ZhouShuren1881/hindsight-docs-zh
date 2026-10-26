@@ -101,6 +101,7 @@ function postHasTag(content: PropBlogPostContent, tag: string): boolean {
 
 export default function BlogListPage({items, metadata}: Props): React.ReactElement {
   const {blogTitle, blogDescription} = metadata;
+  const {withBaseUrl} = useBaseUrlUtils();
   const location = useLocation();
   const history = useHistory();
 
@@ -159,7 +160,7 @@ export default function BlogListPage({items, metadata}: Props): React.ReactEleme
   const featuredItems =
     activeCategory.slug === 'all' && !query.trim()
       ? featured.posts.flatMap(
-          (post) => items.find(({content}) => content.metadata.permalink === post.href) ?? [],
+          (post) => items.find(({content}) => content.metadata.permalink === withBaseUrl(post.href)) ?? [],
         )
       : [];
 
