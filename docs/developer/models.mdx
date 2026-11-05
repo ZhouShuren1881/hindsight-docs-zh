@@ -1,290 +1,55 @@
-import {LLMProvidersGrid} from '@site/src/components/SupportedGrids';
-import {LLMProvidersTable} from '@site/src/components/LLMProvidersTable';
-import {LLMProviderCapabilities} from '@site/src/components/LLMProviderCapabilities';
+import {ModelProviderSearch} from '@site/src/components/ModelProviderSearch';
+import ThemedImage from '@theme/ThemedImage';
+import useBaseUrl from '@docusaurus/useBaseUrl';
+import {ProviderSetup} from '@site/src/components/ProviderSetup';
 
 # 模型 {#models}
 
-Hindsight 使用多种机器学习模型来执行不同任务。
+Hindsight 使用四类模型。只有 LLM 需要配置：嵌入模型和重排序模型默认在本地运行，决策模型则可按需启用。
 
-## 概览 {#overview}
+| 模型 | 作用 | 默认值 |
+|---|---|---|
+| [**LLM**](#llm) | 在 Retain 时提取事实、整合观测、撰写 Reflect 答案和知识页 | `openai` 提供方，`gpt-4o-mini` |
+| [**嵌入模型**](#embedding-model) | 将文本转换为向量，供语义检索使用 | `BAAI/bge-small-en-v1.5`，本地运行 |
+| [**重排序模型**](#cross-encoder-reranker) | 根据相关性对 Recall 候选结果排序 | `hindsight-ai/hs-rerank-1`，本地运行 |
+| [**决策模型**](#decision-model) | 快速回答类型化判断问题，让 Recall、整合、Reflect 和知识页中的判断无需调用 LLM | 关闭。参见[决策模型](./decision-models) |
 
-- **LLM** — 用于事实提取、推理和生成。具体能力因提供方而异，且可完全配置。
-- **嵌入模型** — 将文本转换为向量表示，用于语义检索。默认值：`BAAI/bge-small-en-v1.5`。
-- **交叉编码器** — 对检索结果重新排序。默认值：`cross-encoder/ms-marco-MiniLM-L-6-v2`。
-
-首次运行时，系统会自动从 HuggingFace 下载嵌入模型和交叉编码器模型。
-
----
+本地模型在首次运行时从 Hugging Face 下载。[配置](./configuration#llm-provider)列出了所有设置；本页介绍各提供方所需的配置。
 
 ## LLM {#llm}
 
-用于事实提取、实体消解、心智模型整合和答案合成。
+用于事实提取、实体消歧、观测整合和答案综合生成。选择提供方后，其卡片会显示默认模型，因此不一定要设置模型。
 
-**支持的提供方：**
+<ModelProviderSearch only="llm" />
 
-<LLMProvidersGrid />
+所有提供方都通过 `HINDSIGHT_API_LLM_PROVIDER` 配置，大多数还需要 `HINDSIGHT_API_LLM_API_KEY`。各操作也同样适用：`HINDSIGHT_API_RETAIN_LLM_PROVIDER=anthropic` 为 Retain 单独指定提供方，并使用其默认模型。参见[按操作配置 LLM](./configuration#per-operation-llm-configuration)。
 
-此外还支持**任意 OpenAI 兼容 API**（例如 Azure OpenAI、Together AI、Fireworks），以及 **LiteLLM 提供的 100 多个提供方**（例如 AWS Bedrock、Azure OpenAI、Together AI）。
+:::tip[不知道该选哪个？]
 
-:::tip OpenAI 兼容提供方
-Hindsight 可与任何提供 OpenAI 兼容 API 的服务配合使用。将 `HINDSIGHT_API_LLM_PROVIDER=openai`，并把 `HINDSIGHT_API_LLM_BASE_URL` 指向提供 `/chat/completions` 的端点。对大多数提供方来说，这个 URL 以 `/v1` 结尾，**而不是**账户或资源根路径。
+**[模型排行榜 →](https://benchmarks.hindsight.vectorize.io/)** 使用 Hindsight 自身的评测，分别测试单独使用的 LLM 和与决策模型配合使用的 LLM，并按质量和成本排名。
 
-**Azure OpenAI 不会在资源根路径提供 API**，因此单独使用 `https://<resource>.openai.azure.com` 会返回 `404 Resource not found`。请参阅 [Azure OpenAI 设置](#azure-openai-setup)，了解两种可用的 URL 格式。
+<a href="https://benchmarks.hindsight.vectorize.io/"><ThemedImage alt="模型排行榜：按所有 Hindsight 操作的得分、质量和成本对 LLM 排名" sources={{light: useBaseUrl('/img/leaderboard-light.png'), dark: useBaseUrl('/img/leaderboard-dark.png')}} /></a>
 
-`openai` 提供方使用 **Chat Completions API**（`/v1/chat/completions`）。如需使用较新的 **Responses API**（`/v1/responses`），请设置 `HINDSIGHT_API_LLM_PROVIDER=openai-responses`，详见下方提示。两者都接受自定义 `HINDSIGHT_API_LLM_BASE_URL`，因此提供 `/v1/responses` 的 OpenAI 兼容端点也能像 Chat Completions 端点一样使用。
-
-请参阅[配置](./configuration#llm-provider)中的设置示例。
-:::
-
-:::tip OpenAI Responses API（推理与工具调用并用）
-设置 `HINDSIGHT_API_LLM_PROVIDER=openai-responses`，即可调用 OpenAI 的 **Responses API**（`/v1/responses`），而非 Chat Completions。
-
-它的用途：某些推理模型（例如 `gpt-5.6-terra`）在 Chat Completions 中遇到函数工具时，**会拒绝 `reasoning_effort`**（除非 `reasoning_effort="none"`，否则返回 HTTP 400）。Reflect 会循环调用工具，因此使用 `openai`（Completions）提供方时，整个操作（包括最终答案合成）都被迫关闭推理。（Hindsight 遇到该 400 错误时会用 `reasoning_effort="none"` 重试一次，因此调用仍会成功，但不会启用推理。）Responses API 会将模型的思维链作为一等推理项保留，因此**推理和工具可以并用**：Reflect 的检索循环可使用实际的 `HINDSIGHT_API_LLM_REASONING_EFFORT` 值（例如 `high`）。
-
-建议将其用于需要调用工具的推理模型（gpt-5.x、o 系列）。它也支持自定义 `HINDSIGHT_API_LLM_BASE_URL`，因此任何提供 `/v1/responses` 的 OpenAI 兼容端点（网关、Azure 风格部署）都可以像 Chat Completions 端点一样使用。
-
-请参阅[配置](./configuration#llm-provider)中的设置示例。
-:::
-
-:::info 推理/思考模型与 `max_tokens`
-对于思考模型（Gemini 2.5+/3.x、GPT-5/o 系列、Grok 推理模型、Claude extended thinking），提供方的输出预算同时涵盖**推理 token 和可见输出**；推理会占用同一个 `max_output_tokens`/`max_completion_tokens` 上限。因此，上限较小时，预算可能全部被推理耗尽，可见答案便会在句中被截断。
-
-Hindsight 将 Reflect/心智模型的 `max_tokens` 定义为**可见页面长度**：它作为提示词层面的目标，并在生成后进行改写，**不会**作为提供方调用的硬性上限。默认情况下，Reflect 的合成调用没有上限，因此推理不会挤占答案的预算。如果需要为该调用设置硬性成本上限，请配置 `HINDSIGHT_API_REFLECT_MAX_COMPLETION_TOKENS`；但上限必须高于页面长度并留出足够的推理空间，否则思考模型仍会截断输出。
-
-Gemini 调用达到上限时，Hindsight 会记录 `truncated at max_output_tokens` 警告，而不会把只写了一半的文本当作成功结果静默返回。
-:::
-
-:::tip AWS Bedrock
-设置 `HINDSIGHT_API_LLM_PROVIDER=bedrock`，即可直接使用 AWS Bedrock 模型。模型名称使用 Bedrock 模型 ID（例如 `us.amazon.nova-2-lite-v1:0`）。无需 API 密钥；使用 AWS 凭据（`AWS_ACCESS_KEY_ID`、`AWS_SECRET_ACCESS_KEY`、`AWS_REGION_NAME`）或 IAM 角色进行身份验证。若要将吞吐量费用降低 50%，请设置 `HINDSIGHT_API_LLM_BEDROCK_SERVICE_TIER=flex`（参阅[配置](./configuration#llm-provider)）。
-
-请参阅[配置](./configuration#llm-provider)中的设置示例。
-:::
-
-:::tip 内置 llama.cpp（完全本地运行，无需 API 密钥）
-设置 `HINDSIGHT_API_LLM_PROVIDER=llamacpp`，即可运行内置的 llama.cpp 服务，无需外部依赖。首次运行时会自动下载 Gemma 4 E2B GGUF 模型（约 3.5 GB）。需要安装 `local-llm` 扩展：`pip install 'hindsight-api-slim[local-llm]'`。
-
-发布的 Docker 镜像不包含 `llama-cpp-python`（以控制镜像大小）。如需可运行且基于该镜像添加此依赖的 Docker 配置，请参阅 [`docker/docker-compose/local-llm/`](https://github.com/vectorize-io/hindsight/tree/main/docker/docker-compose/local-llm)。
-
-所有选项请参阅[配置](./configuration#built-in-llamacpp)。
-:::
-
-:::tip LiteLLM 提供方（Azure、Together AI 等）
-设置 `HINDSIGHT_API_LLM_PROVIDER=litellm`，即可使用 [LiteLLM](https://docs.litellm.ai/docs/providers) 支持的任意模型，包括 **Azure OpenAI**、**Together AI**、**Fireworks AI** 等。模型名称使用 LiteLLM 的提供方前缀格式（例如 `azure/gpt-4o`）。
-
-请参阅[配置](./configuration#llm-provider)中的设置示例。
-:::
-
-:::tip LiteLLM Router（回退链、负载均衡、按部署设置限制）
-设置 `HINDSIGHT_API_LLM_PROVIDER=litellmrouter`，通过 [LiteLLM Router](https://docs.litellm.ai/docs/routing) 运行默认 LLM。其 [`Router` 配置](https://docs.litellm.ai/docs/routing#fallbacks)支持按部署顺序回退、同级部署间负载均衡、加权选择、按部署设置 `rpm`/`tpm` 限制和冷却时间。Hindsight 会原样传递 JSON 配置。
-
-设置方法请参阅[配置](./configuration#llm-router-litellm-router)。
 :::
 
 ### 提供方能力 {#provider-capabilities}
 
-除基本生成能力外，某些提供方还支持可降低成本或延迟的可选功能。配置的提供方支持某项功能时，Hindsight 会自动使用该功能。
+部分提供方支持降低成本或延迟的功能。配置的提供方支持时，Hindsight 会自动使用；上方提供方卡片显示了各项支持情况：
 
-<LLMProviderCapabilities />
-
-- **Batch API** — 通过提供方的异步批处理端点批量提交存入时的事实提取任务，费用通常低约 50%。若可用，系统会自动使用；否则改为同步调用。
-- **显式提示缓存** — 重复使用每次调用都会发送的大段固定系统前缀，其中包括存入（事实提取）、整合和 Reflect 工具循环的提示词，并按提供方的缓存输入费率计费。在 Gemini/Vertex 上，此功能使用 `CachedContent` API。**默认启用**；设置 `HINDSIGHT_API_LLM_PROMPT_CACHE_ENABLED=false` 可关闭。Hindsight 会将提示词组织为**不依赖记忆库**的缓存前缀：所有记忆库共享一个缓存，而不是每个记忆库/任务说明各用一个缓存。如果创建缓存失败，会软失败并改为不使用缓存调用，不会导致请求失败。
+- **Batch API**：通过提供方的异步批量端点提交批量 Retain 提取，成本通常降低约 50%。不可用时调用会同步运行。
+- **提示缓存**：复用 Retain 和整合每次调用发送的大型固定系统前缀，按提供方的缓存输入费率计费。Gemini 和 Vertex AI 使用 `CachedContent` API。默认启用，可通过 `HINDSIGHT_API_LLM_PROMPT_CACHE_ENABLED=false` 关闭。所有记忆库的缓存前缀相同，因此共享一个缓存；缓存创建失败时会回退到不使用缓存的调用。
 
 :::note
-“显式提示缓存”列为空，不代表提供方不支持缓存。例如，OpenAI 会在服务器端**自动**缓存稳定的提示词前缀，因此无需配置也能受益；Anthropic 支持通过 `cache_control` 分界点缓存提示词，可通过同一个提供方钩子接入。此列仅记录 Hindsight 的显式 `get_or_create_cached_prefix` 钩子，目前只有 Gemini/Vertex 实现了该钩子。
+卡片没有“提示缓存”并不意味着提供方没有缓存功能。OpenAI 会在其服务端自动缓存稳定的提示前缀，无需配置。该标记仅表示 Hindsight 的显式缓存接口，目前由 Gemini 和 Vertex AI 实现。
 :::
 
-### 基准测试 {#benchmarks}
+### 模型要求 {#model-requirements}
 
-不确定该使用哪个模型？**[模型排行榜](https://benchmarks.hindsight.vectorize.io/)** 对存入、反思和观测整合所用模型的准确率、速度、成本和可靠性进行基准测试，帮助你根据使用场景选择合适的权衡方案。
+- **遵循 JSON 模式（JSON Schema）。** 每次调用，包括 Reflect 的工具调用，都是针对响应模式 的回复（结构化输出）；系统不使用原生工具调用，因此模型无需支持工具。
+- **至少支持 65,000 个输出 token。** Retain 需要较长的结构化输出。对于输出上限较小的模型，请调低 `HINDSIGHT_API_RETAIN_MAX_COMPLETION_TOKENS`（例如设为 `32000` 或 `16000`）。该值必须高于 `HINDSIGHT_API_RETAIN_CHUNK_SIZE`（默认为 `3000`）；服务启动时会检查。
+- **思考模型的推理与可见答案共享输出预算。** 对于 Gemini 2.5+/3.x、GPT-5 和 o 系列、Grok reasoning 及 Claude extended thinking，提供方的输出上限涵盖推理和可见答案，因此较小的上限可能被推理耗尽，导致答案截断。为此，Reflect 的综合生成调用默认不设上限；`HINDSIGHT_API_REFLECT_MAX_COMPLETION_TOKENS` 可设置硬上限，应在页面长度之外为推理留出空间。Gemini 调用达到上限时会记录 `truncated at max_output_tokens` 警告，而不是返回不完整的答案。
 
-[![模型排行榜](/img/leaderboard.webp)](https://benchmarks.hindsight.vectorize.io/)
-
-### 已测试的模型 {#tested-models}
-
-以下模型均已通过测试，确认可以与 Hindsight 正常配合使用：
-
-| 提供方 | 模型 |
-|----------|-------|
-| **OpenAI** | `gpt-5.2` |
-| **OpenAI** | `gpt-5` |
-| **OpenAI** | `gpt-5-mini` |
-| **OpenAI** | `gpt-5-nano` |
-| **OpenAI** | `gpt-4.1-mini` |
-| **OpenAI** | `gpt-6-luna` |
-| **OpenAI** | `gpt-4o-mini` |
-| **Anthropic** | `claude-sonnet-4-20250514` |
-| **Anthropic** | `claude-3-5-sonnet-20241022` |
-| **Gemini** | `gemini-3.5-flash` |
-| **Gemini** | `gemini-3.1-pro-preview` |
-| **Gemini** | `gemini-3.1-flash-lite` |
-| **Groq** | `openai/gpt-oss-120b` |
-| **Groq** | `openai/gpt-oss-20b` |
-| **Meta** | `muse-spark-1.3` |
-
-### 提供方默认模型 {#provider-default-models}
-
-每个提供方都有一个建议的默认模型；未显式设置 `HINDSIGHT_API_LLM_MODEL` 时会使用该模型。这样可以简化配置：只需指定提供方即可使用合适的默认模型：
-
-<LLMProvidersTable />
-
-**示例**：只设置服务提供方时，将使用其默认模型：
-```bash
-# Uses claude-haiku-4-5 automatically
-export HINDSIGHT_API_LLM_PROVIDER=anthropic
-export HINDSIGHT_API_LLM_API_KEY=sk-ant-xxxxxxxxxxxx
-```
-
-可显式设置 `HINDSIGHT_API_LLM_MODEL` 来覆盖默认模型：
-```bash
-# Override to use Sonnet instead
-export HINDSIGHT_API_LLM_PROVIDER=anthropic
-export HINDSIGHT_API_LLM_API_KEY=sk-ant-xxxxxxxxxxxx
-export HINDSIGHT_API_LLM_MODEL=claude-sonnet-4-5-20250929
-```
-
-按操作配置的覆盖项也遵循这一规则：
-```bash
-# Global: OpenAI gpt-4o-mini (default)
-export HINDSIGHT_API_LLM_PROVIDER=openai
-
-# Retain: Anthropic claude-haiku-4-5 (default)
-export HINDSIGHT_API_RETAIN_LLM_PROVIDER=anthropic
-```
-
-### 使用其他模型 {#using-other-models}
-
-Hindsight 也可能支持上表未列出的其他 LLM 模型，但模型必须支持**至少 65,000 个输出 token**，才能可靠地提取事实。如果你需要支持不满足此要求的特定模型，请[提交 issue](https://github.com/hindsight-ai/hindsight/issues)申请例外。
-
-:::tip 输出 token 数量有限的模型
-如果模型最多只支持 32k 个输出 token（例如某些较旧的模型），可以调低存入操作的补全 token 上限：
-
-```bash
-# For models that support 32k output tokens
-export HINDSIGHT_API_RETAIN_MAX_COMPLETION_TOKENS=32000
-
-# For models that support 16k output tokens
-export HINDSIGHT_API_RETAIN_MAX_COMPLETION_TOKENS=16000
-```
-
-**重要：**`HINDSIGHT_API_RETAIN_MAX_COMPLETION_TOKENS` 必须大于 `HINDSIGHT_API_RETAIN_CHUNK_SIZE`（默认值：3000）。系统会在启动时验证此设置；如果配置无效，会显示错误信息。
-:::
-
-:::warning Groq 免费套餐不适合运行 Hindsight
-Groq 免费套餐每分钟仅允许使用 8,000 个 token，远低于 Hindsight 单次存入调用所需的约 64k token。因此，Hindsight 不能使用 Groq 免费套餐中的模型；请改用付费 Groq 套餐或其他提供方。
-:::
-
-### 配置 {#configuration}
-
-```bash
-# Groq (recommended)
-export HINDSIGHT_API_LLM_PROVIDER=groq
-export HINDSIGHT_API_LLM_API_KEY=gsk_xxxxxxxxxxxx
-export HINDSIGHT_API_LLM_MODEL=openai/gpt-oss-20b
-
-# OpenAI (Chat Completions API, /v1/chat/completions)
-export HINDSIGHT_API_LLM_PROVIDER=openai
-export HINDSIGHT_API_LLM_API_KEY=sk-xxxxxxxxxxxx
-export HINDSIGHT_API_LLM_MODEL=gpt-4o
-
-# OpenAI Responses API (/v1/responses) — reasoning + tools together
-export HINDSIGHT_API_LLM_PROVIDER=openai-responses
-export HINDSIGHT_API_LLM_API_KEY=sk-xxxxxxxxxxxx
-export HINDSIGHT_API_LLM_MODEL=gpt-5.6           # reasoning model; e.g. gpt-5.6-terra
-export HINDSIGHT_API_LLM_REASONING_EFFORT=high   # sent alongside tools, unlike Completions
-# Optional: point at any OpenAI-compatible endpoint exposing /v1/responses
-# export HINDSIGHT_API_LLM_BASE_URL=https://your-gateway.example.com/v1
-
-# Gemini
-export HINDSIGHT_API_LLM_PROVIDER=gemini
-export HINDSIGHT_API_LLM_API_KEY=xxxxxxxxxxxx
-export HINDSIGHT_API_LLM_MODEL=gemini-3.5-flash
-
-# Anthropic
-export HINDSIGHT_API_LLM_PROVIDER=anthropic
-export HINDSIGHT_API_LLM_API_KEY=sk-ant-xxxxxxxxxxxx
-export HINDSIGHT_API_LLM_MODEL=claude-sonnet-4-20250514
-
-# Ollama (local)
-export HINDSIGHT_API_LLM_PROVIDER=ollama
-export HINDSIGHT_API_LLM_BASE_URL=http://localhost:11434/v1
-export HINDSIGHT_API_LLM_MODEL=llama3
-
-# Ollama Cloud (hosted Ollama endpoint, requires API key)
-export HINDSIGHT_API_LLM_PROVIDER=ollama-cloud
-export HINDSIGHT_API_LLM_API_KEY=your-ollama-cloud-api-key
-export HINDSIGHT_API_LLM_MODEL=gemma3:12b
-
-# LM Studio (local)
-export HINDSIGHT_API_LLM_PROVIDER=lmstudio
-export HINDSIGHT_API_LLM_BASE_URL=http://localhost:1234/v1
-export HINDSIGHT_API_LLM_MODEL=your-local-model
-
-# MiniMax (1M context window)
-export HINDSIGHT_API_LLM_PROVIDER=minimax
-export HINDSIGHT_API_LLM_API_KEY=your-minimax-api-key
-export HINDSIGHT_API_LLM_MODEL=MiniMax-M3  # or MiniMax-M2.7 for the previous generation
-# MiniMax-M3.1-* 始终启用思考（Hindsight 会发送 thinking=adaptive），且默认使用 max effort；
-# 可通过以下设置降低推理强度：export HINDSIGHT_API_LLM_REASONING_EFFORT=low
-
-# DeepSeek (https://api.deepseek.com)
-export HINDSIGHT_API_LLM_PROVIDER=deepseek
-export HINDSIGHT_API_LLM_API_KEY=sk-xxxxxxxxxxxx
-export HINDSIGHT_API_LLM_MODEL=deepseek-v4-flash  # or deepseek-v4-pro / deepseek-chat / deepseek-reasoner
-
-# z.ai (Zhipu GLM series, OpenAI-compatible, https://z.ai)
-export HINDSIGHT_API_LLM_PROVIDER=zai
-export HINDSIGHT_API_LLM_API_KEY=your-zai-api-key
-export HINDSIGHT_API_LLM_MODEL=glm-4.5-flash  # or glm-4.5-air for the paid tier
-
-# opencode-go (OpenAI-compatible)
-export HINDSIGHT_API_LLM_PROVIDER=opencode-go
-export HINDSIGHT_API_LLM_API_KEY=your-opencode-go-api-key
-export HINDSIGHT_API_LLM_MODEL=deepseek-v4-flash
-
-# Atlas Cloud (OpenAI-compatible, https://www.atlascloud.ai)
-export HINDSIGHT_API_LLM_PROVIDER=atlas
-export HINDSIGHT_API_LLM_API_KEY=your-atlascloud-api-key  # base_url defaults to https://api.atlascloud.ai/v1
-export HINDSIGHT_API_LLM_MODEL=deepseek-ai/deepseek-v4-pro  # reasoning model; also Qwen / GLM / Kimi / MiniMax, etc.
-
-# Meta Model API (OpenAI-compatible, https://ai.developer.meta.com)
-export HINDSIGHT_API_LLM_PROVIDER=meta
-export HINDSIGHT_API_LLM_API_KEY=your-meta-model-api-key  # base_url defaults to https://api.meta.ai/v1
-export HINDSIGHT_API_LLM_MODEL=muse-spark-1.3  # or muse-spark-1.2 / -contributor variants
-# Muse Spark always reasons — raise the deadlines (see "Meta Model API Setup" below)
-export HINDSIGHT_API_REFLECT_LLM_TIMEOUT=300
-export HINDSIGHT_API_LLM_TIMEOUT=300
-
-# Nous Portal (OpenAI-compatible; no API key — uses your `hermes portal` login)
-export HINDSIGHT_API_LLM_PROVIDER=nous
-export HINDSIGHT_API_LLM_MODEL=deepseek/deepseek-v4-flash  # any Nous-hosted slug
-# No API key needed — reads a rotating JWT from ~/.hermes/auth.json (see "Nous Portal Setup" below)
-
-# Cursor subscription via the cursor-agent CLI (no API key — uses `cursor-agent login`)
-export HINDSIGHT_API_LLM_PROVIDER=cursor
-export HINDSIGHT_API_LLM_MODEL=auto  # or any id from `cursor-agent --list-models`
-# An agent CLI turn takes 15-30s — raise the timeouts (see "Cursor Setup" below)
-export HINDSIGHT_API_LLM_TIMEOUT=300
-export HINDSIGHT_API_REFLECT_LLM_TIMEOUT=180
-
-# SuperGrok subscription via device-code OAuth (no API key; the subscription lane, not
-# xAI API support — for an api.x.ai API key use `openai` with a base URL instead)
-export HINDSIGHT_API_LLM_PROVIDER=xai-oauth
-# export HINDSIGHT_API_LLM_MODEL=grok-4.5  # defaults to grok-4.5
-# No API key needed — reads an OAuth grant from ~/.hindsight/xai_oauth.json (see "SuperGrok Subscription Setup" below)
-
-# Vertex AI (Google Cloud)
-export HINDSIGHT_API_LLM_PROVIDER=vertexai
-export HINDSIGHT_API_LLM_MODEL=gemini-3.1-flash-lite
-export HINDSIGHT_API_LLM_VERTEXAI_PROJECT_ID=your-gcp-project-id
-# Optional: region (default: us-central1)
-# export HINDSIGHT_API_LLM_VERTEXAI_REGION=us-central1
-# Optional: service account key (otherwise uses ADC)
-# export HINDSIGHT_API_LLM_VERTEXAI_SERVICE_ACCOUNT_KEY=/path/to/key.json
-```
-
-**注意**：LLM 是存入操作的主要性能瓶颈。优化策略请参阅[性能](./performance)。
-
----
+LLM 是 Retain 的主要瓶颈。加速方法参见[性能](./performance)。
 
 ### 低成本记忆模型与故障切换 {#cheap-memory-model-with-failover}
 
@@ -334,9 +99,289 @@ export HINDSIGHT_API_CONSOLIDATION_LLM_MODEL=<mid-model>
 
 ---
 
+### OpenAI 和兼容端点 {#openai-and-compatible-endpoints}
+
+OpenAI 的 Chat Completions API，以及使用相同协议的 API，例如 Together AI、vLLM 和网关。
+
+<ProviderSetup>
+
+```bash
+export HINDSIGHT_API_LLM_PROVIDER=openai
+export HINDSIGHT_API_LLM_API_KEY=sk-xxxxxxxxxxxx
+export HINDSIGHT_API_LLM_MODEL=gpt-5.6-luna   # default: gpt-4o-mini
+```
+
+`openai` 提供方调用 Chat Completions API（`/v1/chat/completions`），因此支持**任何兼容 OpenAI 的 API**（Together AI、vLLM、网关等）：将 `HINDSIGHT_API_LLM_BASE_URL` 设为提供 `/chat/completions` 的 URL。对大多数提供方来说，这是以 `/v1` 结尾的 URL，而**不是**账户或资源根地址。Azure OpenAI 不在资源根地址提供 API，因此仅使用 `https://<resource>.openai.azure.com` 会返回 `404 Resource not found`；可用的 URL 格式参见[设置 Azure OpenAI](#azure-openai-setup)。
+
+</ProviderSetup>
+
+### OpenAI Responses API {#openai-responses-api}
+
+设置 `HINDSIGHT_API_LLM_PROVIDER=openai-responses` 可调用 OpenAI 的 Responses API（`/v1/responses`）。两种 API 都适用于所有操作；Responses API 将推理模型的思维链作为一等项保留。
+
+<ProviderSetup>
+
+```bash
+export HINDSIGHT_API_LLM_PROVIDER=openai-responses
+export HINDSIGHT_API_LLM_API_KEY=sk-xxxxxxxxxxxx
+export HINDSIGHT_API_LLM_MODEL=gpt-5.6           # reasoning model; e.g. gpt-5.6-terra
+export HINDSIGHT_API_LLM_REASONING_EFFORT=high
+# export HINDSIGHT_API_LLM_BASE_URL=https://your-gateway.example.com/v1   # any endpoint exposing /v1/responses
+```
+
+</ProviderSetup>
+
+### Anthropic {#llm-anthropic}
+
+通过 Anthropic API 使用 Claude 模型。
+
+<ProviderSetup>
+
+```bash
+export HINDSIGHT_API_LLM_PROVIDER=anthropic
+export HINDSIGHT_API_LLM_API_KEY=your-api-key
+# export HINDSIGHT_API_LLM_MODEL=claude-haiku-4-5   # the default
+```
+
+</ProviderSetup>
+
+### Google Gemini {#llm-gemini}
+
+通过 Gemini API 使用 Gemini 模型，支持 Batch API 和提示缓存。在 Google Cloud 上请改用 [Vertex AI](#vertex-ai-setup-google-cloud)。
+
+<ProviderSetup>
+
+```bash
+export HINDSIGHT_API_LLM_PROVIDER=gemini
+export HINDSIGHT_API_LLM_API_KEY=your-api-key
+# export HINDSIGHT_API_LLM_MODEL=gemini-3.5-flash   # the default
+```
+
+</ProviderSetup>
+
+### Groq {#llm-groq}
+
+Groq 上的开放模型。请使用付费层级：免费层级每分钟允许 8,000 个 token，而一次 Retain 调用约需 64k。
+
+<ProviderSetup>
+
+```bash
+export HINDSIGHT_API_LLM_PROVIDER=groq
+export HINDSIGHT_API_LLM_API_KEY=your-api-key
+# export HINDSIGHT_API_LLM_MODEL=openai/gpt-oss-120b   # the default
+```
+
+</ProviderSetup>
+
+### DeepSeek {#llm-deepseek}
+
+DeepSeek 的 API。除默认模型外，`deepseek-v4-pro`、`deepseek-chat` 和 `deepseek-reasoner` 也可用。
+
+<ProviderSetup>
+
+```bash
+export HINDSIGHT_API_LLM_PROVIDER=deepseek
+export HINDSIGHT_API_LLM_API_KEY=your-api-key
+# export HINDSIGHT_API_LLM_MODEL=deepseek-v4-flash   # the default
+```
+
+</ProviderSetup>
+
+### MiniMax {#llm-minimax}
+
+MiniMax 模型的上下文为 100 万 token。`MiniMax-M3.1-*` 始终以最大强度思考；可通过 `HINDSIGHT_API_LLM_REASONING_EFFORT=low` 降低强度。
+
+<ProviderSetup>
+
+```bash
+export HINDSIGHT_API_LLM_PROVIDER=minimax
+export HINDSIGHT_API_LLM_API_KEY=your-api-key
+# export HINDSIGHT_API_LLM_MODEL=MiniMax-M3   # the default
+```
+
+</ProviderSetup>
+
+### z.ai (GLM) {#llm-zai}
+
+z.ai 上的 GLM 模型。`glm-4.5-flash` 免费；`glm-4.5-air` 为付费层级。
+
+<ProviderSetup>
+
+```bash
+export HINDSIGHT_API_LLM_PROVIDER=zai
+export HINDSIGHT_API_LLM_API_KEY=your-api-key
+# export HINDSIGHT_API_LLM_MODEL=glm-4.5-flash   # the default
+```
+
+</ProviderSetup>
+
+### opencode-go {#llm-opencode-go}
+
+通过 opencode-go 提供的模型。
+
+<ProviderSetup>
+
+```bash
+export HINDSIGHT_API_LLM_PROVIDER=opencode-go
+export HINDSIGHT_API_LLM_API_KEY=your-api-key
+# export HINDSIGHT_API_LLM_MODEL=deepseek-v4-flash   # the default
+```
+
+</ProviderSetup>
+
+### Atlas Cloud {#llm-atlas}
+
+Atlas Cloud 还提供 Qwen、GLM、Kimi 和 MiniMax 模型。
+
+<ProviderSetup>
+
+```bash
+export HINDSIGHT_API_LLM_PROVIDER=atlas
+export HINDSIGHT_API_LLM_API_KEY=your-api-key
+# export HINDSIGHT_API_LLM_MODEL=deepseek-ai/deepseek-v4-pro   # the default
+```
+
+</ProviderSetup>
+
+### Volcano Engine {#llm-volcano}
+
+字节跳动的火山引擎，提供豆包模型。
+
+<ProviderSetup>
+
+```bash
+export HINDSIGHT_API_LLM_PROVIDER=volcano
+export HINDSIGHT_API_LLM_API_KEY=your-api-key
+# export HINDSIGHT_API_LLM_MODEL=doubao-pro-32k   # the default
+```
+
+</ProviderSetup>
+
+### OpenRouter {#llm-openrouter}
+
+OpenRouter 提供的任意模型标识。
+
+<ProviderSetup>
+
+```bash
+export HINDSIGHT_API_LLM_PROVIDER=openrouter
+export HINDSIGHT_API_LLM_API_KEY=your-api-key
+# export HINDSIGHT_API_LLM_MODEL=qwen/qwen3.5-9b   # the default
+```
+
+</ProviderSetup>
+
+### Requesty {#llm-requesty}
+
+Requesty 的路由服务，模型名带提供方前缀，例如 `openai/gpt-4o-mini`。
+
+<ProviderSetup>
+
+```bash
+export HINDSIGHT_API_LLM_PROVIDER=requesty
+export HINDSIGHT_API_LLM_API_KEY=your-api-key
+# export HINDSIGHT_API_LLM_MODEL=openai/gpt-4o-mini   # the default
+```
+
+</ProviderSetup>
+
+### Fireworks AI {#llm-fireworks}
+
+Fireworks AI 上的模型，使用完整路径命名，例如 `accounts/fireworks/models/...`。
+
+<ProviderSetup>
+
+```bash
+export HINDSIGHT_API_LLM_PROVIDER=fireworks
+export HINDSIGHT_API_LLM_API_KEY=your-api-key
+# export HINDSIGHT_API_LLM_MODEL=accounts/fireworks/models/llama-v3p1-8b-instruct   # the default
+```
+
+</ProviderSetup>
+
+### Ollama {#llm-ollama}
+
+通过 Ollama 使用本地模型，无需密钥。
+
+<ProviderSetup>
+
+```bash
+export HINDSIGHT_API_LLM_PROVIDER=ollama
+export HINDSIGHT_API_LLM_BASE_URL=http://localhost:11434/v1
+# export HINDSIGHT_API_LLM_MODEL=gemma3:12b   # the default
+```
+
+</ProviderSetup>
+
+### Ollama Cloud {#llm-ollama-cloud}
+
+托管的 Ollama。
+
+<ProviderSetup>
+
+```bash
+export HINDSIGHT_API_LLM_PROVIDER=ollama-cloud
+export HINDSIGHT_API_LLM_API_KEY=your-api-key
+# export HINDSIGHT_API_LLM_MODEL=gemma3:12b   # the default
+```
+
+</ProviderSetup>
+
+### LM Studio {#llm-lmstudio}
+
+通过 LM Studio 使用本地模型，无需密钥。将模型设为 LM Studio 已加载的模型。
+
+<ProviderSetup>
+
+```bash
+export HINDSIGHT_API_LLM_PROVIDER=lmstudio
+export HINDSIGHT_API_LLM_BASE_URL=http://localhost:1234/v1
+# export HINDSIGHT_API_LLM_MODEL=local-model   # the default
+```
+
+</ProviderSetup>
+
+### AWS Bedrock {#aws-bedrock}
+
+AWS Bedrock 上的模型，使用 AWS 凭据或 IAM 角色，无需 API 密钥。
+
+<ProviderSetup>
+
+```bash
+export HINDSIGHT_API_LLM_PROVIDER=bedrock
+export HINDSIGHT_API_LLM_MODEL=us.amazon.nova-2-lite-v1:0   # a Bedrock model ID
+```
+
+无需 API 密钥：身份验证使用 AWS 凭据（`AWS_ACCESS_KEY_ID`、`AWS_SECRET_ACCESS_KEY`、`AWS_REGION_NAME`）或 IAM 角色。设置 `HINDSIGHT_API_LLM_BEDROCK_SERVICE_TIER=flex` 可将吞吐成本降低约 50%。参见[配置](./configuration#llm-provider)。
+
+</ProviderSetup>
+
+### 内置 llama.cpp {#built-in-llamacpp}
+
+设置 `HINDSIGHT_API_LLM_PROVIDER=llamacpp` 可在 Hindsight 内运行 llama.cpp 服务：完全本地化，无需 API 密钥或其他服务。首次运行时会下载 Gemma 4 E2B GGUF 模型（约 3.5 GB）。需要安装 `local-llm` 可选依赖：`pip install 'hindsight-api-slim[local-llm]'`。
+
+<ProviderSetup>
+
+为控制体积，发布的 Docker 镜像不包含 `llama-cpp-python`。添加该依赖的 Docker 配置参见 [`docker/docker-compose/local-llm/`](https://github.com/vectorize-io/hindsight/tree/main/docker/docker-compose/local-llm)。所有选项参见[配置](./configuration#built-in-llamacpp)。
+
+</ProviderSetup>
+
+### LiteLLM 和 LiteLLM Router {#litellm-and-litellm-router}
+
+使用 LiteLLM 支持的任意模型，或使用 LiteLLM Router 实现回退、负载均衡和速率限制。
+
+<ProviderSetup>
+
+- **`litellm`** 可访问 [LiteLLM 支持](https://docs.litellm.ai/docs/providers)的任意模型，模型名需带提供方前缀（例如 `azure/gpt-4o` 或 `together_ai/...`）。参见[配置](./configuration#llm-provider)。
+- **`litellmrouter`** 通过 [LiteLLM Router](https://docs.litellm.ai/docs/routing) 运行 LLM，支持跨部署按顺序回退、负载均衡、加权选择、每个部署的 `rpm`/`tpm` 限制和冷却期。Hindsight 原样传递 JSON 格式的 [`Router` 配置](https://docs.litellm.ai/docs/routing#fallbacks)。参见[配置](./configuration#llm-router-litellm-router)。
+
+</ProviderSetup>
+
 ### 设置 GitHub Copilot {#github-copilot-setup}
 
 通过官方 GitHub Copilot SDK 使用 GitHub Copilot 订阅执行 Hindsight 的提取、整合和反思调用。
+
+<ProviderSetup>
 
 **前提条件：**
 - 已开通 GitHub Copilot
@@ -360,13 +405,15 @@ export HINDSIGHT_API_LLM_MODEL=gpt-5.6-terra
 - GitHub 托管的 Copilot 会话不会通过 SDK 提供 temperature 或最大输出 token 控制，因此不会应用 Hindsight 的这些设置。
 - 嵌入和重排继续使用 Hindsight 单独配置的提供方；其本地默认配置无需 API 密钥。
 
----
+</ProviderSetup>
 
 ### 设置 ChatGPT（使用 ChatGPT 登录） {#chatgpt-setup-sign-in-with-chatgpt}
 
 `chatgpt` 提供方通过 OpenAI 为开源应用提供的[使用 ChatGPT 登录流程](https://developers.openai.com/siwc/token-sharing-open-source)，使用你的 ChatGPT 套餐执行 Hindsight 的 LLM 调用。
 首次登录时，Hindsight 会为自身注册 OAuth 客户端；每次调用都会携带 OAuth 访问令牌，发送到公开的
 `https://api.openai.com/v1/responses` 端点。此方式不使用 API 密钥。
+
+<ProviderSetup>
 
 它与 `openai-codex` 的区别是：后者复用 Codex CLI 的登录状态，并调用 ChatGPT 的私有
 `chatgpt.com/backend-api/codex` 端点。`chatgpt` 使用受支持的访问路径并自行管理凭据，不会与 Codex CLI 共享或轮换令牌。
@@ -426,9 +473,13 @@ export HINDSIGHT_API_LLM_MODEL=gpt-5.6-terra
 - `logout` 会撤销会话并清除本地令牌，但保留客户端注册和主机 ID，以便下次 `login`。`logout --local-only` 只清除令牌，不会撤销会话。
 - `HINDSIGHT_API_LLM_CHATGPT_HOME` 可更改凭据目录。每个 ChatGPT 账户应使用独立目录。该目录必须可写，因为每次刷新都会将轮换后的令牌写回；在容器中，请在此处挂载可写卷。如果写入失败，进程会在内存中保留新令牌，但其他进程和重启后的进程无法读取它们。
 
+</ProviderSetup>
+
 ### 设置 OpenAI Codex（ChatGPT Plus/Pro） {#openai-codex-setup-chatgpt-pluspro}
 
 使用 ChatGPT Plus 或 Pro 订阅运行 Hindsight，无需额外支付 OpenAI Platform API 费用。
+
+<ProviderSetup>
 
 **前提条件：**
 - 有效的 ChatGPT Plus 或 Pro 订阅
@@ -526,11 +577,15 @@ export HINDSIGHT_API_LLM_STRATEGY='{"mode": "failover"}'
 
 令牌刷新按身份验证文件路径协调，因此两个配置会分别刷新，互不覆盖。故障转移遵循通用的多 LLM 行为：前一个成员用尽自身重试并报错后，才会尝试下一个成员。系统没有单独的配额分类器或冷却机制，因此达到速率限制的主配置会在每个请求开始时再次重试（并失败），然后才由回退配置处理请求。
 
----
+</ProviderSetup>
 
 ### 设置 Meta Model API {#meta-model-api-setup}
 
-[Meta Model API](https://ai.developer.meta.com) 通过 OpenAI 兼容端点提供 Muse Spark 模型。请先在 Model API 控制面板获取密钥，然后：
+[Meta Model API](https://ai.developer.meta.com) 通过 OpenAI 兼容端点提供 Muse Spark 模型。
+
+<ProviderSetup>
+
+请先在 Model API 控制面板获取密钥，然后：
 
 ```bash
 export HINDSIGHT_API_LLM_PROVIDER=meta
@@ -558,11 +613,13 @@ Muse Spark **总是在回复前进行推理**。以下所有设置都由这一�
 - **不接受递归 JSON Schema**（返回 `HTTP 400`）。Hindsight 的代码路径不会发送此类 Schema，只有在你添加自引用响应模型时才需要注意。
 - **调用耗时可能更长。** 即使提示词很简单，模型用于推理的 token 也可能多于最终返回的 token。
 
----
+</ProviderSetup>
 
 ### 设置 Nous Portal（Hermes） {#nous-portal-setup-hermes}
 
 通过 Hermes CLI 登录，使用 [Nous Portal](https://portal.nousresearch.com) 订阅运行 Hindsight，无需静态 API 密钥。
+
+<ProviderSetup>
 
 **前提条件：**
 - Nous Portal 账户
@@ -601,11 +658,13 @@ Muse Spark **总是在回复前进行推理**。以下所有设置都由这一�
 - 刷新操作会通过共享身份验证存储与运行中的 Hermes 智能体协调，因此两者不会相互影响会话。
 - 默认基础 URL：`https://inference-api.nousresearch.com/v1`（可通过 `HINDSIGHT_API_LLM_BASE_URL` 覆盖）。
 
----
+</ProviderSetup>
 
 ### 设置 Claude Code（Claude Pro/Max） {#claude-code-setup-claude-promax}
 
 使用 Claude Pro 或 Max 订阅运行 Hindsight，无需另外支付 Anthropic API 费用。
+
+<ProviderSetup>
 
 :::warning 服务条款提示
 
@@ -674,12 +733,13 @@ Muse Spark **总是在回复前进行推理**。以下所有设置都由这一�
 - 用量计入你的 Claude 订阅（无需另付 API 费用）。
 - 仅供个人开发使用（请参阅 Claude 服务条款）。
 
-
----
+</ProviderSetup>
 
 ### 设置 Cursor（Cursor 订阅） {#cursor-setup-cursor-subscription}
 
 通过无头打印模式下运行的 `cursor-agent` CLI，使用 **Cursor 订阅**提供 Hindsight 的提取、整合和反思调用。无需 API 密钥，也无需建立第二种按 token 计费的关系。
+
+<ProviderSetup>
 
 其方向与 [Cursor 集成](/sdks/integrations/cursor)正好相反：后者让 Cursor 作为 Hindsight 的*客户端*。此处则是由 Hindsight 调用 Cursor 作为模型后端。
 
@@ -719,18 +779,20 @@ Muse Spark **总是在回复前进行推理**。以下所有设置都由这一�
 **重要说明：**
 
 - **调高超时。** 每次调用都会启动一个 `cursor-agent` 轮次，使用 `auto` 时需要 15–30s，比 Chat Completions 请求慢，也超过 `HINDSIGHT_API_REFLECT_LLM_TIMEOUT` 默认的 30s。若保留默认值，Reflect 的第一次迭代会先因超时而重试，之后才恢复。
-- **结构化输出和工具调用通过提示词模拟。** CLI 没有 `response_format`、JSON Schema、temperature 或工具定义标志，只有用于描述封装格式的 `--output-format text|json|stream-json`。Hindsight 会把 Schema（或工具列表）放入提示词，再解析模型返回的 JSON；解析失败时会重试。这种方式不如原生 Schema 可靠，因此建议 Reflect（最依赖工具的操作）使用明确命名的强模型，而不是 `auto`。
+- **结构化输出通过提示词模拟。** CLI 没有 `response_format`、JSON Schema 或 temperature 标志，只有用于描述封装格式的 `--output-format text|json|stream-json`。Hindsight 会把 Schema 放入提示词，再解析模型返回的 JSON；解析失败时会重试。这种方式不如原生 Schema 可靠，因此建议 Reflect（最依赖该功能的操作）使用明确命名的强模型，而不是 `auto`。
 - **免费计划只能使用 `auto`。** 指定 `--model` 会返回 `Named models unavailable Free plans can only use Auto`。付费计划可使用 `cursor-agent --list-models` 列出的任意 ID。
 - **会关闭智能体自身的工具。** `cursor-agent` 是智能体而非补全端点：它带有 Shell、Read、Write、Delete、网页抓取等工具；`--mode ask` **不能**关闭工具，无头运行时仍会读取工作目录中的文件。因此，Hindsight 会在空临时工作区中运行 CLI，为其指定独立的 `CURSOR_CONFIG_DIR`（使其无法读取你的 `~/.cursor` 配置、钩子或会话历史），并在其中写入 `cli-config.json`，按名称禁用所有工具。这相当于 `claude-code` 提供方传给 SDK 的 `tools=[]`；由于存入提示词基于你保存在 Hindsight 中的文本构建，因此这一点很重要。
 - 用量计入你的 Cursor 订阅。
 - 不支持推理强度设置：CLI 没有对应标志；若设置了 `HINDSIGHT_API_LLM_REASONING_EFFORT`，Hindsight 会在启动时警告一次。
 - 嵌入和重排仍使用 Hindsight 单独配置的提供方。
 
----
+</ProviderSetup>
 
 ### 设置 SuperGrok 订阅（设备码 OAuth） {#supergrok-subscription-setup-device-code-oauth}
 
 通过 **SuperGrok 订阅**（设备码 OAuth）提供 LLM 调用，无需 API 密钥。如需通过 API 密钥访问 `api.x.ai`，请使用 `provider: openai`，并设置 `HINDSIGHT_API_LLM_BASE_URL=https://api.x.ai/v1`。**此处的提供方用于订阅登录**，与 `openai-codex`（ChatGPT 订阅）及 `claude-code`（Claude 订阅）同类。两种路径访问同一个公开端点，区别仅在凭据：一种是在浏览器中授权一次的固定费率个人订阅，另一种是按 token 计量的密钥。
+
+<ProviderSetup>
 
 身份验证使用 xAI 自己的 OIDC 发行方 `https://auth.x.ai` 和 RFC 8628 设备码流程；公开 OAuth 客户端 ID 发布在 xAI 的 Apache-2.0 许可 Grok CLI 源代码中。Hindsight 使用自己的凭据文件，绝不会读写 Grok CLI 的 `~/.grok/auth.json`。
 
@@ -789,11 +851,13 @@ xAI 可能会根据 SuperGrok 订阅层级限制 `api.x.ai` 的访问：OAuth �
 
 xAI 每次刷新都会颁发一个**新的刷新令牌**，并使被替换的令牌失效。因此，各个副本必须共用同一个凭据文件，而不能各自从一次登录结果的副本启动：只要另一个副本刷新令牌，副本文件就会失效，必须重新登录。支持的部署方式是使用一个共享的可写卷；如果无法提供该卷，请只在一个副本上使用此提供方，并让其他副本使用 API 密钥通道。
 
----
+</ProviderSetup>
 
 ### 设置 Azure OpenAI {#azure-openai-setup}
 
 Azure OpenAI 通过 **`openai`** 提供方访问；没有 `azure` 提供方，若设置该值，启动时会报错：`Invalid LLM provider: azure`。
+
+<ProviderSetup>
 
 容易出错的地方是基础 URL。Azure 不会在资源根路径提供 OpenAI API，因此 Azure 门户中显示的端点不能单独使用：
 
@@ -825,11 +889,13 @@ export HINDSIGHT_API_LLM_BASE_URL=https://<resource>.openai.azure.com/openai/dep
 - 网关和代理必须保留相同的路径格式（`/openai/v1` 或 `/openai/deployments/...?api-version=`）。
 - Azure OpenAI 的 GPT 部署接受 `prompt_cache_key`（可改进 GPT-5.6 及更高版本的缓存路由），但同一个 `*.openai.azure.com` 端点也可能提供不接受此参数的非 OpenAI Foundry 模型（DeepSeek、Llama、Mistral）；这类模型会返回 `unrecognized_request_argument`。单看主机名无法区分，因此对于 Azure 主机，[`HINDSIGHT_API_LLM_CACHE_AFFINITY`](./configuration#llm-provider) 会将 `auto` 解析为 `none`。如果部署提供的是 OpenAI 模型，请显式设置为 `openai_prompt_cache_key`。
 
----
+</ProviderSetup>
 
 ### 设置 Vertex AI（Google Cloud） {#vertex-ai-setup-google-cloud}
 
 Google Cloud 的 Vertex AI 通过原生 Google GenAI SDK 提供 Gemini 模型。
+
+<ProviderSetup>
 
 **前提条件：**
 - 已启用 Vertex AI API 的 GCP 项目
@@ -878,315 +944,605 @@ Google Cloud 的 Vertex AI 通过原生 Google GenAI SDK 提供 Gemini 模型。
 - 原生 SDK 会自动刷新令牌。
 - 如果提供了服务账户凭据，则使用这些凭据；否则回退到 ADC。
 
+</ProviderSetup>
+
 ---
 
 ## 嵌入模型 {#embedding-model}
 
-将文本转换为稠密向量表示，以执行语义相似度检索。
+将文本转换为向量，供语义检索使用。默认模型 `BAAI/bge-small-en-v1.5`（384 维，约 130 MB）在 API 进程中运行，无需配置。通过 `HINDSIGHT_API_EMBEDDINGS_PROVIDER` 选择提供方；所有选项参见[配置 › 嵌入](./configuration#embeddings)。
 
-**默认值：**`BAAI/bge-small-en-v1.5`（384 维，约 130MB）
+<ModelProviderSearch only="embeddings" />
 
-### 支持的提供方 {#supported-providers}
-
-| 提供方 | 说明 | 适用场景 |
-|----------|-------------|----------|
-| `local` | SentenceTransformers（默认） | 开发、低延迟 |
-| `onnx` | 进程内 ONNX Runtime 嵌入器（无需 Ollama/TEI/API sidecar） | 轻量级本地 CPU、多语言 |
-| `openai` | OpenAI embeddings API | 生产环境、高质量 |
-| `openai-codex` | 通过 Codex OAuth 使用 OpenAI 嵌入（ChatGPT Plus/Pro，无需 API 密钥） | 现有 ChatGPT/Codex 订阅用户 |
-| `openrouter` | OpenRouter 嵌入（OpenAI 兼容网关） | 多提供方配置 |
-| `cohere` | Cohere embeddings API | 生产环境、多语言 |
-| `google` | Google 嵌入（Gemini API 或 Vertex AI） | 生产环境、多语言、高质量 |
-| `tei` | HuggingFace Text Embeddings Inference | 生产环境、自托管 |
-| `zeroentropy` | ZeroEntropy zembed-1 | 生产环境、高质量检索 |
-| `nvidia` | NVIDIA NIM 检索嵌入（根据 `input_type` 区分） | 使用 NVIDIA NIM / build.nvidia.com 的用户 |
-| `litellm` | LiteLLM 代理（统一网关） | 多提供方配置 |
-| `litellm-sdk` | LiteLLM SDK（直接调用 API，无需代理） | 多提供方、配置更简单 |
-
-### 本地模型 {#local-models}
-
-| 模型 | 维度 | 用途 |
-|-------|------------|----------|
-| `BAAI/bge-small-en-v1.5` | 384 | 默认模型，速度快、质量好 |
-| `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` | 384 | 多语言（50 多种语言） |
-
-### OpenAI 模型 {#openai-models}
-
-| 模型 | 维度 | 用途 |
-|-------|------------|----------|
-| `text-embedding-3-small` | 1536 | OpenAI 默认模型，成本效益高 |
-| `text-embedding-3-large` | 3072 | 质量更高，费用也更高 |
-| `text-embedding-ada-002` | 1536 | 旧版模型 |
-
-### Google 模型 {#google-models}
-
-| 模型 | 维度 | 用途 |
-|-------|------------|----------|
-| `gemini-embedding-001` | 768（可配置） | Google 默认模型，通用 |
-| `gemini-embedding-2-preview` | 768（可配置） | Gemini Embedding 2 系列；多模态，每个输入对应一个向量 |
-
-Google 的 `gemini-embedding-001` 支持通过截断配置输出维度；Google 建议使用 768、1536 或 3072，并通过 `HINDSIGHT_API_EMBEDDINGS_GEMINI_OUTPUT_DIMENSIONALITY` 配置。默认值为 768。
-
-Gemini API 和 Vertex AI 均支持 `gemini-embedding-2` 系列，包括 `gemini-embedding-2-preview`。这些模型会聚合多个输入的请求，因此 Hindsight 会自动调整为每次调用仅嵌入一个输入，以确保每条事实的向量保持对应。
-
-### Cohere 模型 {#cohere-models}
-
-| 模型 | 维度 | 用途 |
-|-------|------------|----------|
-| `embed-english-v3.0` | 1024 | 英文文本 |
-| `embed-multilingual-v3.0` | 1024 | 100 多种语言 |
-
-### ZeroEntropy 模型 {#zeroentropy-models}
-
-| 模型 | 维度 | 用途 |
-|-------|------------|----------|
-| `zembed-1` | 默认 1280（可配置为 2560/1280/640/320/160/80/40） | 高质量非对称检索 |
-
-Hindsight 将存入的记忆文本作为 `document` 输入发送给 ZeroEntropy，将召回/检索文本作为 `query` 输入发送。ZeroEntropy API 的默认维度为 2560；Hindsight 默认为 1280，使 pgvector HNSW 无需更改向量扩展即可运行。
-
-:::warning 嵌入维度
-Hindsight 会在启动时自动检测嵌入维度并调整数据库架构。保存记忆后，若要更改维度就必须丢失数据。
+:::warning 存入记忆前请选择模型
+Hindsight 在启动时读取嵌入维度并据此确定数据库大小。存入记忆后，改用不同维度的模型会导致记忆丢失；切换到相同维度的模型也需要重新嵌入每个记忆库。
 :::
 
-**配置示例：**
+### Hindsight Inference {#embeddings-hindsight}
+
+[Hindsight Inference](https://inference.hindsight.vectorize.io) 提供专为智能体记忆构建的嵌入模型 `hs-embed-1`，每百万输入 token 收费 $0.005：支持八种语言，向量为 384 维。
+
+<ProviderSetup>
+
+先使用 [`hindsight-admin cloud login`](./admin-cli#cloud) 登录一次，然后：
 
 ```bash
-# Local provider (default)
-export HINDSIGHT_API_EMBEDDINGS_PROVIDER=local
-export HINDSIGHT_API_EMBEDDINGS_LOCAL_MODEL=BAAI/bge-small-en-v1.5
+export HINDSIGHT_API_EMBEDDINGS_PROVIDER=hindsight
+```
 
-# ONNX provider (in-process local CPU, no Ollama/TEI/API sidecar; pip install hindsight-api-slim[local-onnx])
+在无法登录的服务器上，可改为设置密钥 `HINDSIGHT_API_EMBEDDINGS_HINDSIGHT_API_KEY`。该密钥优先于已保存的登录信息。
+
+模型权重开放：[`hindsight-ai/hs-embed-1`](https://huggingface.co/hindsight-ai/hs-embed-1)（112M，MIT）也可在自己的机器上运行，参见[本地](#embeddings-local)。
+
+</ProviderSetup>
+
+### 本地 {#embeddings-local}
+
+在 API 进程中运行 SentenceTransformers：无需密钥，模型下载后无需网络。这是默认方式。推荐使用专为智能体记忆构建的开放嵌入模型 [`hindsight-ai/hs-embed-1`](https://huggingface.co/hindsight-ai/hs-embed-1)。
+
+<ProviderSetup>
+
+```bash
+export HINDSIGHT_API_EMBEDDINGS_PROVIDER=local
+export HINDSIGHT_API_EMBEDDINGS_LOCAL_MODEL=hindsight-ai/hs-embed-1
+```
+
+`hs-embed-1` 有 112M 个参数（MIT），返回 384 维向量，支持八种语言，可读取最多 8,192 个 token 的输入，无需查询或文档前缀。首次启动时从 Hugging Face 下载。不同模型的向量不能混用，因此切换后须重新嵌入已存入的记忆。
+
+其他 Sentence Transformers 模型也以相同方式使用：
+
+| 模型 | 维度 | 用途 |
+|---|---|---|
+| `hindsight-ai/hs-embed-1` | 384 | 推荐。专为智能体记忆构建，支持 8 种语言 |
+| `BAAI/bge-small-en-v1.5` | 384 | 默认。速度快，支持英语 |
+| `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` | 384 | 支持 50 多种语言 |
+
+需要 `trust_remote_code` 的模型还需要设置 `HINDSIGHT_API_EMBEDDINGS_LOCAL_TRUST_REMOTE_CODE=true`，仅应为信任的模型启用。如需在独立机器或 GPU 上提供模型，参见 [Text Embeddings Inference](#embeddings-tei)。
+
+</ProviderSetup>
+
+### ONNX Runtime {#embeddings-onnx}
+
+在 API 进程中通过 CPU 运行 ONNX 嵌入模型，无需 PyTorch 或 sidecar。
+
+<ProviderSetup>
+
+```bash
+pip install 'hindsight-api-slim[local-onnx]'
 export HINDSIGHT_API_EMBEDDINGS_PROVIDER=onnx
 export HINDSIGHT_API_EMBEDDINGS_ONNX_MODEL_ID=intfloat/multilingual-e5-small
 export HINDSIGHT_API_EMBEDDINGS_ONNX_DIMENSIONS=384
+```
 
-# OpenAI
+查询和段落前缀默认为 E5 的前缀（`query: `、`passage: `）；对不使用前缀的模型请清空它们。预下载模型、CUDA 和 Docker 配置方法参见[配置 › 本地 ONNX 嵌入](./configuration#local-onnx-embeddings)。
+
+</ProviderSetup>
+
+### OpenAI {#embeddings-openai}
+
+OpenAI 嵌入，以及使用基础 URL 的 Azure OpenAI 或任何兼容 API。
+
+<ProviderSetup>
+
+```bash
 export HINDSIGHT_API_EMBEDDINGS_PROVIDER=openai
 export HINDSIGHT_API_EMBEDDINGS_OPENAI_API_KEY=sk-xxxxxxxxxxxx
-export HINDSIGHT_API_EMBEDDINGS_OPENAI_MODEL=text-embedding-3-small
+# export HINDSIGHT_API_EMBEDDINGS_OPENAI_MODEL=text-embedding-3-small   # the default
+# export HINDSIGHT_API_EMBEDDINGS_OPENAI_BASE_URL=https://your-endpoint/v1
+```
 
-# Cohere
+`HINDSIGHT_API_EMBEDDINGS_OPENAI_DIMENSIONS` 可缩短 `text-embedding-3` 向量。
+
+</ProviderSetup>
+
+### OpenAI Codex {#embeddings-openai-codex}
+
+使用 ChatGPT Plus 或 Pro 登录访问 OpenAI 嵌入，无需 API 密钥。
+
+<ProviderSetup>
+
+```bash
+export HINDSIGHT_API_EMBEDDINGS_PROVIDER=openai-codex
+```
+
+使用与 LLM 相同的登录信息，参见[设置 OpenAI Codex](#openai-codex-setup-chatgpt-pluspro)。默认模型为 `text-embedding-3-small`。
+
+</ProviderSetup>
+
+### OpenRouter {#embeddings-openrouter}
+
+OpenRouter 提供的嵌入模型。
+
+<ProviderSetup>
+
+```bash
+export HINDSIGHT_API_EMBEDDINGS_PROVIDER=openrouter
+export HINDSIGHT_API_EMBEDDINGS_OPENROUTER_API_KEY=your-api-key   # else HINDSIGHT_API_LLM_API_KEY
+# default model: perplexity/pplx-embed-v1-0.6b
+```
+
+</ProviderSetup>
+
+### Requesty {#embeddings-requesty}
+
+通过 Requesty 路由服务提供的嵌入模型。
+
+<ProviderSetup>
+
+```bash
+export HINDSIGHT_API_EMBEDDINGS_PROVIDER=requesty
+export HINDSIGHT_API_EMBEDDINGS_REQUESTY_API_KEY=your-api-key   # else HINDSIGHT_API_LLM_API_KEY
+# default model: openai/text-embedding-3-small
+```
+
+</ProviderSetup>
+
+### Cohere {#embeddings-cohere}
+
+Cohere 嵌入。`embed-multilingual-v3.0` 覆盖 100 多种语言（1024 维）。
+
+<ProviderSetup>
+
+```bash
 export HINDSIGHT_API_EMBEDDINGS_PROVIDER=cohere
 export HINDSIGHT_API_COHERE_API_KEY=your-api-key
-export HINDSIGHT_API_EMBEDDINGS_COHERE_MODEL=embed-english-v3.0
+# default model: embed-english-v3.0
+```
 
-# Google (API key auth)
+</ProviderSetup>
+
+### Google {#embeddings-google}
+
+Gemini 嵌入：通过密钥访问 Gemini API，或在设置项目后通过 Vertex AI 访问。
+
+<ProviderSetup>
+
+```bash
+# Gemini API
 export HINDSIGHT_API_EMBEDDINGS_PROVIDER=google
 export HINDSIGHT_API_EMBEDDINGS_GEMINI_API_KEY=xxxxxxxxxxxx
-export HINDSIGHT_API_EMBEDDINGS_GEMINI_MODEL=gemini-embedding-001
 
-# Google (Vertex AI auth - auto-detected when project ID is set)
+# Vertex AI: picked automatically when the project ID is set
 export HINDSIGHT_API_EMBEDDINGS_PROVIDER=google
-export HINDSIGHT_API_EMBEDDINGS_GEMINI_MODEL=gemini-embedding-001
 export HINDSIGHT_API_EMBEDDINGS_VERTEXAI_PROJECT_ID=your-gcp-project-id
+```
 
-# TEI (self-hosted)
-export HINDSIGHT_API_EMBEDDINGS_PROVIDER=tei
-export HINDSIGHT_API_EMBEDDINGS_TEI_URL=http://localhost:8080
+`gemini-embedding-001` 默认返回 768 维；Google 推荐 768、1536 或 3072 维，可通过 `HINDSIGHT_API_EMBEDDINGS_GEMINI_OUTPUT_DIMENSIONALITY` 设置。`gemini-embedding-2` 系列（包括 `gemini-embedding-2-preview`）同时支持 Gemini API 和 Vertex AI。这些模型会将多输入请求合并为一个向量，因此 Hindsight 每次调用只发送一个输入，以便每条事实对应一个向量。
 
-# ZeroEntropy
+</ProviderSetup>
+
+### ZeroEntropy {#embeddings-zeroentropy}
+
+`zembed-1` 对查询和文档使用不同的嵌入方式。
+
+<ProviderSetup>
+
+```bash
 export HINDSIGHT_API_EMBEDDINGS_PROVIDER=zeroentropy
 export HINDSIGHT_API_EMBEDDINGS_ZEROENTROPY_API_KEY=your-api-key
-export HINDSIGHT_API_EMBEDDINGS_ZEROENTROPY_MODEL=zembed-1
 export HINDSIGHT_API_EMBEDDINGS_ZEROENTROPY_DIMENSIONS=1280
+```
 
-# NVIDIA NIM
+Hindsight 将存入的记忆作为 `document` 输入，将 Recall 文本作为 `query` 输入。API 默认使用 2560 维；Hindsight 请求 1280 维，以便 pgvector 的 HNSW 索引无需更改向量扩展即可工作。也可使用 640、320、160、80 或 40 维。
+
+</ProviderSetup>
+
+### NVIDIA NIM {#embeddings-nvidia}
+
+NVIDIA 的嵌入 API。Hindsight 将 `input_type` 设为 query 或 passage。
+
+<ProviderSetup>
+
+```bash
 export HINDSIGHT_API_EMBEDDINGS_PROVIDER=nvidia
-export HINDSIGHT_API_EMBEDDINGS_NVIDIA_API_KEY=nvapi-your-key
-export HINDSIGHT_API_EMBEDDINGS_NVIDIA_MODEL=nvidia/llama-nemotron-embed-vl-1b-v2  # 默认值，可省略
+export HINDSIGHT_API_EMBEDDINGS_NVIDIA_API_KEY=your-api-key
+# default model: nvidia/llama-nemotron-embed-vl-1b-v2
+```
 
+</ProviderSetup>
+
+### Text Embeddings Inference {#embeddings-tei}
+
+自行托管的 [Text Embeddings Inference](https://github.com/huggingface/text-embeddings-inference) 服务，可运行在独立机器或 GPU 上。
+
+<ProviderSetup>
+
+```bash
+docker run -p 8080:80 ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.3 \
+  --model-id hindsight-ai/hs-embed-1 --auto-truncate
+
+export HINDSIGHT_API_EMBEDDINGS_PROVIDER=tei
+export HINDSIGHT_API_EMBEDDINGS_TEI_URL=http://localhost:8080
+```
+
+使用服务提供的模型。Docker Compose 配置参见 [`docker/docker-compose/tei/`](https://github.com/vectorize-io/hindsight/tree/main/docker/docker-compose/tei)。
+
+</ProviderSetup>
+
+### LiteLLM 和 AWS Bedrock {#embeddings-litellm}
+
+通过 LiteLLM 代理或 LiteLLM SDK 使用 LiteLLM 支持的任意嵌入模型，包括 AWS Bedrock。
+
+<ProviderSetup>
+
+```bash
 # LiteLLM proxy
 export HINDSIGHT_API_EMBEDDINGS_PROVIDER=litellm
 export HINDSIGHT_API_LITELLM_API_BASE=http://localhost:4000
 export HINDSIGHT_API_EMBEDDINGS_LITELLM_MODEL=text-embedding-3-small
 
-# LiteLLM SDK (direct, no proxy)
+# LiteLLM SDK, no proxy
 export HINDSIGHT_API_EMBEDDINGS_PROVIDER=litellm-sdk
 export HINDSIGHT_API_EMBEDDINGS_LITELLM_SDK_API_KEY=sk-xxxxxxxxxxxx
 export HINDSIGHT_API_EMBEDDINGS_LITELLM_SDK_MODEL=openai/text-embedding-3-small
 
-# AWS Bedrock (via LiteLLM SDK; credentials come from the environment or an IAM role)
+# AWS Bedrock, through the LiteLLM SDK (credentials from the environment or an IAM role)
 export HINDSIGHT_API_EMBEDDINGS_PROVIDER=litellm-sdk
 export HINDSIGHT_API_EMBEDDINGS_LITELLM_SDK_MODEL=bedrock/amazon.titan-embed-text-v2:0
 ```
 
 :::tip AWS Bedrock 应用推理配置文件
 
-如果组织的 Service Control Policy 在存在[应用推理配置文件](https://docs.aws.amazon.com/bedrock/latest/userguide/inference-profiles-support.html)后仍禁止对裸模型 ID 调用 `bedrock:InvokeModel`，请保持 `..._MODEL` 不变，并单独添加配置文件 ARN：
+如果组织的服务控制策略在[应用推理配置文件](https://docs.aws.amazon.com/bedrock/latest/userguide/inference-profiles-support.html)存在后拒绝对裸模型 ID 执行 `bedrock:InvokeModel`，请保持 `..._MODEL` 不变，并单独添加配置文件 ARN：
 
 ```bash
 export HINDSIGHT_API_EMBEDDINGS_PROVIDER=litellm-sdk
-# Stays a recognizable model id — this is what picks the request format
+# Stays a recognizable model id: this is what picks the request format
 export HINDSIGHT_API_EMBEDDINGS_LITELLM_SDK_MODEL=bedrock/amazon.titan-embed-text-v2:0
 # The profile actually invoked
 export HINDSIGHT_API_EMBEDDINGS_LITELLM_SDK_MODEL_ID=arn:aws:bedrock:eu-west-1:123456789012:application-inference-profile/abc123
 ```
 
-两者必须分开设置，因为 Bedrock 的嵌入请求和响应格式因模型系列（Titan、Cohere、TwelveLabs、Nova）而异；系统通过模型 ID 判断系列。配置文件 ARN 不透明且绑定账户，不能用于识别模型系列；应将 ARN 放入 `..._MODEL_ID`，并让 `..._MODEL` 保留真实模型名称。
+两者分开设置，是因为 Bedrock 的嵌入请求和响应格式因模型系列（Titan、Cohere、TwelveLabs、Nova）而异，系统根据模型 ID 判断系列。配置文件 ARN 不透明且限定于账户，因此不能用于判断。
 
-聊天模型无需此设置：将 `HINDSIGHT_API_LLM_MODEL=bedrock/converse/<arn>`，因为 Converse API 对所有模型使用相同格式。
+聊天模型不需要这样做：设置 `HINDSIGHT_API_LLM_MODEL=bedrock/converse/<arn>`，因为 Converse API 对所有模型采用同一种格式。
 
 :::
 
-所有选项（包括 Azure OpenAI 和自定义端点）请参阅[配置](./configuration#embeddings)。
-
-如需可运行的 Docker Compose 配置，通过自托管 TEI sidecar 同时提供嵌入和重排服务，请参阅 [`docker/docker-compose/tei/`](https://github.com/vectorize-io/hindsight/tree/main/docker/docker-compose/tei)。
+</ProviderSetup>
 
 ---
 
 ## 交叉编码器（重排器） {#cross-encoder-reranker}
 
-对初步检索结果重新排序，以提高准确率。
+根据与查询的相关性对 Recall 候选结果排序。默认模型 [`hindsight-ai/hs-rerank-1`](https://huggingface.co/hindsight-ai/hs-rerank-1)（多语言，114M 参数）在 API 进程中运行，无需配置。通过 `HINDSIGHT_API_RERANKER_PROVIDER` 选择提供方；所有选项参见[配置 › 重排序模型](./configuration#reranker)。如果为 Recall 配置了[决策模型](#decision-model)，则改由决策模型排序。
 
-**默认值：**`cross-encoder/ms-marco-MiniLM-L-6-v2`（约 85MB）
+<ModelProviderSearch only="reranker" />
 
-### 支持的提供方 {#supported-providers-1}
+### Hindsight Inference {#reranker-hindsight}
 
-| 提供方 | 说明 | 适用场景 |
-|----------|-------------|----------|
-| `local` | SentenceTransformers CrossEncoder（默认） | 开发、低延迟 |
-| `cohere` | Cohere rerank API | 生产环境、高质量 |
-| `openrouter` | OpenRouter rerank API（兼容 Cohere 的网关） | 多提供方配置 |
-| `zeroentropy` | ZeroEntropy rerank API（zerank-2） | 生产环境、最先进的准确率 |
-| `siliconflow` | SiliconFlow rerank API（兼容 Cohere 的 `/rerank` 端点） | 中国用户或任何使用 SiliconFlow 平台的用户 |
-| `nvidia` | NVIDIA NIM 重排 API（原生 `/retrieval/{model}/reranking` 端点） | 使用 NVIDIA NIM / build.nvidia.com 的用户 |
-| `typesafe` | TypeSafe 类型化决策 API（Jev）——通过一道问题对整个候选池排序 | 生产环境、最高排序质量；也可仅返回相关候选项 |
-| `alibaba` | 阿里云 DashScope rerank API（qwen3-rerank） | 阿里云/DashScope 用户 |
-| `google` | Google Discovery Engine 排序 API（REST + Google 身份验证） | 生产环境、GCP 集成 |
-| `tei` | HuggingFace Text Embeddings Inference | 生产环境、自托管 |
-| `flashrank` | FlashRank（轻量、快速） | 资源受限环境 |
-| `onnx` | 任意导出为 ONNX 的交叉编码器，通过 ONNX Runtime 在进程内运行 | 无需 PyTorch 或 TEI 服务器的自定义模型 |
-| `litellm` | LiteLLM 代理（统一网关） | 多提供方配置 |
-| `litellm-sdk` | LiteLLM SDK（直接调用 API，无需代理） | 多提供方、配置更简单 |
-| `jina-mlx` | 通过 Apple Silicon MLX 本地运行 Jina rerank v3（无需 API 密钥） | Apple Silicon（M1+）本地推理 |
-| `rrf` | 仅使用 RRF（无神经重排） | 测试、资源需求极低 |
+[Hindsight Inference](https://inference.hindsight.vectorize.io) 提供专为智能体记忆构建的交叉编码器 `hs-rerank-1`：支持八种语言，查询和文档最多为 8,192 个 token。
 
-### 本地模型 {#local-models-1}
+<ProviderSetup>
 
-| 模型 | 用途 |
-|-------|----------|
-| `cross-encoder/ms-marco-MiniLM-L-6-v2` | 默认模型，速度快 |
-| `cross-encoder/ms-marco-MiniLM-L-12-v2` | 准确率更高 |
-| `cross-encoder/mmarco-mMiniLMv2-L12-H384-v1` | 多语言 |
-
-### Cohere 模型 {#cohere-models-1}
-
-| 模型 | 用途 |
-|-------|----------|
-| `rerank-english-v3.0` | 英文文本 |
-| `rerank-multilingual-v3.0` | 100 多种语言 |
-
-### ZeroEntropy 模型 {#zeroentropy-models-1}
-
-| 模型 | 用途 |
-|-------|----------|
-| `zerank-2` | 旗舰级多语言重排器（默认） |
-| `zerank-2-small` | 更快速、轻量的变体 |
-
-### SiliconFlow 模型 {#siliconflow-models}
-
-SiliconFlow 通过兼容 Cohere 的 `/rerank` 端点托管多种开放权重重排模型：
-
-| 模型 | 用途 |
-|-------|----------|
-| `BAAI/bge-reranker-v2-m3` | 多语言，优秀的默认选择 |
-| `Qwen/Qwen3-Reranker-8B` | 规模更大，准确率更高 |
-
-### TypeSafe 模型 {#typesafe-models}
-
-TypeSafe 并非 `/rerank` 端点；它会针对某个*状态*回答类型化的*问题*。Hindsight 将候选项设为 Choice 问题的选项，因此返回的概率分布即为排序结果。候选池不超过 250 个选项且符合上下文 token 预算时，一次调用即可为整个候选池排序。候选池较大或文档较长时，系统会将其分组，并在最终排序阶段让每组的头部候选项晋级，同时截断 token 以适配上下文窗口。
-
-| 模型 | 用途 |
-|-------|----------|
-| `jev-latest` | 默认值；跟踪当前 Jev 版本 |
-
-设置 `HINDSIGHT_API_RERANKER_TYPESAFE_PRUNE_CANDIDATES=true` 会增加第二个问题，在相关性结束处截断排序列表，使 Recall 只返回相关候选项。此功能默认关闭，因为会明显缩小 Recall 返回的内容。完整行为及权衡请参阅[配置](/developer/configuration#typesafe)。
-
-TypeSafe 的分数表示单次 Recall 中的名次，而非相关性分数，因此使用 TypeSafe 时 Recall 不会发布 `scores.reranker`，并且会拒绝 `min_scores.reranker`，返回 HTTP 400。
-
-### 阿里云模型 {#alibaba-cloud-models}
-
-阿里云 DashScope 通过兼容 Cohere 的 `/reranks` 端点提供 `qwen3-rerank`：
-
-| 模型 | 用途 |
-|-------|----------|
-| `qwen3-rerank` | 100 多种语言，默认模型 |
-
-### LiteLLM 支持的提供方 {#litellm-supported-providers}
-
-LiteLLM 通过 `/rerank` 端点支持多个重排提供方：
-
-| 提供方 | 模型示例 |
-|----------|---------------|
-| Cohere | `cohere/rerank-english-v3.0` |
-| Together AI | `together_ai/...` |
-| Voyage AI | `voyage/rerank-2` |
-| Jina AI | `jina_ai/...` |
-| AWS Bedrock | `bedrock/...` |
-
-**配置示例：**
+先使用 [`hindsight-admin cloud login`](./admin-cli#cloud) 登录一次，然后：
 
 ```bash
-# Local provider (default)
-export HINDSIGHT_API_RERANKER_PROVIDER=local
-export HINDSIGHT_API_RERANKER_LOCAL_MODEL=cross-encoder/ms-marco-MiniLM-L-6-v2
+export HINDSIGHT_API_RERANKER_PROVIDER=hindsight
+```
 
+在无法登录的服务器上，可改为设置密钥 `HINDSIGHT_API_RERANKER_HINDSIGHT_API_KEY`。该密钥优先于已保存的登录信息。
+
+模型权重开放：[`hindsight-ai/hs-rerank-1`](https://huggingface.co/hindsight-ai/hs-rerank-1)（114M，MIT）也可在自己的机器上运行，参见[本地](#reranker-local)。
+
+</ProviderSetup>
+
+### 本地 {#reranker-local}
+
+在 API 进程中运行 SentenceTransformers CrossEncoder：无需密钥，模型下载后无需网络。默认模型为 [`hindsight-ai/hs-rerank-1`](https://huggingface.co/hindsight-ai/hs-rerank-1)，这是专为智能体记忆构建的开放重排序模型。
+
+<ProviderSetup>
+
+`hs-rerank-1` 有 114M 个参数（MIT），支持八种语言，可读取最多 8,192 个 token 的输入。其权重大部分是词汇表，因此每次推理运行的是 15M 参数的 Transformer，在 CPU 上速度很快。
+
+```bash
+export HINDSIGHT_API_RERANKER_PROVIDER=local
+export HINDSIGHT_API_RERANKER_LOCAL_MODEL=hindsight-ai/hs-rerank-1
+```
+
+首次启动时从 Hugging Face 下载。其他交叉编码器也以相同方式使用：
+
+| 模型 | 用途 |
+|---|---|
+| `hindsight-ai/hs-rerank-1` | 默认。专为智能体记忆构建，支持 8 种语言，输入上限 8,192 token |
+| `cross-encoder/ms-marco-MiniLM-L-6-v2` | 速度快，英语（hs-rerank-1 之前的默认模型） |
+| `cross-encoder/ms-marco-MiniLM-L-12-v2` | 更准确，英语 |
+| `cross-encoder/mmarco-mMiniLMv2-L12-H384-v1` | 多语言 |
+
+如需在独立机器或 GPU 上提供模型，可通过 [Text Embeddings Inference](https://github.com/huggingface/text-embeddings-inference) 运行（CPU 镜像使用模型导出的 int8 ONNX），并将 `tei` 提供方指向它：
+
+```bash
+docker run -p 8080:80 ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.3 \
+  --model-id hindsight-ai/hs-rerank-1 --auto-truncate
+
+export HINDSIGHT_API_RERANKER_PROVIDER=tei
+export HINDSIGHT_API_RERANKER_TEI_URL=http://localhost:8080
+```
+
+使用 GPU 时，请使用 GPU 镜像：L4 和其他 Ada GPU 使用 `89-1.9.3`，A100 和 H100 使用 `1.9.3`，并带上 `--gpus all`。
+
+</ProviderSetup>
+
+### Cohere 和兼容端点 {#reranker-cohere}
+
+Cohere 的重排 API 或使用相同协议的任意端点：Azure AI Foundry、Jina、Voyage、自行托管的 BGE。
+
+<ProviderSetup>
+
+```bash
 # Cohere
 export HINDSIGHT_API_RERANKER_PROVIDER=cohere
 export HINDSIGHT_API_COHERE_API_KEY=your-api-key
-export HINDSIGHT_API_RERANKER_COHERE_MODEL=rerank-english-v3.0
+export HINDSIGHT_API_RERANKER_COHERE_MODEL=rerank-english-v3.0   # or rerank-multilingual-v3.0
 
-# Cohere-compatible endpoint (Azure AI Foundry, Jina, Voyage, self-hosted BGE, ...)
-# Setting COHERE_BASE_URL switches the provider off the Cohere SDK and onto a
-# plain HTTP client that speaks the standard rerank wire format:
-#   POST {base_url}  Authorization: Bearer <key>
-#   {"model","query","documents","return_documents":false}
-#   -> {"results":[{"index","relevance_score"}, ...]}
+# A Cohere-compatible endpoint (Azure AI Foundry, Jina, Voyage, self-hosted BGE, ...)
 export HINDSIGHT_API_RERANKER_PROVIDER=cohere
 export HINDSIGHT_API_RERANKER_COHERE_API_KEY=your-api-key
-export HINDSIGHT_API_RERANKER_COHERE_MODEL=rerank-v3.5  # whatever model the endpoint serves
+export HINDSIGHT_API_RERANKER_COHERE_MODEL=rerank-v3.5   # whatever the endpoint serves
 export HINDSIGHT_API_RERANKER_COHERE_BASE_URL=https://your-endpoint.example/rerank
+```
 
-# ZeroEntropy (state-of-the-art accuracy)
+设置基础 URL 后，Hindsight 会改用遵循标准重排格式的普通 HTTP 客户端，而非 Cohere SDK：发送 `POST {base_url}`，携带 `Authorization: Bearer <key>` 和 `{"model", "query", "documents", "return_documents": false}`，返回 `{"results": [{"index", "relevance_score"}, ...]}`。
+
+</ProviderSetup>
+
+### OpenRouter {#reranker-openrouter}
+
+OpenRouter 提供的重排模型。
+
+<ProviderSetup>
+
+```bash
+export HINDSIGHT_API_RERANKER_PROVIDER=openrouter
+export HINDSIGHT_API_RERANKER_OPENROUTER_API_KEY=your-api-key   # else HINDSIGHT_API_LLM_API_KEY
+# default model: cohere/rerank-v3.5
+```
+
+</ProviderSetup>
+
+### ZeroEntropy {#reranker-zeroentropy}
+
+ZeroEntropy 的 `zerank-2`；`zerank-2-small` 速度更快。
+
+<ProviderSetup>
+
+```bash
 export HINDSIGHT_API_RERANKER_PROVIDER=zeroentropy
 export HINDSIGHT_API_RERANKER_ZEROENTROPY_API_KEY=your-api-key
-export HINDSIGHT_API_RERANKER_ZEROENTROPY_MODEL=zerank-2  # default, can omit
+# default model: zerank-2
+```
 
-# SiliconFlow (Cohere-compatible /rerank endpoint)
+</ProviderSetup>
+
+### SiliconFlow {#reranker-siliconflow}
+
+SiliconFlow 上的重排模型，包括 `Qwen/Qwen3-Reranker-8B`。
+
+<ProviderSetup>
+
+```bash
 export HINDSIGHT_API_RERANKER_PROVIDER=siliconflow
 export HINDSIGHT_API_RERANKER_SILICONFLOW_API_KEY=your-api-key
-export HINDSIGHT_API_RERANKER_SILICONFLOW_MODEL=BAAI/bge-reranker-v2-m3  # default, can omit
+# default model: BAAI/bge-reranker-v2-m3
+```
 
-# NVIDIA NIM（原生重排 API，与 Cohere 不兼容）
+</ProviderSetup>
+
+### NVIDIA NIM {#reranker-nvidia}
+
+NVIDIA 自有的重排 API，与 Cohere 不兼容。
+
+<ProviderSetup>
+
+```bash
 export HINDSIGHT_API_RERANKER_PROVIDER=nvidia
-export HINDSIGHT_API_RERANKER_NVIDIA_API_KEY=nvapi-your-key
-export HINDSIGHT_API_RERANKER_NVIDIA_MODEL=nvidia/llama-nemotron-rerank-vl-1b-v2  # 默认值，可省略
+export HINDSIGHT_API_RERANKER_NVIDIA_API_KEY=your-api-key
+# default model: nvidia/llama-nemotron-rerank-vl-1b-v2
+```
 
-# TypeSafe (typed-decision API, ranks the whole pool in one question)
-export HINDSIGHT_API_RERANKER_PROVIDER=typesafe
-export HINDSIGHT_API_RERANKER_TYPESAFE_API_KEY=your-api-key
-export HINDSIGHT_API_RERANKER_TYPESAFE_MODEL=jev-latest  # default, can omit
-# export HINDSIGHT_API_RERANKER_TYPESAFE_PRUNE_CANDIDATES=true  # return only the relevant ones
+</ProviderSetup>
 
-# Alibaba Cloud DashScope (qwen3-rerank)
+### 阿里云（DashScope） {#reranker-alibaba}
+
+阿里云的 DashScope 重排 API，支持 100 多种语言。
+
+<ProviderSetup>
+
+```bash
 export HINDSIGHT_API_RERANKER_PROVIDER=alibaba
-export HINDSIGHT_API_RERANKER_ALIBABA_API_KEY=your-dashscope-api-key
-export HINDSIGHT_API_RERANKER_ALIBABA_MODEL=qwen3-rerank  # default, can omit
+export HINDSIGHT_API_RERANKER_ALIBABA_API_KEY=your-api-key
+# default model: qwen3-rerank
+```
 
-# TEI (self-hosted)
+</ProviderSetup>
+
+### Google {#reranker-google}
+
+Google Cloud 的 Discovery Engine 排序 API，使用 Google Cloud 凭据。
+
+<ProviderSetup>
+
+```bash
+export HINDSIGHT_API_RERANKER_PROVIDER=google
+export HINDSIGHT_API_RERANKER_GOOGLE_PROJECT_ID=your-gcp-project-id   # falls back to HINDSIGHT_API_LLM_VERTEXAI_PROJECT_ID
+# export HINDSIGHT_API_RERANKER_GOOGLE_SERVICE_ACCOUNT_KEY=/path/to/key.json   # else Application Default Credentials
+```
+
+</ProviderSetup>
+
+### Text Embeddings Inference {#reranker-tei}
+
+自行托管的 [Text Embeddings Inference](https://github.com/huggingface/text-embeddings-inference) 服务，可运行在独立机器或 GPU 上。
+
+<ProviderSetup>
+
+```bash
+docker run -p 8080:80 ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.3 \
+  --model-id hindsight-ai/hs-rerank-1 --auto-truncate
+
 export HINDSIGHT_API_RERANKER_PROVIDER=tei
-export HINDSIGHT_API_RERANKER_TEI_URL=http://localhost:8081
+export HINDSIGHT_API_RERANKER_TEI_URL=http://localhost:8080
+```
 
-# FlashRank (lightweight)
+使用服务提供的模型；CPU 镜像使用模型导出的 int8 ONNX。使用 GPU 时，请使用 GPU 镜像：L4 和其他 Ada GPU 使用 `89-1.9.3`，A100 和 H100 使用 `1.9.3`，并带上 `--gpus all`。
+
+</ProviderSetup>
+
+### FlashRank {#reranker-flashrank}
+
+在进程中通过 CPU 运行的小型快速交叉编码器。
+
+<ProviderSetup>
+
+```bash
 export HINDSIGHT_API_RERANKER_PROVIDER=flashrank
+# default model: ms-marco-MiniLM-L-12-v2
+```
 
+</ProviderSetup>
+
+### ONNX Runtime {#reranker-onnx}
+
+在 API 进程中运行导出为 ONNX 的任意交叉编码器，无需 PyTorch。
+
+<ProviderSetup>
+
+```bash
+export HINDSIGHT_API_RERANKER_PROVIDER=onnx
+export HINDSIGHT_API_RERANKER_ONNX_MODEL_ID=hindsight-ai/hs-rerank-1   # the default
+```
+
+在 Apple Silicon 上，`local` 提供方通常更快。所有选项参见[配置 › 重排序模型](./configuration#reranker)。
+
+</ProviderSetup>
+
+### Jina (Apple Silicon MLX) {#reranker-jina-mlx}
+
+在 M1 或更新的设备上通过 MLX 本地运行 `jinaai/jina-reranker-v3-mlx`。
+
+<ProviderSetup>
+
+```bash
+export HINDSIGHT_API_RERANKER_PROVIDER=jina-mlx
+```
+
+模型（约 1.2 GB）在首次启动时从 Hugging Face 下载。
+
+</ProviderSetup>
+
+### LiteLLM {#reranker-litellm}
+
+通过 LiteLLM 代理或 LiteLLM SDK 使用 LiteLLM 支持的重排模型：Cohere、Together AI、Voyage、Jina、Bedrock。
+
+<ProviderSetup>
+
+```bash
 # LiteLLM proxy
 export HINDSIGHT_API_RERANKER_PROVIDER=litellm
-export HINDSIGHT_API_LITELLM_API_BASE=http://localhost:4000
+export HINDSIGHT_API_RERANKER_LITELLM_API_BASE=http://localhost:4000
 export HINDSIGHT_API_RERANKER_LITELLM_MODEL=cohere/rerank-english-v3.0
 
-# RRF-only (no neural reranking)
+# LiteLLM SDK, no proxy
+export HINDSIGHT_API_RERANKER_PROVIDER=litellm-sdk
+export HINDSIGHT_API_RERANKER_LITELLM_SDK_API_KEY=your-api-key
+export HINDSIGHT_API_RERANKER_LITELLM_SDK_MODEL=cohere/rerank-english-v3.0
+```
+
+</ProviderSetup>
+
+### 仅使用 RRF（无模型） {#reranker-rrf}
+
+不使用模型：Recall 保留合并后的检索顺序。
+
+<ProviderSetup>
+
+```bash
 export HINDSIGHT_API_RERANKER_PROVIDER=rrf
 ```
 
-所有选项（包括 Azure 托管端点和批处理设置）请参阅[配置](./configuration#reranker)。
+</ProviderSetup>
+
+### TypeSafe（已弃用） {#reranker-typesafe}
+
+已弃用：请改为使用 `typesafe` 提供方配置[决策模型](#decision-model)。Recall 使用决策模型替代重排序模型，整合、Reflect 和知识页也会使用。
+
+<ProviderSetup>
+
+TypeSafe 并非 `/rerank` 端点：它回答有关状态的类型化问题。Hindsight 将候选结果作为一道选择题的选项，返回的概率即为排名。候选池符合 250 个选项的限制及 token 预算时，一次调用即可排序；更大的候选池会分组，各组的头部候选进入最终轮次。`HINDSIGHT_API_RERANKER_TYPESAFE_PRUNE_CANDIDATES=true` 会增加第二个问题，在相关内容结束的位置截断列表（参见[配置](./configuration#typesafe)）。其分数表示排名位置，而非相关性，因此 Recall 不返回 `scores.reranker`，并以 HTTP 400 拒绝 `min_scores.reranker`。
+
+</ProviderSetup>
+
+---
+
+## 决策模型 {#decision-model}
+
+在远不到一秒的时间内回答简短的类型化问题（是或否、从选项中选择、可能性有多大），使 Hindsight 对无需撰写内容的判断跳过 LLM 调用。此功能可选：未配置时（默认 `HINDSIGHT_API_DECISION_MODEL_PROVIDER=none`），所有操作仍仅使用 LLM。各操作的使用方式参见[决策模型](./decision-models)，全部选项（包括按操作覆盖）参见[配置](./configuration#decision-model)。
+
+<ModelProviderSearch only="decision" />
+
+Reflect 和知识页刷新目前仅支持 `hindsight` 和 `typesafe`。使用其他提供方时，它们仍仅使用 LLM 并记录警告，而 Recall 和整合仍会使用该提供方。如需将其他提供方与用于 Reflect 的 `hindsight` 或 `typesafe` 搭配，请覆盖 Reflect 的提供方（参见 [OpenAI Decisions](#decision-openai)）。
+
+如果端点提供的模型并非该提供方的默认模型，还需设置 `HINDSIGHT_API_DECISION_MODEL_MODEL` 和 `HINDSIGHT_API_DECISION_MODEL_TOKENIZER`，并将 `HINDSIGHT_API_DECISION_MODEL_MAX_REQUEST_TOKENS` 设为该模型的上下文窗口减去一定余量。
+
+### Hindsight Inference {#decision-hindsight}
+
+[Hindsight Inference](https://inference.hindsight.vectorize.io) Decisions API 上的 `hs-decide-1-flash`。用于整合、Reflect 和知识页，启用后也用于 Recall。
+
+<ProviderSetup>
+
+登录一次，或设置 `HINDSIGHT_API_DECISION_MODEL_API_KEY`：
+
+```bash
+hindsight-admin cloud login
+export HINDSIGHT_API_DECISION_MODEL_PROVIDER=hindsight
+```
+
+`hs-decide-1-flash` 也开放了权重：[`hindsight-ai/hs-decide-1-flash`](https://huggingface.co/hindsight-ai/hs-decide-1-flash)（0.8B，Apache 2.0）。如需自行通过 vLLM 提供服务，参见[决策模型 › 自行运行](./decision-models#run-it-yourself)。
+
+</ProviderSetup>
+
+### TypeSafe (Jev) {#decision-typesafe}
+
+[TypeSafe](https://typesafe.ai) System One API 上的 `jev-latest`。用于 Recall、整合、Reflect 和知识页。
+
+<ProviderSetup>
+
+```bash
+export HINDSIGHT_API_DECISION_MODEL_PROVIDER=typesafe
+export HINDSIGHT_API_DECISION_MODEL_API_KEY=your-typesafe-key
+```
+
+</ProviderSetup>
+
+### Cloudflare Clef {#decision-cloudflare}
+
+Workers AI 上的 [Clef](https://blog.cloudflare.com/clef-decision-models)，可选 `clef` 或 `clef-flash`。用于 Recall 和整合。
+
+<ProviderSetup>
+
+必须设置基础 URL：
+
+```bash
+export HINDSIGHT_API_DECISION_MODEL_PROVIDER=cloudflare
+export HINDSIGHT_API_DECISION_MODEL_API_KEY=your-cloudflare-api-token
+export HINDSIGHT_API_DECISION_MODEL_BASE_URL=https://api.cloudflare.com/client/v4/accounts/<account_id>/ai/run
+```
+
+</ProviderSetup>
+
+### OpenAI Decisions {#decision-openai}
+
+[OpenAI Decisions API](https://developers.openai.com/api/docs/guides/decisions)（公开测试版），默认为 `gpt-6-luna`。用于 Recall 和整合。
+
+<ProviderSetup>
+
+由于 Reflect 尚不支持 OpenAI，此示例为 Reflect 配置 TypeSafe：
+
+```bash
+export HINDSIGHT_API_DECISION_MODEL_PROVIDER=openai
+export HINDSIGHT_API_DECISION_MODEL_API_KEY=your-openai-key
+export HINDSIGHT_API_REFLECT_DECISION_MODEL_PROVIDER=typesafe
+export HINDSIGHT_API_REFLECT_DECISION_MODEL_API_KEY=your-typesafe-key
+```
+
+</ProviderSetup>

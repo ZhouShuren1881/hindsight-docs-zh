@@ -10,6 +10,8 @@
 - `工程代码` docusaurus 文档工程相关代码、配置
 - `Hindsight文档` 简称文档，一般指主文档、博客、集成文档和指南
 
+对齐工作完成后，编写 markdown 格式的工作总结到临时文件夹。
+
 ![对齐示例](alignment-workflow.svg)
 
 ## 工程代码对齐
@@ -44,17 +46,33 @@
 
 ## 图片压缩
 
-压缩二进制图片为 q=90 WebP 格式以节省空间。
+压缩二进制图片为 q=95 WebP 格式以节省空间。
 
 待压缩对象满足如下三个条件：
 1. 原图大于 25 KiB
 2. 压缩后体积比原图减少超过 50%
-3. 无损压缩图片或 ImageMagick 推断质量高于 90 的有损压缩图片
+3. 无损压缩图片或 ImageMagick 推断质量≥96的有损压缩图片
 
 图片压缩任务仅针对 `git diff` 新增/变化的图片，如果新的/变化的图片无需压缩，则从上游原样复制。压缩后要同步更新文档中的图片链接。
 
-## README 更新
+压缩命令示例：
+```bash
+# use method 6
+magick "image.png" -quality 95 -define webp:method=6 "image.webp"
+```
 
-中文文档项目的 README 参考了上游项目的部分内容（`Hindsight 社区中文文档` 前面的内容），发现上游项目 README 变化时，向用户申请 README 修改许可，然后同步 README修改。
+## README & package.json 更新
+
+### README 更新
+
+中文文档项目的 README 参考了上游项目的部分内容（`upstream-translation` start end 之间的内容），发现上游项目参考内容变化时，向用户申请 README 修改许可，然后同步 README修改。
 
 修改 README 可能涉及 URL 变化，仅将指向英文文档的部分改为中文文档链接，其余保持不变。
+
+### package.json 更新
+
+和 README 一样，package.json 更新也需要用户明确许可。
+
+导航会引用 package.json 的版本号，当上游更新版本号时，同步更新 package.json 与锁文件的版本号。
+
+当前仓库的 build 禁用了 `scripts/sync-coding-agents-doc.mjs`、`scripts/sync-hermes-doc.mjs` 两项检查。

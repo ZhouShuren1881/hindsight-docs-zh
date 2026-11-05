@@ -4,11 +4,11 @@ authors: [benfrank241]
 date: 2026-04-28T14:00:00Z
 tags: [shared-memory, chatgpt, perplexity, guide]
 description: "让两个连接器指向同一记忆库，即可在 ChatGPT 和 Perplexity 之间共享 Hindsight 记忆；再通过实际工作测试跨工具召回。"
-image: /img/guides/guide-share-hindsight-memory-across-chatgpt-and-perplexity.webp
+image: /img/guides/guide-share-hindsight-memory-across-chatgpt-and-perplexity.png
 hide_table_of_contents: true
 ---
 
-![在 ChatGPT 和 Perplexity 之间共享 Hindsight 记忆](/img/guides/guide-share-hindsight-memory-across-chatgpt-and-perplexity.webp)
+![在 ChatGPT 和 Perplexity 之间共享 Hindsight 记忆](/img/guides/guide-share-hindsight-memory-across-chatgpt-and-perplexity.png)
 
 如果你想**在 ChatGPT 和 Perplexity 之间共享 Hindsight 记忆**，关键要决定的不是连接器本身，而是记忆库的边界。两个工具都已经可以连接 Hindsight，但只有刻意让它们读写同一个记忆库，才能真正形成一套工作流。设置共享路径时，可参考 [ChatGPT 指南](/sdks/integrations/chatgpt)、[Perplexity 指南](/sdks/integrations/perplexity)、[MCP 服务器文档](/developer/mcp-server)和[快速入门指南](/developer/api/quickstart)。
 

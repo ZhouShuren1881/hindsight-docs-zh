@@ -272,6 +272,16 @@ CE_normalized = 1 / (1 + e^(-raw_logit))
 
 ---
 
+### 阶段 2：使用决策模型 {#decision-model-ranking}
+
+为 Recall 配置[决策模型](./decision-models)后，它会替代交叉编码器。模型会逐一判断展示每个候选是否有助于回答问题，并据此对候选集排序。判断时会告知模型提问日期：使用 Recall 的问题日期，未提供时使用当天日期。
+
+这个排序就是最终结果。Recall 会跳过阶段 3 的时效性、时间接近程度和支持事实数加权，不提供重排序模型分数（`scores.reranker` 为 `null`），并以 HTTP 400 拒绝 [`min_scores.reranker`](./api/recall#min_scores)；请改用 `min_scores.final`。如果重试后仍无法连接决策模型，Recall 会失败，与其他远程重排序模型的行为相同。
+
+设置 [`HINDSIGHT_API_RECALL_DECISION_MODEL_PRUNE=true`](./configuration#decision-model) 后，Recall 不仅会排序，还会丢弃被判断为无帮助的候选。排名最佳的候选始终会保留。如果希望其他操作使用决策模型，而 Recall 继续使用交叉编码器，请设置 `HINDSIGHT_API_RECALL_DECISION_MODEL_PROVIDER=none`。
+
+---
+
 ### 阶段 3：组合评分（加权） {#stage-3-combined-scoring-boosts}
 
 系统会用三个**乘法加权项**调整归一化后的交叉编码器分数，纳入模型无法直接看到的信号：记忆的新近程度、时间接近程度和证据强度。

@@ -666,6 +666,19 @@
           "description": "持久保存原始源文本（documents.original_text / chunks.chunk_text）。设为 false 时仅保留提取出的事实。",
           "title": "存储文档文本"
         },
+        "default_timezone": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "当存入时间戳或 LLM 提取的时间不含 UTC 偏移量时，用于解读该时间的 IANA 时区（例如 'Europe/Rome'）。",
+          "title": "默认时区"
+        },
         "enable_auto_consolidation": {
           "anyOf": [
             {
@@ -689,7 +702,7 @@
             }
           ],
           "default": null,
-          "description": "服务器配置了决策模型时，观测整合会让它在调用 LLM 前处理重复表述、新出现的侧面和闲谈。",
+          "description": "当服务器配置了决策模型时，整合会让它在调用 LLM 前处理重复陈述和闲聊",
           "title": "观测整合是否使用决策模型"
         },
         "consolidation_max_memories_per_round": {
@@ -743,6 +756,32 @@
           "default": null,
           "description": "请求未提供 prefer_observations 时，召回操作使用的默认值。",
           "title": "召回优先使用观测"
+        },
+        "recall_decision_model_prune": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "请求省略 recall prune 时使用的默认值（仅适用于决策模型重排序模型）",
+          "title": "Recall 决策模型剪枝"
+        },
+        "recall_decision_model_dedup": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "请求省略 recall dedup 时使用的默认值（仅适用于决策模型重排序模型）",
+          "title": "Recall 决策模型去重"
         },
         "recall_max_tokens": {
           "anyOf": [
@@ -804,6 +843,8 @@
         "priority": {
           "default": 0,
           "description": "优先级较高的指令先注入",
+          "maximum": 2147483647,
+          "minimum": -2147483648,
           "title": "优先级",
           "type": "integer"
         },
@@ -834,7 +875,7 @@
       "description": "记忆库模板清单中的心智模型定义。",
       "properties": {
         "id": {
-          "description": "心智模型的唯一 ID（由小写字母、数字和连字符组成）",
+          "description": "心智模型的唯一 ID（规则与记忆库 ID 相同：UTF-8 编码最多 192 字节，不允许包含 '/' 或控制字符）",
           "title": "ID",
           "type": "string"
         },

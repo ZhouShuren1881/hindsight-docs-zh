@@ -1,0 +1,353 @@
+{
+  "title": "使用决策模型的整合",
+  "speed": 2200,
+  "elements": [
+    {
+      "id": "facts",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "新事实"
+        },
+        {
+          "type": "subtitle",
+          "text": "来自 Retain"
+        }
+      ],
+      "minCardHeight": 148,
+      "width": 250
+    },
+    {
+      "id": "find",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "查找相关观测"
+        },
+        {
+          "type": "subtitle",
+          "text": "Recall 为每条事实找到的观测"
+        }
+      ],
+      "minCardHeight": 28,
+      "width": 320
+    },
+    {
+      "id": "dm",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "决策模型"
+        },
+        {
+          "type": "subtitle",
+          "text": "重述 · 新内容 · 改变 · 闲聊"
+        }
+      ],
+      "minCardHeight": 148,
+      "width": 320
+    },
+    {
+      "id": "llm",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "LLM"
+        },
+        {
+          "type": "subtitle",
+          "text": "仅处理会改变观测的内容"
+        }
+      ],
+      "minCardHeight": 43,
+      "width": 320
+    },
+    {
+      "id": "work",
+      "type": "group",
+      "label": {
+        "title": "Hindsight 工作进程 · 整合"
+      },
+      "children": [
+        "find",
+        "dm",
+        "llm"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 40,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "obs",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "观测"
+        }
+      ],
+      "minCardHeight": 148,
+      "width": 300
+    },
+    {
+      "id": "g0",
+      "type": "group",
+      "children": [
+        "facts",
+        "work",
+        "obs"
+      ],
+      "layout": {
+        "direction": "row",
+        "gap": 56,
+        "align": "center"
+      }
+    },
+    {
+      "id": "in",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "facts"
+      },
+      "end": {
+        "id": "find"
+      },
+      "label": {
+        "text": "新事实"
+      }
+    },
+    {
+      "id": "lookup",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "find"
+      },
+      "end": {
+        "id": "obs"
+      },
+      "label": {
+        "text": "Recall"
+      }
+    },
+    {
+      "id": "ask",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "find"
+      },
+      "end": {
+        "id": "dm"
+      }
+    },
+    {
+      "id": "settle",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "dm"
+      },
+      "end": {
+        "id": "obs"
+      },
+      "label": {
+        "text": "已处理，无需 LLM"
+      }
+    },
+    {
+      "id": "hard",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "dm"
+      },
+      "end": {
+        "id": "llm"
+      },
+      "label": {
+        "text": "其余内容"
+      }
+    },
+    {
+      "id": "write",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "llm"
+      },
+      "end": {
+        "id": "obs"
+      },
+      "label": {
+        "text": "重写"
+      }
+    }
+  ],
+  "scenes": [
+    {
+      "label": "整合",
+      "beats": [
+        {
+          "show": {
+            "facts": [
+              {
+                "tag": "1",
+                "tone": "gray",
+                "text": "Alice 在 Google 工作"
+              },
+              {
+                "tag": "2",
+                "tone": "gray",
+                "text": "Alice 的经理是 Carol"
+              },
+              {
+                "tag": "3",
+                "tone": "gray",
+                "text": "谢谢，明天聊！"
+              },
+              {
+                "tag": "4",
+                "tone": "gray",
+                "text": "Alice 搬到了苏黎世办公室"
+              }
+            ],
+            "obs": [
+              {
+                "text": "Alice 是 Google 的软件工程师"
+              },
+              {
+                "text": "Alice 在伦敦办公室工作"
+              }
+            ]
+          },
+          "say": "Retain 存入了四条新事实。整合在后台将事实转化为观测。",
+          "ms": 2600
+        },
+        {
+          "edges": [
+            {
+              "edge": "in",
+              "data": "4 条事实"
+            },
+            {
+              "edge": "lookup",
+              "data": "Recall"
+            }
+          ],
+          "show": {
+            "find": [
+              {
+                "text": "每条事实的相关观测",
+                "mark": "✓"
+              }
+            ]
+          },
+          "say": "系统像以往一样，为每条事实找到它可能涉及的观测。"
+        },
+        {
+          "edges": {
+            "edge": "ask",
+            "data": "事实 + 相关观测"
+          },
+          "show": {
+            "dm": [
+              {
+                "tag": "重述",
+                "tone": "blue",
+                "text": "1 · Alice 在 Google 工作"
+              },
+              {
+                "tag": "新内容",
+                "tone": "green",
+                "text": "2 · Alice 的经理是 Carol"
+              },
+              {
+                "tag": "闲聊",
+                "tone": "gray",
+                "text": "3 · 谢谢，明天聊！"
+              },
+              {
+                "tag": "改变",
+                "tone": "orange",
+                "text": "4 · Alice 搬到了苏黎世"
+              }
+            ]
+          },
+          "say": "决策模型判断每条事实与这些观测的关系：它是重述观测、添加新内容、改变观测，还是闲聊？",
+          "ms": 3400
+        },
+        {
+          "edges": {
+            "edge": "settle",
+            "data": "证据 · 新观测 · 跳过"
+          },
+          "show": {
+            "obs": [
+              {
+                "text": "Alice 是 Google 的软件工程师",
+                "meta": "+1 个来源"
+              },
+              {
+                "text": "Alice 在伦敦办公室工作"
+              },
+              {
+                "text": "Alice 的经理是 Carol",
+                "mark": "新内容"
+              }
+            ]
+          },
+          "say": "其中三条无需调用 LLM 即可处理：重述成为证据，新事实按原文成为观测，闲聊被跳过。",
+          "ms": 3400
+        },
+        {
+          "edges": {
+            "edge": "hard",
+            "data": "事实 4"
+          },
+          "show": {
+            "llm": [
+              {
+                "tag": "更新",
+                "tone": "orange",
+                "text": "伦敦 → 苏黎世"
+              }
+            ]
+          },
+          "say": "只有改变观测内容的事实会交给 LLM，由它像以往一样重写观测。"
+        },
+        {
+          "edges": {
+            "edge": "write",
+            "data": "重写"
+          },
+          "show": {
+            "obs": [
+              {
+                "text": "Alice 是 Google 的软件工程师",
+                "meta": "+1 个来源"
+              },
+              {
+                "text": "Alice 从伦敦搬到了苏黎世办公室",
+                "mark": "已更新"
+              },
+              {
+                "text": "Alice 的经理是 Carol",
+                "mark": "新内容"
+              }
+            ]
+          },
+          "say": "四条事实，一次 LLM 调用。在整合评测中，LLM 调用次数减少约 40%，通过率保持不变。",
+          "ms": 3400
+        }
+      ]
+    }
+  ]
+}

@@ -4,11 +4,11 @@ authors: [benfrank241]
 date: 2026-04-28T14:00:00Z
 tags: [mental-models, tags, control-plane, guide]
 description: "介绍如何在 Hindsight 的新列表视图中使用心智模型标签、服务器端标签建议，以及如何更安全地筛选刷新和反思工作流。"
-image: /img/guides/guide-use-mental-model-tags-in-hindsight-list-view.webp
+image: /img/guides/guide-use-mental-model-tags-in-hindsight-list-view.png
 hide_table_of_contents: true
 ---
 
-![在 Hindsight 的新列表视图中使用心智模型标签](/img/guides/guide-use-mental-model-tags-in-hindsight-list-view.webp)
+![在 Hindsight 的新列表视图中使用心智模型标签](/img/guides/guide-use-mental-model-tags-in-hindsight-list-view.png)
 
 如果您想**在 Hindsight 的新列表视图中使用心智模型标签**，主要变化是控制平面现在把心智模型视为真正用于工作的文档。页面默认显示分栏列表，标签建议也改为从实际的心智模型标签来源获取，您不必再靠记忆手动输入标签。调整工作流时，可以随时查阅[心智模型 API 文档](/developer/api/mental-models)、[反思文档](/developer/api/reflect)、[观测文档](/developer/observations)和[文档首页](/)。
 

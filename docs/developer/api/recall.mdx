@@ -88,6 +88,15 @@ import recallGo from '!!raw-loader!@site/examples/api/recall.go';
 
 这样就可以一次请求全部内容，无需在“仅原始事实”（不做整合）和“仅观测”（整合赶不上最新存入内容时可能滞后）之间二选一。除非请求或记忆库配置启用，否则此功能处于关闭状态。请求未提供该参数时，由记忆库的 `recall_prefer_observations` 配置决定（环境变量 `HINDSIGHT_API_RECALL_PREFER_OBSERVATIONS`；未配置时为 `false`），因此部署可以为从不传入该参数的客户端（例如 MCP 连接器）启用此功能。只有当 `types` 同时包含 `observation` 和至少一种 `world`/`experience` 时，此选项才生效。
 
+### rerank {#rerank}
+
+为 Recall [配置决策模型](../configuration#decision-model)后，Recall 除了排序，还可以舍弃结果。以下两个选项都放在 `rerank` 对象中，例如 `"rerank": {"prune": true, "dedup": true}`：
+
+- `prune` 会舍弃被判定为对查询没有帮助的结果。它复用排序时的回答，因此不会产生额外请求，并且始终保留排名最高的结果。
+- `dedup` 会舍弃与排名更高的结果重复的结果，因此从多个文档存入的同一事实只会返回一次。它会在排序请求之后额外发起一次决策模型请求。
+
+请求未提供其中某个选项时，由记忆库的 `recall_decision_model_prune` / `recall_decision_model_dedup` 配置决定（环境变量 `HINDSIGHT_API_RECALL_DECISION_MODEL_PRUNE` / `_DEDUP`；未配置时为 `false`）。没有决策模型时，这两个选项均被忽略。
+
 ### budget {#budget}
 
 控制检索深度和广度。可接受的值为 `low`、`mid`（默认值）和 `high`。简单查询、希望快速返回时用 `low`；日常查询、需要均衡结果时用 `mid`；需要发现间接关联或尽可能全面覆盖时用 `high`。
@@ -441,7 +450,7 @@ Recall 会运行[四个检索分支](#results)：语义、关键词、图和时�
 
 **谨慎使用分数下限。** 重排器的分数适合用于*排序*，但不适合作为*绝对值*：一条明显相关的记忆，在某个查询中可能得分为 `~0.001`，在另一个查询中却可能是 `~1.0`，因此固定阈值可能会悄然丢弃有用结果。请根据实际观察到的分数校准阈值（先在不设置 `min_scores` 的情况下召回，再检查 [`scores`](#scores) 对象）。依赖固定阈值前，请阅读 [`scores`](#scores) 下方关于分数尺度为相对值而非绝对值的说明。
 
-**TypeSafe 重排器不支持此功能。** TypeSafe 会一次性为整个候选池排序，并返回每条记忆的名次，而不是相关性分数：每次查询中排名第一的记忆都是 `1.0`，因此设置 `reranker` 下限只会固定保留一定比例的结果。配置 TypeSafe 作为重排器时，Recall 会针对 `min_scores.reranker` 返回 HTTP 400；如果故障转移链回退到 TypeSafe，则会跳过此下限。请改用 `final`。
+**[决策模型](/developer/decision-models)和 TypeSafe 重排序模型不支持此功能。** 两者都会为候选池排序，并返回每条记忆的名次，而不是相关性分数：每次查询中排名第一的记忆都是 `1.0`，因此设置 `reranker` 下限只会固定保留一定比例的结果。Recall 使用决策模型排序或配置 TypeSafe 作为重排序模型时，Recall 会针对 `min_scores.reranker` 返回 HTTP 400；如果故障转移链回退到 TypeSafe，则会跳过此下限。请改用 `final`。
 
 ---
 
@@ -508,7 +517,7 @@ Recall 会运行[四个检索分支](#results)：语义、关键词、图和时�
 包含此结果各阶段分数的对象。`source_facts` 条目通过来源关系附加，而不是经过排序，因此其 `scores` 为 `null`。字段如下：
 
 - **`final`** — 此事实据以排序的分数（交叉编码器相关性 × 近期性/时间/证据加权）。`results` 按此分数降序排列。它是相对信号，不是经过校准的概率（参见上文说明）。
-- **`reranker`** — 交叉编码器归一化后的相关性分数（`0`–`1`）。部署使用直通式重排器（RRF/interleave 模式），或使用返回名次而非分数的重排器（TypeSafe）时为 `null`。
+- **`reranker`** — 交叉编码器归一化后的相关性分数（`0`–`1`）。部署使用直通式重排序模型（RRF/interleave 模式），或使用返回名次而非分数的重排序模型（[决策模型](/developer/decision-models)或 TypeSafe）时为 `null`。
 - **`semantic`** — 原始向量余弦相似度（`0`–`1`）。此结果不是由语义检索找到时为 `null`。
 - **`keyword`** — 原始关键词/全文（BM25）分数（`≥ 0`，无上限）。此结果不是由关键词检索找到时为 `null`。
 

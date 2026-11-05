@@ -74,7 +74,7 @@ Hindsight 的两个基本操作让这一流程得以实现：
 
 Retain（存入）和 Reflect（反思）共同让马赛克能够增量更新。新文档被摄取，事实被存入，心智模型重新运行。“当前状态”无需从头重建，而是持续更新的知识栈中最新的一层。
 
-![比较 architxt 与远程 Hindsight 记忆库中的心智模型：仅存在于 architxt、两边都有，或仅存在于记忆库。](/img/blog/architxt-hindsight-compare.webp)
+![比较 architxt 与远程 Hindsight 记忆库中的心智模型：仅存在于 architxt、两边都有，或仅存在于记忆库。](/img/blog/architxt-hindsight-compare.png)
 
 ## 时态马赛克：没有单一事实来源的当前状态 {#the-temporal-mosaic-current-state-without-a-single-source-of-truth}
 

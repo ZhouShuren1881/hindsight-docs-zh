@@ -96,8 +96,10 @@ HINDSIGHT_API_EMBEDDINGS_LOCAL_MODEL=BAAI/bge-m3
 | `intfloat/multilingual-e5-large` | 100+ | 良好的替代选择 |
 | `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` | 50+ | 体量较小 |
 
-### 3. 重排序模型（建议） {#3-reranker-model-recommended}
-默认重排序模型（`cross-encoder/ms-marco-MiniLM-L-6-v2`）**仅支持英语**。处理多语言内容时，请使用多语言重排序模型：
+<a id="3-reranker-model-recommended" />
+
+### 3. 重排序模型（仅其他语言需要） {#3-reranker-model-only-for-other-languages}
+默认重排序模型（`hindsight-ai/hs-rerank-1`）**支持多种语言**：英语、西班牙语、法语、德语、葡萄牙语、日语、韩语和中文。处理其他语言时，请使用支持相应语言的重排序模型：
 
 ```bash
 # 在 .env 文件中设置
@@ -183,7 +185,7 @@ HINDSIGHT_API_LLM_OUTPUT_LANGUAGE=Spanish
 ## 最佳实践 {#best-practices}
 
 ### 1. 处理非英语内容时使用多语言模型 {#1-use-multilingual-models-for-non-english-content}
-如果你的主要工作内容不是英语，请配置多语言嵌入模型和重排序模型。仅支持英语的模型仍能正确存储内容，但语义检索质量会下降。
+如果你的主要工作内容不是英语，请配置多语言嵌入模型（默认重排序模型已支持 8 种语言；处理这些语言以外的内容时，也需要更换重排序模型）。仅支持英语的模型仍能正确存储内容，但语义检索质量会下降。
 
 ### 2. 每次 Retain 调用只使用一种语言 {#2-keep-content-in-one-language-per-retain-call}
 混合语言内容虽然可以处理，但每次 `retain` 调用只使用一种语言，结果会更一致。

@@ -4,11 +4,11 @@ authors: [benfrank241]
 date: 2026-04-28T14:00:00Z
 tags: [openclaw, retention, troubleshooting, guide]
 description: "通过对齐记忆库粒度默认值、验证配置，并在召回似乎缺失时检查新增的跳过日志，修复 OpenClaw 默认主会话中的记忆存入问题。"
-image: /img/guides/guide-fix-openclaw-retention-and-recall-on-default-main-sessions.webp
+image: /img/guides/guide-fix-openclaw-retention-and-recall-on-default-main-sessions.png
 hide_table_of_contents: true
 ---
 
-![修复 OpenClaw 默认主会话中的记忆存入与召回](/img/guides/guide-fix-openclaw-retention-and-recall-on-default-main-sessions.webp)
+![修复 OpenClaw 默认主会话中的记忆存入与召回](/img/guides/guide-fix-openclaw-retention-and-recall-on-default-main-sessions.png)
 
 如果你需要**修复 OpenClaw 默认主会话中的记忆存入与召回**，近期的 OpenClaw 集成更新值得关注。它修复了一处细微的默认值不一致：运行时的默认记忆库粒度本已意味着应该存入 `agent:main:main` 会话，但这些会话仍可能被跳过。结果看起来像是记忆缺失，根本原因却是配置逻辑。验证修复时，请随手查阅 [OpenClaw 集成文档](/sdks/integrations/openclaw)、[配置指南](/developer/configuration)、[Recall API 指南](/developer/api/recall)和[文档首页](/)。
 

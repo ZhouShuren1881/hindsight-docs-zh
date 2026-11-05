@@ -5,11 +5,11 @@ authors: [benfrank241]
 slug: "2026/08/04/per-user-multi-tenant-agent-memory"
 date: 2026-08-04T12:00
 tags: [hindsight, agent-memory, multi-tenancy, per-user, saas, architecture, deep-dive]
-image: /img/blog/per-user-multi-tenant-agent-memory.webp
+image: /img/blog/per-user-multi-tenant-agent-memory.png
 hide_table_of_contents: true
 ---
 
-![AI 产品的每用户记忆：多租户智能体记忆中的硬隔离边界与软分区](/img/blog/per-user-multi-tenant-agent-memory.webp)
+![AI 产品的每用户记忆：多租户智能体记忆中的硬隔离边界与软分区](/img/blog/per-user-multi-tenant-agent-memory.png)
 
 当 AI 产品在一个客户的会话中召回了另一个客户的数据，这就不是个性化功能出了问题，而是发生了数据泄露。每用户记忆看起来像一项功能，实际却是一条安全边界；而大多数“只要加个 `user_id`”的建议，恰恰把这点说反了。
 

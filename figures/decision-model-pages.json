@@ -1,0 +1,293 @@
+{
+  "title": "使用决策模型刷新知识页",
+  "speed": 2200,
+  "elements": [
+    {
+      "id": "new",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "新记忆"
+        },
+        {
+          "type": "subtitle",
+          "text": "上次刷新以来"
+        }
+      ],
+      "minCardHeight": 148,
+      "width": 270
+    },
+    {
+      "id": "dm",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "决策模型"
+        },
+        {
+          "type": "subtitle",
+          "text": "这可能改变页面吗？"
+        }
+      ],
+      "minCardHeight": 148,
+      "width": 320
+    },
+    {
+      "id": "llm",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "LLM"
+        },
+        {
+          "type": "subtitle",
+          "text": "编辑页面"
+        }
+      ],
+      "minCardHeight": 43,
+      "width": 320
+    },
+    {
+      "id": "refresh",
+      "type": "group",
+      "label": {
+        "title": "增量刷新"
+      },
+      "children": [
+        "dm",
+        "llm"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 48,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "page",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "知识页"
+        },
+        {
+          "type": "subtitle",
+          "text": "团队 › 谁负责什么"
+        }
+      ],
+      "minCardHeight": 133,
+      "width": 280
+    },
+    {
+      "id": "g0",
+      "type": "group",
+      "children": [
+        "new",
+        "refresh",
+        "page"
+      ],
+      "layout": {
+        "direction": "row",
+        "gap": 110,
+        "align": "center"
+      }
+    },
+    {
+      "id": "read",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "new"
+      },
+      "end": {
+        "id": "dm"
+      },
+      "label": {
+        "text": "每条一个问题"
+      },
+      "labelAt": 0.7
+    },
+    {
+      "id": "context",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "page"
+      },
+      "end": {
+        "id": "dm"
+      },
+      "label": {
+        "text": "当前页面"
+      }
+    },
+    {
+      "id": "kept",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "dm"
+      },
+      "end": {
+        "id": "llm"
+      },
+      "label": {
+        "text": "仅这些"
+      }
+    },
+    {
+      "id": "edit",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "llm"
+      },
+      "end": {
+        "id": "page"
+      },
+      "label": {
+        "text": "编辑"
+      }
+    }
+  ],
+  "scenes": [
+    {
+      "label": "刷新",
+      "beats": [
+        {
+          "show": {
+            "new": [
+              {
+                "text": "Alice 搬到了苏黎世办公室"
+              },
+              {
+                "text": "Bob 修复了登录缺陷"
+              },
+              {
+                "text": "Carol 现在领导机器学习团队"
+              },
+              {
+                "text": "周五午餐在中午"
+              },
+              {
+                "text": "Dan 喜欢新笔记本电脑"
+              }
+            ],
+            "page": [
+              {
+                "text": "Alice — 后端，伦敦"
+              },
+              {
+                "text": "Carol — 机器学习工程师"
+              },
+              {
+                "text": "Bob — 前端"
+              }
+            ]
+          },
+          "say": "该页面上次刷新后新增了五条记忆。页面以增量方式刷新，因此只需查看这些记忆。",
+          "ms": 3000
+        },
+        {
+          "edges": [
+            {
+              "edge": "read",
+              "data": "5 条记忆"
+            },
+            {
+              "edge": "context",
+              "data": "页面"
+            }
+          ],
+          "show": {
+            "dm": [
+              {
+                "tag": "询问中",
+                "tone": "gray",
+                "text": "每条记忆一个问题"
+              }
+            ]
+          },
+          "say": "刷新不运行 Reflect，而是将页面提供给决策模型，针对每条记忆询问：这可能改变页面吗？",
+          "ms": 3000
+        },
+        {
+          "show": {
+            "dm": [
+              {
+                "tag": "是",
+                "tone": "green",
+                "text": "Alice 搬到了苏黎世办公室"
+              },
+              {
+                "tag": "是",
+                "tone": "green",
+                "text": "Carol 现在领导机器学习团队"
+              },
+              {
+                "tag": "否",
+                "tone": "gray",
+                "text": "Bob 修复了登录缺陷"
+              },
+              {
+                "tag": "否",
+                "tone": "gray",
+                "text": "周五午餐在中午"
+              },
+              {
+                "tag": "否",
+                "tone": "gray",
+                "text": "Dan 喜欢新笔记本电脑"
+              }
+            ]
+          },
+          "say": "其中两条可能改变页面。其余三条被丢弃，之后不会再次提供。",
+          "ms": 3000
+        },
+        {
+          "edges": {
+            "edge": "kept",
+            "data": "2 条记忆 + 强制指令"
+          },
+          "show": {
+            "llm": [
+              {
+                "tag": "1 次调用",
+                "tone": "green",
+                "text": "更新 Alice 和 Carol 的信息"
+              }
+            ]
+          },
+          "say": "只有这些记忆会交给负责编辑页面的 LLM。如果没有记忆可能改变页面，则完全不会调用 LLM。"
+        },
+        {
+          "edges": {
+            "edge": "edit",
+            "data": "2 处编辑"
+          },
+          "show": {
+            "page": [
+              {
+                "text": "Alice — 后端，苏黎世",
+                "mark": "已更新"
+              },
+              {
+                "text": "Carol — 领导机器学习团队",
+                "mark": "已更新"
+              },
+              {
+                "text": "Bob — 前端"
+              }
+            ]
+          },
+          "say": "在刷新成本评测中，处理 20 条记忆的刷新从 3 次 LLM 调用降至 1 次，输入 token 减少约 70%。",
+          "ms": 3400
+        }
+      ]
+    }
+  ]
+}

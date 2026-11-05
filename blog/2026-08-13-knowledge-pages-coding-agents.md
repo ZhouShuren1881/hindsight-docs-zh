@@ -37,7 +37,7 @@ Hindsight 0.9.0 推出了[知识页](/developer/knowledge-pages)，解决的正�
 
 让这一切自动运行、无需手动维护，关键就在这里。安装集成后，在一个尚未探索过的代码库中启动下次会话时，**探索智能体会通过你所用 harness 的 CLI 执行只读调查**。它会梳理代码库，并创建初始页面：组件关系图、核心概念、约定与模式、关键决策及其依据，以及当前计划。从这时起，Hindsight 会持续维护这些页面。
 
-![Hindsight 控制平面中的知识库目录树](/img/blog/knowledge-pages-tree.webp)
+![Hindsight 控制平面中的知识库目录树](/img/blog/knowledge-pages-tree.png)
 
 这些页面都不是你手动编写的。智能体调查了代码库，Hindsight 则根据调查结果综合生成页面。页面刚生成时会带有一个绿点，整个目录树也都可以搜索。
 
@@ -50,7 +50,7 @@ Hindsight 0.9.0 推出了[知识页](/developer/knowledge-pages)，解决的正�
 
 打开一页，它读起来就像一位细心的队友写的，只不过实际上没有人动笔。
 
-![呈现出的知识页“系统架构”：根据代码库的观测综合成清晰的文字，并在最近一次整合后标记更新时间](/img/blog/knowledge-pages-rendered.webp)
+![呈现出的知识页“系统架构”：根据代码库的观测综合成清晰的文字，并在最近一次整合后标记更新时间](/img/blog/knowledge-pages-rendered.png)
 
 “更新时间”透露了其中的机制：新记忆写入后，页面随即自行刷新。代码库不断演进，你的架构文档也能如实反映变化，无需维护；如果偶尔想调整方向，还可以点击“编辑”。
 
@@ -58,7 +58,7 @@ Hindsight 0.9.0 推出了[知识页](/developer/knowledge-pages)，解决的正�
 
 你不需要编写页面正文。知识页由**名称**和**来源查询**定义——每次整合后，Hindsight 都会重新提出这个问题，并根据记忆重建页面。
 
-![在控制台中编辑知识页](/img/blog/knowledge-pages-edit.webp)
+![在控制台中编辑知识页](/img/blog/knowledge-pages-edit.png)
 
 修改问题后，内容就会重新综合生成。这也是自动行为背后的手动控制方式：调查过程和 `hindsight_capture_initiative` 会替你创建问题合理的页面，但你也可以自行添加问题（例如“我们的部署和回滚流程是什么？”），之后 Hindsight 会持续维护对应答案。你可以通过提出更好的问题来维护内容，无需亲自撰写和维护文字。
 

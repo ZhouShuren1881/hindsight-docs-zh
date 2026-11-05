@@ -21,7 +21,7 @@
 
 组织 agents 团队翻译时，不要调用外部翻译服务，负责用户沟通的 agent 称为 leader，其余叫做 subagent。
 
-Leader 负责将翻译工作拆分并分配给 subagent，subagent 全部使用 GPT 6 luna(effort=high)。
+Leader 负责将翻译工作拆分并分配给 subagent，subagent 全部使用 GPT 6.1 Terra(effort=high)。
 翻译任务分派以页面为单位，每个 subagent 只能翻译一个页面。
 每个 subagent 任务结束后，不再接收新的翻译任务，即不能复用 subagent。
 Subagent 工作时，遵循 `translation-rules` 的要求。

@@ -1,3 +1,4 @@
+<!-- upstream-translation:start source="README.md" -->
 <div align="center">
 
 ![Hindsight Banner](./static/img/hindsight-github-banner.png)
@@ -16,12 +17,13 @@
 </p>
 
 </div>
+<!-- upstream-translation:end -->
 
 ---
 
 ## Hindsight 社区中文文档
 
-Hindsight 文档社区翻译版。对应的上游项目hash存放于项目根目录下的 [local-meta.json](./local-meta.json)。
+Hindsight 文档社区翻译版。对应的上游项目哈希存放于项目根目录下的 [local-meta.json](./local-meta.json)。
 
 ## 什么是 Hindsight？
 

@@ -5,11 +5,11 @@ slug: "2026/07/09/aider-persistent-memory"
 date: 2026-07-09T12:00
 tags: [hindsight, aider, integration, memory, persistent-memory, pair-programming, tutorial]
 description: "Aider 是一款出色的终端结对编程工具，但退出后便会忘记所有内容。hindsight-aider 会包装该命令，在每次会话开始前召回项目决策，并在会话结束后存入本次学到的内容。"
-image: /img/blog/aider-persistent-memory.webp
+image: /img/blog/aider-persistent-memory.png
 hide_table_of_contents: true
 ---
 
-![借助 Hindsight 为 Aider 结对编程 CLI 提供持久记忆](/img/blog/aider-persistent-memory.webp)
+![借助 Hindsight 为 Aider 结对编程 CLI 提供持久记忆](/img/blog/aider-persistent-memory.png)
 
 [Aider](https://aider.chat) 是目前最出色的终端 AI 结对编程工具之一。它可以编辑真实文件、自己创建 git 提交，而且不会妨碍你的工作。但和所有编程智能体一样，它在单次会话中表现出色，会话之间却一片空白。退出 Aider，第二天再回来，它就忘了这个仓库使用的是 `uv` 而不是 `pip`、你上周决定不采用 ORM，以及测试文件和它们所覆盖的代码放在一起。
 

@@ -123,6 +123,10 @@ Hindsight 不存储对话本身。它将对话中的内容提取为带类型的�
 
 循环的详细说明请参阅 [Reflect](/developer/reflect)。
 
+### 决策模型 {#decision-models}
+
+你可以选择使用[决策模型](/developer/decision-models)，接手 Recall、整合、Reflect 和知识页刷新中的一些小判断，例如*这条记忆有帮助吗？*、*这条事实包含新信息吗？*、*这些信息足以回答问题吗？*。决策模型能在远不到一秒的时间内回答这些问题，而 LLM 仍负责撰写内容，因此完成相同工作所需的 LLM 调用更少。
+
 ## 深入了解架构 {#architecture-deep-dive}
 
 下面的动画完整展示上述流程：文档在摄取过程中变成什么，三种操作各自涉及哪些内容，以及后台工作进程如何更新它们。你可以播放动画，也可以按自己的节奏逐步查看。
@@ -147,6 +151,7 @@ Hindsight 不存储对话本身。它将对话中的内容提取为带类型的�
 - [**Retain**](/developer/retain)——如何以多维事实存储记忆
 - [**Recall**](/developer/retrieval)——四路并行搜索如何检索记忆
 - [**Reflect**](/developer/reflect)——任务说明、强制指令和性格倾向如何影响推理
+- [**决策模型**](/developer/decision-models)——决策模型如何在各项操作中减少 LLM 调用
 
 ### API 方法 {#api-methods}
 - [**Retain**](/developer/api/retain)——向记忆库存入信息

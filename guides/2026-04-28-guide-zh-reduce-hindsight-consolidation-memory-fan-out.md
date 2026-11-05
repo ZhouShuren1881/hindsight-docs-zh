@@ -4,11 +4,11 @@ authors: [benfrank241]
 date: 2026-04-28T14:00:00Z
 tags: [consolidation, memory, operations, guide]
 description: "通过调整召回预算、来源事实限制和 FlashRank 内存设置，减少生产环境大型记忆库中 Hindsight 整合过程的内存扇出。"
-image: /img/guides/guide-reduce-hindsight-consolidation-memory-fan-out.webp
+image: /img/guides/guide-reduce-hindsight-consolidation-memory-fan-out.png
 hide_table_of_contents: true
 ---
 
-![安全地减少 Hindsight 整合过程中的内存扇出](/img/guides/guide-reduce-hindsight-consolidation-memory-fan-out.webp)
+![安全地减少 Hindsight 整合过程中的内存扇出](/img/guides/guide-reduce-hindsight-consolidation-memory-fan-out.png)
 
 如果您需要**减少 Hindsight 整合过程中的内存扇出**，最近的默认值确实有了改进。过去，整合可能会在内部召回期间放大内存用量，尤其是在大型记忆库上：来源事实的加载和重排序模型的行为都可能使 RSS 高于预期。新的默认值让这条处理路径受到更多限制。调整时，请备好[配置指南](/developer/configuration)、[观测指南](/developer/observations)、[安装指南](/developer/installation)和[文档首页](/)以供查阅。
 

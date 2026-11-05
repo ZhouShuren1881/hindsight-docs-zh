@@ -538,7 +538,7 @@
       "by": "hindsight",
       "category": "framework",
       "link": "/sdks/integrations/flowise",
-      "icon": "/img/icons/flowise.webp"
+      "icon": "/img/icons/flowise.png"
     },
     {
       "id": "obsidian",
@@ -549,6 +549,16 @@
       "category": "tool",
       "link": "/sdks/integrations/obsidian",
       "icon": "/img/icons/obsidian.svg"
+    },
+    {
+      "id": "openbot",
+      "name": "OpenBot",
+      "description": "为 OpenBot 团队成员提供跨对话持久保存、供整个团队共享的长期记忆——将 Hindsight 的 MCP 服务器连接到任意 OpenBot 智能体。",
+      "type": "official",
+      "by": "hindsight",
+      "category": "mcp",
+      "link": "/sdks/integrations/openbot",
+      "icon": "/img/icons/openbot.png"
     },
     {
       "id": "hindclaw",

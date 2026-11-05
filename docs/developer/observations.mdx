@@ -48,6 +48,20 @@ import observationsFigure from '@site/figures/observations.json';
 3. **创建或更新观测**——创建新观测，或修订现有观测
 4. **追踪证据**——每条观测都会维护指向支持事实的引用
 
+### 决策模型分流 {#decision-model-triage}
+
+为整合配置[决策模型](./decision-models)后，它会在整合 LLM 处理事实之前先处理容易判断的事实。对于每条新事实，它会判断该事实与召回找到的观测之间的关系：
+
+- **重复某条观测的内容**——将该事实作为证据关联到这条观测。
+- **属于闲聊内容**——跳过该事实。
+- **改变某条观测的内容，或增加新内容**——与此前一样，将该事实交给 LLM 处理。决策模型绝不会编写观测文本。
+
+判断结果不一致或请求失败的事实也会交给 LLM 处理，因此决策模型服务中断只会导致无法节省调用。在整合评测中，这一做法在通过率不变的情况下将 LLM 调用次数减少了约 40%。
+
+当记忆库设置了自己的[观测任务说明](#observations-mission)时，闲聊内容会交给 LLM，由它应用任务说明。
+
+可以使用 [`consolidation_use_decision_model: false`](/developer/configuration#observations) 为单个记忆库关闭此功能，或使用 `HINDSIGHT_API_CONSOLIDATION_DECISION_MODEL_PROVIDER=none` 为所有记忆库关闭。
+
 ### 近似重复项协调处理 {#near-duplicate-reconciliation}
 
 整合过程仍可能产生两条措辞略有不同、含义却相同的观测。例如，能力较弱的模型可能新写一条近似相同的观测，而没有修订现有观测；或者修订某条观测时改变了措辞，导致它与另一条观测重叠。若不处理，这些近似重复项会让召回结果充斥冗余的认知判断。

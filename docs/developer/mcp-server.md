@@ -278,7 +278,7 @@ MCP 工具仅在提供 `tags` 时才会转发 `tags_match`。对于原始事实�
 |-----------|------|----------|-------------|
 | `name` | string | 是 | 便于人阅读的心智模型名称 |
 | `source_query` | string | 是 | 用于生成和刷新模型的查询 |
-| `mental_model_id` | string | 否 | 自定义 ID（小写字母、数字和连字符）。未提供时自动生成 |
+| `mental_model_id` | string | 否 | 自定义 ID（与记忆库 ID 规则相同：UTF-8 编码最多 192 字节，不能包含 `/` 或控制字符）。未提供时自动生成 |
 | `tags` | list[string] | 否 | 用于整理和筛选模型的标签 |
 | `tags_match` | string | 否 | 刷新时如何将模型标签与记忆匹配：`any`、`all`、`any_strict`、`all_strict` 或 `exact`。默认值见下方说明 |
 | `trigger` | object | 否 | 刷新策略，见[触发设置](#trigger-settings) |

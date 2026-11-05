@@ -439,6 +439,50 @@ hindsight-admin import-bank --archive my-bank.zip
 
 ---
 
+### cloud {#cloud}
+
+登录 Hindsight Cloud，为 `hindsight` [决策模型](./decision-models)供应商（[Hindsight Inference](https://inference.hindsight.vectorize.io)，`hs-decide-1-flash`）保存 API 密钥。登录时会打开浏览器；请登录（或注册）、选择组织并授权。Hindsight Cloud 会创建密钥，CLI 将其保存到 `~/.hindsight/cloud/credentials.json`，该文件仅供你读取。此命令与其他命令不同，不会操作数据库。
+
+```bash
+hindsight-admin cloud login [OPTIONS]
+hindsight-admin cloud status
+hindsight-admin cloud logout
+```
+
+然后设置 `HINDSIGHT_API_DECISION_MODEL_PROVIDER=hindsight` 并重启 API。`HINDSIGHT_API_DECISION_MODEL_API_KEY` 中设置的密钥优先于保存的密钥。
+
+**命令：**
+
+| 命令 | 说明 |
+|---------|-------------|
+| `login` | 在浏览器中登录并保存密钥。使用 `--from-file` 时，改为安装在另一台机器上保存的 `credentials.json`。 |
+| `status` | 显示组织和密钥的最后 4 个字符。 |
+| `logout` | 删除保存的密钥。如需撤销密钥，请在 Hindsight Cloud 的 **API Keys** 中删除它。 |
+
+**选项：**
+
+| 选项 | 说明 | 默认值 |
+|--------|-------------|---------|
+| `--home` | 凭据目录（放在命令之前）。 | `HINDSIGHT_API_CLOUD_HOME` 或 `~/.hindsight/cloud` |
+| `--no-browser` | `login`：打印登录链接，而不是打开浏览器。 | `false` |
+| `--port` | `login`：`127.0.0.1` 上本地回调的端口。 | 一个空闲端口 |
+| `--cloud-url` | `login`：Hindsight Cloud URL。 | `HINDSIGHT_API_CLOUD_URL` 或 Hindsight Cloud |
+| `--from-file` | `login`：复制在有浏览器的机器上生成的 `credentials.json`。 | - |
+
+**示例：**
+
+```bash
+# Sign in on this machine
+hindsight-admin cloud login
+
+# A server with no browser: sign in on your laptop, then copy the login over
+hindsight-admin cloud login
+scp ~/.hindsight/cloud/credentials.json server:/tmp/cloud.json
+ssh server 'hindsight-admin cloud login --from-file /tmp/cloud.json && rm /tmp/cloud.json'
+```
+
+---
+
 ## 将记忆库迁移到新实例 {#migrating-a-bank-to-a-new-instance}
 
 已填充数据的记忆库无法原地更改其**嵌入模型**（例如从 384 维编码器换成 1024 维编码器）、**向量扩展**（pgvector/vchord/pgvectorscale）或**全文检索后端**；存储的向量和索引都依赖这些设置。由于每个嵌入向量和索引都是根据磁盘上已有文本确定性生成的，受支持的做法是：将记忆库迁移到已按新设置配置的全新实例，并在那里重新派生所有数据，**无需让 LLM 重新提取事实**。

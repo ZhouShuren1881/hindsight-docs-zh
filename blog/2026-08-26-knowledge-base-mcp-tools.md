@@ -5,11 +5,11 @@ slug: "2026/08/26/knowledge-base-mcp-tools"
 date: 2026-08-26T12:00
 tags: [hindsight, knowledge-pages, mcp, agent-memory, knowledge-base, self-updating-docs]
 description: "Hindsight 0.9.2 将知识库变为原生 MCP 能力：智能体可通过与存入和召回记忆相同的连接，浏览、搜索、创建、更新和清理自己的 wiki，共有七种工具。"
-image: /img/blog/knowledge-base-mcp-tools.webp
+image: /img/blog/knowledge-base-mcp-tools.png
 hide_table_of_contents: true
 ---
 
-![Hindsight 知识库作为原生 MCP 能力：智能体通过用于存入和召回记忆的同一连接，读取、搜索并维护一个可自我修复的 wiki](/img/blog/knowledge-base-mcp-tools.webp)
+![Hindsight 知识库作为原生 MCP 能力：智能体通过用于存入和召回记忆的同一连接，读取、搜索并维护一个可自我修复的 wiki](/img/blog/knowledge-base-mcp-tools.png)
 
 [Hindsight](/) 知识库是构建在智能体记忆之上的可读、自我修复 wiki：其中的页面会提炼智能体所知的内容，方便人类快速浏览；底层记忆发生变化时，页面也会自行重建。
 

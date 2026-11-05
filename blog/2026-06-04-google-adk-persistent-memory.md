@@ -5,11 +5,11 @@ slug: "2026/06/04/google-adk-persistent-memory"
 date: 2026-06-04T12:00
 tags: [integrations, google, adk, agents, memory, gemini, tutorial, hindsight]
 description: "借助 Hindsight 为 Google ADK 智能体添加持久的长期记忆。插入即可使用的 BaseMemoryService 可在会话结束时自动存入记忆，并在调用 search_memory 时召回记忆；如有需要，也可以提供显式的存入、召回和反思工具。"
-image: /img/blog/google-adk-persistent-memory.webp
+image: /img/blog/google-adk-persistent-memory.png
 hide_table_of_contents: true
 ---
 
-![借助 Hindsight 为 Google ADK 智能体添加长期记忆](/img/blog/google-adk-persistent-memory.webp)
+![借助 Hindsight 为 Google ADK 智能体添加长期记忆](/img/blog/google-adk-persistent-memory.png)
 
 [Google 的 Agent Development Kit（ADK）](https://adk.dev/) 为构建 Gemini 驱动的智能体提供了清晰的抽象层，包括会话、运行器、工具、插件和多智能体组合。它也提供了一个记忆接口：`BaseMemoryService`，任何持久记忆后端都可以实现这一接口。不过，ADK 并未附带记忆后端，需要由你自行提供。
 

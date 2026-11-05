@@ -65,6 +65,12 @@ const sidebars: SidebarsConfig = {
         },
         {
           "type": "doc",
+          "id": "developer/decision-models",
+          "label": "决策模型",
+          "customProps": { "icon": "lu-network" }
+        },
+        {
+          "type": "doc",
           "id": "developer/multilingual",
           "label": "多语言",
           "customProps": {

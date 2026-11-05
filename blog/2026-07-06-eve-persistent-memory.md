@@ -43,7 +43,7 @@ Eve 以文件系统为核心：只要把文件放进项目，智能体就能获�
 
 这两个文件都会直接调用 Hindsight REST API（召回使用 `POST /v1/default/banks/{bank}/memories/recall`，存入使用 `POST /v1/default/banks/{bank}/memories`）。这里没有 MCP 服务器，也没有供模型调用的工具。记忆操作发生在轮次前后，而不是轮次执行过程中。
 
-![一项偏好被存入并整合为 Hindsight 记忆库中的观测，整个过程无需调用工具。](/img/blog/eve-bank-observation.webp)
+![一项偏好被存入并整合为 Hindsight 记忆库中的观测，整个过程无需调用工具。](/img/blog/eve-bank-observation.png)
 
 ## 安装和快速开始 {#install-and-quick-start}
 

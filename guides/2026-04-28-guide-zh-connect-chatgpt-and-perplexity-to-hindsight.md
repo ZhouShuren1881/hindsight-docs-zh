@@ -4,11 +4,11 @@ authors: [benfrank241]
 date: 2026-04-28T14:00:00Z
 tags: [integrations, chatgpt, perplexity, guide]
 description: "通过 MCP、OAuth 和自定义指令将 ChatGPT 和 Perplexity 连接到 Hindsight，让这两个工具能够保留上下文，而不是每次都从零开始。"
-image: /img/guides/guide-connect-chatgpt-and-perplexity-to-hindsight.webp
+image: /img/guides/guide-connect-chatgpt-and-perplexity-to-hindsight.png
 hide_table_of_contents: true
 ---
 
-![将 ChatGPT 和 Perplexity 连接到 Hindsight 记忆](/img/guides/guide-connect-chatgpt-and-perplexity-to-hindsight.webp)
+![将 ChatGPT 和 Perplexity 连接到 Hindsight 记忆](/img/guides/guide-connect-chatgpt-and-perplexity-to-hindsight.png)
 
 如果您想**将 ChatGPT 和 Perplexity 连接到 Hindsight**，现在已经有清晰的文档说明如何连接这两个工具。新的官方集成指南展示了在两个界面中都适用的相同核心流程：添加远程 MCP 连接器，在浏览器中完成 OAuth，然后明确指示模型存入和召回有用的上下文。设置时，请打开[ChatGPT 集成指南](/sdks/integrations/chatgpt)、[Perplexity 集成指南](/sdks/integrations/perplexity)、[MCP 服务器文档](/developer/mcp-server)和[文档首页](/)。
 

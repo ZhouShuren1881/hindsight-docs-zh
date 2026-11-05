@@ -5,11 +5,11 @@ slug: "2026/09/18/what-hindsight-learned-this-summer"
 date: 2026-09-18T14:00
 tags: [hindsight, agent-memory, release, knowledge-pages, coding-agents, roundup]
 description: "八周内发布六个版本，从 0.8.5 到 0.10.0。按这些版本带来的构建能力，梳理 Hindsight 这个夏天最重要的进展。"
-image: /img/blog/what-hindsight-learned-this-summer.webp
+image: /img/blog/what-hindsight-learned-this-summer.png
 hide_table_of_contents: true
 ---
 
-![Hindsight 这个夏天学到的事：从 0.8.5 到 0.10.0 的六个版本](/img/blog/what-hindsight-learned-this-summer.webp)
+![Hindsight 这个夏天学到的事：从 0.8.5 到 0.10.0 的六个版本](/img/blog/what-hindsight-learned-this-summer.png)
 
 从七月下旬到九月中旬，Hindsight 发布了六个版本：0.8.5、0.8.6、0.9.0、0.9.1、0.9.2 和 0.10.0。每个版本都有自己的发布说明。如果你每篇都读了，这当然很好；如果没有读完，要掌握全貌就没那么容易了。
 

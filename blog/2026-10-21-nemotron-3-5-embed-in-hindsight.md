@@ -26,7 +26,7 @@ import {StaticImage} from '@site/src/components/StaticMedia';
 - **八种语言表现最佳**：在 27 项公开检索任务上的平均 nDCG@10 为 55.1。
 - **在单张 NVIDIA L4 上每次查询耗时 30 ms。** 它比体量略高于自身一半的 Qwen3-Embedding-0.6B 更快；相较于体量为其四倍的 Qwen3-Embedding-4B，速度约快一倍；准确率也高于这两款模型。
 
-<StaticImage src="/img/blog/nemotron-3-5-embed-results-table.webp" alt="Nemotron 3.5 Embed 1B 与另外七款嵌入模型在记忆检索、长段落、长对话、延迟和八种语言上的结果" />
+<StaticImage src="/img/blog/nemotron-3-5-embed-results-table.png" alt="Nemotron 3.5 Embed 1B 与另外七款嵌入模型在记忆检索、长段落、长对话、延迟和八种语言上的结果" />
 
 ## 1. 更常找到正确的记忆 {#1-it-finds-the-right-memory-more-often}
 
@@ -60,7 +60,7 @@ Hindsight 支持西班牙语、法语、德语、葡萄牙语、日语、韩语�
 
 <StaticImage src="/img/blog/nemotron-3-5-embed-multilingual.webp" alt="八种语言的平均 nDCG@10" />
 
-<StaticImage src="/img/blog/nemotron-3-5-embed-languages-table.webp" alt="各模型按语言划分的 nDCG@10" />
+<StaticImage src="/img/blog/nemotron-3-5-embed-languages-table.png" alt="各模型按语言划分的 nDCG@10" />
 
 Nemotron 的平均 nDCG@10 为 55.1，在我们评测的这些任务中高于所有其他模型，并在八种语言中的七种领先。相较 text-embedding-3-small，它在日语、韩语和繁体中文上的优势最大，每种语言领先 9 到 11 个百分点。
 
@@ -68,7 +68,7 @@ Nemotron 的平均 nDCG@10 为 55.1，在我们评测的这些任务中高于所
 
 [Hindsight 嵌入模型排行榜](https://benchmarks.hindsight.vectorize.io/leaderboard/embeddings)会在 Hindsight 中端到端运行每个模型，将其用作嵌入模型，贯穿 Retain 和 Recall 流程，再按检索质量、速度和成本进行排名。Nemotron 位居第一，MRR（0.852）和 recall@5（94.8%）均为榜上最高。
 
-<StaticImage src="/img/blog/nemotron-3-5-embed-leaderboard.webp" alt="Hindsight 嵌入模型排行榜" />
+<StaticImage src="/img/blog/nemotron-3-5-embed-leaderboard.png" alt="Hindsight 嵌入模型排行榜" />
 
 ## 6. 速度胜过体量小得多的模型 {#6-it-is-faster-than-models-a-fraction-of-its-size}
 

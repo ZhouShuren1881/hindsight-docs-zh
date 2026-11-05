@@ -5,11 +5,11 @@ slug: "2026/06/02/entity-labels-automatic-memory-tagging"
 date: 2026-06-02T12:00
 tags: [hindsight, memory, entities, tagging, tutorial, agents]
 description: "Hindsight 的实体标签可以将自由文本记忆自动转换为结构化、可筛选的分类。通过受控词表、四种标签类型，以及一个让标签也成为可筛选标签的开关，轻松管理记忆。"
-image: /img/blog/entity-labels-tagging.webp
+image: /img/blog/entity-labels-tagging.png
 hide_table_of_contents: true
 ---
 
-![Hindsight 中用于自动标记记忆的实体标签](/img/blog/entity-labels-tagging.webp)
+![Hindsight 中用于自动标记记忆的实体标签](/img/blog/entity-labels-tagging.png)
 
 Hindsight 的自由格式实体提取很适合发现数据中*已有*的内容，例如模型自行识别出的名称、地点和概念。但如果之后要筛选这些数据，它就没那么好用了。
 

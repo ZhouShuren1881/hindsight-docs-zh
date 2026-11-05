@@ -2,14 +2,14 @@
   "max": 4,
   "posts": [
     {
+      "href": "/blog/2026/11/03/hindsight-models",
+      "label": "认识 Hindsight Models",
+      "cover": "/img/blog/hindsight-models/cover.webp"
+    },
+    {
       "href": "/blog/2026/10/13/memlake",
       "label": "认识 Hindsight Memlake",
       "cover": "/img/blog/memlake/cover.webp"
-    },
-    {
-      "href": "/blog/2026/10/01/hindsight-hermes-plugin-what-changed",
-      "label": "Hindsight 成为 Hermes 插件后有哪些变化",
-      "cover": "/img/blog/migrate-hindsight-hermes.webp"
     },
     {
       "href": "/blog/2026/09/03/hindsight-cloud-enterprise-features",

@@ -1,0 +1,149 @@
+---
+sidebar_position: 8
+---
+
+import Figure from '@site/src/components/Figure';
+import recallFigure from '@site/figures/decision-model-recall.json';
+import consolidationFigure from '@site/figures/decision-model-consolidation.json';
+import reflectFigure from '@site/figures/decision-model-reflect.json';
+import pagesFigure from '@site/figures/decision-model-pages.json';
+
+# 决策模型 {#decision-models}
+
+**决策模型**能在远不到一秒的时间内回答简短的类型化问题，例如“是或否”“选哪一个”“可能性有多大”。Hindsight 将 Recall（召回）、整合、Reflect（反思）和知识页刷新中隐含的小判断交给决策模型，把 LLM 留给需要撰写内容的环节。
+
+决策模型是可选的。不使用时，每个操作都与以往完全相同；使用时，相同的操作会减少 LLM 调用次数。只需配置一次，所有支持决策模型的操作就会开始使用它。
+
+:::tip 从 Hindsight Inference 获取模型
+[Hindsight Inference](https://inference.hindsight.vectorize.io) 提供 `hs-decide-1-flash`，这是针对 Hindsight 中的判断任务训练的决策模型，每百万输入 token 收费 $0.02。它适用于所有操作，包括 Reflect 和知识页。登录一次并选择 `hindsight` 服务提供方：
+
+```bash
+hindsight-admin cloud login     # 登录 Hindsight Cloud 并保存密钥
+export HINDSIGHT_API_DECISION_MODEL_PROVIDER=hindsight
+```
+
+也可以不登录，而是使用 Hindsight Cloud 的密钥设置 `HINDSIGHT_API_DECISION_MODEL_API_KEY=hsk_...`。Recall 仍会使用其重排序模型；若也要用决策模型对 Recall 结果排序，请设置 `HINDSIGHT_API_RECALL_DECISION_MODEL_PROVIDER=hindsight`。
+
+模型权重是开放的，因此也可以[自行运行](#run-it-yourself)。
+:::
+
+---
+
+## 判断与撰写 {#judging-is-not-writing}
+
+看看 Hindsight 向 LLM 提出的问题，就会发现其中许多根本不需要撰写，而是需要判断：
+
+- *这条记忆有助于回答问题吗？*
+- *这个新事实是否包含观测尚未提及的内容？*
+- *目前收集的证据是否足以回答问题？*
+- *这条新记忆是否可能改变该页面？*
+
+LLM 可以回答这些问题，但每次回答都是一次完整的生成调用：需要数秒延迟、为上下文中的每个 token 付费，还要将自由格式的文本解析回一个判断。大多数调用最终只得到一个词的结论。
+
+决策模型正是为这类问题构建的。它返回类型化答案，例如选项或概率，而非文字描述，因此无需解析，也不会偏离预设格式。Hindsight 将判断交给决策模型，就地处理所有能处理的情况，只有真正需要撰写内容时才调用 LLM。
+
+最终得到的是相同的记忆，构建和读取方式也相同，但 LLM 调用次数大幅减少。
+
+---
+
+## 对 Recall 返回的结果排序 {#ranking-what-recall-returns}
+
+Recall 通常使用交叉编码器对候选结果重排序，为每条记忆与查询的相似程度打分。使用决策模型时，Recall 会针对每个候选结果单独提出一个更有针对性的问题：*展示这条记忆是否有助于回答问题？* Recall 还会告诉模型提问日期，因此去年正确但现在已不再正确的记忆，排名可能低于取代它的新记忆。
+
+<Figure doc={recallFigure} />
+
+答案决定了最终顺序：Recall 不会再叠加通常使用的近期性、时间和支持事实数加权。Recall 还可以丢弃被判定为完全无帮助的候选结果，而不是仅将其排在最后；最佳候选结果始终会保留。参见 [Recall](./retrieval#decision-model-ranking)。
+
+---
+
+## 在调用 LLM 前处理事实 {#settling-facts-before-the-llm}
+
+整合会将新事实转化为[观测](./observations)。对于每条事实，系统会找到它可能涉及的观测，然后通常会询问 LLM 如何处理。多数情况下，答案显而易见：事实重复了记忆库已知的内容，或没有值得保留的内容。
+
+<Figure doc={consolidationFigure} />
+
+使用决策模型时，这些明显的情况无需 LLM 即可处理。**重述**某项观测的事实会成为该观测的证据，**闲聊**则会被跳过。其他所有事实，无论是**改变**某项观测的内容还是添加**新内容**，都会交给 LLM，由它撰写观测文本；决策模型绝不负责撰写。在整合评测中，这使 LLM 调用次数减少约 40%，通过率保持不变。参见[观测](./observations#decision-model-triage)。
+
+---
+
+## 判断 Reflect 何时获得足够证据 {#knowing-when-reflect-has-enough}
+
+[Reflect](./reflect) 是一个智能体：每一轮中，LLM 选择一个工具，读取返回结果，然后决定下一步行动。搜索每一层——心智模型、观测、事实——都需要额外的一轮 LLM 调用，何时获得足够信息由 LLM 自行决定。
+
+<Figure doc={reflectFigure} />
+
+使用决策模型后，Reflect 的流程发生变化。一次 LLM 调用生成搜索查询，**所有层同时**使用该查询进行搜索。决策模型随后保留重要证据，丢弃其余证据，并判断剩余证据是否已能回答请求。如果能，下一次 LLM 调用就会撰写答案；否则，LLM 会生成新查询并运行下一轮。原本需要智能体多轮处理的问题，现在只需几次 LLM 调用。参见 [Reflect](./reflect#decision-model-orchestration)。
+
+---
+
+## 只刷新发生变化的内容 {#refreshing-only-what-changed}
+
+[知识页](./knowledge-pages)以增量方式刷新：只需考虑上次刷新以来新增的记忆。不使用决策模型时，刷新仍会运行 Reflect 来收集这些记忆，并由 LLM 判断它们。
+
+<Figure doc={pagesFigure} />
+
+使用决策模型时，刷新会跳过 Reflect。系统将页面内容提供给决策模型，针对每条新记忆询问：*这条记忆可能改变页面吗？* 只有可能改变页面的记忆才会交给负责编辑页面的 LLM；其余记忆会被丢弃，之后也不会再次提供。如果没有记忆可能改变页面，刷新完全不会调用 LLM。在刷新成本评测中，处理 20 条记忆的刷新从 3 次 LLM 调用降至 1 次，输入 token 减少约 70%。参见[知识页](./knowledge-pages#decision-model-refresh)。
+
+---
+
+## 失效时的处理 {#safe-to-lose}
+
+决策模型的作用是节省 LLM 调用次数；它绝不会成为完成操作的唯一途径。当它失败或超时时：
+
+- **整合**会像以前一样将事实交给 LLM。
+- **Reflect** 会像智能体模式一样让 LLM 决定何时停止。
+- **知识页**会像以前一样运行 Reflect 来刷新。
+- **Recall** 是个例外：决策模型*就是*它的排序器，因此重试后仍无法访问时，Recall 会失败，与使用其他远程重排序模型一样。
+
+Reflect 和知识页刷新目前需要 `hindsight` 或 `typesafe` 服务提供方；使用其他服务提供方时，它们会继续采用仅使用 LLM 的流程并记录警告，而 Recall 和整合仍会使用该决策模型。
+
+每次决策模型调用都会与 LLM、嵌入模型和重排序模型调用一起记录在记忆库的模型调用日志中，因此可以查看向它提出的问题和它的回答：在控制台中打开记忆库，然后前往 **LLM Requests**。
+
+## 自行运行 {#run-it-yourself}
+
+这三个 Hindsight 模型的权重均在 [Hugging Face](https://huggingface.co/hindsight-ai) 上开放，因此可以在自己的硬件上运行整套模型：
+
+| 模型 | 用途 | 规模 | 许可证 | 运行环境 |
+|---|---|---|---|---|
+| [`hindsight-ai/hs-decide-1-flash`](https://huggingface.co/hindsight-ai/hs-decide-1-flash) | 决策模型 | 0.8B | Apache 2.0 | vLLM，一块 GPU |
+| [`hindsight-ai/hs-rerank-1`](https://huggingface.co/hindsight-ai/hs-rerank-1) | 重排序模型 | 114M | MIT | API 进程内，或 Text Embeddings Inference |
+| [`hindsight-ai/hs-embed-1`](https://huggingface.co/hindsight-ai/hs-embed-1) | 嵌入 | 112M | MIT | API 进程内，或 Text Embeddings Inference |
+
+**决策模型。** 使用模型 `serving/` 文件夹中的插件在 [vLLM](https://docs.vllm.ai) 上提供服务。该插件会添加 Hindsight 调用的 `/v1/systemone` 端点：
+
+```bash
+hf download hindsight-ai/hs-decide-1-flash --local-dir hs-decide-1-flash
+pip install vllm==0.32.0 ./hs-decide-1-flash/serving
+```
+
+然后使用[模型卡](https://huggingface.co/hindsight-ai/hs-decide-1-flash#vllm)中的启动脚本启动服务，添加 `--api-key`，并将 `hindsight` 服务提供方指向自己的服务器：
+
+```bash
+export HINDSIGHT_API_DECISION_MODEL_PROVIDER=hindsight
+export HINDSIGHT_API_DECISION_MODEL_BASE_URL=http://localhost:8000
+export HINDSIGHT_API_DECISION_MODEL_MODEL=hs-decide-1-flash
+export HINDSIGHT_API_DECISION_MODEL_API_KEY=<the server's --api-key>
+```
+
+与托管模型一样，除非同时设置 `HINDSIGHT_API_RECALL_DECISION_MODEL_PROVIDER=hindsight`，否则 Recall 仍会使用其重排序模型。
+
+**重排序模型和嵌入模型。** 这两个模型足够小，可以在 Hindsight API 进程内使用 CPU 运行，无需额外服务器。首次启动时会从 Hugging Face 下载：
+
+```bash
+export HINDSIGHT_API_RERANKER_PROVIDER=local
+export HINDSIGHT_API_RERANKER_LOCAL_MODEL=hindsight-ai/hs-rerank-1
+export HINDSIGHT_API_EMBEDDINGS_PROVIDER=local
+export HINDSIGHT_API_EMBEDDINGS_LOCAL_MODEL=hindsight-ai/hs-embed-1
+```
+
+切换嵌入模型后，已经存储的记忆需要重新生成嵌入。如需改用 Text Embeddings Inference 提供其中任一模型，请参见[模型 › 嵌入](./models#embeddings-local)和[模型 › 重排序模型](./models#reranker-local)。
+
+---
+
+## 后续步骤 {#next-steps}
+
+- [**Hindsight Inference**](https://inference.hindsight.vectorize.io) — 获取 `hs-decide-1-flash` 的密钥
+- [**Hugging Face**](https://huggingface.co/hindsight-ai) — 获取三个模型的开放权重
+- [**配置 › 决策模型**](./configuration#decision-model) — 配置、关闭和调整模型
+- [**模型 › 决策模型**](./models#decision-model) — 服务提供方和默认模型
+- [**Recall**](./retrieval#decision-model-ranking) · [**观测**](./observations#decision-model-triage) · [**Reflect**](./reflect#decision-model-orchestration) · [**知识页**](./knowledge-pages#decision-model-refresh) — 各操作的详细说明

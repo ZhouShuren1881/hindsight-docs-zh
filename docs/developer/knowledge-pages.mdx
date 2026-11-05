@@ -62,6 +62,20 @@ hindsight fs mount --bank my-bank
 
 ---
 
+## 使用决策模型降低刷新成本 {#decision-model-refresh}
+
+由于页面采用增量刷新，大多数刷新只需考虑少量新记忆。如果为 Reflect 配置了[决策模型](./decision-models)，刷新时会使用该模型：
+
+1. 读取页面上次刷新以来新增的记忆。
+2. 对每条记忆，询问决策模型它是否可能改变页面内容。
+3. 只有可能改变页面的记忆才会连同记忆库的强制指令一起交给负责编辑页面的 LLM。如果没有这样的记忆，就完全不调用 LLM。
+
+被丢弃的记忆不会再次送交决策模型。当新记忆超过 200 条（参见 [`HINDSIGHT_API_MENTAL_MODEL_DELTA_GATE_MAX_MEMORIES`](./configuration#reflect)），或者决策模型发生故障时，刷新会像以前一样运行 Reflect。在刷新成本评估中，这使一次涉及 20 条记忆的刷新从调用 LLM 3 次减少到 1 次，输入 token 数量降低了约 70%。
+
+这也适用于 `delta` 模式下的任何[心智模型](./api/mental-models#refresh-mode)。目前仅支持 `hindsight` 和 `typesafe` 提供方。可以使用 [`mental_model_delta_use_decision_model: false`](./configuration#reflect) 为单个记忆库关闭此功能。
+
+---
+
 ## 为什么不直接使用原始文件？ {#why-not-just-raw-files}
 
 如果最终答案是文件夹树中的文档，我们是不是重新发明了文件——而文件正是记忆系统要取代的东西？

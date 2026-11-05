@@ -334,6 +334,12 @@ class MyValidator(OperationValidatorExtension):
 
 `precheck` 在读取或反序列化请求正文之前运行。其 `PrecheckContext.content_length` 是解析后的 `Content-Length` 请求头整数值；如果请求头缺失或无法解析（例如使用分块传输编码），则为 `None`。可用它实现开销较低、能根据大小作出判断的配额或成本防护；完整的 `validate_*` 钩子仍会在解析之后运行，应在其中执行精确的逐操作限制。
 
+#### 拒绝操作 {#rejecting-an-operation}
+
+`ValidationResult.reject(reason, status_code=403)` 会在操作执行任何工作之前拒绝该操作。调用方收到的状态码为 `status_code`，错误详情为 `reason`，因此应选择能告知客户端下一步如何处理的状态码：策略拒绝使用 `403`，配额限制使用 `402` 或 `429`。拒绝会在 `hindsight.operation.total` 中以 `success="rejected"` 计数，而不是 `"false"`，因此被拒绝后仍持续调用的客户端不会导致该操作的失败率上升（参见[监控](./monitoring.md)）。
+
+只有拒绝会按这种方式计数。如果验证器自身抛出异常（例如配额服务不可用），操作会以 `500` 失败，并以 `success="false"` 计数。
+
 #### 记忆维护钩子 {#memory-curation-hooks}
 
 维护记忆（`PATCH /v1/default/banks/{bank_id}/memories/{memory_id}`：编辑、失效或恢复）时，除首先运行的 `validate_bank_write` 访问检查外，还会运行一对专用钩子：

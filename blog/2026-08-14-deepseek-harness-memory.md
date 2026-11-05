@@ -5,11 +5,11 @@ slug: "2026/08/14/deepseek-harness-persistent-memory"
 date: 2026-08-14T15:00
 tags: [hindsight, deepseek, deepseek-harness, coding-agents, agent-memory, persistent-memory]
 description: "DeepSeek 刚刚推出 Harness（dsh），这是一个基于插件构建的开源编程智能体。Hindsight 可原生接入，让它长期记住你的代码库。"
-image: /img/blog/deepseek-harness-memory-cover.webp
+image: /img/blog/deepseek-harness-memory-cover.png
 hide_table_of_contents: true
 ---
 
-![DeepSeek Harness 与 Hindsight：一种能够存入项目规则并在未来会话中召回这些规则的编程智能体](/img/blog/deepseek-harness-memory-cover.webp)
+![DeepSeek Harness 与 Hindsight：一种能够存入项目规则并在未来会话中召回这些规则的编程智能体](/img/blog/deepseek-harness-memory-cover.png)
 
 昨天，DeepSeek 将 [Harness](https://github.com/deepseek-ai/dsh)（`dsh`）开源了。它是一个基于 [Cordis](https://github.com/deepseek-ai/dsh) 插件框架构建的编程智能体，其指导原则是“一切皆插件”。它采用 MIT 许可证，以 TypeScript 编写，并明确定位为 Claude Code 的开源替代方案。发布后数小时内，它就获得了 27,000 个星标。
 

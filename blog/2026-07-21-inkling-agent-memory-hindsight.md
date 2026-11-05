@@ -5,11 +5,11 @@ slug: "2026/07/21/inkling-agent-memory-hindsight"
 date: 2026-07-21T12:00
 tags: [hindsight, inkling, thinking-machines, agent-memory, open-weights, tutorial]
 description: "Thinking Machines 将 Inkling 开源了。我们只用四个环境变量，就让它成为 AI 智能体的长期记忆模型；第一次尝试时，它就把“上周”解析成了真实日期。具体做法如下。"
-image: /img/blog/inkling-agent-memory-hindsight.webp
+image: /img/blog/inkling-agent-memory-hindsight.png
 hide_table_of_contents: true
 ---
 
-![将 Thinking Machines 的 Inkling 接入 Hindsight，作为智能体记忆引擎](/img/blog/inkling-agent-memory-hindsight.webp)
+![将 Thinking Machines 的 Inkling 接入 Hindsight，作为智能体记忆引擎](/img/blog/inkling-agent-memory-hindsight.png)
 
 7 月 15 日，[Thinking Machines Lab](https://thinkingmachines.ai) 发布了 [Inkling](https://thinkingmachines.ai/news/introducing-inkling/)，这是 Mira Murati 的新实验室推出的首个开放权重模型。它是一个拥有 9750 亿参数的混合专家模型，采用 Apache 2.0 许可证，支持多模态，上下文窗口长达 100 万 token。整个互联网随即做了同一件事：开始微调它。
 

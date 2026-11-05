@@ -77,7 +77,8 @@ CPU 与 GPU：仅使用 CPU 时，2 个 vCPU 足以满足开发和基本工作�
 ```bash
 export OPENAI_API_KEY=sk-xxx
 
-docker run -it --pull always --name hindsight --restart unless-stopped --shm-size=1g -p 8888:8888 -p 9999:9999 \
+docker run -it --pull always --name hindsight --restart unless-stopped --shm-size=1g --stop-timeout 75 \
+  -p 8888:8888 -p 9999:9999 \
   -e HINDSIGHT_API_LLM_API_KEY=$OPENAI_API_KEY \
   -v hindsight-data:/home/hindsight/.pg0 \
   ghcr.io/vectorize-io/hindsight:latest
@@ -109,7 +110,7 @@ KeyError: 'getpwuid(): uid not found: 1042'
 :::tip 在生产环境中为 `HINDSIGHT_API_WORKER_ID` 设置稳定值
 工作进程使用容器主机名作为自身标识；Docker 默认会将主机名设为容器 ID。容器 ID 每次重启都会变化，因此容器停止时正在处理的任务会留在旧 ID 下，新容器无法将其识别为自己的任务。
 
-将 `HINDSIGHT_API_WORKER_ID` 设为稳定值（例如 `-e HINDSIGHT_API_WORKER_ID=hindsight-prod`），使工作进程在重启后仍保持相同标识。即使只部署一个容器，也建议这样设置。诊断和恢复命令请参阅 [Admin CLI - 恢复卡住的操作](./admin-cli#recovering-stuck-or-zombie-operations)。
+将 `HINDSIGHT_API_WORKER_ID` 设为稳定值（例如 `-e HINDSIGHT_API_WORKER_ID=hindsight-prod`），使工作进程在重启后仍保持相同标识。即使只部署一个容器，也建议这样设置。同时，请为容器留出关闭时交回任务的时间：这一过程最多需要 60 秒，而 Docker 默认会在 10 秒后强制终止容器。因此，上面的命令使用了 `--stop-timeout 75`（在 Compose 中为 `stop_grace_period: 75s`）。诊断和恢复命令请参阅 [Admin CLI - 恢复卡住的操作](./admin-cli#recovering-stuck-or-zombie-operations)。
 :::
 
 ### Docker 镜像变体 {#docker-image-variants}

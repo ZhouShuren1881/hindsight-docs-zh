@@ -4,11 +4,11 @@ authors: [benfrank241]
 date: 2026-04-28T14:00:00Z
 tags: [cli, linux, arm64, guide]
 description: "借助新的发布资产在 Linux ARM64 上运行 Hindsight CLI，并在 Pi 或 ARM 主机上设置命名配置文件、API 访问和日常记忆命令。"
-image: /img/guides/guide-run-hindsight-cli-on-linux-arm64.webp
+image: /img/guides/guide-run-hindsight-cli-on-linux-arm64.png
 hide_table_of_contents: true
 ---
 
-![在 Linux ARM64 上运行 Hindsight CLI，无需额外变通](/img/guides/guide-run-hindsight-cli-on-linux-arm64.webp)
+![在 Linux ARM64 上运行 Hindsight CLI，无需额外变通](/img/guides/guide-run-hindsight-cli-on-linux-arm64.png)
 
 如果您想**在 Linux ARM64 上运行 Hindsight CLI**，现在的设置终于简单了。最新的发布流程已提供正式的 `hindsight-linux-arm64` 资产，因此 Raspberry Pi 设备、Graviton 实例和小型 ARM 服务器不再需要本地重新构建，也不必通过非官方方式复制文件才能运行 CLI。工作时如果还需要查阅相关文档，可以同时打开 [CLI 参考](/sdks/cli)、[安装指南](/developer/installation)、[快速入门指南](/developer/api/quickstart) 和 [文档首页](/)。
 

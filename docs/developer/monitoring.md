@@ -96,7 +96,7 @@ API 服务（端口 8888）和每个工作进程（端口 8889）都会暴露相
 - `source`：操作的触发来源（`api`、`reflect`、`internal`、`worker`）
 - `budget`：指定时的预算级别（`low`、`mid`、`high`）
 - `max_tokens`：指定时的最大令牌数
-- `success`：操作是否成功（`true`、`false`）
+- `success`：操作的结束状态：`true`、`false`；如果客户端在召回或反思完成前断开连接，则为 `cancelled`；如果操作在执行前被拒绝（由[操作验证器](./extensions.md#rejecting-an-operation)拒绝，或调用方的标签范围不允许该操作），则为 `rejected`。取消和拒绝都不属于失败，因此 `success="false"` 仍表示服务端失败；`cancelled` 的耗时显示客户端放弃前等待了多久。
 - `memories_backend`：当 memories 扩展为记忆库指定了存储后端时，用于标识该后端（`MemoriesExtension.backend_name_for`）。此标签默认不存在，因此现有时间序列不受影响。如果不同记忆库位于不同存储中，部署方可以用它比较各库的延迟，而无需启用 `tenant`。操作内部记录的召回阶段指标也会带上此标签。
 
 `source` 标签可用于区分：
@@ -342,6 +342,7 @@ export HINDSIGHT_API_OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
 - `gen_ai.usage.input_tokens` - 输入令牌数
 - `gen_ai.usage.output_tokens` - 输出令牌数
 - `hindsight.scope` - LLM 调用用途（`memory`、`reflect`、`consolidation` 等）
+- `hindsight.bank_id` - 记忆库 ID。在记忆库操作内启动的每个 Span 都带有此属性，因此采集器可以按记忆库路由 Span 及其令牌用量。
 
 **事件：**
 - `gen_ai.client.inference.operation.details` - 完整的提示词和补全内容

@@ -1,0 +1,390 @@
+{
+  "title": "使用决策模型的 Reflect",
+  "speed": 2200,
+  "elements": [
+    {
+      "id": "agent",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "你的 AI 智能体"
+        }
+      ],
+      "minCardHeight": 103,
+      "width": 230
+    },
+    {
+      "id": "llm",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "LLM"
+        },
+        {
+          "type": "subtitle",
+          "text": "先生成查询，再撰写答案"
+        }
+      ],
+      "minCardHeight": 73,
+      "width": 280
+    },
+    {
+      "id": "dm",
+      "type": "rectangle",
+      "content": [
+        {
+          "type": "title",
+          "text": "决策模型"
+        },
+        {
+          "type": "subtitle",
+          "text": "保留重要内容 · 是否足够？"
+        }
+      ],
+      "minCardHeight": 118,
+      "width": 280
+    },
+    {
+      "id": "reflect",
+      "type": "group",
+      "label": {
+        "title": "Reflect"
+      },
+      "children": [
+        "llm",
+        "dm"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 56,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "mm",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "心智模型"
+        }
+      ],
+      "minCardHeight": 28,
+      "width": 260
+    },
+    {
+      "id": "obs",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "观测"
+        }
+      ],
+      "minCardHeight": 28,
+      "width": 260
+    },
+    {
+      "id": "facts",
+      "type": "cylinder",
+      "content": [
+        {
+          "type": "title",
+          "text": "事实"
+        }
+      ],
+      "minCardHeight": 28,
+      "width": 260
+    },
+    {
+      "id": "bank",
+      "type": "group",
+      "label": {
+        "title": "一轮并行搜索"
+      },
+      "children": [
+        "mm",
+        "obs",
+        "facts"
+      ],
+      "layout": {
+        "direction": "column",
+        "gap": 12,
+        "align": "stretch"
+      }
+    },
+    {
+      "id": "g0",
+      "type": "group",
+      "children": [
+        "agent",
+        "reflect",
+        "bank"
+      ],
+      "layout": {
+        "direction": "row",
+        "gap": 90,
+        "align": "center"
+      }
+    },
+    {
+      "id": "ask",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "agent"
+      },
+      "end": {
+        "id": "llm"
+      },
+      "label": {
+        "text": "reflect()"
+      }
+    },
+    {
+      "id": "q-mm",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "llm"
+      },
+      "end": {
+        "id": "mm"
+      }
+    },
+    {
+      "id": "q-obs",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "llm"
+      },
+      "end": {
+        "id": "obs"
+      }
+    },
+    {
+      "id": "q-facts",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "llm"
+      },
+      "end": {
+        "id": "facts"
+      }
+    },
+    {
+      "id": "evidence",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "bank"
+      },
+      "end": {
+        "id": "dm"
+      },
+      "label": {
+        "text": "证据"
+      }
+    },
+    {
+      "id": "verdict",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "dm"
+      },
+      "end": {
+        "id": "llm"
+      },
+      "label": {
+        "text": "足够 / 尚不足够"
+      }
+    },
+    {
+      "id": "reply",
+      "type": "arrow",
+      "route": "curved",
+      "start": {
+        "id": "llm"
+      },
+      "end": {
+        "id": "agent"
+      },
+      "label": {
+        "text": "答案"
+      }
+    }
+  ],
+  "scenes": [
+    {
+      "label": "reflect()",
+      "beats": [
+        {
+          "edges": {
+            "edge": "ask",
+            "data": "“Alice 应该加入机器学习项目吗？”"
+          },
+          "show": {
+            "agent": [
+              {
+                "tag": "问题",
+                "tone": "gray",
+                "text": "“Alice 应该加入机器学习项目吗？”"
+              }
+            ]
+          },
+          "say": "reflect() 接收到一个需要推理的问题。"
+        },
+        {
+          "show": {
+            "llm": [
+              {
+                "tag": "调用 1",
+                "tone": "gray",
+                "text": "查询：“Alice 的技能、机器学习项目需求”"
+              }
+            ]
+          },
+          "say": "一次 LLM 调用将请求转化为搜索查询。",
+          "ms": 2400
+        },
+        {
+          "edges": [
+            "q-mm",
+            "q-obs",
+            "q-facts"
+          ],
+          "show": {
+            "mm": [
+              {
+                "text": "团队概览",
+                "mark": "最新"
+              }
+            ],
+            "obs": [
+              {
+                "text": "Alice 擅长 Python"
+              },
+              {
+                "text": "Alice 更喜欢研究工作"
+              }
+            ],
+            "facts": [
+              {
+                "text": "机器学习项目需要 PyTorch"
+              },
+              {
+                "text": "Alice 喜欢徒步"
+              }
+            ]
+          },
+          "say": "心智模型、观测和事实各层同时使用该查询搜索。在智能体模式下，每一层都需要单独的一轮 LLM 调用。",
+          "ms": 3000
+        },
+        {
+          "edges": {
+            "edge": "evidence",
+            "data": "5 条结果"
+          },
+          "show": {
+            "dm": [
+              {
+                "tag": "保留",
+                "tone": "green",
+                "text": "Alice 擅长 Python"
+              },
+              {
+                "tag": "保留",
+                "tone": "green",
+                "text": "Alice 更喜欢研究工作"
+              },
+              {
+                "tag": "保留",
+                "tone": "green",
+                "text": "机器学习项目需要 PyTorch"
+              },
+              {
+                "tag": "丢弃",
+                "tone": "gray",
+                "text": "Alice 喜欢徒步"
+              }
+            ]
+          },
+          "say": "决策模型保留重要证据，丢弃其余证据。",
+          "ms": 3000
+        },
+        {
+          "show": {
+            "dm": [
+              {
+                "tag": "保留",
+                "tone": "green",
+                "text": "Alice 擅长 Python"
+              },
+              {
+                "tag": "保留",
+                "tone": "green",
+                "text": "Alice 更喜欢研究工作"
+              },
+              {
+                "tag": "保留",
+                "tone": "green",
+                "text": "机器学习项目需要 PyTorch"
+              },
+              {
+                "tag": "足够吗？",
+                "tone": "blue",
+                "text": "是，足以回答",
+                "mark": "✓"
+              }
+            ]
+          },
+          "say": "然后它判断这些证据是否已能回答请求。如果不能，LLM 会生成下一个查询并运行下一轮。",
+          "ms": 3000
+        },
+        {
+          "edges": {
+            "edge": "verdict",
+            "data": "足够"
+          },
+          "show": {
+            "llm": [
+              {
+                "tag": "调用 1",
+                "tone": "gray",
+                "text": "查询：“Alice 的技能、机器学习项目需求”"
+              },
+              {
+                "tag": "调用 2",
+                "tone": "green",
+                "text": "撰写答案"
+              }
+            ]
+          },
+          "say": "证据足够，因此下一次 LLM 调用撰写答案。"
+        },
+        {
+          "edges": {
+            "edge": "reply",
+            "data": "答案 + 引用"
+          },
+          "show": {
+            "agent": [
+              {
+                "tag": "答案",
+                "tone": "green",
+                "text": "是：她懂 Python，喜欢研究；她还需要掌握 PyTorch。"
+              }
+            ]
+          },
+          "say": "总共两次 LLM 调用。如果决策模型失败，就像智能体模式一样由 LLM 决定何时停止。",
+          "ms": 3200
+        }
+      ]
+    }
+  ]
+}

@@ -44,6 +44,8 @@ Hindsight 服务器**不是** Hermes 虚拟环境的依赖项。`local_embedded`
 
 `_new_embedded_client` 会组合旧版 `hindsight.HindsightEmbedded` 封装内部使用的 `hindsight_embed.get_embed_manager()` 和 `hindsight_client.Hindsight`，而不再导入该封装。**现有嵌入式模式用户无需改变任何内容**：守护进程由 profile 决定，因此数据库（`~/.pg0/instances/hindsight-embed-<profile>/`）和 profile 环境文件（`~/.hindsight/profiles/<profile>.env`）仍是相同文件，读取方式也相同。无需迁移或重新设置。
 
+如果希望守护进程使用已有数据库，而不是自己的 pg0，请在 `$HERMES_HOME/.env` 或 profile 环境文件中设置 `HINDSIGHT_API_DATABASE_URL`（或 `HINDSIGHT_EMBED_API_DATABASE_URL`）。插件会将其写入 profile 环境文件，因此它启动的每个守护进程都会连接到该数据库。
+
 插件不再从任何位置调用 `tools.lazy_deps.install_specs`。在通过包管理器安装的 Hermes 中，这只是一个已弃用的兼容接口：它会将进程交给更新器并退出，而不是安装依赖。因此，每次调用 `hermes` 都会触发约 40 秒的“更新”，清空 `hermes-gateway`，却仍然缺少所需导入（NousResearch/hermes-agent#126494；上游已在 af26acab73 修复为抛出 `ImportError`）。现在没有任何依赖需要它来安装。
 
 ## 从内置提供方迁移 {#coming-from-the-built-in-provider}
@@ -356,7 +358,7 @@ hermes config set memory.user_profile_enabled false   # 可选：禁用 USER.md 
 
 **`/tools` 中没有显示工具** — 提供程序未配置时会跳过工具注册。检查 `hermes memory status` 是否报告 `hindsight` 为当前提供程序，并显示 `Status: available`。在 `memory_mode: context` 下，工具会按预期隐藏。
 
-**`local_embedded` 模式显示 `Status: not available`** — 该插件自身的依赖包（`hindsight-client`、`hindsight-embed`）未安装到环境中；如果重建虚拟环境时移除了插件，就可能发生这种情况。运行 `hermes pm repair`，然后重启 Hermes 以重新构建环境。该虚拟环境**不需要**安装 Hindsight 服务器——服务器作为独立进程运行；如果尚无 `hindsight-api` 二进制文件，首次使用时会下载它。
+**`Status: not available` 或 `No module named 'hindsight_client'`** — 该插件自身的依赖包（`hindsight-client`，以及 `local_embedded` 模式所需的 `hindsight-embed`）未安装到运行 Hermes 的环境中。如果重建虚拟环境时移除了插件，或网关在安装插件前启动，就可能发生这种情况：运行中的网关会保留启动时的环境。运行 `hermes pm repair`，然后运行 `hermes gateway restart`——仅重启桌面应用不会重启脱离应用运行的网关。该虚拟环境**不需要**安装 Hindsight 服务器——服务器作为独立进程运行；如果尚无 `hindsight-api` 二进制文件，首次使用时会下载它。
 
 **`Timeout context manager should be used inside a task`** — 这是 `hindsight-embed` 0.10.0 的问题。运行 `hermes plugins update hindsight`，升级到 0.10.1 版本下限。
 
