@@ -129,7 +129,7 @@ curl http://localhost:8888/health
 - 要保留的最大消息数（默认值为 4，用于演示截断）
 
 **Hindsight 配置：**
-- API URL（默认值为 http://localhost:8888）
+- API URL（默认值为 http://localhost:8888 ）
 - 用于隔离记忆的记忆库 ID 和实体 ID
 - 要检索的最大记忆数
 - 召回预算（low/mid/high）

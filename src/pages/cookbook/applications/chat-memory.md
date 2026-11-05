@@ -111,7 +111,7 @@ Hindsight.retain() → 存储对话
    - "I prefer VS Code over other editors"
    - "I'm working on a React project"
 
-4. **验证记忆**：访问 Hindsight 控制台 http://localhost:9999，查看已存储的记忆
+4. **验证记忆**：访问 Hindsight 控制台 http://localhost:9999 ，查看已存储的记忆
 
 ## 开发 {#development}
 
