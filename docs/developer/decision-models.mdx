@@ -10,12 +10,12 @@ import pagesFigure from '@site/figures/decision-model-pages.json';
 
 # 决策模型 {#decision-models}
 
-**决策模型**能在远不到一秒的时间内回答简短的类型化问题，例如“是或否”“选哪一个”“可能性有多大”。Hindsight 将 Recall（召回）、整合、Reflect（反思）和知识页刷新中隐含的小判断交给决策模型，把 LLM 留给需要撰写内容的环节。
+**决策模型**能在远不到一秒的时间内回答简短的类型化问题，例如“是或否”“选哪一个”“可能性有多大”。Hindsight 将 Recall（召回）、整合、Reflect（反思）和页面刷新中隐含的小判断交给决策模型，把 LLM 留给需要撰写内容的环节。
 
 决策模型是可选的。不使用时，每个操作都与以往完全相同；使用时，相同的操作会减少 LLM 调用次数。只需配置一次，所有支持决策模型的操作就会开始使用它。
 
 :::tip 从 Hindsight Inference 获取模型
-[Hindsight Inference](https://inference.hindsight.vectorize.io) 提供 `hs-decide-1-flash`，这是针对 Hindsight 中的判断任务训练的决策模型，每百万输入 token 收费 $0.02。它适用于所有操作，包括 Reflect 和知识页。登录一次并选择 `hindsight` 服务提供方：
+[Hindsight Inference](https://inference.hindsight.vectorize.io) 提供 `hs-decide-1-flash`，这是针对 Hindsight 中的判断任务训练的决策模型，每百万输入 token 收费 $0.02。它适用于所有操作，包括 Reflect 和页面。登录一次并选择 `hindsight` 服务提供方：
 
 ```bash
 hindsight-admin cloud login     # 登录 Hindsight Cloud 并保存密钥
@@ -78,11 +78,11 @@ Recall 通常使用交叉编码器对候选结果重排序，为每条记忆与�
 
 ## 只刷新发生变化的内容 {#refreshing-only-what-changed}
 
-[知识页](./knowledge-pages)以增量方式刷新：只需考虑上次刷新以来新增的记忆。不使用决策模型时，刷新仍会运行 Reflect 来收集这些记忆，并由 LLM 判断它们。
+[页面](./pages)以增量方式刷新：只需考虑上次刷新以来新增的记忆。不使用决策模型时，刷新仍会运行 Reflect 来收集这些记忆，并由 LLM 判断它们。
 
 <Figure doc={pagesFigure} />
 
-使用决策模型时，刷新会跳过 Reflect。系统将页面内容提供给决策模型，针对每条新记忆询问：*这条记忆可能改变页面吗？* 只有可能改变页面的记忆才会交给负责编辑页面的 LLM；其余记忆会被丢弃，之后也不会再次提供。如果没有记忆可能改变页面，刷新完全不会调用 LLM。在刷新成本评测中，处理 20 条记忆的刷新从 3 次 LLM 调用降至 1 次，输入 token 减少约 70%。参见[知识页](./knowledge-pages#decision-model-refresh)。
+使用决策模型时，刷新会跳过 Reflect。系统将页面内容提供给决策模型，针对每条新记忆询问：*这条记忆可能改变页面吗？* 只有可能改变页面的记忆才会交给负责编辑页面的 LLM；其余记忆会被丢弃，之后也不会再次提供。如果没有记忆可能改变页面，刷新完全不会调用 LLM。在刷新成本评测中，处理 20 条记忆的刷新从 3 次 LLM 调用降至 1 次，输入 token 减少约 70%。参见[页面](./pages#decision-model-refresh)。
 
 ---
 
@@ -92,10 +92,10 @@ Recall 通常使用交叉编码器对候选结果重排序，为每条记忆与�
 
 - **整合**会像以前一样将事实交给 LLM。
 - **Reflect** 会像智能体模式一样让 LLM 决定何时停止。
-- **知识页**会像以前一样运行 Reflect 来刷新。
+- **页面**会像以前一样运行 Reflect 来刷新。
 - **Recall** 是个例外：决策模型*就是*它的排序器，因此重试后仍无法访问时，Recall 会失败，与使用其他远程重排序模型一样。
 
-Reflect 和知识页刷新目前需要 `hindsight` 或 `typesafe` 服务提供方；使用其他服务提供方时，它们会继续采用仅使用 LLM 的流程并记录警告，而 Recall 和整合仍会使用该决策模型。
+Reflect 和页面刷新目前需要 `hindsight` 或 `typesafe` 服务提供方；使用其他服务提供方时，它们会继续采用仅使用 LLM 的流程并记录警告，而 Recall 和整合仍会使用该决策模型。
 
 每次决策模型调用都会与 LLM、嵌入模型和重排序模型调用一起记录在记忆库的模型调用日志中，因此可以查看向它提出的问题和它的回答：在控制台中打开记忆库，然后前往 **LLM Requests**。
 
@@ -127,6 +127,8 @@ export HINDSIGHT_API_DECISION_MODEL_API_KEY=<the server's --api-key>
 
 与托管模型一样，除非同时设置 `HINDSIGHT_API_RECALL_DECISION_MODEL_PROVIDER=hindsight`，否则 Recall 仍会使用其重排序模型。
 
+你的服务器没有网关来将每个请求调整到模型的上下文窗口内，因此 Hindsight 会将大型请求拆分为每次最多 54,000 token 的请求，以适应 `hs-decide-1-flash` 的 64k 窗口。如果部署时使用较小的 `--max-model-len`，请设置 `HINDSIGHT_API_DECISION_MODEL_MAX_REQUEST_TOKENS`。
+
 **重排序模型和嵌入模型。** 这两个模型足够小，可以在 Hindsight API 进程内使用 CPU 运行，无需额外服务器。首次启动时会从 Hugging Face 下载：
 
 ```bash
@@ -146,4 +148,4 @@ export HINDSIGHT_API_EMBEDDINGS_LOCAL_MODEL=hindsight-ai/hs-embed-1
 - [**Hugging Face**](https://huggingface.co/hindsight-ai) — 获取三个模型的开放权重
 - [**配置 › 决策模型**](./configuration#decision-model) — 配置、关闭和调整模型
 - [**模型 › 决策模型**](./models#decision-model) — 服务提供方和默认模型
-- [**Recall**](./retrieval#decision-model-ranking) · [**观测**](./observations#decision-model-triage) · [**Reflect**](./reflect#decision-model-orchestration) · [**知识页**](./knowledge-pages#decision-model-refresh) — 各操作的详细说明
+- [**Recall**](./retrieval#decision-model-ranking) · [**观测**](./observations#decision-model-triage) · [**Reflect**](./reflect#decision-model-orchestration) · [**页面**](./pages#decision-model-refresh) — 各操作的详细说明

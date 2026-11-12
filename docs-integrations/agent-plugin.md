@@ -58,7 +58,7 @@ agent-plugin/
 | `retain` | 学到持久且可复用的事实后 | 存入该事实，供后续会话使用 |
 | `reflect` | 单次查询过于浅显，需要综合推理时 | 根据性格倾向，对已记住的所有内容进行推理 |
 
-此外还提供知识页、心智模型、文档和标签等工具，详见 [MCP 服务器参考](/developer/mcp-server)。
+此外还提供页面、心智模型、文档和标签等工具，详见 [MCP 服务器参考](/developer/mcp-server)。
 
 ## 配置 {#configuration}
 

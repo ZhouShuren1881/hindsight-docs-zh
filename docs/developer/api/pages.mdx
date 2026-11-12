@@ -2,46 +2,46 @@
 sidebar_position: 5
 ---
 
-# 知识页 {#knowledge-pages}
+# 页面 {#pages}
 
 按文件夹树组织、会随着记忆库不断学习而自行改写的 Markdown 文档。
 
-知识页以[心智模型](./mental-models)为底层，但配置方式是文档：它只根据记忆库的[观测](../observations)构建，绝不读取其他页面，并会在每次整合后增量刷新。有关 API 背后的概念，请参阅[知识页](../knowledge-pages)。
+页面以[心智模型](./mental-models)为底层，但配置方式是文档：它只根据记忆库的[观测](../observations)构建，绝不读取其他页面，并会在每次整合后增量刷新。有关 API 背后的概念，请参阅[页面](../pages)。
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import CodeSnippet from '@site/src/components/CodeSnippet';
 
 {/* Import raw source files */}
-import knowledgePagesPy from '!!raw-loader!@site/examples/api/knowledge-pages.py';
-import knowledgePagesMjs from '!!raw-loader!@site/examples/api/knowledge-pages.mjs';
-import knowledgePagesSh from '!!raw-loader!@site/examples/api/knowledge-pages.sh';
-import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go';
+import pagesPy from '!!raw-loader!@site/examples/api/pages.py';
+import pagesMjs from '!!raw-loader!@site/examples/api/pages.mjs';
+import pagesSh from '!!raw-loader!@site/examples/api/pages.sh';
+import pagesGo from '!!raw-loader!@site/examples/api/pages.go';
 
 以下所有端点均相对于某个记忆库：
 
 ```
-/v1/default/banks/{bank_id}/knowledge-base
+/v1/default/banks/{bank_id}/pages
 ```
 
 ---
 
 ## 获取目录树 {#get-the-tree}
 
-以嵌套的文件夹和页面树形式返回整个知识库。**不包含**页面正文；要读取内容，请单独获取页面。
+以嵌套的文件夹和页面树形式返回记忆库中的所有页面。**不包含**页面正文；要读取内容，请单独获取页面。
 
 <Tabs>
 <TabItem value="python" label="Python">
-<CodeSnippet code={knowledgePagesPy} section="get-tree" language="python" />
+<CodeSnippet code={pagesPy} section="get-tree" language="python" />
 </TabItem>
 <TabItem value="node" label="Node.js">
-<CodeSnippet code={knowledgePagesMjs} section="get-tree" language="javascript" />
+<CodeSnippet code={pagesMjs} section="get-tree" language="javascript" />
 </TabItem>
 <TabItem value="cli" label="CLI">
-<CodeSnippet code={knowledgePagesSh} section="get-tree" language="bash" />
+<CodeSnippet code={pagesSh} section="get-tree" language="bash" />
 </TabItem>
 <TabItem value="go" label="Go">
-<CodeSnippet code={knowledgePagesGo} section="get-tree" language="go" />
+<CodeSnippet code={pagesGo} section="get-tree" language="go" />
 </TabItem>
 </Tabs>
 
@@ -105,16 +105,16 @@ import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go
 
 <Tabs>
 <TabItem value="python" label="Python">
-<CodeSnippet code={knowledgePagesPy} section="create-page" language="python" />
+<CodeSnippet code={pagesPy} section="create-page" language="python" />
 </TabItem>
 <TabItem value="node" label="Node.js">
-<CodeSnippet code={knowledgePagesMjs} section="create-page" language="javascript" />
+<CodeSnippet code={pagesMjs} section="create-page" language="javascript" />
 </TabItem>
 <TabItem value="cli" label="CLI">
-<CodeSnippet code={knowledgePagesSh} section="create-page" language="bash" />
+<CodeSnippet code={pagesSh} section="create-page" language="bash" />
 </TabItem>
 <TabItem value="go" label="Go">
-<CodeSnippet code={knowledgePagesGo} section="create-page" language="go" />
+<CodeSnippet code={pagesGo} section="create-page" language="go" />
 </TabItem>
 </Tabs>
 
@@ -185,7 +185,7 @@ import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go
 | 设置 | 原因 |
 |---|---|
 | `fact_types: ["observation"]` | 页面读取的是整合后的认知判断，而不是其下层原始对话中的零散内容。观测已经去重并有证据支持，因此页面呈现为经过整理的文档，而非对话记录。此限制由结构保证：范围内只有 `observation` 时，刷新智能体根本不会获得原始记忆召回工具。 |
-| `exclude_mental_models: true` | 页面绝不会对同级页面进行反思。若不排除，页面可能互相引用并陷入反馈循环，让一个错误说法在整个知识库中传播。 |
+| `exclude_mental_models: true` | 页面绝不会对同级页面进行反思。若不排除，页面可能互相引用并陷入反馈循环，让一个错误说法在记忆库的各页面之间传播。 |
 | `mode: "delta"` | 每次刷新都会将新内容编辑到现有文档中，而不是重新生成整篇，因此人工调整过的结构和措辞能够保留。参见[刷新模式](./mental-models#refresh-mode)。 |
 | `refresh_after_consolidation: true` | 每当整合在页面范围内产生新知识，页面就会自行改写；是否刷新仍受与其他心智模型相同的[待更新状态检查](./mental-models#staleness-gating)控制，因此记忆库中无关位置的活动不会触发重建。 |
 
@@ -211,16 +211,16 @@ import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go
 
 <Tabs>
 <TabItem value="python" label="Python">
-<CodeSnippet code={knowledgePagesPy} section="create-folder" language="python" />
+<CodeSnippet code={pagesPy} section="create-folder" language="python" />
 </TabItem>
 <TabItem value="node" label="Node.js">
-<CodeSnippet code={knowledgePagesMjs} section="create-folder" language="javascript" />
+<CodeSnippet code={pagesMjs} section="create-folder" language="javascript" />
 </TabItem>
 <TabItem value="cli" label="CLI">
-<CodeSnippet code={knowledgePagesSh} section="create-folder" language="bash" />
+<CodeSnippet code={pagesSh} section="create-folder" language="bash" />
 </TabItem>
 <TabItem value="go" label="Go">
-<CodeSnippet code={knowledgePagesGo} section="create-folder" language="go" />
+<CodeSnippet code={pagesGo} section="create-folder" language="go" />
 </TabItem>
 </Tabs>
 
@@ -239,16 +239,16 @@ import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go
 
 <Tabs>
 <TabItem value="python" label="Python">
-<CodeSnippet code={knowledgePagesPy} section="get-page" language="python" />
+<CodeSnippet code={pagesPy} section="get-page" language="python" />
 </TabItem>
 <TabItem value="node" label="Node.js">
-<CodeSnippet code={knowledgePagesMjs} section="get-page" language="javascript" />
+<CodeSnippet code={pagesMjs} section="get-page" language="javascript" />
 </TabItem>
 <TabItem value="cli" label="CLI">
-<CodeSnippet code={knowledgePagesSh} section="get-page" language="bash" />
+<CodeSnippet code={pagesSh} section="get-page" language="bash" />
 </TabItem>
 <TabItem value="go" label="Go">
-<CodeSnippet code={knowledgePagesGo} section="get-page" language="go" />
+<CodeSnippet code={pagesGo} section="get-page" language="go" />
 </TabItem>
 </Tabs>
 
@@ -267,7 +267,7 @@ import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go
 
 - `body` 仅包含综合生成的 Markdown 正文。
 - `markdown` 是完整文档：先是 YAML frontmatter 块（包含 `id`、`type`、`title`、`description`、`tags`、`timestamp`），后接正文。
-- `type` 取自 `type:<x>` 标签，默认值为 `knowledge-page`。返回的 `tags` 中会移除 `type:` 标签。
+- `type` 取自 `type:<x>` 标签，默认值为 `page`。返回的 `tags` 中会移除 `type:` 标签。
 
 ---
 
@@ -277,16 +277,16 @@ import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go
 
 <Tabs>
 <TabItem value="python" label="Python">
-<CodeSnippet code={knowledgePagesPy} section="search-pages" language="python" />
+<CodeSnippet code={pagesPy} section="search-pages" language="python" />
 </TabItem>
 <TabItem value="node" label="Node.js">
-<CodeSnippet code={knowledgePagesMjs} section="search-pages" language="javascript" />
+<CodeSnippet code={pagesMjs} section="search-pages" language="javascript" />
 </TabItem>
 <TabItem value="cli" label="CLI">
-<CodeSnippet code={knowledgePagesSh} section="search-pages" language="bash" />
+<CodeSnippet code={pagesSh} section="search-pages" language="bash" />
 </TabItem>
 <TabItem value="go" label="Go">
-<CodeSnippet code={knowledgePagesGo} section="search-pages" language="go" />
+<CodeSnippet code={pagesGo} section="search-pages" language="go" />
 </TabItem>
 </Tabs>
 
@@ -324,16 +324,16 @@ import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go
 
 <Tabs>
 <TabItem value="python" label="Python">
-<CodeSnippet code={knowledgePagesPy} section="filter-by-tags" language="python" />
+<CodeSnippet code={pagesPy} section="filter-by-tags" language="python" />
 </TabItem>
 <TabItem value="node" label="Node.js">
-<CodeSnippet code={knowledgePagesMjs} section="filter-by-tags" language="javascript" />
+<CodeSnippet code={pagesMjs} section="filter-by-tags" language="javascript" />
 </TabItem>
 <TabItem value="cli" label="CLI">
-<CodeSnippet code={knowledgePagesSh} section="filter-by-tags" language="bash" />
+<CodeSnippet code={pagesSh} section="filter-by-tags" language="bash" />
 </TabItem>
 <TabItem value="go" label="Go">
-<CodeSnippet code={knowledgePagesGo} section="filter-by-tags" language="go" />
+<CodeSnippet code={pagesGo} section="filter-by-tags" language="go" />
 </TabItem>
 </Tabs>
 
@@ -345,16 +345,16 @@ import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go
 
 <Tabs>
 <TabItem value="python" label="Python">
-<CodeSnippet code={knowledgePagesPy} section="update-node" language="python" />
+<CodeSnippet code={pagesPy} section="update-node" language="python" />
 </TabItem>
 <TabItem value="node" label="Node.js">
-<CodeSnippet code={knowledgePagesMjs} section="update-node" language="javascript" />
+<CodeSnippet code={pagesMjs} section="update-node" language="javascript" />
 </TabItem>
 <TabItem value="cli" label="CLI">
-<CodeSnippet code={knowledgePagesSh} section="update-node" language="bash" />
+<CodeSnippet code={pagesSh} section="update-node" language="bash" />
 </TabItem>
 <TabItem value="go" label="Go">
-<CodeSnippet code={knowledgePagesGo} section="update-node" language="go" />
+<CodeSnippet code={pagesGo} section="update-node" language="go" />
 </TabItem>
 </Tabs>
 
@@ -377,16 +377,16 @@ import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go
 
 <Tabs>
 <TabItem value="python" label="Python">
-<CodeSnippet code={knowledgePagesPy} section="delete-node" language="python" />
+<CodeSnippet code={pagesPy} section="delete-node" language="python" />
 </TabItem>
 <TabItem value="node" label="Node.js">
-<CodeSnippet code={knowledgePagesMjs} section="delete-node" language="javascript" />
+<CodeSnippet code={pagesMjs} section="delete-node" language="javascript" />
 </TabItem>
 <TabItem value="cli" label="CLI">
-<CodeSnippet code={knowledgePagesSh} section="delete-node" language="bash" />
+<CodeSnippet code={pagesSh} section="delete-node" language="bash" />
 </TabItem>
 <TabItem value="go" label="Go">
-<CodeSnippet code={knowledgePagesGo} section="delete-node" language="go" />
+<CodeSnippet code={pagesGo} section="delete-node" language="go" />
 </TabItem>
 </Tabs>
 
@@ -398,20 +398,20 @@ import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go
 
 ## 导出为 Markdown 文件包 {#export-as-a-markdown-bundle}
 
-将整个知识库作为一组扁平、可移植的 Markdown 文件返回：包括一个嵌套结构的 `index.md`、每个页面各一个 `<page-id>.md`，以及已重建页面各自的 `<page-id>.log.md` 刷新历史文件。
+将记忆库中的所有页面作为一组扁平、可移植的 Markdown 文件返回：包括一个嵌套结构的 `index.md`、每个页面各一个 `<page-id>.md`，以及已重建页面各自的 `<page-id>.log.md` 刷新历史文件。
 
 <Tabs>
 <TabItem value="python" label="Python">
-<CodeSnippet code={knowledgePagesPy} section="export" language="python" />
+<CodeSnippet code={pagesPy} section="export" language="python" />
 </TabItem>
 <TabItem value="node" label="Node.js">
-<CodeSnippet code={knowledgePagesMjs} section="export" language="javascript" />
+<CodeSnippet code={pagesMjs} section="export" language="javascript" />
 </TabItem>
 <TabItem value="cli" label="CLI">
-<CodeSnippet code={knowledgePagesSh} section="export" language="bash" />
+<CodeSnippet code={pagesSh} section="export" language="bash" />
 </TabItem>
 <TabItem value="go" label="Go">
-<CodeSnippet code={knowledgePagesGo} section="export" language="go" />
+<CodeSnippet code={pagesGo} section="export" language="go" />
 </TabItem>
 </Tabs>
 
@@ -435,10 +435,10 @@ import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go
 
 | 表 | 内容 |
 |---|---|
-| `knowledge_pages` | 目录树：文件夹和页面、名称、上级节点及排序。页面行引用其底层心智模型；文件夹行不引用模型。 |
+| `knowledge_pages`（重命名前的名称） | 目录树：文件夹和页面、名称、上级节点及排序。页面行引用其底层心智模型；文件夹行不引用模型。 |
 | `mental_models` | 页面内容：文档正文、来源查询、标签、token 预算、触发配置和刷新历史。 |
 
-知识页这一层只负责目录树结构；所有页面内容都保存在底层心智模型中，因此心智模型的每项[功能](./mental-models)也都原样适用于知识页。
+页面这一层只负责目录树结构；所有页面内容都保存在底层心智模型中，因此心智模型的每项[功能](./mental-models)也都原样适用于页面。
 
 ---
 
@@ -446,11 +446,13 @@ import knowledgePagesGo from '!!raw-loader!@site/examples/api/knowledge-pages.go
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
-| `GET` | `/knowledge-base/tree` | 带待更新状态的嵌套文件夹/页面目录树 |
-| `POST` | `/knowledge-base/folders` | 创建文件夹 |
-| `POST` | `/knowledge-base/pages` | 创建页面（异步执行首次生成） |
-| `GET` | `/knowledge-base/pages/{page_id}` | 以 Markdown 形式读取页面 |
-| `GET` | `/knowledge-base/search` | 对页面进行混合搜索 |
-| `PATCH` | `/knowledge-base/nodes/{node_id}` | 重命名、移动或重新配置节点 |
-| `DELETE` | `/knowledge-base/nodes/{node_id}` | 删除节点及其子树 |
-| `GET` | `/knowledge-base/export` | 将整个知识库导出为 Markdown 文件 |
+| `GET` | `/pages/tree` | 带待更新状态的嵌套文件夹/页面目录树 |
+| `POST` | `/pages/folders` | 创建文件夹 |
+| `POST` | `/pages` | 创建页面（异步执行首次生成） |
+| `GET` | `/pages/{page_id}` | 以 Markdown 形式读取页面 |
+| `GET` | `/pages/search` | 对页面进行混合搜索 |
+| `PATCH` | `/pages/nodes/{node_id}` | 重命名、移动或重新配置节点 |
+| `DELETE` | `/pages/nodes/{node_id}` | 删除节点及其子树 |
+| `GET` | `/pages/export` | 将所有页面导出为 Markdown 文件 |
+
+旧版 `/knowledge-base/...` 路径仍可使用，但已弃用，并将在 2.x 中移除。

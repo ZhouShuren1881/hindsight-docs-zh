@@ -136,9 +136,11 @@ import refreshModes from '@site/figures/refresh-modes.json';
 
 设置 `refresh_cron` 后，Hindsight 会在服务器的心智模型刷新检查周期中检查计划，只有模型范围内的记忆自上次刷新以来发生变化时才刷新。`refresh_cron` 与 `refresh_after_consolidation` 互斥：模型要么在整合后刷新，要么按固定 UTC 时间计划刷新，不能同时采用两者。
 
-模型上的 `last_refresh_failed_at`（知识树中的页面也有此字段）记录刷新失败的时间，因此列表视图无需逐个读取历史记录，就能显示哪些模型已停止自动刷新。
+模型上的 `last_refresh_failed_at`（页面树中的页面也有此字段）记录刷新失败的时间，因此列表视图无需逐个读取历史记录，就能显示哪些模型已停止自动刷新。
 
 **刷新失败会暂停自动刷新。** 工作进程会重试失败的刷新，次数由 `HINDSIGHT_API_WORKER_MAX_RETRIES` 控制，默认 3 次，之后停止。在一次刷新成功之前，`refresh_after_consolidation`、`refresh_cron` 和 `full_refresh_cron` 都不会再次将该模型入队。因此，无法成功的刷新——例如提示词超出模型容量、账户余额耗尽或增量编辑无法应用——只消耗几次尝试的成本，而不会在每个检查周期都产生 LLM 费用。失败会显示在模型的[历史记录](#history)中。修复原因后，请手动刷新模型；成功刷新会恢复自动刷新。`HINDSIGHT_API_REFLECT_WALL_TIMEOUT` 像限制 Reflect 一样限制整个刷新的运行时间，因该限制被中断的刷新也算失败。
+
+无需打开模型即可发现暂停状态：监控记忆库统计数据（`GET /v1/default/banks/{bank_id}/stats`）中的 `paused_mental_models`。它统计该记忆库中当前暂停的模型数，因此可在该值大于 0 时触发告警，提示有页面已停止更新。
 
 ### 限制自动刷新频率 {#rate-limiting-automatic-refreshes}
 
@@ -196,7 +198,7 @@ import refreshModes from '@site/figures/refresh-modes.json';
 
 **无标签写入绝不会让有标签的模型变为待更新。** 使用 `tags_match: "any"` 或 `"all"` 时，刷新也会*读取*无标签记忆，但待更新状态只计算携带模型标签的写入。否则，在同时进行有标签和无标签写入的记忆库上，这类模型几乎每次写入后都会被判为待更新（#4857）。使用这些模式的 `tag_groups` 叶子条件也遵循相同规则；明确选择无标签记忆的条件组，例如标签为空的 `exact` 叶子条件或 `not`，仍会计入无标签写入。没有标签的模型以整个记忆库为范围，所以任何写入都会将其标记为待更新。
 
-所有可读取的 `is_stale` 都按相同规则计算，包括单个心智模型读取结果中的标志、列表中的标志、Reflect 智能体看到的标志，以及[知识库树](./knowledge-pages)中每个页面的标志。模型被标记为待更新，意味着刷新确实会重写它。
+所有可读取的 `is_stale` 都按相同规则计算，包括单个心智模型读取结果中的标志、列表中的标志、Reflect 智能体看到的标志，以及[页面树](./pages)中每个页面的标志。模型被标记为待更新，意味着刷新确实会重写它。
 
 列出模型无需为每个模型单独查询，系统会一次处理整页结果，因此你无需近似判断。如果已经从记忆库统计端点获得 `last_memory_write_at`，那么 `last_memory_seen_at` 等于或晚于该时间的模型可以确定是最新的，无需再查询：记忆库没有任何变化，该模型范围内自然也没有变化。
 
@@ -245,7 +247,7 @@ Hindsight 为文档维护一份具有权威性的**结构化**表示：有序的
 
 **增量刷新绝不会用不完整的文档替换原文档。** 增量检索只读取上次刷新之后的新记忆，所以基于该窗口写出的答案只覆盖主题最近的一部分，可用于编辑文档，不能直接替换文档。因此，完全无法进行编辑时——例如服务提供方调用失败、响应无法读取，或每个操作都被拒绝——既有内容会保持原样，刷新会**失败**，不会算作完成。内容不会丢失，刷新的时间窗口不会推进，重试会再次看到同一批记忆。空答案也遵循相同规则：有内容的文档绝不被空文档覆盖。增量刷新绝不会在你不知情时改为全文重写；如果模型的增量刷新持续失败，请将其 `mode` 切换为 `full`。
 
-**配置决策模型后，增量刷新可以跳过 Reflect。** 为 Reflect 配置[决策模型](/developer/decision-models)后，增量刷新会让它判断上次刷新以来新增的哪些记忆可能改变文档，并仅将这些记忆发送给编写操作的 LLM；如果没有这样的记忆，就不会调用该 LLM。限制和回退情况参见[知识页](/developer/knowledge-pages#decision-model-refresh)。
+**配置决策模型后，增量刷新可以跳过 Reflect。** 为 Reflect 配置[决策模型](/developer/decision-models)后，增量刷新会让它判断上次刷新以来新增的哪些记忆可能改变文档，并仅将这些记忆发送给编写操作的 LLM；如果没有这样的记忆，就不会调用该 LLM。限制和回退情况参见[页面](../pages.mdx#decision-model-refresh)。
 
 | 使用场景 | 建议模式 | 原因 |
 |----------|-----------------|-----|
@@ -325,7 +327,7 @@ Hindsight 为文档维护一份具有权威性的**结构化**表示：有序的
 </TabItem>
 </Tabs>
 
-[知识页](./knowledge-pages)会将内容保存在心智模型中，因此列表也包含知识页背后的模型。每个条目都带有 `is_knowledge_page` 用于区分；设置 `exclude_knowledge_pages=true` 后只列出独立心智模型（条目和 `total` 均如此）。
+[页面](./pages)会将内容保存在心智模型中，因此列表也包含页面背后的模型。每个条目都带有 `is_page` 用于区分；设置 `exclude_pages=true` 后只列出独立心智模型（条目和 `total` 均如此）。
 
 ---
 
@@ -527,7 +529,7 @@ MCP 工具 `get_mental_model` 支持 `detail` 参数。MCP 工具 `list_mental_m
 |-------|----------|
 | `effective_mode` | 最终按 `full` 还是 `delta` 运行 |
 | `mode_fallback_reason` | 请求增量模式却未应用的原因：`no_baseline_content`、`source_query_changed`、`structured_doc_unreadable`、`delta_ops_failed`、`delta_ops_all_skipped` |
-| `outcome` | `content_written`、`content_preserved_no_new_facts`、`refresh_failed_empty_candidate` 或 `refresh_failed_delta_not_applied`（编辑未应用，文档保留，刷新失败）。操作记录还会添加两种执行器无法产生的结果，因为它们发生在一次运行之外：`refresh_failed_structured_output` 和 `refresh_failed_error`（检索工具抛出异常、智能体没有生成答案，或刷新中出现未预见的异常）。 |
+| `outcome` | `content_written`、`content_preserved_no_new_facts`、`refresh_failed_empty_candidate` 或 `refresh_failed_delta_not_applied`（编辑未应用，文档保留，刷新失败）。操作记录还会添加三种执行器无法产生的结果，因为它们发生在一次运行之外：`refresh_failed_structured_output`、`refresh_failed_candidate_rejected`（[操作校验器](../extensions.md)拒绝了新文档）和 `refresh_failed_error`（检索工具抛出异常、智能体没有生成答案，或刷新中出现未预见的异常）。 |
 | `tool_calls[]` | 每次调用的 `tool`、智能体的 `reason`、完整 `input`、`result_count`、`duration_ms` 和所属 `iteration` |
 | `llm_calls[]` | 每次调用的 `scope`（`agent_1`、`agent_2`、…、`final`）和 `duration_ms` |
 | `delta_operations` | 增量模式输出的操作，以及 `applied` 和 `skipped` |
@@ -706,7 +708,7 @@ MCP 工具 `create_mental_model` 通过顶层 `tags_match` 参数提供相同选
 | `changed_at` | string | 发生变更时的 ISO 8601 时间戳 |
 | `kind` | `"refresh_failed"` \| absent | 仅在**失败记录**，即拒绝写入的刷新上存在；版本快照上省略 |
 | `outcome` | string \| absent | 失败记录中的操作结果，例如 `refresh_failed_error` |
-| `failure_reason` | string \| absent | 失败记录中的拒绝原因：`retrieval_failed`、`no_answer`、`unexpected_error`、`empty_candidate`、`structured_doc_unreadable`、`delta_ops_failed`、`delta_ops_all_skipped`、`delta_not_applied`、`structured_output_failed` |
+| `failure_reason` | string \| absent | 失败记录中的拒绝原因：`retrieval_failed`、`no_answer`、`unexpected_error`、`empty_candidate`、`structured_doc_unreadable`、`delta_ops_failed`、`delta_ops_all_skipped`、`delta_not_applied`、`structured_output_failed`、`candidate_rejected` |
 | `error_message` | string \| absent | 失败记录中的异常，与操作报告的一致 |
 
 每个版本记录保存**变更之前的内容**及变更时间。当前内容由标准的[获取心智模型](#get-a-mental-model)端点返回。

@@ -57,8 +57,8 @@ const sidebars: SidebarsConfig = {
         },
         {
           "type": "doc",
-          "id": "developer/knowledge-pages",
-          "label": "知识页",
+          "id": "developer/pages",
+          "label": "页面",
           "customProps": {
             "icon": "lu-book-text"
           }
@@ -150,8 +150,8 @@ const sidebars: SidebarsConfig = {
         },
         {
           "type": "doc",
-          "id": "developer/api/knowledge-pages",
-          "label": "知识页",
+          "id": "developer/api/pages",
+          "label": "页面",
           "customProps": {
             "icon": "lu-book-text"
           }

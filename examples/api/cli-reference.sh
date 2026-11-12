@@ -219,6 +219,9 @@ hindsight document get my-cli-bank "$DOCUMENT_ID"
 # 替换文档的标签
 hindsight document update my-cli-bank "$DOCUMENT_ID" --tags project-x,meetings
 
+# 添加或移除单个标签，保留其余标签
+hindsight document update my-cli-bank "$DOCUMENT_ID" --add-tags team-c --remove-tags meetings
+
 # 删除文档及其记忆
 hindsight document delete my-cli-bank "$DOCUMENT_ID"
 # [/docs:cli-documents]
@@ -287,56 +290,56 @@ hindsight webhook delete my-cli-bank "$WEBHOOK_ID" -y
 # [/docs:cli-webhooks]
 
 # =============================================================================
-# 知识库
+# 页面
 # =============================================================================
 
 # [docs:cli-kb-tree]
 # 显示文件夹/页面树（内容待更新的页面标记为 stale）
-hindsight knowledge-base tree my-cli-bank
+hindsight pages tree my-cli-bank
 # [/docs:cli-kb-tree]
 
 # [docs:cli-kb-create-folder]
 # 创建文件夹，可选择嵌套在另一个文件夹下
-hindsight knowledge-base create-folder my-cli-bank "Operations"
+hindsight pages create-folder my-cli-bank "Operations"
 # [/docs:cli-kb-create-folder]
-FOLDER_ID=$(hindsight knowledge-base tree "$BANK" -o json | jq -r '[.. | objects | select(.kind? == "folder" and .name? == "Operations")][0].id')
+FOLDER_ID=$(hindsight pages tree "$BANK" -o json | jq -r '[.. | objects | select(.kind? == "folder" and .name? == "Operations")][0].id')
 
 # [docs:cli-kb-create-subfolder]
-hindsight knowledge-base create-folder my-cli-bank "Runbooks" --parent-id "$FOLDER_ID"
+hindsight pages create-folder my-cli-bank "Runbooks" --parent-id "$FOLDER_ID"
 # [/docs:cli-kb-create-subfolder]
 
 # [docs:cli-kb-create-page]
-# 创建知识页，内容在后台生成
-hindsight knowledge-base create-page my-cli-bank \
+# 创建页面，内容在后台生成
+hindsight pages create-page my-cli-bank \
   "Deploying the API" \
   "How is the API deployed?" \
   --parent-id "$FOLDER_ID" \
   --tags ops,type:runbook
 
-# 从原始事实构建知识页，替代默认仅使用观测的方式
-hindsight knowledge-base create-page my-cli-bank "Recent Incidents" \
+# 从原始事实构建页面，替代默认仅使用观测的方式
+hindsight pages create-page my-cli-bank "Recent Incidents" \
   "What incidents happened recently?" \
   --fact-types experience,world --mode full
 # [/docs:cli-kb-create-page]
-PAGE_ID=$(hindsight knowledge-base tree "$BANK" -o json | jq -r '[.. | objects | select(.kind? == "page" and .name? == "Recent Incidents")][0].id')
+PAGE_ID=$(hindsight pages tree "$BANK" -o json | jq -r '[.. | objects | select(.kind? == "page" and .name? == "Recent Incidents")][0].id')
 NODE_ID="$FOLDER_ID"
 
 # [docs:cli-kb-manage]
-# 以 Markdown 文档形式读取知识页
-hindsight knowledge-base get-page my-cli-bank "$PAGE_ID"
+# 以 Markdown 文档形式读取页面
+hindsight pages get-page my-cli-bank "$PAGE_ID"
 
 # 以整页为单位进行混合检索（全文检索 + 向量检索）
-hindsight knowledge-base search my-cli-bank "how do we deploy" --limit 5
+hindsight pages search my-cli-bank "how do we deploy" --limit 5
 
 # 重命名、移动或重新配置节点
-hindsight knowledge-base update my-cli-bank "$NODE_ID" --name "New name"
-hindsight knowledge-base update my-cli-bank "$PAGE_ID" --source-query "New question?"
+hindsight pages update my-cli-bank "$NODE_ID" --name "New name"
+hindsight pages update my-cli-bank "$PAGE_ID" --source-query "New question?"
 
-# 将整个知识库导出为 Markdown 文件包
-hindsight knowledge-base export my-cli-bank
+# 将全部页面导出为 Markdown 文件包
+hindsight pages export my-cli-bank
 
-# 删除文件夹或知识页及其下所有内容
-hindsight knowledge-base delete my-cli-bank "$NODE_ID" -y
+# 删除文件夹或页面及其下所有内容
+hindsight pages delete my-cli-bank "$NODE_ID" -y
 # [/docs:cli-kb-manage]
 
 # =============================================================================

@@ -310,12 +310,12 @@
 <div class="page">
 
   <header>
-    <div class="eyebrow">Hindsight · engine/reflect · 知识页</div>
+    <div class="eyebrow">Hindsight · engine/reflect · 页面</div>
     <h1>心智模型如何刷新</h1>
     <hr class="masthead-rule">
   </header>
 
-  <p class="standfirst">Hindsight 中的每个知识页，都是一个会改写自身内容的心智模型。本文逐步对照当前代码，追踪整个流程：模式选择、七个阶段、每条分支，以及四种结果。</p>
+  <p class="standfirst">Hindsight 中的每个页面，都是一个会改写自身内容的心智模型。本文逐步对照当前代码，追踪整个流程：模式选择、七个阶段、每条分支，以及四种结果。</p>
 
   <nav class="toc" aria-label="目录">
     <ol>
@@ -432,7 +432,7 @@
   <!-- ================================================================== -->
   <h2 id="gate">2 · 阶段 2：模式门控</h2>
 
-  <p>请求 delta 模式，并不意味着最终就会使用它。<code>requested_mode</code> 来自触发器：知识页使用 <code>KNOWLEDGE_PAGE_DEFAULT_TRIGGER</code>，其中设置了 <code>mode: "delta"</code>，因此<b>每个页面默认都请求增量编辑</b>。随后由三道门控决定是否继续使用请求的模式。</p>
+  <p>请求 delta 模式，并不意味着最终就会使用它。<code>requested_mode</code> 来自触发器：页面使用 <code>PAGE_DEFAULT_TRIGGER</code>，其中设置了 <code>mode: "delta"</code>，因此<b>每个页面默认都请求增量编辑</b>。随后由三道门控决定是否继续使用请求的模式。</p>
 
   <figure class="bleed">
     <svg viewBox="0 0 900 400" role="img" aria-label="模式门控：增量编辑请求通过基线检查和来源查询检查后，设为 use_delta；另有两种回退原因，使流程转向 full 模式。">
@@ -706,7 +706,7 @@
 
       <!-- 1 create -->
       <rect class="d-box" x="24" y="28" width="240" height="66" rx="4"/>
-      <text class="d-head" x="40" y="50">① create_knowledge_page</text>
+      <text class="d-head" x="40" y="50">① create_page</text>
       <text class="d-t-sm" x="40" y="68">客户端通过 POST 提交 Markdown</text>
       <text class="d-m-sm" x="40" y="85">structured_content 保持 NULL</text>
       <path class="d-line" d="M 264 61 L 282 61 L 282 239 L 296 239" marker-end="url(#a4)"/>
@@ -838,8 +838,8 @@
 
   <h3>主次反转方案仍需保留什么</h3>
   <ul>
-    <li><b><code>content</code> 列。</b><code>search_knowledge_pages</code> 对页面名称和内容上的 BM25 检索结果进行融合，并返回内容片段。必须持续保存渲染后的形式，因此，解析器问题会转变为映射结果的同步问题。</li>
-    <li><b>解析器。</b><code>create_knowledge_page</code> 接受客户端提交的 Markdown，导入也会恢复 Markdown 正文。这两者仍需要 Markdown → 结构转换。</li>
+    <li><b><code>content</code> 列。</b><code>search_pages</code> 对页面名称和内容上的 BM25 检索结果进行融合，并返回内容片段。必须持续保存渲染后的形式，因此，解析器问题会转变为映射结果的同步问题。</li>
+    <li><b>解析器。</b><code>create_page</code> 接受客户端提交的 Markdown，导入也会恢复 Markdown 正文。这两者仍需要 Markdown → 结构转换。</li>
     <li><b>模式的表达上限。</b>只有五种内容块类型，图像和原始 HTML 明确不在支持范围内。在主次反转方案下，未建模的内容在摄取时就无法表示，而不是稍后才降级。这或许更好，因为失败发生在有人能够处理它的环节。</li>
   </ul>
 

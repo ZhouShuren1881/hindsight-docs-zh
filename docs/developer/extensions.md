@@ -143,6 +143,48 @@ HINDSIGHT_API_MODEL_CALL_EXTENSION=mypackage.calls:MyRecorder
 
 ---
 
+### 自定义 LLM 供应商 {#custom-llm-provider}
+
+对于内置供应商无法支持（或无法完全支持）的后端，可以使用自己的类作为 LLM。在需要指定供应商的位置通过导入路径指定该类：
+
+```bash
+HINDSIGHT_API_LLM_PROVIDER=mypackage.llm:MyLLM          # every operation
+HINDSIGHT_API_RETAIN_LLM_PROVIDER=mypackage.llm:MyLLM   # or just one
+```
+
+任何包含 `:` 的值都会按 `package.module:ClassName` 解析；全局设置、单操作设置、故障转移链以及 `LLMRequestExtension` 选择的供应商都支持这种写法（后者可用于按记忆库选择供应商）。该类必须继承 `LLMInterface`（`hindsight_api.engine.llm_interface`），并通过关键字参数构造：`provider`、`api_key`、`base_url`、`model`、`reasoning_effort` 和 `timeout`（由 `LLMInterface.__init__` 存储），以及 `extra_body` 和 `default_headers`。如果路径无法导入，或类不是 `LLMInterface` 的子类，服务器将无法启动。
+
+需要实现：
+
+- **`call(...) -> LLMCallResult`**：执行一次补全。提供 `response_format`（Pydantic 模型）时，除非设置了 `skip_validation`，否则应将解析后的模型作为 `content` 返回。工具调用也通过 `call` 以响应模式的形式处理，因此 Reflect 无需额外实现。
+- **`verify_connection()`**：执行启动检查。抛出异常可阻止启动。
+- **`cleanup()`**：关闭客户端。
+- **批处理（可选）**：让 `supports_batch_api()` 返回 `True`，并实现 `submit_batch(requests: list[BatchRequest]) -> BatchSubmission`、`get_batch_status(batch_id) -> BatchStatus` 和 `retrieve_batch_results(batch_id) -> list[BatchResult]`（模型位于 `hindsight_api.engine.response_models`）。每个 `BatchRequest.body` 都是 OpenAI chat-completions 请求体。设置 `HINDSIGHT_API_RETAIN_BATCH_ENABLED=true` 后，Retain 会通过你的 Batch API 执行。
+
+如果只需更改内置供应商的某个细节，可以继承该供应商，并向父类传入它所使用的通信协议对应的供应商名称（配置的 `provider` 是你的类路径，内置类不接受该路径）：
+
+```python
+from typing import Any
+
+from hindsight_api.engine.providers.openai_compatible_llm import OpenAICompatibleLLM
+
+
+class MyBatchHost(OpenAICompatibleLLM):
+    def __init__(self, **kwargs: Any) -> None:
+        kwargs["provider"] = "openai"
+        super().__init__(**kwargs)
+```
+
+例如，对于创建批次时需要 `name` 且不接受 `response_format` 的 OpenAI 兼容批处理主机，可以创建这样的子类并重写 `verify_connection` 和 `submit_batch`。
+
+自定义供应商不要求 API 密钥；如果你的供应商需要密钥，请在 `verify_connection` 中检查。代码仓库中的 `tests/test_custom_llm_provider.py` 提供了完整且经过测试的示例（`EchoProvider`）。安装包的方式与其他扩展相同（参见[部署自定义扩展](#deploying-custom-extensions)）。
+
+:::caution
+`LLMInterface` 是公开的内部接口，可能在次版本之间发生变化；请固定 Hindsight 版本，并在升级时查看变更日志。
+:::
+
+---
+
 ## 编写自定义扩展 {#writing-custom-extensions}
 
 ### 扩展基础知识 {#extension-basics}
@@ -347,6 +389,30 @@ class MyValidator(OperationValidatorExtension):
 - `validate_memory_update(ctx: MemoryUpdateContext)` 在任何处理开始前运行。上下文包含请求的 `text`（编辑时）、请求的 `state` 以及 `edits_fields`。在此处拒绝即可阻止维护操作；返回的 `status_code` 会原样传入 HTTP 响应。
 - `on_memory_update_complete(result: MemoryUpdateResult)` 在变更提交后运行一次。`result.action` 的值为 `edit`、`invalidate`、`revert` 或 `reason`；`result.reembedded_tokens` 表示引擎重新嵌入的文本量（仅失效或仅更新原因时为 0）。编辑或恢复会重新嵌入记忆并重新整合记忆库，因此，如果维护操作的计费应与摄取相同，可据此数值计量。
 
+#### 检查心智模型的新文档 {#checking-a-mental-models-new-document}
+
+刷新（完整或增量）生成新文档后，`validate_mental_model_candidate(ctx: MentalModelCandidateContext)` 会在新文档替换已存储文档之前运行。`ctx.candidate_content` 是即将存储的精确 Markdown 内容；`ctx.current_content`、`ctx.max_tokens`、`ctx.refresh_mode` 和 `ctx.candidate_structured` 可用于将其与读者当前看到的页面进行比较。可以用它强制执行模型未必能遵守的规则，例如严格的长度限制或“不允许重复章节”。
+
+- **接受**：按原样存储文档。
+- **拒绝**：已存储文档、其结构化视图和水位线均保持不变。操作以 `refresh_failed_candidate_rejected` 结果和 `candidate_rejected` 失败原因结束，拒绝原因会记入模型历史，自动刷新会暂停，直到显式刷新成功。
+- 默认情况下，拒绝是最终结果：工作进程不会再次运行刷新，因为相同输入通常会生成同类文档。
+- 若要生成另一份草稿，请返回 `ValidationResult.reject(reason, retry=True)`。刷新会立即生成一份新的完整文档，并将 `reason` 加入提示词，让模型知道需要修正什么，然后再次调用该钩子。`ctx.attempt` 表示当前是第几份草稿（第一份为 0），`ctx.previous_rejections` 列出迄今的拒绝原因。重新生成 3 次后，无论 `retry` 的值是什么，拒绝都是最终结果。
+
+如果钩子抛出异常，文档同样不会被存储。试运行不会调用此钩子。
+
+#### 记忆审核钩子 {#memory-review-hooks}
+
+两个可选钩子让验证器检查即将写入的内容，并丢弃内容或更改其标签。每个钩子按顺序为每项返回一个 `MemoryReview(keep=True, tags=None)`，或返回 `None` 以原样保留全部内容。设置 `tags` 时，它会替换该项的标签。文本不能更改。
+
+- `filter_retain_facts(ctx: RetainFactsContext)` 在 Retain 提取记忆之后、嵌入和存储之前运行。`ctx.facts` 包含每条记忆的 `text`、`fact_type`、`tags` 和 `entities`，`ctx.document_id` 标识文档。大型文档分批提取，因此一次 Retain 可能多次调用该钩子。再次存入文档时，未变化分块的记忆会保留，不经过该钩子。提取试运行不会调用任何验证器钩子，因此预览仍会列出此钩子原本会丢弃的记忆。
+- `filter_consolidation_actions(ctx: ConsolidationActionsContext)` 在整合批次决定要写入的观测之后、应用写入之前运行。每个 `ReviewedConsolidationAction` 都是 `create` 或 `update`（针对 `observation_id`），包含 `text`、`tags` 和 `source_memory_ids`。更新会将其标签添加到观测现有标签中。当写入将合并到现有近似重复项时，`merge_into` 会被设置。合并会保留该观测的标签，因此新标签在此情况下不起作用，但丢弃该操作仍会阻止合并。被丢弃操作的来源记忆仍会标记为已整合。
+
+```python
+class DropPasswords(OperationValidatorExtension):
+    async def filter_retain_facts(self, ctx: RetainFactsContext):
+        return [MemoryReview(keep="password" not in f.text.lower()) for f in ctx.facts]
+```
+
 #### 转移归档导入钩子 {#transfer-archive-import-hooks}
 
 导入转移归档（导入文档或恢复整个记忆库）时，会将已提取的事实导入记忆库，而不会重新运行事实提取：
@@ -374,10 +440,10 @@ class TeamScopes(OperationValidatorExtension):
 
 引擎会把该范围与调用方提交的过滤条件组合，因此调用方可以进一步缩小可见范围，但不能扩大范围：
 
-- **经过过滤的读取** —— Recall、Reflect（以及它运行的每个工具）、记忆列表、文档列表和心智模型列表、观测范围、标签列表、记忆图、时间序列、实体与实体图，以及知识库树、搜索和导出，都只会读取范围内的行。实体计数会根据可见记忆重新统计。
-- **按 ID 读取和写入** —— 如果记忆、文档及其文本分块、心智模型或知识页在范围之外，请求会返回 `404`。如果 Retain 指定了范围外已存在的文档，则会被拒绝（`403`），因为替换或追加内容会触及他人的文本。
+- **经过过滤的读取** —— Recall、Reflect（以及它运行的每个工具）、记忆列表、文档列表和心智模型列表、观测范围、标签列表、记忆图、时间序列、实体与实体图，以及页面树、搜索和导出，都只会读取范围内的行。实体计数会根据可见记忆重新统计。
+- **按 ID 读取和写入** —— 如果记忆、文档及其文本分块、心智模型或页面在范围之外，请求会返回 `404`。如果 Retain 指定了范围外已存在的文档，则会被拒绝（`403`），因为替换或追加内容会触及他人的文本。
 - **源文本遵循其所属文档的范围。** 某条记忆可能因自身标签而可见（例如从他人的私密笔记中提取、带有 `kind:rule` 标签的事实），但对应笔记不可见。只有文档自身的标签通过过滤后，才会返回其文本分块和文档正文。无论是否使用扩展，这条规则都适用于所有按标签过滤的 Recall 和 Reflect。
-- **心智模型和知识页** —— 受范围限制的调用方创建或更新的心智模型和知识页必须带有范围内的标签（否则返回 `403`，因为调用方将无法看到自己创建的内容），并在其触发条件中记录该范围（`scope_tag_groups`）。每次刷新都会将其与模型自身的过滤条件按 AND 组合，因此绝不会基于创建者无权读取的记忆构建内容。后台刷新不受调用方范围限制运行，并依赖已记录的范围。已记录的范围只会进一步缩小模型范围，且无法通过 API 编辑；若要移除该范围，请重新创建模型。
+- **心智模型和页面** —— 受范围限制的调用方创建或更新的心智模型和页面必须带有范围内的标签（否则返回 `403`，因为调用方将无法看到自己创建的内容），并在其触发条件中记录该范围（`scope_tag_groups`）。每次刷新都会将其与模型自身的过滤条件按 AND 组合，因此绝不会基于创建者无权读取的记忆构建内容。后台刷新不受调用方范围限制运行，并依赖已记录的范围。已记录的范围只会进一步缩小模型范围，且无法通过 API 编辑；若要移除该范围，请重新创建模型。
 
 请使用 `_strict` 匹配模式：非严格模式也会包含无标签行，而没有标签的心智模型会基于整个记忆库构建。
 
@@ -395,7 +461,7 @@ class TeamScopes(OperationValidatorExtension):
 
 - **retain**（文本和文件）：每项输入的标签和批次的 `document_tags`，以及该 retain 策略中的[实体标签](./api/memory-banks#entity-labels)在 `tag: true` 时可能添加的所有标签（对每个允许值使用 `key:value`；对开放词汇使用 `key:*`），还有显式设置的 `observation_scopes`（`"shared"` 会写入无标签观测）。它们会在提取之前检查，因此被拒绝的 retain 不会调用 LLM；
 - **记忆和文档**：编辑、使记忆失效或清除记忆的观测；更新文档（包括新标签）、重新处理文档或删除文档；
-- **心智模型和知识页**：创建（包括设置标签）、更新、刷新、清除或删除；以及重命名、移动或删除知识节点（包括该节点下的所有页面，以及其移动到的文件夹下的页面）；
+- **心智模型和页面**：创建（包括设置标签）、更新、刷新、清除或删除；以及重命名、移动或删除页面节点（包括该节点下的所有页面，以及其移动到的文件夹下的页面）；
 - **强制指令**：创建、更新或删除。无标签强制指令会影响所有人的 Reflect，因此受限写入者不能创建无标签强制指令。
 
 读取强制指令的方式与 Reflect 相同：无标签强制指令适用于所有人，带标签的强制指令仅在调用方的读取范围内适用。

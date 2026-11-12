@@ -167,7 +167,7 @@ await hs.reflect(bank, "我应该推荐 Vue 吗？")`}
           <div className={styles.bankItems}>
             <span>事实与实体</span>
             <span>观测</span>
-            <span>知识页</span>
+            <span>页面</span>
           </div>
           <span className={styles.bankNote}>每位用户或每个智能体各有独立记忆库，彼此完全隔离</span>
         </div>

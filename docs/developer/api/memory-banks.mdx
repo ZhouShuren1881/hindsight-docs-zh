@@ -88,7 +88,7 @@ DELETE /v1/default/banks/{bank_id}/aliases/{alias}
 - **删除别名只会关闭这条访问路径。** 记忆库及其记忆不会受影响；仍使用已删除别名的客户端会收到与该别名从未存在时相同的结果。
 - **删除记忆库会移除其别名**，释放这些名称以供重复使用。
 - **导出、导入或克隆不会携带别名。** 别名描述的是在*当前部署*中哪些 ID 可以访问某个记忆库，因此副本不会继承别名；需要时请在目标库上自行添加。
-- **更改需要几秒钟才能传播到所有 API 副本。** 参见 [`HINDSIGHT_API_BANK_ALIAS_CACHE_TTL_SECONDS`](/developer/configuration)。
+- **更改需要几秒钟才能传播到所有 API 副本。** 参见 [`HINDSIGHT_API_BANK_ALIAS_CACHE_TTL_SECONDS`](/developer/configuration#bank-alias-cache)。
 
 ## 记忆库配置 {#bank-configuration}
 
@@ -176,7 +176,7 @@ e.g. Always include technical decisions, API design choices, and architectural t
 |`values`|`[]`|`"value"` 和 `"multi-values"` 类型的允许值。对于 `"text"`、`"multi-text"` 和 `"map"` 类型会被忽略。|
 |`fields`|`{}`|`"map"` 类型的字段定义。每个字段都带有自己的类型（`"text"`、`"multi-text"`、`"value"`、`"multi-values"` 或嵌套的 `"map"`）。对非 map 类型会被忽略。|
 |`optional`|`true`|为 `true` 时，若标签不适用，LLM 可以跳过它；为 `false` 时，LLM 必须始终为标签赋值。对 `"multi-values"` 和 `"multi-text"` 组无效，因为这两类组始终可选。|
-|`tag`|`false`|为 `true` 时，提取出的 `key:value` 标签也会写入记忆单元的 tags 字段，因此可在 Recall / Reflect 中通过 `tags` / `tags_match` 筛选。|
+|`tag`|`false`|为 `true` 时，提取出的 `key:value` 标签也会写入记忆单元的 tags 字段，因此可在 Recall / Reflect 中通过 `tags` / `tags_match` 筛选。记忆会保留这些标签，直到再次提取：移除标签组（或其 `tag` 标志）会使新记忆不再获得这些标签，而更改文档标签不会移除它们。要从现有记忆中移除这些标签，请重新处理文档。|
 
 **枚举组**（`type: "value"` 或 `type: "multi-values"`）：LLM 从预定义的 `values` 列表中选择；列表之外的值会被直接丢弃。这样可以保持词汇稳定，并使图中的关联更准确。当一条事实可能同时属于多个值时，使用 `"multi-values"`。
 
@@ -338,7 +338,7 @@ e.g. You are a senior engineering assistant.
 ["recall", "reflect"]
 ```
 
-可用工具名称：`retain`，`recall`，`reflect`，`list_banks`，`create_bank`，`list_mental_models`，`get_mental_model`，`create_mental_model`，`update_mental_model`，`delete_mental_model`，`refresh_mental_model`，`list_directives`，`create_directive`，`delete_directive`，`list_memories`，`get_memory`，`list_documents`，`get_document`，`delete_document`，`list_operations`，`get_operation`，`cancel_operation`，`list_tags`，`get_bank`，`get_bank_stats`，`update_bank`，`delete_bank`，`clear_memories`，`get_knowledge_base_tree`，`search_knowledge_base`，`get_knowledge_page`，`create_knowledge_folder`，`create_knowledge_page`，`update_knowledge_node`，`delete_knowledge_node`。
+可用工具名称：`retain`，`recall`，`reflect`，`list_banks`，`create_bank`，`list_mental_models`，`get_mental_model`，`create_mental_model`，`update_mental_model`，`delete_mental_model`，`refresh_mental_model`，`list_directives`，`create_directive`，`delete_directive`，`list_memories`，`get_memory`，`list_documents`，`get_document`，`delete_document`，`list_operations`，`get_operation`，`cancel_operation`，`list_tags`，`get_bank`，`get_bank_stats`，`update_bank`，`delete_bank`，`clear_memories`，`get_page_tree`，`search_pages`，`get_page`，`create_page_folder`，`create_page`，`update_page_node`，`delete_page_node`。
 
 ### llm_gemini_safety_settings {#llm_gemini_safety_settings}
 
@@ -681,11 +681,11 @@ e.g. You are a senior engineering assistant.
 
 |标志|默认值|包含的内容|
 |------|---------|-----------------|
-|`include_data`|`true`|文档、原始文本分块、提取出的事实、整合后的观测、实体及其链接、附件**及附件字节**、已失效事实的人工维护归档、操作日志、维护队列，以及基于这些数据综合生成的心智模型、刷新历史和知识页树。|
+|`include_data`|`true`|文档、原始文本分块、提取出的事实、整合后的观测、实体及其链接、附件**及附件字节**、已失效事实的人工维护归档、操作日志、维护队列，以及基于这些数据综合生成的心智模型、刷新历史和页面树。|
 |`include_bank_config`|`true`|记忆库的配置方式，包括配置覆盖项、强制指令和 Webhook。|
 |`include_history`|`false`|`audit_log` 和 `llm_requests`。|
 
-心智模型和知识页属于**数据**，而非配置。心智模型是对记忆库事实的解读，并通过 `based_on` 证据按 ID 引用这些事实；如果没有这些事实，恢复出来的综合内容就会失去依据。基于同样的原因，心智模型的刷新历史也会一并传输。
+心智模型和页面属于**数据**，而非配置。心智模型是对记忆库事实的解读，并通过 `based_on` 证据按 ID 引用这些事实；如果没有这些事实，恢复出来的综合内容就会失去依据。基于同样的原因，心智模型的刷新历史也会一并传输。
 
 归档不会携带嵌入向量或数据库 ID：事实会使用*目标*记忆库的模型重新生成嵌入，实体也会在目标库中重新解析。因此，归档可以迁移到采用不同嵌入模型、向量扩展或文本搜索后端的实例。
 
@@ -831,7 +831,7 @@ import.zip
 |查询参数|默认值|说明|
 |-------------|---------|-------------|
 |`target_bank_id`|—|必填。要创建的目标记忆库；该 ID 必须尚不存在。|
-|`include_data`|`true`|复制记忆及其所有底层数据，以及基于这些数据综合生成的心智模型和知识页。|
+|`include_data`|`true`|复制记忆及其所有底层数据，以及基于这些数据综合生成的心智模型和页面。|
 |`include_bank_config`|`true`|复制记忆库的配置覆盖项、强制指令和 Webhook。|
 |`include_history`|`false`|复制`audit_log` 和 `llm_requests`。|
 
@@ -944,7 +944,7 @@ Webhook 属于记忆库配置，因此使用默认标志创建的克隆会调用
 | 文档、原始文本分块 | 是 |
 | 提取出的事实、实体名称、因果链接 | 是 |
 | 整合后的观测 | **否**——目标库会根据导入的事实重新整合 |
-| 心智模型、知识页 | **否**——需在目标库重建 |
+| 心智模型、页面 | **否**——需在目标库重建 |
 | 记忆库配置、强制指令、Webhook | **否**——指定 `document_id` 时传入 `include_bank_config` 会返回 `400` |
 | `audit_log`、`llm_requests` | **否**——指定 `document_id` 时传入 `include_history` 会返回 `400` |
 
@@ -1039,7 +1039,7 @@ curl --fail-with-body -X POST -H "Authorization: Bearer $API_KEY" \
 
 整合完成前，目标库只有事实，没有观测层。召回仍会有结果，这正是容易跳过此步骤的原因；但此时只能从原始事实中召回，因此目标库会显得比源库浅，而不易察觉原因。
 
-之后，手动重建记忆库级综合内容：心智模型、其强制指令，以及知识页树都不会随子集迁移。
+之后，手动重建记忆库级综合内容：心智模型、其强制指令，以及页面树都不会随子集迁移。
 
 **7. 从源记忆库中删除已迁移的文档。**
 

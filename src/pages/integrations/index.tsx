@@ -105,7 +105,6 @@ function IntegrationCard({
 export default function IntegrationsHub(): React.ReactElement {
   const {withBaseUrl} = useBaseUrlUtils();
   const [search, setSearch] = useState('');
-  const [selectedType, setSelectedType] = useState<IntegrationType | 'all'>('all');
 
   // Which integrations have a changelog page, from the same build-time index the /changelog
   // listing uses — so a card grows a Changelog button the release after its first release,
@@ -128,15 +127,14 @@ export default function IntegrationsHub(): React.ReactElement {
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
     return integrations.filter((i) => {
-      if (selectedType !== 'all' && i.type !== selectedType) return false;
       if (q && !i.name.toLowerCase().includes(q) && !i.description.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [integrations, search, selectedType]);
+  }, [integrations, search]);
 
-  // Featured only makes sense on the unfiltered view: once someone searches or filters, pinned
+  // Featured only makes sense on the unfiltered view: once someone searches, pinned
   // cards would sit above results that don't match them and read as noise.
-  const showFeatured = !search.trim() && selectedType === 'all';
+  const showFeatured = !search.trim();
   const featured = useMemo(
     () =>
       FEATURED_IDS.map((id) => integrations.find((i) => i.id === id)).filter(
@@ -151,17 +149,11 @@ export default function IntegrationsHub(): React.ReactElement {
 
   // The individual coding agents are not catalogue entries — one plugin installs all of them — but
   // people search this page for the agent they use, not for the plugin's name, and found nothing.
-  // A card each, pointing at that agent's install section on the plugin page. All official, so the
-  // community filter hides the section rather than showing an empty one.
+  // A card each, pointing at that agent's install section on the plugin page.
   const harnesses = useMemo(() => {
     const q = search.toLowerCase().trim();
-    if (selectedType === 'community') return [];
     return CODING_AGENT_HARNESSES.filter((h) => !q || h.label.toLowerCase().includes(q));
-  }, [search, selectedType]);
-
-  // Counts what the page is showing, harness cards included — searching "Codex" matches no
-  // catalogue entry, and a toolbar reading "0 integrations" above a matching card is just wrong.
-  const resultCount = filtered.length + harnesses.length;
+  }, [search]);
 
   const officialCount = integrations.filter((i) => i.type === 'official').length;
   const communityCount = integrations.filter((i) => i.type === 'community').length;
@@ -205,22 +197,6 @@ export default function IntegrationsHub(): React.ReactElement {
 
       {/* Main content */}
       <div className={styles.page}>
-        <div className={styles.toolbar}>
-          <div className={styles.filterGroup}>
-            {(['all', 'official', 'community'] as const).map((t) => (
-              <button
-                key={t}
-                className={`${styles.filterPill} ${selectedType === t ? styles.filterPillActive : ''}`}
-                onClick={() => setSelectedType(t)}>
-                {t === 'all' ? '全部' : t === 'official' ? '官方' : '社区'}
-              </button>
-            ))}
-          </div>
-          <span className={styles.resultCount}>
-            {resultCount} 个集成
-          </span>
-        </div>
-
         {showFeatured && featured.length > 0 && (
           <section className={styles.featuredSection}>
             <h2 className={styles.featuredTitle}>精选集成</h2>
@@ -274,13 +250,15 @@ export default function IntegrationsHub(): React.ReactElement {
         {filtered.length === 0 && harnesses.length === 0 ? (
           <div className={styles.empty}>
             <p>没有符合搜索条件的集成。</p>
-            <button className={styles.resetButton} onClick={() => { setSearch(''); setSelectedType('all'); }}>
-              重置筛选条件
+            <button className={styles.resetButton} onClick={() => setSearch('')}>
+              清空搜索
             </button>
           </div>
         ) : (
           <div className={styles.groups}>
-            {groupByCategory(rest).map(([category, items]) => (
+            {groupByCategory(
+              rest.map((i) => (i.type === 'community' ? {...i, category: 'community'} : i)),
+            ).map(([category, items]) => (
               <section key={category} className={styles.group}>
                 <h3 className={styles.groupTitle}>
                   {CATEGORY_LABELS[category] ?? category}

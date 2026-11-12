@@ -1,5 +1,5 @@
 {
-  "title": "知识页",
+  "title": "页面",
   "speed": 1466.6666666666667,
   "elements": [
     {
@@ -75,7 +75,7 @@
         },
         {
           "type": "subtitle",
-          "text": "知识页"
+          "text": "页面"
         }
       ],
       "minCardHeight": 238,
@@ -319,7 +319,7 @@
   ],
   "scenes": [
     {
-      "label": "知识页",
+      "label": "页面",
       "caption": "",
       "beats": [
         {

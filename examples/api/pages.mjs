@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 /**
- * Knowledge Pages API examples for Hindsight (Node.js)
- * Run: node examples/api/knowledge-pages.mjs
+ * Pages API examples for Hindsight (Node.js)
+ * Run: node examples/api/pages.mjs
  */
 import { HindsightClient } from '@vectorize-io/hindsight-client';
 
 const HINDSIGHT_URL = process.env.HINDSIGHT_API_URL || 'http://localhost:8888';
-const BANK_ID = 'knowledge-pages-demo-bank-node';
+const BANK_ID = 'pages-demo-bank-node';
 
 // =============================================================================
 // Setup (not shown in docs)
 // =============================================================================
 const client = new HindsightClient({ baseUrl: HINDSIGHT_URL });
-await client.createBank(BANK_ID, { name: 'Knowledge Pages Demo' });
+await client.createBank(BANK_ID, { name: 'Pages Demo' });
 await client.retain(BANK_ID, 'The API is deployed to Kubernetes with a rolling update');
 await client.retain(BANK_ID, 'Deploys run from the main branch after CI passes');
 await client.retain(BANK_ID, 'A failed deploy is rolled back by redeploying the previous tag');
@@ -24,14 +24,14 @@ await new Promise(r => setTimeout(r, 2000));
 
 // [docs:create-folder]
 // Create a folder (omit parentId, or pass null, to create it at the root)
-const folder = await client.createKnowledgeFolder(BANK_ID, 'Operations');
+const folder = await client.createPageFolder(BANK_ID, 'Operations');
 
 console.log(`Folder ID: ${folder.id}`);
 // [/docs:create-folder]
 
 // [docs:create-page]
 // Create a page — content is generated in the background
-const page = await client.createKnowledgePage(
+const page = await client.createPage(
     BANK_ID,
     'Deploying the API',
     'How is the API deployed?',
@@ -46,8 +46,8 @@ console.log(`Page ID: ${page.page_id}, operation: ${page.operation_id}`);
 await new Promise(r => setTimeout(r, 20000));
 
 // [docs:get-tree]
-// Fetch the whole knowledge base as a nested folder/page tree (no page bodies)
-const tree = await client.getKnowledgeBaseTree(BANK_ID);
+// 以嵌套文件夹/页面树形式获取记忆库中的全部页面（不含页面正文）
+const tree = await client.getPageTree(BANK_ID);
 
 for (const root of tree.roots) {
     console.log(`${root.kind}: ${root.name}`);
@@ -59,7 +59,7 @@ for (const root of tree.roots) {
 
 // [docs:get-page]
 // Read a page as a markdown document
-const document = await client.getKnowledgePage(BANK_ID, page.page_id);
+const document = await client.getPage(BANK_ID, page.page_id);
 
 console.log(document.type);      // "runbook" — from the type:runbook tag
 console.log(document.body);      // the synthesized markdown body
@@ -68,7 +68,7 @@ console.log(document.markdown);  // YAML frontmatter + body
 
 // [docs:search-pages]
 // Hybrid search (full-text + vector) over whole pages
-const results = await client.searchKnowledgeBase(BANK_ID, 'how do we deploy', { limit: 5 });
+const results = await client.searchPages(BANK_ID, 'how do we deploy', { limit: 5 });
 
 for (const hit of results.results) {
     console.log(`${hit.score.toFixed(3)}  ${hit.name}: ${hit.snippet}`);
@@ -77,12 +77,12 @@ for (const hit of results.results) {
 
 // [docs:filter-by-tags]
 // Narrow the tree and search to pages carrying a tag (recall's tags / tags_match / tag_groups)
-const runbooks = await client.getKnowledgeBaseTree(BANK_ID, { tags: ['type:runbook'], tagsMatch: 'any_strict' });
-const opsHits = await client.searchKnowledgeBase(BANK_ID, 'how do we deploy', { tags: ['ops'], tagsMatch: 'all_strict' });
+const runbooks = await client.getPageTree(BANK_ID, { tags: ['type:runbook'], tagsMatch: 'any_strict' });
+const opsHits = await client.searchPages(BANK_ID, 'how do we deploy', { tags: ['ops'], tagsMatch: 'all_strict' });
 console.log(`${runbooks.roots.length} runbook roots, ${opsHits.results.length} ops hits`);
 
 // Compound filters use tagGroups: here, runbooks that are not drafts
-const notDrafts = await client.searchKnowledgeBase(BANK_ID, 'how do we deploy', {
+const notDrafts = await client.searchPages(BANK_ID, 'how do we deploy', {
     tagGroups: [{ and: [{ tags: ['type:runbook'] }, { not: { tags: ['draft'] } }] }],
 });
 console.log(`${notDrafts.results.length} non-draft runbooks`);
@@ -91,15 +91,15 @@ console.log(`${notDrafts.results.length} non-draft runbooks`);
 // [docs:update-node]
 // Rename a node, move it, and/or update a page's options.
 // Changing sourceQuery rebuilds the page against the new question.
-await client.updateKnowledgeNode(BANK_ID, page.page_id, {
+await client.updatePageNode(BANK_ID, page.page_id, {
     name: 'Deploying the API (v2)',
     tags: ['ops', 'type:runbook', 'reviewed'],
 });
 // [/docs:update-node]
 
 // [docs:export]
-// Export the knowledge base as a portable markdown bundle
-const bundle = await client.exportKnowledgeBase(BANK_ID);
+// 将记忆库中的页面导出为可移植的 Markdown 文件包
+const bundle = await client.exportPages(BANK_ID);
 
 for (const file of bundle.files) {
     console.log(file.path);  // index.md, <page-id>.md, <page-id>.log.md
@@ -108,7 +108,7 @@ for (const file of bundle.files) {
 
 // [docs:delete-node]
 // Delete a folder or page — deleting a folder removes its whole subtree
-await client.deleteKnowledgeNode(BANK_ID, folder.id);
+await client.deletePageNode(BANK_ID, folder.id);
 // [/docs:delete-node]
 
 // =============================================================================
@@ -116,4 +116,4 @@ await client.deleteKnowledgeNode(BANK_ID, folder.id);
 // =============================================================================
 await client.deleteBank(BANK_ID);
 
-console.log('knowledge-pages.mjs: All examples passed');
+console.log('pages.mjs: All examples passed');

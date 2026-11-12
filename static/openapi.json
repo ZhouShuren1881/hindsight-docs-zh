@@ -10,7 +10,7 @@
       "name": "Apache 2.0",
       "url": "https://www.apache.org/licenses/LICENSE-2.0.html"
     },
-    "version": "1.2.0"
+    "version": "1.2.1"
   },
   "paths": {
     "/health": {
@@ -1947,16 +1947,30 @@
             }
           },
           {
+            "name": "exclude_pages",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "排除用于存放页面内容的心智模型（仅列出独立心智模型）。",
+              "default": false,
+              "title": "排除页面"
+            },
+            "description": "排除用于存放页面内容的心智模型（仅列出独立心智模型）。"
+          },
+          {
             "name": "exclude_knowledge_pages",
             "in": "query",
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "排除用于存放知识页内容的心智模型（仅列出独立心智模型）。",
+              "description": "已弃用：请使用 exclude_pages。",
+              "deprecated": true,
               "default": false,
               "title": "排除知识页"
             },
-            "description": "排除用于存放知识页内容的心智模型（仅列出独立心智模型）。"
+            "description": "已弃用：请使用 exclude_pages。",
+            "deprecated": true
           },
           {
             "name": "authorization",
@@ -2586,9 +2600,10 @@
         "tags": [
           "Knowledge Base"
         ],
-        "summary": "获取知识库目录树",
-        "description": "以文件夹和页面组成的嵌套树返回知识库。",
+        "summary": "获取页面树（已弃用的路径）",
+        "description": "`GET /v1/default/banks/{bank_id}/pages/tree` 的已弃用别名；请求与响应相同。将在 2.x 中移除。",
         "operationId": "get_knowledge_base_tree",
+        "deprecated": true,
         "parameters": [
           {
             "name": "bank_id",
@@ -2680,7 +2695,127 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/KnowledgeTreeResponse"
+                  "$ref": "#/components/schemas/PageTreeResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记忆库不存在。"
+          },
+          "422": {
+            "description": "验证错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/default/banks/{bank_id}/pages/tree": {
+      "get": {
+        "tags": [
+          "Pages"
+        ],
+        "summary": "获取页面树",
+        "description": "以嵌套的文件夹与页面树形式返回记忆库中的页面。",
+        "operationId": "get_page_tree",
+        "parameters": [
+          {
+            "name": "bank_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "记忆库 ID"
+            }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "仅返回带有这些标签的页面（与 recall 一样，按 `tags_match` 匹配）。",
+              "title": "标签"
+            },
+            "description": "仅返回带有这些标签的页面（与 recall 一样，按 `tags_match` 匹配）。"
+          },
+          {
+            "name": "tags_match",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "any",
+                "all",
+                "any_strict",
+                "all_strict",
+                "exact"
+              ],
+              "type": "string",
+              "description": "`tags` 与页面标签的匹配方式：any、all、any_strict、all_strict、exact。'any'/'all' 也返回无标签页面；_strict 模式和 'exact' 不会。",
+              "default": "any",
+              "title": "标签匹配方式"
+            },
+            "description": "`tags` 与页面标签的匹配方式：any、all、any_strict、all_strict、exact。'any'/'all' 也返回无标签页面；_strict 模式和 'exact' 不会。"
+          },
+          {
+            "name": "tag_groups",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "JSON 编码的复合标签筛选条件，与 recall 的 `tag_groups` 结构相同，例如 `[{\"or\":[{\"tags\":[\"user:kate\"],\"match\":\"all_strict\"},{\"tags\":[\"team\"]}]}]`。顶层组之间以 AND 连接，并与 `tags` 以 AND 连接。",
+              "title": "复合标签条件组"
+            },
+            "description": "JSON 编码的复合标签筛选条件，与 recall 的 `tag_groups` 结构相同，例如 `[{\"or\":[{\"tags\":[\"user:kate\"],\"match\":\"all_strict\"},{\"tags\":[\"team\"]}]}]`。顶层组之间以 AND 连接，并与 `tags` 以 AND 连接。"
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功响应",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageTreeResponse"
                 }
               }
             }
@@ -2706,9 +2841,10 @@
         "tags": [
           "Knowledge Base"
         ],
-        "summary": "创建知识库文件夹",
-        "description": "创建文件夹，可选择将其嵌套在父文件夹下。",
+        "summary": "创建文件夹（已弃用的路径）",
+        "description": "`POST /v1/default/banks/{bank_id}/pages/folders` 的已弃用别名；请求与响应相同。将在 2.x 中移除。",
         "operationId": "create_knowledge_folder",
+        "deprecated": true,
         "parameters": [
           {
             "name": "bank_id",
@@ -2752,7 +2888,76 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/KnowledgeNode"
+                  "$ref": "#/components/schemas/PageNode"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "验证错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/default/banks/{bank_id}/pages/folders": {
+      "post": {
+        "tags": [
+          "Pages"
+        ],
+        "summary": "创建文件夹",
+        "description": "创建文件夹，可选择将其嵌套在父文件夹下。",
+        "operationId": "create_page_folder",
+        "parameters": [
+          {
+            "name": "bank_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "记忆库 ID"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFolderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "成功响应",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageNode"
                 }
               }
             }
@@ -2775,9 +2980,10 @@
         "tags": [
           "Knowledge Base"
         ],
-        "summary": "创建知识库页面",
-        "description": "创建页面（心智模型 + 树节点）。内容异步生成，使用返回的 operation_id 跟踪完成情况。",
+        "summary": "创建页面（已弃用的路径）",
+        "description": "`POST /v1/default/banks/{bank_id}/pages` 的已弃用别名；请求与响应相同。将在 2.x 中移除。",
         "operationId": "create_knowledge_page",
+        "deprecated": true,
         "parameters": [
           {
             "name": "bank_id",
@@ -2821,7 +3027,76 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CreateKnowledgePageResponse"
+                  "$ref": "#/components/schemas/CreatePageResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "验证错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/default/banks/{bank_id}/pages": {
+      "post": {
+        "tags": [
+          "Pages"
+        ],
+        "summary": "创建页面",
+        "description": "创建页面（心智模型 + 树节点）。内容异步生成，使用返回的 operation_id 跟踪完成情况。",
+        "operationId": "create_page",
+        "parameters": [
+          {
+            "name": "bank_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "记忆库 ID"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePageRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "成功响应",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatePageResponse"
                 }
               }
             }
@@ -2844,9 +3119,10 @@
         "tags": [
           "Knowledge Base"
         ],
-        "summary": "将知识库导出为 Markdown 包",
-        "description": "返回可移植的 Markdown 包：嵌套的 index.md、每页一个 <id>.md 文件，以及历史日志。",
+        "summary": "将页面导出为 Markdown 包（已弃用的路径）",
+        "description": "`GET /v1/default/banks/{bank_id}/pages/export` 的已弃用别名；请求与响应相同。将在 2.x 中移除。",
         "operationId": "export_knowledge_base",
+        "deprecated": true,
         "parameters": [
           {
             "name": "bank_id",
@@ -2880,7 +3156,69 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/KnowledgePageBundleResponse"
+                  "$ref": "#/components/schemas/PageBundleResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记忆库不存在。"
+          },
+          "422": {
+            "description": "验证错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/default/banks/{bank_id}/pages/export": {
+      "get": {
+        "tags": [
+          "Pages"
+        ],
+        "summary": "将页面导出为 Markdown 包",
+        "description": "返回可移植的 Markdown 包：嵌套的 index.md、每页一个 <id>.md 文件，以及历史日志。",
+        "operationId": "export_pages",
+        "parameters": [
+          {
+            "name": "bank_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "记忆库 ID"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功响应",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageBundleResponse"
                 }
               }
             }
@@ -2906,9 +3244,10 @@
         "tags": [
           "Knowledge Base"
         ],
-        "summary": "对知识页进行混合检索（BM25 + 向量）",
-        "description": "对记忆库中的知识页进行文档级混合检索：将全文（BM25）匹配与向量相似度匹配通过倒数排名融合合并。不使用重排序模型，针对延迟进行调优。",
+        "summary": "页面混合检索（BM25 + 向量）（已弃用的路径）",
+        "description": "`GET /v1/default/banks/{bank_id}/pages/search` 的已弃用别名；请求与响应相同。将在 2.x 中移除。",
         "operationId": "search_knowledge_base",
+        "deprecated": true,
         "parameters": [
           {
             "name": "bank_id",
@@ -3026,7 +3365,153 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/KnowledgePageSearchResponse"
+                  "$ref": "#/components/schemas/PageSearchResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记忆库不存在。"
+          },
+          "422": {
+            "description": "验证错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/default/banks/{bank_id}/pages/search": {
+      "get": {
+        "tags": [
+          "Pages"
+        ],
+        "summary": "对页面进行混合检索（BM25 + 向量）",
+        "description": "对记忆库中的页面进行文档级混合检索：将全文（BM25）匹配与向量相似度匹配通过倒数排名融合合并。不使用重排序模型，针对延迟进行调优。",
+        "operationId": "search_pages",
+        "parameters": [
+          {
+            "name": "bank_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "记忆库 ID"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "搜索查询",
+              "title": "Q"
+            },
+            "description": "搜索查询"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "description": "最多返回的结果数量",
+              "default": 10,
+              "title": "数量上限"
+            },
+            "description": "最多返回的结果数量"
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "仅返回带有这些标签的页面（与 recall 一样，按 `tags_match` 匹配）。",
+              "title": "标签"
+            },
+            "description": "仅返回带有这些标签的页面（与 recall 一样，按 `tags_match` 匹配）。"
+          },
+          {
+            "name": "tags_match",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "any",
+                "all",
+                "any_strict",
+                "all_strict",
+                "exact"
+              ],
+              "type": "string",
+              "description": "`tags` 与页面标签的匹配方式：any、all、any_strict、all_strict、exact。'any'/'all' 也返回无标签页面；_strict 模式和 'exact' 不会。",
+              "default": "any",
+              "title": "标签匹配方式"
+            },
+            "description": "`tags` 与页面标签的匹配方式：any、all、any_strict、all_strict、exact。'any'/'all' 也返回无标签页面；_strict 模式和 'exact' 不会。"
+          },
+          {
+            "name": "tag_groups",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "JSON 编码的复合标签筛选条件，与 recall 的 `tag_groups` 结构相同，例如 `[{\"or\":[{\"tags\":[\"user:kate\"],\"match\":\"all_strict\"},{\"tags\":[\"team\"]}]}]`。顶层组之间以 AND 连接，并与 `tags` 以 AND 连接。",
+              "title": "复合标签条件组"
+            },
+            "description": "JSON 编码的复合标签筛选条件，与 recall 的 `tag_groups` 结构相同，例如 `[{\"or\":[{\"tags\":[\"user:kate\"],\"match\":\"all_strict\"},{\"tags\":[\"team\"]}]}]`。顶层组之间以 AND 连接，并与 `tags` 以 AND 连接。"
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功响应",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageSearchResponse"
                 }
               }
             }
@@ -3052,9 +3537,10 @@
         "tags": [
           "Knowledge Base"
         ],
-        "summary": "获取知识库页面",
-        "description": "以 Markdown 文档（frontmatter + Markdown 正文）返回单个页面。",
+        "summary": "获取页面（已弃用的路径）",
+        "description": "`GET /v1/default/banks/{bank_id}/pages/{page_id}` 的已弃用别名；请求与响应相同。将在 2.x 中移除。",
         "operationId": "get_knowledge_page",
+        "deprecated": true,
         "parameters": [
           {
             "name": "bank_id",
@@ -3097,7 +3583,75 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/KnowledgePageResponse"
+                  "$ref": "#/components/schemas/PageResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "验证错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/default/banks/{bank_id}/pages/{page_id}": {
+      "get": {
+        "tags": [
+          "Pages"
+        ],
+        "summary": "获取页面",
+        "description": "以 Markdown 文档（frontmatter + Markdown 正文）返回单个页面。",
+        "operationId": "get_page",
+        "parameters": [
+          {
+            "name": "bank_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "记忆库 ID"
+            }
+          },
+          {
+            "name": "page_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "页面 ID"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功响应",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResponse"
                 }
               }
             }
@@ -3120,9 +3674,10 @@
         "tags": [
           "Knowledge Base"
         ],
-        "summary": "重命名/移动知识库节点或更新页面选项",
-        "description": "重命名节点（设置 `name`）、将其移至另一文件夹下（设置 `parent_id`，null 表示根目录），和/或更新页面选项（`source_query`、`tags`、`max_tokens`、`trigger`）。改变 `source_query` 会安排异步刷新，使页面基于新问题重建。`trigger` 按补丁方式应用：更新发送的字段，其他字段保留页面当前值。",
+        "summary": "重命名/移动页面节点或更新页面选项（已弃用的路径）",
+        "description": "`PATCH /v1/default/banks/{bank_id}/pages/nodes/{node_id}` 的已弃用别名；请求与响应相同。将在 2.x 中移除。",
         "operationId": "update_knowledge_node",
+        "deprecated": true,
         "parameters": [
           {
             "name": "bank_id",
@@ -3175,7 +3730,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/KnowledgeNode"
+                  "$ref": "#/components/schemas/PageNode"
                 }
               }
             }
@@ -3196,9 +3751,152 @@
         "tags": [
           "Knowledge Base"
         ],
-        "summary": "删除知识库节点",
-        "description": "删除文件夹或页面及其整个子树（页面的心智模型也会删除）。",
+        "summary": "删除页面节点（已弃用的路径）",
+        "description": "`DELETE /v1/default/banks/{bank_id}/pages/nodes/{node_id}` 的已弃用别名；请求与响应相同。将在 2.x 中移除。",
         "operationId": "delete_knowledge_node",
+        "deprecated": true,
+        "parameters": [
+          {
+            "name": "bank_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "记忆库 ID"
+            }
+          },
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "节点 ID"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功响应",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "验证错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/default/banks/{bank_id}/pages/nodes/{node_id}": {
+      "patch": {
+        "tags": [
+          "Pages"
+        ],
+        "summary": "重命名/移动页面节点或更新页面选项",
+        "description": "重命名节点（设置 `name`）、将其移至另一文件夹下（设置 `parent_id`，null 表示根目录），和/或更新页面选项（`source_query`、`tags`、`max_tokens`、`trigger`）。改变 `source_query` 会安排异步刷新，使页面基于新问题重建。`trigger` 按补丁方式应用：更新发送的字段，其他字段保留页面当前值。",
+        "operationId": "update_page_node",
+        "parameters": [
+          {
+            "name": "bank_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "记忆库 ID"
+            }
+          },
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "节点 ID"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateNodeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功响应",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageNode"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "验证错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Pages"
+        ],
+        "summary": "删除页面节点",
+        "description": "删除文件夹或页面及其整个子树（页面的心智模型也会删除）。",
+        "operationId": "delete_page_node",
         "parameters": [
           {
             "name": "bank_id",
@@ -4029,7 +4727,7 @@
                   "type": "null"
                 }
               ],
-              "title": "授权"
+              "title": "Authorization"
             }
           }
         ],
@@ -4197,7 +4895,7 @@
           "Documents"
         ],
         "summary": "更新文档",
-        "description": "更新文档的可变字段，不重新处理其内容。\n\n**标签**（`tags`）：该数组会替换文档的标签，而非与之合并。请发送文档最终应具有的完整标签集合；未包含的标签会被移除。因此，空数组（`[]`）会清空所有标签；完全省略此字段会被拒绝（422）。\n\n新标签会传播到所有关联的记忆单元。\n\n**观测范围**（`observation_scopes`）：替换整合期间文档记忆的范围划分方式，可使用与 retain 相同的值。若记忆库中的文档此前按单次会话标签存入，可用此字段将其移至 `shared`，无需重新提取。之后重新处理此文档时也会使用该设置。\n\n仅当变更导致记忆解析出的观测范围发生变化时，才会重新整合该记忆：其观测会被删除，记忆会重新排队；其他文档中与这些观测共享来源的记忆也会一并处理。若变更解析出的范围相同（例如在 `shared` 下更改标签、单个标签对应的 `combined` 与 `[[that tag]]` 等价，或重新发送当前值），则保留所有观测，不会排队。\n\n必须至少提供一个字段。",
+        "description": "更新文档的可变字段，而不重新处理其内容。\n\n**标签**（`tags`）：该数组会替换文档的标签，而不是与现有标签合并。请发送文档最终应具有的完整标签集合，任何省略的标签都会被移除。因此，空数组（`[]`）会清空所有标签。\n\n**部分标签变更**（`add_tags`、`remove_tags`）：仅添加或移除列出的标签，其余标签保留，例如 `{\"add_tags\": [\"team-c\"], \"remove_tags\": [\"team-a\"]}`。先执行移除。不能与 `tags` 同时使用（422）。请求若不包含 `tags`、`add_tags`、`remove_tags` 或 `observation_scopes` 中的任何字段，将被拒绝（422）。\n\n新标签会传播到所有关联的记忆单元。\n\n**观测范围**（`observation_scopes`）：替换文档中的记忆在整合时的范围划分方式，接受的值与 Retain 相同。对于文档此前按会话标签存入的记忆库，可以用它改为 `shared`，无需重新提取内容。之后重新处理文档时，也会使用该值存入。\n\n只有当变更改变了记忆解析后的观测范围时，才会重新整合该记忆：删除其观测，并将其与其他文档中共享这些观测的共同来源记忆一起重新入队。如果变更解析后的范围相同（在 `shared` 下更改标签、对单个标签使用 `combined` 与 `[[that tag]]`、重新发送当前值），则保留全部观测，不会将任何记忆入队。",
         "operationId": "update_document",
         "parameters": [
           {
@@ -5885,7 +6583,7 @@
           "Document Transfer"
         ],
         "summary": "导出文档（异步）",
-        "description": "提交异步操作，将记忆库文档（提取的事实、实体名称、因果连接、文本分块）导出为传输 ZIP 归档。不包含嵌入向量和数据库 ID；导入时使用目标记忆库的模型重新生成嵌入向量，并重新消解实体。通过后台操作运行，避免大型记忆库长时间占用 API。返回 operation_id；轮询 GET /v1/default/banks/{bank_id}/operations/{operation_id}。完成后，操作的 result_metadata 包含 download_url（从 GET /v1/default/files/download/{key} 获取 ZIP）、storage_key、byte_size 和 filename。传入 document_id 查询参数可导出指定文档，省略则导出整个记忆库；include_observations=true 携带整合后的观测，include_knowledge_base=true 携带心智模型和知识页（两者都仅适用于整库导出）。",
+        "description": "提交异步导出，将记忆库中的文档（提取的事实、实体名称、因果连接、分块）导出为迁移 ZIP 归档。归档不含嵌入向量与数据库 ID；导入时会使用目标记忆库的模型重新生成嵌入向量，并重新解析实体。以后台操作运行，避免大型记忆库长时间占用 API。返回 operation_id；轮询 GET /v1/default/banks/{bank_id}/operations/{operation_id}。完成后，操作的 result_metadata 包含 download_url（从 GET /v1/default/files/download/{key} 获取 ZIP）、storage_key、byte_size 和 filename。传入 document_id 查询参数可导出特定文档，省略则导出整个记忆库；include_observations=true 会包含整合后的观测，include_knowledge_base=true 会包含心智模型与页面（这些选项均仅用于整个记忆库导出）。",
         "operationId": "export_documents",
         "deprecated": true,
         "parameters": [
@@ -5937,11 +6635,11 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "同时导出心智模型和知识页（导入时恢复，仅限整库）",
+              "description": "同时导出心智模型和页面（导入时恢复，仅限整库）",
               "default": false,
               "title": "包含知识库"
             },
-            "description": "同时导出心智模型和知识页（导入时恢复，仅限整库）"
+            "description": "同时导出心智模型和页面（导入时恢复，仅限整库）"
           },
           {
             "name": "authorization",
@@ -5990,7 +6688,7 @@
           "Bank Transfer"
         ],
         "summary": "导出记忆库（异步）",
-        "description": "提交异步操作，将记忆库导出为传输 ZIP 归档。三个开关选择归档携带的内容：include_data（文档、事实、观测、附件及其字节数据、人工维护归档、操作日志和维护队列）、include_bank_config（记忆库配置、心智模型及其历史、知识页）、include_bank_config（记忆库配置覆盖项、强制指令和 Webhook），以及 include_history（audit_log、llm_requests）。绝不携带嵌入向量和数据库 ID；导入时使用目标记忆库模型重新生成嵌入向量，并重新消解实体，因此归档可在配置不同嵌入模型的实例之间迁移。返回 operation_id；轮询 GET /v1/default/banks/{bank_id}/operations/{operation_id}，然后从其 result_metadata 中的 download_url 获取归档。传入 document_id 可导出指定文档而非整个记忆库（文档子集不携带记忆库级部分）。",
+        "description": "提交异步操作，将记忆库导出为传输 ZIP 归档。三个开关选择归档携带的内容：include_data（文档、事实、观测、附件及其字节数据、人工维护归档、操作日志和维护队列）、include_bank_config（记忆库配置、心智模型及其历史、页面）、include_bank_config（记忆库配置覆盖项、强制指令和 Webhook），以及 include_history（audit_log、llm_requests）。绝不携带嵌入向量和数据库 ID；导入时使用目标记忆库模型重新生成嵌入向量，并重新消解实体，因此归档可在配置不同嵌入模型的实例之间迁移。返回 operation_id；轮询 GET /v1/default/banks/{bank_id}/operations/{operation_id}，然后从其 result_metadata 中的 download_url 获取归档。传入 document_id 可导出指定文档而非整个记忆库（文档子集不携带记忆库级部分）。",
         "operationId": "export_bank_transfer",
         "parameters": [
           {
@@ -6274,7 +6972,7 @@
           "Bank Transfer"
         ],
         "summary": "克隆记忆库（异步）",
-        "description": "通过一次调用将此记忆库复制为新库。克隆库从克隆时来源库的记忆状态开始，此后独立演变：任一库后续的存入、整合和编辑均不影响另一库。\n\n这相当于在此实例上连续执行上述导出和导入，因此不重新提取内容，也不调用 LLM；与 restore 完全相同，事实重新生成嵌入向量，实体重新消解。同样的三个开关选择克隆继承的内容：include_data（文档、事实、观测、附件、人工维护归档、操作日志，以及从中综合生成的心智模型和知识页）、include_bank_config（记忆库配置覆盖项、强制指令和 **Webhook**），以及 include_history（audit_log、llm_requests）。\n\n请注意 Webhook：它们随记忆库配置一起复制，因此使用默认开关创建的克隆库会调用来源库的 Webhook 端点。如果这些端点指向针对单个记忆库的消费者，请传入 include_bank_config=false，或在克隆库中删除它们。\n\ntarget_bank_id 必须尚不存在。返回 operation_id，记录在来源记忆库下（目标尚不存在）；轮询 GET /v1/default/banks/{bank_id}/operations/{operation_id} 可获取状态和各组成部分的数量。",
+        "description": "通过一次调用将此记忆库复制为新库。克隆库从克隆时来源库的记忆状态开始，此后独立演变：任一库后续的存入、整合和编辑均不影响另一库。\n\n这相当于在此实例上连续执行上述导出和导入，因此不重新提取内容，也不调用 LLM；与 restore 完全相同，事实重新生成嵌入向量，实体重新消解。同样的三个开关选择克隆继承的内容：include_data（文档、事实、观测、附件、人工维护归档、操作日志，以及从中综合生成的心智模型和页面）、include_bank_config（记忆库配置覆盖项、强制指令和 **Webhook**），以及 include_history（audit_log、llm_requests）。\n\n请注意 Webhook：它们随记忆库配置一起复制，因此使用默认开关创建的克隆库会调用来源库的 Webhook 端点。如果这些端点指向针对单个记忆库的消费者，请传入 include_bank_config=false，或在克隆库中删除它们。\n\ntarget_bank_id 必须尚不存在。返回 operation_id，记录在来源记忆库下（目标尚不存在）；轮询 GET /v1/default/banks/{bank_id}/operations/{operation_id} 可获取状态和各组成部分的数量。",
         "operationId": "clone_bank",
         "parameters": [
           {
@@ -6303,11 +7001,11 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "复制记忆、支撑数据，以及从中综合生成的心智模型和知识页",
+              "description": "复制记忆、支撑数据，以及从中综合生成的心智模型和页面",
               "default": true,
               "title": "包含数据"
             },
-            "description": "复制记忆、支撑数据，以及从中综合生成的心智模型和知识页"
+            "description": "复制记忆、支撑数据，以及从中综合生成的心智模型和页面"
           },
           {
             "name": "include_bank_config",
@@ -7779,7 +8477,7 @@
                 }
               ],
               "description": "按动作类型筛选",
-              "title": "动作"
+              "title": "操作"
             },
             "description": "按动作类型筛选"
           },
@@ -7940,7 +8638,7 @@
                 }
               ],
               "description": "按动作类型筛选",
-              "title": "动作"
+              "title": "操作"
             },
             "description": "按动作类型筛选"
           },
@@ -8040,7 +8738,7 @@
                   "type": "null"
                 }
               ],
-              "title": "授权"
+              "title": "Authorization"
             }
           }
         ],
@@ -8555,7 +9253,7 @@
           },
           "action": {
             "type": "string",
-            "title": "动作"
+            "title": "操作"
           },
           "transport": {
             "type": "string",
@@ -8604,7 +9302,7 @@
               }
             ],
             "title": "持续时间（毫秒）",
-            "description": "服务器计算的持续时间，单位为毫秒（started_at 到 ended_at）。尚未完成时为 Null。"
+            "description": "服务器根据 started_at → ended_at 计算的时长，单位为毫秒。尚未完成时为 null。"
           },
           "metadata": {
             "additionalProperties": true,
@@ -8809,7 +9507,7 @@
                 "type": "null"
               }
             ],
-            "title": "耗时（毫秒）",
+            "title": "持续时间（毫秒）",
             "description": "服务器根据 started_at → ended_at 计算的时长，单位为毫秒。尚未完成时为 null。"
           },
           "metadata": {
@@ -9357,6 +10055,12 @@
             "title": "观测总数",
             "description": "观测总数",
             "default": 0
+          },
+          "paused_mental_models": {
+            "type": "integer",
+            "title": "已暂停的心智模型",
+            "description": "最近一次刷新失败的心智模型数量。自动触发器（`refresh_after_consolidation`、`refresh_cron`、`full_refresh_cron`）会跳过这些模型，直至显式刷新成功。它们的内容会停止更新，因此当该值大于 0 时应发出告警。每个模型的 `last_refresh_failed_at` 可用于确定哪些模型受影响，其历史记录则说明失败原因。",
+            "default": 0
           }
         },
         "type": "object",
@@ -9402,6 +10106,7 @@
             "observation": 20,
             "preference": 30
           },
+          "paused_mental_models": 0,
           "pending_consolidation": 0,
           "pending_operations": 2,
           "total_documents": 10,
@@ -9578,7 +10283,7 @@
               }
             ],
             "title": "心智模型刷新使用决策模型",
-            "description": "同样适用于知识页刷新。"
+            "description": "同样适用于页面刷新。"
           },
           "mental_model_delta_use_decision_model": {
             "anyOf": [
@@ -9590,7 +10295,7 @@
               }
             ],
             "title": "心智模型增量更新使用决策模型",
-            "description": "服务器配置了决策模型时，知识页增量刷新会让该模型判断哪些新记忆可能改变页面，而不是运行 reflect。"
+            "description": "服务器配置了决策模型时，页面增量刷新会让该模型判断哪些新记忆可能改变页面，而不是运行 reflect。"
           },
           "disposition_skepticism": {
             "anyOf": [
@@ -9725,6 +10430,21 @@
             "title": "MCP 已启用工具",
             "description": "此记忆库的 MCP 工具允许列表（None = 所有工具）"
           },
+          "knowledge_banks": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "知识库",
+            "description": "该记忆库执行 Reflect 时读取其内容片段的知识库"
+          },
           "consolidation_llm_batch_size": {
             "anyOf": [
               {
@@ -9843,6 +10563,19 @@
             "title": "reflect 来源事实最大 token 数",
             "description": "每次 reflect 调用的来源事实最大 token 数"
           },
+          "page_default_trigger": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "页面默认触发器",
+            "description": "创建页面时，合并到内置页面默认值之上的触发器字段（如 {\"refresh_cron\": \"0 * * * *\"}）。创建请求中发送的触发器仍具有更高优先级。"
+          },
           "knowledge_page_default_trigger": {
             "anyOf": [
               {
@@ -9854,7 +10587,8 @@
               }
             ],
             "title": "知识页默认触发器",
-            "description": "创建页面时，合并到内置知识页默认值之上的触发器字段（如 {\"refresh_cron\": \"0 * * * *\"}）。创建请求中发送的触发器仍具有更高优先级。"
+            "description": "page_default_trigger 的已弃用别名。将在 2.x 中移除。",
+            "deprecated": true
           },
           "reflect_default_options": {
             "anyOf": [
@@ -9867,7 +10601,7 @@
               }
             ],
             "title": "reflect 默认选项",
-            "description": "此记忆库的默认 reflect 选项（如 {\"reflect_search_observations_max_tokens\": 3000, \"reflect_search_observations_include_entities\": false}）。当请求（或模型触发器）未设置选项时，应用于记忆库中的每次 reflect，包括 API、MCP 和心智模型刷新。"
+            "description": "此记忆库的默认 Reflect 选项（例如 {\"reflect_search_observations_max_tokens\": 3000, \"reflect_search_observations_include_entities\": false}）。应用于记忆库中每个未设置相应选项的 Reflect 请求（API 和 MCP）。心智模型刷新不会读取它：刷新从自身触发器获取这些选项，其记忆库级默认值由 page_default_trigger 设置。"
           },
           "mental_model_min_refresh_interval_seconds": {
             "anyOf": [
@@ -11266,7 +12000,7 @@
               }
             ],
             "title": "启用文本检索",
-            "description": "控制 recall 中的关键词（BM25）检索分支。禁用后仅保留纯向量检索：此分支完全不参与查询，而非筛选至无结果，因此不产生该分支的任何成本。同时移除知识页搜索中的关键词分支。"
+            "description": "控制 recall 中的关键词（BM25）检索分支。禁用后仅保留纯向量检索：此分支完全不参与查询，而非筛选至无结果，因此不产生该分支的任何成本。同时移除页面搜索中的关键词分支。"
           },
           "enable_temporal_retrieval": {
             "anyOf": [
@@ -11381,36 +12115,6 @@
         ],
         "title": "CreateFolderRequest",
         "description": "创建文件夹，可选择放在父文件夹下。"
-      },
-      "CreateKnowledgePageResponse": {
-        "properties": {
-          "page_id": {
-            "type": "string",
-            "title": "页面 ID"
-          },
-          "mental_model_id": {
-            "type": "string",
-            "title": "心智模型 ID"
-          },
-          "operation_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "操作 ID"
-          }
-        },
-        "type": "object",
-        "required": [
-          "page_id",
-          "mental_model_id"
-        ],
-        "title": "CreateKnowledgePageResponse",
-        "description": "创建页面的结果：节点 ID、对应心智模型和刷新操作。"
       },
       "CreateMentalModelRequest": {
         "properties": {
@@ -11573,6 +12277,36 @@
         ],
         "title": "CreatePageRequest",
         "description": "创建页面（心智模型 + 树节点），可选择放在父文件夹下。"
+      },
+      "CreatePageResponse": {
+        "properties": {
+          "page_id": {
+            "type": "string",
+            "title": "页面 ID"
+          },
+          "mental_model_id": {
+            "type": "string",
+            "title": "心智模型 ID"
+          },
+          "operation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "操作 ID"
+          }
+        },
+        "type": "object",
+        "required": [
+          "page_id",
+          "mental_model_id"
+        ],
+        "title": "CreatePageResponse",
+        "description": "创建页面的结果：节点 ID、对应心智模型和刷新操作。"
       },
       "CreateWebhookRequest": {
         "properties": {
@@ -11977,7 +12711,7 @@
           "consolidation"
         ],
         "title": "DocumentEventKind",
-        "description": "变更的类型。这是一个具名枚举，而非 Literal：生成的 Rust 客户端会以内联枚举所在字段命名；而 ``kind`` 已用于命名其中的知识库节点枚举。"
+        "description": "变更的类型。使用具名枚举而非 Literal：生成的 Rust 客户端会按字段为内联枚举命名，而其中的 ``kind`` 已用于页面节点枚举。"
       },
       "DocumentExportSubmitResponse": {
         "properties": {
@@ -13173,6 +13907,12 @@
             "title": "文档导入 API",
             "description": "是否启用文档导入端点"
           },
+          "knowledge_banks": {
+            "type": "boolean",
+            "title": "知识库",
+            "description": "是否启用知识库",
+            "default": false
+          },
           "audit_log": {
             "type": "boolean",
             "title": "审计日志",
@@ -13419,353 +14159,6 @@
         "type": "object",
         "title": "IncludeOptions",
         "description": "在 recall 结果中包含附加数据的选项。"
-      },
-      "KnowledgeNode": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "ID"
-          },
-          "kind": {
-            "type": "string",
-            "enum": [
-              "folder",
-              "page"
-            ],
-            "title": "种类"
-          },
-          "name": {
-            "type": "string",
-            "title": "名称"
-          },
-          "parent_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "父节点 ID"
-          },
-          "mental_model_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "心智模型 ID",
-            "description": "底层心智模型 ID（仅页面）。"
-          },
-          "managed": {
-            "type": "boolean",
-            "title": "系统管理",
-            "description": "客户端设置的标志：true = 系统所有，false = 人工编写。",
-            "default": false
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "说明",
-            "description": "页面来源查询（页面的 `description`）。"
-          },
-          "tags": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "标签",
-            "default": []
-          },
-          "timestamp": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "时间戳",
-            "description": "最后刷新（页面）或最后更新（文件夹）的时间。"
-          },
-          "is_stale": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "是否待更新",
-            "description": "仅页面，由树端点填充。当*此页面*范围（标签和事实类型）内的记忆自页面上次读取记忆后被写入时为 True。这与定时刷新消耗一次 LLM 调用之前的检查相同，因此被标记的页面正是刷新时实际会重写的页面。不检测删除：移除范围内记忆不会留下写入，因此不会触发此标志。"
-          },
-          "last_refresh_failed_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "最近刷新失败时间",
-            "description": "仅页面：此页面最近一次刷新失败的时间（ISO 格式），若上次成功则为 null。设置此值期间，页面不会通过自身触发器重建，参见心智模型的同名字段。显式刷新仍会运行。"
-          },
-          "trigger": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/MentalModelTrigger-Output"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "仅页面具有此字段：页面的刷新设置，包括何时重建自身（`refresh_after_consolidation`、`refresh_cron`，以及任何 `full_refresh_cron`）、使用何种模式以及基于哪些事实。这是实际生效的策略：页面从未存储的设置会按默认值报告，因此应比较所关注的字段，而不是将整个对象与曾发送的补丁进行比较。文件夹没有底层心智模型，因此不含此字段；未存储触发器的页面也不含此字段。"
-          },
-          "children": {
-            "items": {
-              "$ref": "#/components/schemas/KnowledgeNode"
-            },
-            "type": "array",
-            "title": "子节点",
-            "default": []
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "kind",
-          "name"
-        ],
-        "title": "KnowledgeNode",
-        "description": "知识库目录树中的节点，可以是文件夹或页面。\n\n页面从其底层心智模型携带 ``description``/``tags``。知识库由客户端管理（CRUD）；``managed`` 允许客户端将节点标为系统所有或人工编写。"
-      },
-      "KnowledgePageBundleFile": {
-        "properties": {
-          "path": {
-            "type": "string",
-            "title": "路径"
-          },
-          "content": {
-            "type": "string",
-            "title": "内容"
-          }
-        },
-        "type": "object",
-        "required": [
-          "path",
-          "content"
-        ],
-        "title": "KnowledgePageBundleFile",
-        "description": "可移植 Markdown 包中的一个文件。"
-      },
-      "KnowledgePageBundleResponse": {
-        "properties": {
-          "files": {
-            "items": {
-              "$ref": "#/components/schemas/KnowledgePageBundleFile"
-            },
-            "type": "array",
-            "title": "文件"
-          }
-        },
-        "type": "object",
-        "required": [
-          "files"
-        ],
-        "title": "KnowledgePageBundleResponse",
-        "description": "可移植 Markdown 包，即一组平铺的 Markdown 文件（索引 + 页面 + 日志）。"
-      },
-      "KnowledgePageResponse": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "ID"
-          },
-          "name": {
-            "type": "string",
-            "title": "名称"
-          },
-          "type": {
-            "type": "string",
-            "title": "类型",
-            "description": "页面类型，取自 `type:<x>` 标签，否则为 'knowledge-page'。"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "说明",
-            "description": "重建页面所用的来源查询。"
-          },
-          "tags": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "标签",
-            "default": []
-          },
-          "timestamp": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "时间戳",
-            "description": "最后刷新时间（回退至创建时间）。"
-          },
-          "body": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "正文",
-            "description": "页面综合生成的 Markdown 正文，与存储内容完全一致。在刷新写入正文之前为空；与 `markdown` 不同，后者会用文字说明。可依据此字段构建 UI 自己的空状态；展示文档本身则读取 `markdown`。"
-          },
-          "markdown": {
-            "type": "string",
-            "title": "Markdown",
-            "description": "完整 Markdown 文档：YAML frontmatter + Markdown 正文。尚无正文的页面会将 'No content yet.' 渲染为正文，而非只显示 frontmatter（后者看起来像页面渲染失败）。提示在返回时添加；`body` 中存储的正文仍为空，导出包仍保留不带提示的原始文档。"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "name",
-          "type",
-          "markdown"
-        ],
-        "title": "KnowledgePageResponse",
-        "description": "呈现为 Markdown 文档的知识页。"
-      },
-      "KnowledgePageSearchResponse": {
-        "properties": {
-          "results": {
-            "items": {
-              "$ref": "#/components/schemas/KnowledgePageSearchResult"
-            },
-            "type": "array",
-            "title": "结果"
-          },
-          "total": {
-            "type": "integer",
-            "title": "总数"
-          }
-        },
-        "type": "object",
-        "required": [
-          "results",
-          "total"
-        ],
-        "title": "KnowledgePageSearchResponse",
-        "description": "已排序的知识页搜索结果（BM25 + 向量，经 RRF 融合）。"
-      },
-      "KnowledgePageSearchResult": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "ID"
-          },
-          "name": {
-            "type": "string",
-            "title": "名称"
-          },
-          "mental_model_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "心智模型 ID"
-          },
-          "source_query": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "来源查询",
-            "description": "页面回答的问题。"
-          },
-          "snippet": {
-            "type": "string",
-            "title": "片段",
-            "description": "页面开头的文本。正文仍为空的页面会以文字 'No content yet.' 说明，而非返回空白，使调用方能够区分未写入的页面和仅片段未渲染的页面。该标记在返回时生成；存储的正文保持为空，也不进入搜索索引。"
-          },
-          "score": {
-            "type": "number",
-            "title": "分数",
-            "description": "范围为 0..1 的排名融合分数，1.0 表示各检索分支均将此页排在首位。反映该页针对此查询的排名，而非文本匹配程度，因此仅能在同一结果集中比较。"
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "更新时间"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "name",
-          "snippet",
-          "score"
-        ],
-        "title": "KnowledgePageSearchResult",
-        "description": "一条混合检索命中：知识页及其融合相关性分数。"
-      },
-      "KnowledgeTreeResponse": {
-        "properties": {
-          "roots": {
-            "items": {
-              "$ref": "#/components/schemas/KnowledgeNode"
-            },
-            "type": "array",
-            "title": "根节点"
-          }
-        },
-        "type": "object",
-        "required": [
-          "roots"
-        ],
-        "title": "KnowledgeTreeResponse",
-        "description": "以嵌套文件夹/页面树表示的知识库。"
       },
       "LLMCallTrace": {
         "properties": {
@@ -16162,6 +16555,18 @@
             ],
             "title": "创建时间"
           },
+          "is_page": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "是否为页面",
+            "description": "若此模型存储的是页面内容，而非独立心智模型，则为 true。由列表和获取端点设置。"
+          },
           "is_knowledge_page": {
             "anyOf": [
               {
@@ -16172,7 +16577,8 @@
               }
             ],
             "title": "是否为知识页",
-            "description": "若此模型存储的是知识页内容，而非独立心智模型，则为 true。由列表和获取端点设置。"
+            "description": "已弃用：请使用 is_page。",
+            "deprecated": true
           },
           "reflect_response": {
             "anyOf": [
@@ -16572,7 +16978,7 @@
         },
         "type": "object",
         "title": "MentalModelTrigger",
-        "description": "心智模型的触发器设置。\n\n刷新并非参数不同的临时 reflect：它要综合生成整个文档，因此需要专属检索和迭代设置。此触发器因而是它们的唯一来源，记忆库的 ``reflect_default_options`` 有意不应用于刷新。这些字段的逐记忆库默认值是 ``knowledge_page_default_trigger``，在创建页面时合并到同一结构之上。"
+        "description": "心智模型的触发器设置。\n\n刷新并非参数不同的临时 reflect：它要综合生成整个文档，因此需要专属检索和迭代设置。此触发器因而是它们的唯一来源，记忆库的 ``reflect_default_options`` 有意不应用于刷新。这些字段的逐记忆库默认值是 ``page_default_trigger``，在创建页面时合并到同一结构之上。"
       },
       "MentalModelTrigger-Output": {
         "properties": {
@@ -16811,7 +17217,7 @@
         },
         "type": "object",
         "title": "MentalModelTrigger",
-        "description": "心智模型的触发器设置。\n\n刷新并非参数不同的临时 reflect：它要综合生成整个文档，因此需要专属检索和迭代设置。此触发器因而是它们的唯一来源，记忆库的 ``reflect_default_options`` 有意不应用于刷新。这些字段的逐记忆库默认值是 ``knowledge_page_default_trigger``，在创建页面时合并到同一结构之上。"
+        "description": "心智模型的触发器设置。\n\n刷新并非参数不同的临时 reflect：它要综合生成整个文档，因此需要专属检索和迭代设置。此触发器因而是它们的唯一来源，记忆库的 ``reflect_default_options`` 有意不应用于刷新。这些字段的逐记忆库默认值是 ``page_default_trigger``，在创建页面时合并到同一结构之上。"
       },
       "MinScores": {
         "properties": {
@@ -17466,6 +17872,353 @@
           ],
           "total": 150
         }
+      },
+      "PageBundleFile": {
+        "properties": {
+          "path": {
+            "type": "string",
+            "title": "路径"
+          },
+          "content": {
+            "type": "string",
+            "title": "内容"
+          }
+        },
+        "type": "object",
+        "required": [
+          "path",
+          "content"
+        ],
+        "title": "PageBundleFile",
+        "description": "可移植 Markdown 包中的一个文件。"
+      },
+      "PageBundleResponse": {
+        "properties": {
+          "files": {
+            "items": {
+              "$ref": "#/components/schemas/PageBundleFile"
+            },
+            "type": "array",
+            "title": "文件"
+          }
+        },
+        "type": "object",
+        "required": [
+          "files"
+        ],
+        "title": "PageBundleResponse",
+        "description": "可移植 Markdown 包，即一组平铺的 Markdown 文件（索引 + 页面 + 日志）。"
+      },
+      "PageNode": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "ID"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "folder",
+              "page"
+            ],
+            "title": "种类"
+          },
+          "name": {
+            "type": "string",
+            "title": "名称"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "父节点 ID"
+          },
+          "mental_model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "心智模型 ID",
+            "description": "底层心智模型 ID（仅页面）。"
+          },
+          "managed": {
+            "type": "boolean",
+            "title": "系统管理",
+            "description": "客户端设置的标志：true = 系统所有，false = 人工编写。",
+            "default": false
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "说明",
+            "description": "页面来源查询（页面的 `description`）。"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "标签",
+            "default": []
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "时间戳",
+            "description": "最后刷新（页面）或最后更新（文件夹）的时间。"
+          },
+          "is_stale": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "是否待更新",
+            "description": "仅页面，由树端点填充。当*此页面*范围（标签和事实类型）内的记忆自页面上次读取记忆后被写入时为 True。这与定时刷新消耗一次 LLM 调用之前的检查相同，因此被标记的页面正是刷新时实际会重写的页面。不检测删除：移除范围内记忆不会留下写入，因此不会触发此标志。"
+          },
+          "last_refresh_failed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "最近刷新失败时间",
+            "description": "仅页面：此页面最近一次刷新失败的时间（ISO 格式），若上次成功则为 null。设置此值期间，页面不会通过自身触发器重建，参见心智模型的同名字段。显式刷新仍会运行。"
+          },
+          "trigger": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MentalModelTrigger-Output"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "仅页面具有此字段：页面的刷新设置，包括何时重建自身（`refresh_after_consolidation`、`refresh_cron`，以及任何 `full_refresh_cron`）、使用何种模式以及基于哪些事实。这是实际生效的策略：页面从未存储的设置会按默认值报告，因此应比较所关注的字段，而不是将整个对象与曾发送的补丁进行比较。文件夹没有底层心智模型，因此不含此字段；未存储触发器的页面也不含此字段。"
+          },
+          "children": {
+            "items": {
+              "$ref": "#/components/schemas/PageNode"
+            },
+            "type": "array",
+            "title": "子节点",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "name"
+        ],
+        "title": "PageNode",
+        "description": "页面树中的节点，可以是文件夹或页面。\n\n页面的 ``description``/``tags`` 来自其底层心智模型。页面由客户端管理（CRUD）；客户端可通过 ``managed`` 将节点标记为系统维护或人工编写。"
+      },
+      "PageResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "ID"
+          },
+          "name": {
+            "type": "string",
+            "title": "名称"
+          },
+          "type": {
+            "type": "string",
+            "title": "类型",
+            "description": "页面类型，取自 `type:<x>` 标签，否则为 'knowledge-page'。"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "说明",
+            "description": "重建页面所用的来源查询。"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "标签",
+            "default": []
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "时间戳",
+            "description": "最后刷新时间（回退至创建时间）。"
+          },
+          "body": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "正文",
+            "description": "页面综合生成的 Markdown 正文，与存储内容完全一致。在刷新写入正文之前为空；与 `markdown` 不同，后者会用文字说明。可依据此字段构建 UI 自己的空状态；展示文档本身则读取 `markdown`。"
+          },
+          "markdown": {
+            "type": "string",
+            "title": "Markdown",
+            "description": "完整 Markdown 文档：YAML frontmatter + Markdown 正文。尚无正文的页面会将 'No content yet.' 渲染为正文，而非只显示 frontmatter（后者看起来像页面渲染失败）。提示在返回时添加；`body` 中存储的正文仍为空，导出包仍保留不带提示的原始文档。"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "type",
+          "markdown"
+        ],
+        "title": "PageResponse",
+        "description": "呈现为 Markdown 文档的页面。"
+      },
+      "PageSearchResponse": {
+        "properties": {
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/PageSearchResult"
+            },
+            "type": "array",
+            "title": "结果"
+          },
+          "total": {
+            "type": "integer",
+            "title": "总数"
+          }
+        },
+        "type": "object",
+        "required": [
+          "results",
+          "total"
+        ],
+        "title": "PageSearchResponse",
+        "description": "已排序的页面搜索结果（BM25 + 向量，经 RRF 融合）。"
+      },
+      "PageSearchResult": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "ID"
+          },
+          "name": {
+            "type": "string",
+            "title": "名称"
+          },
+          "mental_model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "心智模型 ID"
+          },
+          "source_query": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "来源查询",
+            "description": "页面回答的问题。"
+          },
+          "snippet": {
+            "type": "string",
+            "title": "片段",
+            "description": "页面开头的文本。正文仍为空的页面会以文字 'No content yet.' 说明，而非返回空白，使调用方能够区分未写入的页面和仅片段未渲染的页面。该标记在返回时生成；存储的正文保持为空，也不进入搜索索引。"
+          },
+          "score": {
+            "type": "number",
+            "title": "分数",
+            "description": "范围为 0..1 的排名融合分数，1.0 表示各检索分支均将此页排在首位。反映该页针对此查询的排名，而非文本匹配程度，因此仅能在同一结果集中比较。"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "更新时间"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "snippet",
+          "score"
+        ],
+        "title": "PageSearchResult",
+        "description": "一条混合检索命中：页面及其融合相关性分数。"
+      },
+      "PageTreeResponse": {
+        "properties": {
+          "roots": {
+            "items": {
+              "$ref": "#/components/schemas/PageNode"
+            },
+            "type": "array",
+            "title": "根节点"
+          }
+        },
+        "type": "object",
+        "required": [
+          "roots"
+        ],
+        "title": "PageTreeResponse",
+        "description": "以嵌套文件夹/页面树形式表示的页面。"
       },
       "PromptBlockModel": {
         "properties": {
@@ -19006,6 +19759,7 @@
               "refresh_failed_empty_candidate",
               "refresh_failed_delta_not_applied",
               "refresh_failed_structured_output",
+              "refresh_failed_candidate_rejected",
               "refresh_failed_error"
             ],
             "title": "结果",
@@ -19022,6 +19776,7 @@
                   "delta_ops_all_skipped",
                   "delta_not_applied",
                   "structured_output_failed",
+                  "candidate_rejected",
                   "retrieval_failed",
                   "no_answer",
                   "unexpected_error"
@@ -19903,7 +20658,37 @@
               }
             ],
             "title": "标签",
-            "description": "文档及其记忆单元的新标签完整集合，会替换已有标签，而非添加，因此遗漏标签就会删除它，`[]` 会清空全部标签。触发观测失效和重新整合。"
+            "description": "文档及其记忆单元最终应具有的完整标签集合。它会替换现有标签，而不是追加，因此省略的标签会被移除，`[]` 会清空全部标签。触发观测失效与重新整合。若仅需更改部分标签，请改用 `add_tags` / `remove_tags`。"
+          },
+          "add_tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "添加标签",
+            "description": "要添加到文档的标签，保留文档现有标签。不能与 `tags` 同时使用。"
+          },
+          "remove_tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "移除标签",
+            "description": "要从文档中移除的标签，保留其余标签（在 `add_tags` 之前执行）。不能与 `tags` 同时使用。记忆从设置了 `tag: true` 的实体标签组获得的标签仍会保留在该记忆上。"
           },
           "observation_scopes": {
             "anyOf": [
@@ -20382,6 +21167,7 @@
             "document_export_api": true,
             "document_import_api": true,
             "file_upload_api": true,
+            "knowledge_banks": false,
             "llm_trace": false,
             "mcp": true,
             "observations": false,

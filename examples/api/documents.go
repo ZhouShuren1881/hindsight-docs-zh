@@ -103,6 +103,28 @@ func main() {
 		log.Fatalf("Expected no tags after clearing, got %v (err %v)", cleared.GetTags(), err)
 	}
 
+	// 先设置两个标签，以便下面的部分更新移除一个并保留另一个。
+	if _, _, err = client.DocumentsAPI.UpdateDocument(ctx, "my-bank", "meeting-2024-03-15").
+		UpdateDocumentRequest(hindsight.UpdateDocumentRequest{Tags: []string{"team-a", "team-b"}}).
+		Execute(); err != nil {
+		log.Fatalf("Failed to set tags: %v", err)
+	}
+
+	// [docs:document-update-tags-partial]
+	// 添加一个标签并移除另一个，保留其余所有标签
+	_, _, err = client.DocumentsAPI.UpdateDocument(ctx, "my-bank", "meeting-2024-03-15").
+		UpdateDocumentRequest(hindsight.UpdateDocumentRequest{AddTags: []string{"team-c"}, RemoveTags: []string{"team-a"}}).
+		Execute()
+	if err != nil {
+		log.Fatalf("Failed to update tags: %v", err)
+	}
+	// [/docs:document-update-tags-partial]
+
+	partial, _, err := client.DocumentsAPI.GetDocument(ctx, "my-bank", "meeting-2024-03-15").Execute()
+	if err != nil || fmt.Sprint(partial.GetTags()) != "[team-b team-c]" {
+		log.Fatalf("Expected [team-b team-c] after the partial update, got %v (err %v)", partial.GetTags(), err)
+	}
+
 	// [docs:document-delete]
 	client.DocumentsAPI.DeleteDocument(ctx, "my-bank", "meeting-2024-03-15").Execute()
 	// [/docs:document-delete]

@@ -9,10 +9,10 @@ Hindsight 使用四类模型。只有 LLM 需要配置：嵌入模型和重排�
 
 | 模型 | 作用 | 默认值 |
 |---|---|---|
-| [**LLM**](#llm) | 在 Retain 时提取事实、整合观测、撰写 Reflect 答案和知识页 | `openai` 提供方，`gpt-4o-mini` |
+| [**LLM**](#llm) | 在 Retain 时提取事实、整合观测、撰写 Reflect 答案和页面 | `openai` 提供方，`gpt-4o-mini` |
 | [**嵌入模型**](#embedding-model) | 将文本转换为向量，供语义检索使用 | `BAAI/bge-small-en-v1.5`，本地运行 |
 | [**重排序模型**](#cross-encoder-reranker) | 根据相关性对 Recall 候选结果排序 | `hindsight-ai/hs-rerank-1`，本地运行 |
-| [**决策模型**](#decision-model) | 快速回答类型化判断问题，让 Recall、整合、Reflect 和知识页中的判断无需调用 LLM | 关闭。参见[决策模型](./decision-models) |
+| [**决策模型**](#decision-model) | 快速回答类型化判断问题，让 Recall、整合、Reflect 和页面中的判断无需调用 LLM | 关闭。参见[决策模型](./decision-models) |
 
 本地模型在首次运行时从 Hugging Face 下载。[配置](./configuration#llm-provider)列出了所有设置；本页介绍各提供方所需的配置。
 
@@ -271,6 +271,16 @@ export HINDSIGHT_API_LLM_API_KEY=your-api-key
 
 </ProviderSetup>
 
+OpenRouter 可以通过多个托管方提供同一个模型。`z-ai/glm-5.3-flash` 这样的模型标识说明模型由谁创建，而不是请求实际发送到哪个托管方。对于每次要求返回 JSON 的调用（事实提取、整合、Reflect 的工具调用），Hindsight 会设置 `provider.require_parameters=true`，使 OpenRouter 只选择支持所发送全部参数的托管方。
+
+如需自行选择托管方，可设置 OpenRouter 的[提供方路由](https://openrouter.ai/docs/features/provider-routing)配置项。你设置的 `provider` 配置项会被保留，并优先于 Hindsight 的设置：
+
+```bash
+export HINDSIGHT_API_LLM_EXTRA_BODY='{"provider":{"only":["deepinfra","novita"],"allow_fallbacks":false}}'
+```
+
+如果模型报错 “No endpoints found that can handle the requested parameters”，说明没有托管方支持所发送的全部参数。常见原因是模型不接受 `temperature`。设置 `HINDSIGHT_API_LLM_TEMPERATURE=none` 可停止发送该参数。
+
 ### Requesty {#llm-requesty}
 
 Requesty 的路由服务，模型名带提供方前缀，例如 `openai/gpt-4o-mini`。
@@ -315,7 +325,7 @@ export HINDSIGHT_API_LLM_BASE_URL=http://localhost:11434/v1
 
 ### Ollama Cloud {#llm-ollama-cloud}
 
-托管的 Ollama。
+托管的 Ollama。Ollama Cloud 不强制遵循响应模式（参见 [Ollama 文档](https://docs.ollama.com/capabilities/structured-outputs)），因此回复仅由提示约束并在事后检查：请选择能可靠遵循 JSON 模式的模型。
 
 <ProviderSetup>
 
@@ -955,7 +965,7 @@ Google Cloud 的 Vertex AI 通过原生 Google GenAI SDK 提供 Gemini 模型。
 <ModelProviderSearch only="embeddings" />
 
 :::warning 存入记忆前请选择模型
-Hindsight 在启动时读取嵌入维度并据此确定数据库大小。存入记忆后，改用不同维度的模型会导致记忆丢失；切换到相同维度的模型也需要重新嵌入每个记忆库。
+Hindsight 在启动时读取嵌入维度并据此确定数据库大小。存入记忆后，如果模型维度不同，服务器将无法启动。切换模型时，请使用 [`hindsight-admin reembed`](./admin-cli.md#reembed) 原地为所有内容重新生成嵌入向量；切换到相同维度的模型时也需要这样做，否则新旧向量会混在一起。
 :::
 
 ### Hindsight Inference {#embeddings-hindsight}
@@ -987,7 +997,7 @@ export HINDSIGHT_API_EMBEDDINGS_PROVIDER=local
 export HINDSIGHT_API_EMBEDDINGS_LOCAL_MODEL=hindsight-ai/hs-embed-1
 ```
 
-`hs-embed-1` 有 112M 个参数（MIT），返回 384 维向量，支持八种语言，可读取最多 8,192 个 token 的输入，无需查询或文档前缀。首次启动时从 Hugging Face 下载。不同模型的向量不能混用，因此切换后须重新嵌入已存入的记忆。
+`hs-embed-1` 有 112M 个参数（MIT），返回 384 维向量，支持八种语言，可读取最多 8,192 个 token 的输入，无需查询或文档前缀。首次启动时从 Hugging Face 下载。不同模型的向量不能混用，因此切换后须为已存入的记忆重新生成嵌入向量，参见 [`hindsight-admin reembed`](./admin-cli.md#reembed)。
 
 其他 Sentence Transformers 模型也以相同方式使用：
 
@@ -1464,7 +1474,7 @@ export HINDSIGHT_API_RERANKER_PROVIDER=rrf
 
 ### TypeSafe（已弃用） {#reranker-typesafe}
 
-已弃用：请改为使用 `typesafe` 提供方配置[决策模型](#decision-model)。Recall 使用决策模型替代重排序模型，整合、Reflect 和知识页也会使用。
+已弃用：请改为使用 `typesafe` 提供方配置[决策模型](#decision-model)。Recall 使用决策模型替代重排序模型，整合、Reflect 和页面也会使用。
 
 <ProviderSetup>
 
@@ -1480,13 +1490,13 @@ TypeSafe 并非 `/rerank` 端点：它回答有关状态的类型化问题。Hin
 
 <ModelProviderSearch only="decision" />
 
-Reflect 和知识页刷新目前仅支持 `hindsight` 和 `typesafe`。使用其他提供方时，它们仍仅使用 LLM 并记录警告，而 Recall 和整合仍会使用该提供方。如需将其他提供方与用于 Reflect 的 `hindsight` 或 `typesafe` 搭配，请覆盖 Reflect 的提供方（参见 [OpenAI Decisions](#decision-openai)）。
+Reflect 和页面刷新目前仅支持 `hindsight` 和 `typesafe`。使用其他提供方时，它们仍仅使用 LLM 并记录警告，而 Recall 和整合仍会使用该提供方。如需将其他提供方与用于 Reflect 的 `hindsight` 或 `typesafe` 搭配，请覆盖 Reflect 的提供方（参见 [OpenAI Decisions](#decision-openai)）。
 
-如果端点提供的模型并非该提供方的默认模型，还需设置 `HINDSIGHT_API_DECISION_MODEL_MODEL` 和 `HINDSIGHT_API_DECISION_MODEL_TOKENIZER`，并将 `HINDSIGHT_API_DECISION_MODEL_MAX_REQUEST_TOKENS` 设为该模型的上下文窗口减去一定余量。
+如果端点提供的模型并非该提供方的默认模型，还需设置 `HINDSIGHT_API_DECISION_MODEL_MODEL` 和 `HINDSIGHT_API_DECISION_MODEL_TOKENIZER`，并将 `HINDSIGHT_API_DECISION_MODEL_MAX_REQUEST_TOKENS` 设为该模型的上下文窗口减去一定余量。在 Hindsight Inference 上无需这样做：它会使每个请求适配实际服务该请求的模型的上下文窗口。
 
 ### Hindsight Inference {#decision-hindsight}
 
-[Hindsight Inference](https://inference.hindsight.vectorize.io) Decisions API 上的 `hs-decide-1-flash`。用于整合、Reflect 和知识页，启用后也用于 Recall。
+[Hindsight Inference](https://inference.hindsight.vectorize.io) Decisions API 上的 `hs-decide-1-flash`。用于整合、Reflect 和页面，启用后也用于 Recall。
 
 <ProviderSetup>
 
@@ -1503,7 +1513,7 @@ export HINDSIGHT_API_DECISION_MODEL_PROVIDER=hindsight
 
 ### TypeSafe (Jev) {#decision-typesafe}
 
-[TypeSafe](https://typesafe.ai) System One API 上的 `jev-latest`。用于 Recall、整合、Reflect 和知识页。
+[TypeSafe](https://typesafe.ai) System One API 上的 `jev-latest`。用于 Recall、整合、Reflect 和页面。
 
 <ProviderSetup>
 

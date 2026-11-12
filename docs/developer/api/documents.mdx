@@ -100,9 +100,9 @@ import documentsGo from '!!raw-loader!@site/examples/api/documents.go';
 
 ## 更新文档 {#update-document}
 
-更新现有文档中可变的字段，无需重新处理内容。目前支持更新 `tags`。
+更新现有文档中可变的字段，无需重新处理内容：可以更新文档的标签，以及文档中的记忆如何划分观测范围。
 
-`tags` 数组会**替换**文档原有的标签，而不是与其合并。请发送你希望文档最终包含的完整标签集合：凡是省略的标签都会被移除，空数组会清除所有标签。要移除单个标签，请先读取文档当前的标签，删去要移除的那个，再发送其余标签。完全省略此字段不算更新，且请求会被 `422` 拒绝。
+`tags` 数组会**替换**文档原有的标签，而不是与其合并。请发送你希望文档最终包含的完整标签集合：凡是省略的标签都会被移除，空数组会清除所有标签。若只需更改部分标签，请使用下文介绍的 `add_tags` / `remove_tags`。如果请求中不包含 `tags`、`add_tags`、`remove_tags` 或 `observation_scopes` 中的任何字段，则会被 `422` 拒绝。
 
 <Tabs>
 <TabItem value="python" label="Python">
@@ -116,6 +116,25 @@ import documentsGo from '!!raw-loader!@site/examples/api/documents.go';
 </TabItem>
 <TabItem value="go" label="Go">
 <CodeSnippet code={documentsGo} section="document-update-tags" language="go" />
+</TabItem>
+</Tabs>
+
+### 添加或移除单个标签 {#add-or-remove-single-tags}
+
+`add_tags` 和 `remove_tags` 只更改其指定的标签，保留其余标签，因此无需先读取当前标签集合。系统先执行移除操作，因此同时出现在两个列表中的标签最终会保留在文档上。这两个字段不能与 `tags` 同时使用，否则会返回 `422`。记忆从设置了 `tag: true` 的[实体标签](/developer/api/memory-banks#entity-labels)组继承的标签在两种情况下都会保留在该记忆上。
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={documentsPy} section="document-update-tags-partial" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={documentsMjs} section="document-update-tags-partial" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={documentsSh} section="document-update-tags-partial" language="bash" />
+</TabItem>
+<TabItem value="go" label="Go">
+<CodeSnippet code={documentsGo} section="document-update-tags-partial" language="go" />
 </TabItem>
 </Tabs>
 

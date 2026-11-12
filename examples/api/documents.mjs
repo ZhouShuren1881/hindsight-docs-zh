@@ -102,7 +102,6 @@ console.log(`Memory count: ${doc.memory_unit_count}`);
 console.log(`Created: ${doc.created_at}`);
 // [/docs:document-get]
 
-
 // [docs:document-history]
 // 按时间从新到旧列出每次 Retain、事实编辑和整合对本文档的影响
 const { data: history, error: historyError } = await sdk.getDocumentHistory({
@@ -142,6 +141,35 @@ await sdk.updateDocument({
     body: { tags: [] }
 });
 // [/docs:document-update-tags]
+
+// 先设置两个标签，以便下面的部分更新移除一个并保留另一个。
+await sdk.updateDocument({
+    client: apiClient,
+    path: { bank_id: 'my-bank', document_id: 'meeting-2024-03-15-section-1' },
+    body: { tags: ['team-a', 'team-b'] }
+});
+
+
+// [docs:document-update-tags-partial]
+// 添加一个标签并移除另一个，保留其余所有标签
+const { error: partialError } = await sdk.updateDocument({
+    client: apiClient,
+    path: { bank_id: 'my-bank', document_id: 'meeting-2024-03-15-section-1' },
+    body: { add_tags: ['team-c'], remove_tags: ['team-a'] }
+});
+
+if (partialError) {
+    throw new Error(`Failed to update tags: ${JSON.stringify(partialError)}`);
+}
+// [/docs:document-update-tags-partial]
+
+const { data: partialDoc } = await sdk.getDocument({
+    client: apiClient,
+    path: { bank_id: 'my-bank', document_id: 'meeting-2024-03-15-section-1' }
+});
+if (JSON.stringify(partialDoc.tags) !== JSON.stringify(['team-b', 'team-c'])) {
+    throw new Error(`Expected ["team-b","team-c"] after the partial update, got ${JSON.stringify(partialDoc.tags)}`);
+}
 
 
 // [docs:document-delete]

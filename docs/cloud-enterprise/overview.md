@@ -6,7 +6,7 @@ description: 自行运行开源版 Hindsight、使用托管的 Hindsight Cloud�
 
 # Hindsight 的运行方式 {#ways-to-run-hindsight}
 
-Hindsight 有三种运行方式。它们使用相同的记忆引擎：相同的 Retain（存入）、Recall（召回）和 Reflect（反思）操作、相同的心智模型和知识页，以及相同的 API 和 SDK。你可以先从一种方式开始，之后再切换到另一种。
+Hindsight 有三种运行方式。它们使用相同的记忆引擎：相同的 Retain（存入）、Recall（召回）和 Reflect（反思）操作、相同的心智模型和页面，以及相同的 API 和 SDK。你可以先从一种方式开始，之后再切换到另一种。
 
 | | 自托管（开源） | Hindsight Cloud | Hindsight Enterprise |
 |---|---|---|---|

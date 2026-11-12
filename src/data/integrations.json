@@ -699,6 +699,36 @@
       "category": "tool",
       "link": "https://github.com/Nyrest/hindsight-ingestion",
       "icon": "/img/icons/hindsight-ingestion.svg"
+    },
+    {
+      "id": "hindsight-php",
+      "name": "hindsight-php",
+      "description": "提供 Hindsight PHP 客户端，并为 Laravel AI SDK 智能体添加记忆。通过一个中间件，在智能体回答前召回记忆、回答后存入本次交互；支持排队存入、安全重试，以及用于测试的模拟实现。",
+      "type": "community",
+      "by": "skybleak333",
+      "category": "framework",
+      "link": "https://github.com/skybleak333/hindsight-php",
+      "icon": "/img/icons/laravel.svg"
+    },
+    {
+      "id": "hindsight-livekit",
+      "name": "LiveKit",
+      "description": "为 LiveKit 语音智能体提供跨通话的长期记忆。在通话开始时召回 Hindsight 对来电者已知的信息，将每次通话保存为文档，并为实时模型提供 retain/recall/reflect 工具。",
+      "type": "community",
+      "by": "namandidthis",
+      "category": "framework",
+      "link": "https://github.com/namandidthis/hindsight-livekit",
+      "icon": "/img/icons/github.png"
+    },
+    {
+      "id": "hindsight-desktop",
+      "name": "Hindsight Desktop",
+      "description": "适用于 Hindsight 服务器的独立 macOS 应用，可审阅来源、探索记忆和页面、搜索或提问，并跟踪处理进度与用量。",
+      "type": "community",
+      "by": "paabL",
+      "category": "tool",
+      "link": "https://github.com/paabL/hindsight-desktop",
+      "icon": "/img/icons/hindsight-desktop.png"
     }
   ]
 }

@@ -14,10 +14,28 @@ Hindsight 可在 **Linux**、**macOS** 和 **Windows** 上运行：
 |----------|--------|------------------|--------------------|-------|
 | **Linux**（x86_64、ARM64） | ✅ | ✅ | ✅ | 完全支持，建议用于生产环境 |
 | **macOS**（Apple Silicon / arm64） | ✅ | ✅ | ✅ | 完全支持 |
-| **macOS**（Intel / x86_64） | ✅ | ⚠️ 仅 slim | ✅ | 使用 `hindsight-all-slim` / `hindsight-api-slim`。完整套件中的本地 ML 模型（PyTorch、MLX）没有发布适用于 Intel Mac 的 wheel，因此执行 `pip install hindsight-all` 时会悄悄回退到数月前的版本。将 slim 套件与托管嵌入/重排服务提供方或进程内 ONNX 后端（`hindsight-api-slim[local-onnx]`）搭配使用。 |
+| **macOS**（Intel / x86_64） | ✅ | ⚠️ 仅 slim | ✅ | 使用 `hindsight-all-slim` / `hindsight-api-slim`。完整套件中的本地 ML 模型（PyTorch、MLX）没有发布适用于 Intel Mac 的 wheel，因此执行 `pip install hindsight-all` 时会悄悄回退到数月前的版本。将 slim 套件与托管嵌入/重排服务提供方或进程内 ONNX 后端搭配使用，详情请参阅 [Intel Mac](#intel-macs)。 |
 | **Windows**（x86_64） | ✅ | ✅ | ✅ | 完全支持 — 使用外部 PostgreSQL 的选项请参阅 [Windows 设置](#windows) |
 
 所有平台在开发时都支持使用内嵌数据库（pg0）。在 Windows 上，你还可以使用外部 PostgreSQL 安装；分步指南请参阅 [Windows](#windows) 部分。
+
+### Intel Mac {#intel-macs}
+
+PyTorch 在 2.2.2 之后不再发布适用于 Intel Mac（x86_64）的构建版本，而 Hindsight 需要更新的版本，因此无法在这类设备上安装完整的 `hindsight-api` / `hindsight-all` 包，也无法安装 `hindsight-embed` 默认使用的 `uvx hindsight-api` 守护进程。请改用 slim 包和进程内 ONNX 模型。这些模型不需要 PyTorch，仍可在本机运行嵌入器和重排器。
+
+ONNX Runtime 最后一个适用于 Intel Mac 的构建版本（1.23.2）支持 Python 3.10–3.13，因此**请使用 Python 3.13 或更早版本**。在 Python 3.14 上，只有托管服务提供方（OpenAI、Cohere、TEI 等）可用。
+
+```bash
+python3.13 -m venv ~/.hindsight/venv
+~/.hindsight/venv/bin/pip install "hindsight-api-slim[local-onnx,embedded-db]" flashrank hindsight-embed
+
+export HINDSIGHT_API_EMBEDDINGS_PROVIDER=onnx       # downloads intfloat/multilingual-e5-small on first start
+export HINDSIGHT_API_RERANKER_PROVIDER=flashrank     # ONNX cross-encoder, no PyTorch
+
+~/.hindsight/venv/bin/hindsight-api                  # or: ~/.hindsight/venv/bin/hindsight-embed ...
+```
+
+将两个提供方都设为非 `local` 值后，`hindsight-embed` 会启动与其安装在同一环境中的 `hindsight-api`，而不会回退到 `uvx hindsight-api`。
 
 ---
 

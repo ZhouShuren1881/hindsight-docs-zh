@@ -15,6 +15,16 @@ Hindsight CLI 提供命令行接口，用于操作记忆和管理记忆库。所
 curl -fsSL https://hindsight.vectorize.io/get-cli | bash
 ```
 
+### Windows（x64） {#windows-x64}
+
+每个版本都提供 `hindsight-windows-amd64.exe`。通过 PowerShell 下载后，将 `hindsight.exe` 移到 `PATH` 中的某个文件夹：
+
+```powershell
+Invoke-WebRequest https://github.com/vectorize-io/hindsight/releases/latest/download/hindsight-windows-amd64.exe -OutFile hindsight.exe
+```
+
+配置和命名配置文件的使用方式与 Linux 和 macOS 相同。`hindsight fs mount` 支持前台运行；后台挂载（`fs start`、`mount --detach`）仅支持 Unix。不提供 Windows ARM64 构建版本。
+
 ## 配置 {#configuration}
 
 配置 API URL：
@@ -141,9 +151,11 @@ export HINDSIGHT_API_KEY=your-api-key
 
 <CodeSnippet code={cliSh} section="cli-webhooks" language="bash" />
 
-## 知识库 {#knowledge-base}
+<a id="knowledge-base"></a>
 
-管理记忆库中的知识页，即按目录树组织的持续更新的文档。有关知识页的概念及刷新方式，参见[知识页](../developer/api/knowledge-pages)。
+## 页面 {#pages}
+
+管理记忆库中的页面，即按目录树组织的持续更新的文档。有关页面的概念及刷新方式，参见[页面](../developer/api/pages)。
 
 <CodeSnippet code={cliSh} section="cli-kb-tree" language="bash" />
 
@@ -156,7 +168,7 @@ export HINDSIGHT_API_KEY=your-api-key
 <CodeSnippet code={cliSh} section="cli-kb-manage" language="bash" />
 
 :::tip
-`hindsight fs mount --bank <bank_id>` 将同一个知识库镜像到磁盘上，生成实际的 Markdown 文件，并通过后台刷新循环保持最新。如果更习惯使用 `grep`、`rg` 或编辑器来操作知识库，这种方式会很方便。
+`hindsight fs mount --bank <bank_id>` 将同一组页面镜像到磁盘上，生成实际的 Markdown 文件，并通过后台刷新循环保持最新。如果更习惯使用 `grep`、`rg` 或编辑器来操作页面，这种方式会很方便。
 :::
 
 ## 审计日志 {#audit-logs}

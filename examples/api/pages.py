@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-Knowledge Pages API examples for Hindsight.
-Run: python examples/api/knowledge-pages.py
+Hindsight 页面 API 示例。
+运行：python examples/api/pages.py
 """
 import os
 import time
 
 HINDSIGHT_URL = os.getenv("HINDSIGHT_API_URL", "http://localhost:8888")
-BANK_ID = "knowledge-pages-demo-bank"
+BANK_ID = "pages-demo-bank"
 
 # =============================================================================
 # Setup (not shown in docs)
@@ -16,7 +16,7 @@ from hindsight_client import Hindsight
 
 client = Hindsight(base_url=HINDSIGHT_URL)
 
-client.create_bank(bank_id=BANK_ID, name="Knowledge Pages Demo")
+client.create_bank(bank_id=BANK_ID, name="Pages Demo")
 client.retain(bank_id=BANK_ID, content="The API is deployed to Kubernetes with a rolling update")
 client.retain(bank_id=BANK_ID, content="Deploys run from the main branch after CI passes")
 client.retain(bank_id=BANK_ID, content="A failed deploy is rolled back by redeploying the previous tag")
@@ -29,14 +29,14 @@ time.sleep(2)
 
 # [docs:create-folder]
 # Create a folder (omit parent_id, or pass None, to create it at the root)
-folder = client.create_knowledge_folder(BANK_ID, name="Operations")
+folder = client.create_page_folder(BANK_ID, name="Operations")
 
 print(f"Folder ID: {folder.id}")
 # [/docs:create-folder]
 
 # [docs:create-page]
 # Create a page — content is generated in the background
-page = client.create_knowledge_page(
+page = client.create_page(
     BANK_ID,
     name="Deploying the API",
     source_query="How is the API deployed?",
@@ -52,8 +52,8 @@ print(f"Page ID: {page.page_id}, operation: {page.operation_id}")
 time.sleep(20)
 
 # [docs:get-tree]
-# Fetch the whole knowledge base as a nested folder/page tree (no page bodies)
-tree = client.get_knowledge_base_tree(BANK_ID)
+# 以嵌套文件夹/页面树形式获取记忆库中的全部页面（不含页面正文）
+tree = client.get_page_tree(BANK_ID)
 
 for root in tree.roots:
     print(f"{root.kind}: {root.name}")
@@ -63,7 +63,7 @@ for root in tree.roots:
 
 # [docs:get-page]
 # Read a page as a markdown document
-document = client.get_knowledge_page(BANK_ID, page.page_id)
+document = client.get_page(BANK_ID, page.page_id)
 
 print(document.type)      # "runbook" — from the type:runbook tag
 print(document.body)      # the synthesized markdown body
@@ -72,7 +72,7 @@ print(document.markdown)  # YAML frontmatter + body
 
 # [docs:search-pages]
 # Hybrid search (full-text + vector) over whole pages
-results = client.search_knowledge_base(BANK_ID, q="how do we deploy", limit=5)
+results = client.search_pages(BANK_ID, q="how do we deploy", limit=5)
 
 for hit in results.results:
     print(f"{hit.score:.3f}  {hit.name}: {hit.snippet}")
@@ -80,12 +80,12 @@ for hit in results.results:
 
 # [docs:filter-by-tags]
 # Narrow the tree and search to pages carrying a tag (recall's tags / tags_match / tag_groups)
-tree = client.get_knowledge_base_tree(BANK_ID, tags=["type:runbook"], tags_match="any_strict")
-ops_hits = client.search_knowledge_base(BANK_ID, q="how do we deploy", tags=["ops"], tags_match="all_strict")
+tree = client.get_page_tree(BANK_ID, tags=["type:runbook"], tags_match="any_strict")
+ops_hits = client.search_pages(BANK_ID, q="how do we deploy", tags=["ops"], tags_match="all_strict")
 print(f"{len(tree.roots)} runbook roots, {len(ops_hits.results)} ops hits")
 
 # Compound filters use tag_groups: here, runbooks that are not drafts
-not_drafts = client.search_knowledge_base(
+not_drafts = client.search_pages(
     BANK_ID,
     q="how do we deploy",
     tag_groups=[{"and": [{"tags": ["type:runbook"]}, {"not": {"tags": ["draft"]}}]}],
@@ -96,7 +96,7 @@ print(f"{len(not_drafts.results)} non-draft runbooks")
 # [docs:update-node]
 # Rename a node, move it, and/or update a page's options.
 # Changing source_query rebuilds the page against the new question.
-client.update_knowledge_node(
+client.update_page_node(
     BANK_ID,
     page.page_id,
     name="Deploying the API (v2)",
@@ -105,8 +105,8 @@ client.update_knowledge_node(
 # [/docs:update-node]
 
 # [docs:export]
-# Export the knowledge base as a portable markdown bundle
-bundle = client.export_knowledge_base(BANK_ID)
+# 将记忆库中的页面导出为可移植的 Markdown 文件包
+bundle = client.export_pages(BANK_ID)
 
 for file in bundle.files:
     print(file.path)  # index.md, <page-id>.md, <page-id>.log.md
@@ -114,7 +114,7 @@ for file in bundle.files:
 
 # [docs:delete-node]
 # Delete a folder or page — deleting a folder removes its whole subtree
-client.delete_knowledge_node(BANK_ID, folder.id)
+client.delete_page_node(BANK_ID, folder.id)
 # [/docs:delete-node]
 
 # =============================================================================
@@ -122,4 +122,4 @@ client.delete_knowledge_node(BANK_ID, folder.id)
 # =============================================================================
 client.delete_bank(bank_id=BANK_ID)
 
-print("knowledge-pages.py: All examples passed")
+print("pages.py: All examples passed")

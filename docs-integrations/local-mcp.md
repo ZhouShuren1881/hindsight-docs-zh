@@ -133,17 +133,17 @@ claude mcp add --transport http hindsight http://localhost:8888/mcp/my-bank/
 | `list_banks` | 列出所有记忆库（仅限多记忆库模式） |
 | `create_bank` | 创建或配置记忆库（仅限多记忆库模式） |
 
-**知识库**
+**页面**
 
 | 工具 | 说明 |
 |------|-------------|
-| `get_knowledge_base_tree` | 浏览文件夹和页面构成的目录树 |
-| `search_knowledge_base` | 对知识页进行混合搜索 |
-| `get_knowledge_page` | 以 Markdown 文档形式读取页面 |
-| `create_knowledge_folder` | 创建文件夹 |
-| `create_knowledge_page` | 创建页面（根据记忆库中的记忆持续更新的文档） |
-| `update_knowledge_node` | 重命名或移动节点，或更新页面选项 |
-| `delete_knowledge_node` | 删除文件夹或页面及其子树 |
+| `get_page_tree` | 浏览文件夹和页面构成的目录树 |
+| `search_pages` | 对页面进行混合搜索 |
+| `get_page` | 以 Markdown 文档形式读取页面 |
+| `create_page_folder` | 创建文件夹 |
+| `create_page` | 创建页面（根据记忆库中的记忆持续更新的文档） |
+| `update_page_node` | 重命名或移动节点，或更新页面选项 |
+| `delete_page_node` | 删除文件夹或页面及其子树 |
 
 参数的详细说明请参阅 [MCP 服务器参考](/developer/mcp-server#available-tools)。
 

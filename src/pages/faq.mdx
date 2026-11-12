@@ -21,7 +21,7 @@ import { StaticImage } from '@site/src/components/StaticMedia';
 - [记忆存储、记忆召回与反思有什么区别？](#whats-the-difference-between-retain-recall-and-reflect)
 - [何时使用记忆召回，何时使用反思？](#when-should-i-use-recall-vs-reflect)
 - [何时使用心智模型？](#when-should-i-use-mental-models)
-- [心智模型与知识页](#whats-the-difference-between-a-mental-model-and-a-knowledge-page)
+- [心智模型与页面](#whats-the-difference-between-a-mental-model-and-a-page)
 - [预期延迟](#whats-the-typical-latency-for-recall-operations)
 - [标签、元数据与实体标签](#does-hindsight-support-metadata-filtering)
 - [控制召回的记忆类型](#how-do-i-control-which-types-of-memories-are-recalled)
@@ -214,11 +214,11 @@ reflect("What should I order for Alice?")
 
 ---
 
-### 心智模型与知识页有什么区别？ {#whats-the-difference-between-a-mental-model-and-a-knowledge-page}
+### 心智模型与页面有什么区别？ {#whats-the-difference-between-a-mental-model-and-a-page}
 
-**知识页也是心智模型**，使用相同引擎与刷新行为，但增加了两点：在文件夹树中的位置，以及面向文档而非答案调整的默认配置（仅基于观测构建、每次整合后增量刷新、不受其他页面影响，以及更大的内容预算）。
+**页面也是心智模型**，使用相同引擎与刷新行为，但增加了两点：在文件夹树中的位置，以及面向文档而非答案调整的默认配置（仅基于观测构建、每次整合后增量刷新、不受其他页面影响，以及更大的内容预算）。
 
-| | 心智模型 | 知识页 |
+| | 心智模型 | 页面 |
 |---|---|---|
 | 形式 | 针对问题的持久答案 | 带有 frontmatter 的 Markdown 文档 |
 | 组织方式 | 按标签限定范围的平面列表 | 嵌套文件夹与页面 |
@@ -226,9 +226,9 @@ reflect("What should I order for Alice?")
 | 刷新 | 默认关闭 | 每次整合后增量刷新 |
 | 典型使用者 | 通过查找获取答案的应用或智能体 | 浏览与阅读的人或智能体 |
 
-系统需要查询答案时，使用普通心智模型。结果需要像 wiki 一样供直接浏览与阅读时，使用知识页。心智模型上的所有可配置项同样适用于知识页。
+系统需要查询答案时，使用普通心智模型。结果需要像 wiki 一样供直接浏览与阅读时，使用页面。心智模型上的所有可配置项同样适用于页面。
 
-参阅[心智模型](/developer/api/mental-models)及开发者文档的知识页章节。
+参阅[心智模型](/developer/api/mental-models)及开发者文档的页面章节。
 
 ---
 

@@ -201,7 +201,7 @@
       "content": [
         {
           "type": "title",
-          "text": "知识页"
+          "text": "页面"
         }
       ],
       "width": 220
@@ -617,7 +617,7 @@
         {
           "edges": {
             "edge": "seed-pages",
-            "data": "5 个知识页"
+            "data": "5 个页面"
           },
           "show": {
             "pages": [
@@ -643,7 +643,7 @@
               }
             ]
           },
-          "say": "首项工作是配置记忆库并创建仓库知识页，每页回答一个关于项目的问题。页面最初为空。"
+          "say": "首项工作是配置记忆库并创建仓库页面，每页回答一个关于项目的问题。页面最初为空。"
         },
         {
           "edges": [
@@ -832,7 +832,7 @@
               }
             ]
           },
-          "say": "默认对记忆库执行一次有限预算的反思。\"pages\" 模式改为搜索知识页，\"recall\" 模式改为召回记忆，两者均只检索。",
+          "say": "默认对记忆库执行一次有限预算的反思。\"pages\" 模式改为搜索页面，\"recall\" 模式改为召回记忆，两者均只检索。",
           "ms": 3400
         },
         {
@@ -872,7 +872,7 @@
         {
           "edges": {
             "edge": "on-tool",
-            "data": "search_knowledge_pages(\"rounding\")"
+            "data": "search_pages(\"rounding\")"
           },
           "show": {
             "agent": [
@@ -884,17 +884,17 @@
               {
                 "tag": "tool",
                 "tone": "gray",
-                "text": "hindsight_search_knowledge_pages(\"rounding\")",
+                "text": "hindsight_search_pages(\"rounding\")",
                 "mono": true
               }
             ],
             "tools": [
               {
-                "text": "hindsight_search_knowledge_pages",
+                "text": "hindsight_search_pages",
                 "mono": true
               },
               {
-                "text": "hindsight_list / read_knowledge_page",
+                "text": "hindsight_list / read_page",
                 "mono": true
               },
               {
@@ -937,7 +937,7 @@
               }
             ]
           },
-          "say": "页面搜索按相关性排序，并返回各页片段，速度快且显示为工具调用。hindsight_read_knowledge_page 可读取整页。",
+          "say": "页面搜索按相关性排序，并返回各页片段，速度快且显示为工具调用。hindsight_read_page 可读取整页。",
           "ms": 2800
         },
         {
@@ -956,7 +956,7 @@
               {
                 "tag": "tool",
                 "tone": "gray",
-                "text": "hindsight_search_knowledge_pages(\"rounding\")",
+                "text": "hindsight_search_pages(\"rounding\")",
                 "mono": true
               },
               {

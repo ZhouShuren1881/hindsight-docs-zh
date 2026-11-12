@@ -1,5 +1,5 @@
 {
-  "title": "使用决策模型刷新知识页",
+  "title": "使用决策模型刷新页面",
   "speed": 2200,
   "elements": [
     {
@@ -72,7 +72,7 @@
       "content": [
         {
           "type": "title",
-          "text": "知识页"
+          "text": "页面"
         },
         {
           "type": "subtitle",

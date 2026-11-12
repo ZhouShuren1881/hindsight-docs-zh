@@ -38,10 +38,12 @@ export const CATEGORY_LABELS: Record<string, string> = {
   framework: '框架与 SDK',
   mcp: 'MCP',
   tool: '工具与应用',
+  // 集成中心将所有社区条目归入此组，不受条目自身 category 值影响。
+  community: '社区',
   legacy: '已被替代',
 };
 
-const CATEGORY_ORDER = ['framework', 'mcp', 'tool', 'coding-agent', 'legacy'];
+const CATEGORY_ORDER = ['framework', 'mcp', 'tool', 'coding-agent', 'community', 'legacy'];
 
 function categoryRank(category: string): number {
   const i = CATEGORY_ORDER.indexOf(category);

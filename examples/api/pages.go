@@ -10,7 +10,7 @@ import (
 	hindsight "github.com/vectorize-io/hindsight/hindsight-clients/go"
 )
 
-const kpBankID = "knowledge-pages-demo-bank-go"
+const kpBankID = "pages-demo-bank-go"
 
 func main() {
 	apiURL := os.Getenv("HINDSIGHT_API_URL")
@@ -28,7 +28,7 @@ func main() {
 	// =============================================================================
 	client.BanksAPI.CreateOrUpdateBank(ctx, kpBankID).
 		CreateBankRequest(hindsight.CreateBankRequest{
-			Name: *hindsight.NewNullableString(hindsight.PtrString("Knowledge Pages Demo")),
+			Name: *hindsight.NewNullableString(hindsight.PtrString("Pages Demo")),
 		}).Execute()
 	for _, content := range []string{
 		"The API is deployed to Kubernetes with a rolling update",
@@ -44,7 +44,7 @@ func main() {
 
 	// [docs:create-folder]
 	// Create a folder (leave ParentId unset to create it at the root)
-	folder, _, _ := client.KnowledgeBaseAPI.CreateKnowledgeFolder(ctx, kpBankID).
+	folder, _, _ := client.PagesAPI.CreatePageFolder(ctx, kpBankID).
 		CreateFolderRequest(hindsight.CreateFolderRequest{Name: "Operations"}).
 		Execute()
 
@@ -53,7 +53,7 @@ func main() {
 
 	// [docs:create-page]
 	// Create a page — content is generated in the background
-	page, _, _ := client.KnowledgeBaseAPI.CreateKnowledgePage(ctx, kpBankID).
+	page, _, _ := client.PagesAPI.CreatePage(ctx, kpBankID).
 		CreatePageRequest(hindsight.CreatePageRequest{
 			Name:        "Deploying the API",
 			SourceQuery: "How is the API deployed?",
@@ -69,8 +69,8 @@ func main() {
 	time.Sleep(20 * time.Second)
 
 	// [docs:get-tree]
-	// Fetch the whole knowledge base as a nested folder/page tree (no page bodies)
-	tree, _, _ := client.KnowledgeBaseAPI.GetKnowledgeBaseTree(ctx, kpBankID).Execute()
+	// 以嵌套文件夹/页面树形式获取记忆库中的全部页面（不含页面正文）
+	tree, _, _ := client.PagesAPI.GetPageTree(ctx, kpBankID).Execute()
 
 	for _, root := range tree.Roots {
 		fmt.Printf("%s: %s\n", root.Kind, root.Name)
@@ -82,7 +82,7 @@ func main() {
 
 	// [docs:get-page]
 	// Read a page as a markdown document
-	document, _, _ := client.KnowledgeBaseAPI.GetKnowledgePage(ctx, kpBankID, page.PageId).Execute()
+	document, _, _ := client.PagesAPI.GetPage(ctx, kpBankID, page.PageId).Execute()
 
 	fmt.Println(document.Type)      // "runbook" — from the type:runbook tag
 	fmt.Println(document.GetBody()) // the synthesized markdown body
@@ -91,7 +91,7 @@ func main() {
 
 	// [docs:search-pages]
 	// Hybrid search (full-text + vector) over whole pages
-	results, _, _ := client.KnowledgeBaseAPI.SearchKnowledgeBase(ctx, kpBankID).
+	results, _, _ := client.PagesAPI.SearchPages(ctx, kpBankID).
 		Q("how do we deploy").Limit(5).Execute()
 
 	for _, hit := range results.Results {
@@ -101,12 +101,12 @@ func main() {
 
 	// [docs:filter-by-tags]
 	// Narrow the tree and search to pages carrying a tag (recall's tags / tags_match / tag_groups)
-	runbooks, _, _ := client.KnowledgeBaseAPI.GetKnowledgeBaseTree(ctx, kpBankID).
+	runbooks, _, _ := client.PagesAPI.GetPageTree(ctx, kpBankID).
 		Tags([]string{"type:runbook"}).TagsMatch("any_strict").Execute()
 	fmt.Printf("runbook roots: %d\n", len(runbooks.Roots))
 
 	// Compound filters use tag_groups, sent as one JSON-encoded query param
-	notDrafts, _, _ := client.KnowledgeBaseAPI.SearchKnowledgeBase(ctx, kpBankID).
+	notDrafts, _, _ := client.PagesAPI.SearchPages(ctx, kpBankID).
 		Q("how do we deploy").
 		TagGroups(`[{"and":[{"tags":["type:runbook"]},{"not":{"tags":["draft"]}}]}]`).Execute()
 	fmt.Printf("non-draft hits: %d\n", len(notDrafts.Results))
@@ -115,7 +115,7 @@ func main() {
 	// [docs:update-node]
 	// Rename a node, move it, and/or update a page's options.
 	// Changing SourceQuery rebuilds the page against the new question.
-	client.KnowledgeBaseAPI.UpdateKnowledgeNode(ctx, kpBankID, page.PageId).
+	client.PagesAPI.UpdatePageNode(ctx, kpBankID, page.PageId).
 		UpdateNodeRequest(hindsight.UpdateNodeRequest{
 			Name: *hindsight.NewNullableString(hindsight.PtrString("Deploying the API (v2)")),
 			Tags: []string{"ops", "type:runbook", "reviewed"},
@@ -123,8 +123,8 @@ func main() {
 	// [/docs:update-node]
 
 	// [docs:export]
-	// Export the knowledge base as a portable markdown bundle
-	bundle, _, _ := client.KnowledgeBaseAPI.ExportKnowledgeBase(ctx, kpBankID).Execute()
+	// 将记忆库中的页面导出为可移植的 Markdown 文件包
+	bundle, _, _ := client.PagesAPI.ExportPages(ctx, kpBankID).Execute()
 
 	for _, file := range bundle.Files {
 		fmt.Println(file.Path) // index.md, <page-id>.md, <page-id>.log.md
@@ -133,18 +133,18 @@ func main() {
 
 	// [docs:delete-node]
 	// Delete a folder or page — deleting a folder removes its whole subtree
-	client.KnowledgeBaseAPI.DeleteKnowledgeNode(ctx, kpBankID, folder.Id).Execute()
+	client.PagesAPI.DeletePageNode(ctx, kpBankID, folder.Id).Execute()
 	// [/docs:delete-node]
 
 	// =============================================================================
 	// Cleanup (not shown in docs)
 	// =============================================================================
-	cleanupKnowledgePages(apiURL)
+	cleanupPages(apiURL)
 
-	fmt.Println("knowledge-pages.go: All examples passed")
+	fmt.Println("pages.go: All examples passed")
 }
 
-func cleanupKnowledgePages(apiURL string) {
+func cleanupPages(apiURL string) {
 	req, _ := http.NewRequest("DELETE", fmt.Sprintf("%s/v1/default/banks/%s", apiURL, kpBankID), nil)
 	http.DefaultClient.Do(req)
 }

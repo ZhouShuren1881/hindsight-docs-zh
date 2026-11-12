@@ -26,6 +26,7 @@ API 服务负责全部记忆操作：Retain（存入）、Recall（召回）和 
 | `HINDSIGHT_API_DATABASE_URL` | PostgreSQL 连接 URL | `pg0`（内嵌数据库） |
 | `HINDSIGHT_API_READ_DATABASE_URL` | 可选的 PostgreSQL 只读副本 URL。设置后，召回查询（语义、BM25、图、时间检索）会通过针对此 URL 的独立连接池执行，从而分担主数据库负载。通常指向只读端点，例如 CNPG 的 `<cluster>-ro` 服务或 Aurora reader 端点。 | 未设置（使用主库） |
 | `HINDSIGHT_API_MIGRATION_DATABASE_URL` | 运行迁移时使用的 PostgreSQL 直连 URL，可绕过 PgBouncer 等连接池代理。设置后，advisory lock 和 Alembic 迁移都会使用此 URL，而不是 `DATABASE_URL`。 | 回退到 `DATABASE_URL` |
+| `HINDSIGHT_API_DATABASE_CONNECT_HOOK` | 仅适用于 PostgreSQL。以 `module.path:function` 指定一个与 `asyncpg.connect` 签名相同的异步函数。Hindsight 通过它打开每个新的数据库连接（包括连接池扩容、重连、只读副本连接池及向量索引维护），因此轮换后的凭据或短期凭据无需重启即可生效。参见[轮换数据库凭据](#rotating-database-credentials)。 | 未设置（直接使用 `asyncpg.connect`） |
 | `HINDSIGHT_API_DATABASE_SCHEMA` | 存放表的 PostgreSQL schema 名称 | `public` |
 | `HINDSIGHT_API_RUN_MIGRATIONS_ON_STARTUP` | API 启动时执行数据库迁移 | `true` |
 | `HINDSIGHT_API_MIGRATION_ISOLATION` | 在子进程中运行迁移，而不是在调用方进程中运行：设为 `true` 可避免 Alembic 的导入依赖图和 psycopg2 同步引擎进入长期运行的服务器进程；也可设为 `false`。 | `false` |
@@ -52,9 +53,29 @@ export HINDSIGHT_API_DATABASE_SCHEMA=hindsight
 
 迁移会在 schema 不存在时自动创建它，并将所有表都建在配置的 schema 中。
 
+#### 轮换数据库凭据 {#rotating-database-credentials}
+
+当数据库密码在 Hindsight 运行期间发生变化时（例如 AWS Secrets Manager 轮换、RDS IAM token、Azure AD 或 Cloud SQL IAM 身份验证、Vault），将 `HINDSIGHT_API_DATABASE_CONNECT_HOOK` 指向一个获取当前凭据并打开连接的函数。已打开的连接继续工作；每个新连接都会经过该钩子。
+
+```python
+# mypackage/db.py  ->  HINDSIGHT_API_DATABASE_CONNECT_HOOK=mypackage.db:connect
+from urllib.parse import quote, urlparse
+
+import asyncpg
+
+async def connect(dsn: str, **kwargs) -> asyncpg.Connection:
+    user, password = fetch_current_credentials()  # your secret store
+    u = urlparse(dsn)
+    host = u.netloc.rpartition("@")[2]  # host[:port], credentials dropped
+    dsn = u._replace(netloc=f"{quote(user)}:{quote(password)}@{host}").geturl()
+    return await asyncpg.connect(dsn, **kwargs)  # always forward kwargs
+```
+
+必须始终转发 `**kwargs`：连接池会传入所需的连接类。启动时的迁移和 `hindsight-admin` 命令不使用该钩子，它们只读取一次 URL，因此启动时 URL 必须有效。
+
 #### 自行维护例程 {#owning-a-maintenance-routine}
 
-后台维护循环会调用四个 PostgreSQL 例程来查找待处理任务：`mental_models_with_cron`、`banks_needing_consolidation`、`schemas_with_expired_rows` 和 `schemas_with_expired_operations`。默认实现会在每次循环时扫描数据库中的所有 schema。大型多租户部署中，这意味着每个运行维护循环的进程都会在每个周期串行遍历数千个 schema。
+后台维护循环会调用五个 PostgreSQL 例程来查找待处理任务：`mental_models_with_cron`、`banks_needing_consolidation`、`schemas_with_expired_rows`、`schemas_with_expired_operations` 和 `banks_with_attachments_in_window`。默认实现会在每次循环时扫描数据库中的所有 schema。大型多租户部署中，这意味着每个运行维护循环的进程都会在每个周期串行遍历数千个 schema。
 
 这些例程按名称调用，因此可以替换成适合自身部署的实现。常见方案是通过行触发器维护注册表，让查找只需要一次索引读取，而非扫描。列出自行替换的例程后，迁移便会跳过它们：
 
@@ -235,7 +256,7 @@ Hindsight 提供五种 BM25 关键词检索后端：
 
 | 变量 | 说明 | 默认值 |
 |----------|-------------|---------|
-| `HINDSIGHT_API_LLM_PROVIDER` | 提供方：`openai`、`openai-responses`、`openai-codex`、`chatgpt`、`claude-code`、`cursor`、`github-copilot`、`anthropic`、`gemini`、`groq`、`minimax`、`deepseek`、`zai`、`opencode-go`、`meta`、`nous`、`xai-oauth`、`fireworks`、`ollama`、`ollama-cloud`、`lmstudio`、`llamacpp`、`vertexai`、`bedrock`、`litellm`、`litellmrouter`、`volcano`、`openrouter`、`requesty`、`none` | `openai` |
+| `HINDSIGHT_API_LLM_PROVIDER` | 提供方：`openai`、`openai-responses`、`openai-codex`、`chatgpt`、`claude-code`、`cursor`、`github-copilot`、`anthropic`、`gemini`、`groq`、`minimax`、`deepseek`、`zai`、`opencode-go`、`meta`、`nous`、`xai-oauth`、`fireworks`、`ollama`、`ollama-cloud`、`lmstudio`、`llamacpp`、`vertexai`、`bedrock`、`litellm`、`litellmrouter`、`volcano`、`openrouter`、`requesty`、`none`，或用于[自定义提供方](./extensions.md#custom-llm-provider)的 `package.module:ClassName` | `openai` |
 | `HINDSIGHT_API_LLM_API_KEY` | 需要密钥的提供方所用 API 密钥；`github-copilot` 不使用此项。配置了[工作负载身份联合](https://platform.claude.com/docs/en/manage-claude/workload-identity-federation)时，`anthropic` 可不设置此项（见下方 Anthropic 示例）。 | - |
 | `HINDSIGHT_API_LLM_MODEL` | 模型名称 | `gpt-5-mini` |
 | `HINDSIGHT_API_LLM_BASE_URL` | 自定义 LLM 端点 | 提供方默认值 |
@@ -994,6 +1015,43 @@ export HINDSIGHT_API_EMBEDDINGS_ONNX_PASSAGE_PREFIX=""
 默认 ONNX 查询/文档前缀（`query: ` 和 `passage: `）适用于 E5 模型。对于 MiniLM、BGE 等非 E5 模型，请清空这两个前缀变量，否则 Hindsight 会为未按此格式训练的模型添加 E5 风格文本。
 :::
 
+#### 分别配置查询和文本段落的嵌入 {#separate-query-and-passage-embeddings}
+
+每次搜索都会为查询生成嵌入向量，包括 Recall、Reflect、页面搜索以及整合时查找相关观测的搜索。所有存储内容（事实、观测和心智模型）都作为文本段落生成嵌入向量。默认情况下，两侧均使用上述嵌入配置。你可以像[按操作配置 LLM](#per-operation-llm-configuration) 一样分别配置：两侧各自从主嵌入配置出发，所设置的对应变量会覆盖主配置。
+
+| 侧 | 用途 | 变量模式 |
+|---|---|---|
+| 查询 | 所有搜索，包括整合时的搜索 | `HINDSIGHT_API_QUERY_EMBEDDINGS_<X>` 覆盖 `HINDSIGHT_API_EMBEDDINGS_<X>` |
+| 文本段落 | 所有存储内容：事实、观测、心智模型 | `HINDSIGHT_API_PASSAGE_EMBEDDINGS_<X>` 覆盖 `HINDSIGHT_API_EMBEDDINGS_<X>` |
+
+`<X>` 可以是本页中任何嵌入变量，例如 `PROVIDER`、`TEI_URL`、`OPENAI_BASE_URL`、`ONNX_MODEL_ID`、`MAX_INPUT_TOKENS`。若名称不匹配任何嵌入变量，启动会报错，以免拼写错误被忽略。两侧可以使用不同提供方，例如一侧在进程内运行，另一侧调用远程服务。每侧都有独立的请求上限（`MAX_CONCURRENT_REQUESTS`），因此耗时较长的存入或导入不会使召回查询排在其后。请注意，后台整合也会搜索，因此也会向查询侧发送请求。将某侧变量设为空值只会清除该侧的主配置值（例如 `HINDSIGHT_API_QUERY_EMBEDDINGS_QUERY_PREFIX=`）。
+
+**相同模型，查询使用独立端点。** 例如，查询使用小型 TEI 实例，文档使用批量处理实例：
+
+```bash
+HINDSIGHT_API_EMBEDDINGS_PROVIDER=openai
+HINDSIGHT_API_EMBEDDINGS_OPENAI_MODEL=BAAI/bge-m3
+HINDSIGHT_API_EMBEDDINGS_OPENAI_BASE_URL=http://tei-bulk:8080/v1
+HINDSIGHT_API_QUERY_EMBEDDINGS_OPENAI_BASE_URL=http://tei-small:8080/v1
+```
+
+**使用为文档模型空间训练的较小查询模型。** Qdrant 的 [Constella](https://qdrant.tech/blog/constella-research-preview/) 使用 Stella 嵌入文档，使用体积小 12 倍的 Constella Nano 嵌入查询。两者均通过 `onnx` 提供方在进程内运行：
+
+```bash
+HINDSIGHT_API_EMBEDDINGS_PROVIDER=onnx
+HINDSIGHT_API_EMBEDDINGS_ONNX_MODEL_ID=Qdrant/stella-en-400M-v5-doc-onnx
+HINDSIGHT_API_EMBEDDINGS_ONNX_FILE=model.onnx
+HINDSIGHT_API_EMBEDDINGS_ONNX_MAX_TOKENS=512
+# Neither model takes an E5-style prefix.
+HINDSIGHT_API_EMBEDDINGS_ONNX_QUERY_PREFIX=
+HINDSIGHT_API_EMBEDDINGS_ONNX_PASSAGE_PREFIX=
+HINDSIGHT_API_QUERY_EMBEDDINGS_ONNX_MODEL_ID=Qdrant/constella-nano
+```
+
+:::warning
+两侧必须生成同一向量空间中的嵌入向量。维度不同时启动会失败，但维度相同不足以证明两个模型兼容。仅配对专门设计为相互配合的模型，例如两个端点上的同一模型，或 Stella 与 Constella。更改现有记忆库中任一侧的模型，需要像更改主模型一样重新生成嵌入向量。
+:::
+
 #### 常见问题：提供方专用的嵌入环境变量名称 {#common-pitfall-provider-specific-embedding-env-var-names}
 
 嵌入环境变量的键名中包含提供方字段：
@@ -1158,7 +1216,7 @@ ZeroEntropy 的 `zembed-1` 支持 Matryoshka 维度：`2560`、`1280`、`640`、
 | `HINDSIGHT_API_RERANKER_LOCAL_MAX_CONCURRENT` | 本地重排的最大并发数（防止负载较高时 CPU 过载） | `4` |
 | `HINDSIGHT_API_RERANKER_LOCAL_TRUST_REMOTE_CODE` | 允许加载含自定义代码的模型（存在安全风险，默认禁用） | `false` |
 | `HINDSIGHT_API_RERANKER_LOCAL_FORCE_CPU` | 即使 CUDA/XPU 可用，也强制本地重排器使用 CPU | `false` |
-| `HINDSIGHT_API_RERANKER_LOCAL_FP16` | 本地重排器使用半精度（FP16）推理。在 CUDA 上速度更快且质量相同。默认禁用，因为部分 CPU 不支持原生 FP16。 | `false` |
+| `HINDSIGHT_API_RERANKER_LOCAL_FP16` | 本地重排器使用半精度（FP16）推理。在 CUDA 上速度更快；在 CPU 上可将模型内存占用减半，但速度不一定更快。排名变化很小（测试中 `BAAI/bge-reranker-v2-m3` 的前 10 项相同）。默认禁用，因为部分 CPU 不支持原生 FP16。 | `false` |
 | `HINDSIGHT_API_RERANKER_LOCAL_BUCKET_BATCHING` | 按 token 长度对文本对排序后再分批，以减少填充浪费。在不同模型上可快 36–54%，且按设计不会影响质量。 | `false` |
 | `HINDSIGHT_API_RERANKER_LOCAL_BATCH_SIZE` | 本地重排器 `predict()` 的批次大小。最佳值取决于硬件和模型（较小批次有时比大批次更快）。 | `32` |
 | `HINDSIGHT_API_RERANKER_LOCAL_TIMEOUT` | 为一次召回的候选项评分所允许的墙钟时间上限。超时后，尚未评分的候选项会保留重排前的 RRF 顺序，排在已评分项目之后，因此召回仍会返回结果。此值应远高于正常重排所需时间；它是本地 CPU 模型过大时的安全保护，而非延迟目标。设为 `0` 可禁用。 | `300` |
@@ -1445,7 +1503,7 @@ PyTorch 使用 Apple Accelerate 矩阵单元，而 ONNX Runtime 的 CPU 后端�
 
 ### 决策模型 {#decision-model}
 
-决策模型可在不到一秒内回答类型化问题（例如从选项中选一个，或判断某种情况的可能性），使 Recall、整合、Reflect 和知识页刷新可以省去 LLM 调用。这是可选功能：提供方设为 `none`（默认值）时，各操作继续使用仅依赖 LLM 的路径。各操作的用法见[决策模型](./decision-models)，提供方及其默认模型见[模型 › 决策模型](./models#decision-model)。
+决策模型可在不到一秒内回答类型化问题（例如从选项中选一个，或判断某种情况的可能性），使 Recall、整合、Reflect 和页面刷新可以省去 LLM 调用。这是可选功能：提供方设为 `none`（默认值）时，各操作继续使用仅依赖 LLM 的路径。各操作的用法见[决策模型](./decision-models)，提供方及其默认模型见[模型 › 决策模型](./models#decision-model)。
 
 #### 配置 {#set-it-up}
 
@@ -1473,13 +1531,13 @@ export HINDSIGHT_API_DECISION_MODEL_API_KEY=your-key
 | `HINDSIGHT_API_DECISION_MODEL_BASE_URL` | API 基础 URL。`cloudflare` 必填。 | 提供方默认值 |
 | `HINDSIGHT_API_DECISION_MODEL_TIMEOUT` | 请求超时时间（秒）。 | `60` |
 | `HINDSIGHT_API_DECISION_MODEL_MAX_CONCURRENT` | 每个使用决策模型的操作所允许的最大并发请求数。 | `24` |
-| `HINDSIGHT_API_DECISION_MODEL_MAX_REQUEST_TOKENS` | 单次请求可携带的最大 token 数，按整个请求正文计数。较大的请求会拆分发送。此值应低于服务模型的上下文窗口，并留出余量。 | `26000` |
+| `HINDSIGHT_API_DECISION_MODEL_MAX_REQUEST_TOKENS` | 单次请求可携带的最大 token 数，按整个请求正文计数。较大的请求会拆分发送。此值应低于服务模型的上下文窗口，并留出余量。仅适用于不自行调整请求大小的端点：使用 Hindsight Inference 自身的 URL 时，`hindsight` 会将每个请求调整到模型窗口内，因此整个请求只发送一次（仅为不超过 2 MB 正文上限而拆分）。使用自定义 `HINDSIGHT_API_DECISION_MODEL_BASE_URL`（自己的 vLLM 上的模型）时，请求会再次拆分。 | `26000`；自定义 URL 的 `hindsight` 为 `54000`；Hindsight Inference 未设置 |
 
 | `HINDSIGHT_API_DECISION_MODEL_TOKENIZER` | 计算请求上限和 Recall 各项上限（查询、共享上下文及每条记忆）所用的词汇表：使用服务模型自己的词汇表，因为它会拒绝超出窗口的请求。除 `HINDSIGHT_API_TOKENIZER_ENCODING` 支持的词汇表外，还支持 `jev`（Jev 计数的估算）和 `qwen3.5`。端点提供的模型不是该提供方的默认模型时应设置此项。 | `typesafe` 使用 `jev`；其他提供方使用 `HINDSIGHT_API_TOKENIZER_ENCODING` |
 
 每个请求遇到速率限制（429）或暂时性故障时，都会单独重试。
 
-**为单个操作使用不同配置。** `HINDSIGHT_API_{RECALL,REFLECT,CONSOLIDATION}_DECISION_MODEL_{PROVIDER,API_KEY,MODEL,BASE_URL}` 可仅替换对应操作的全局值。只有操作仍使用全局提供方时，密钥、模型和 URL 才会回退到全局值；切换到其他提供方时，会采用该提供方的默认值，并需要为操作单独设置密钥。即使未配置全局决策模型，也可只为一个操作配置。Reflect 和知识页刷新共享 Reflect 配置，目前仅支持 `hindsight` 和 `typesafe`。
+**为单个操作使用不同配置。** `HINDSIGHT_API_{RECALL,REFLECT,CONSOLIDATION}_DECISION_MODEL_{PROVIDER,API_KEY,MODEL,BASE_URL}` 可仅替换对应操作的全局值。只有操作仍使用全局提供方时，密钥、模型和 URL 才会回退到全局值；切换到其他提供方时，会采用该提供方的默认值，并需要为操作单独设置密钥。即使未配置全局决策模型，也可只为一个操作配置。Reflect 和页面刷新共享 Reflect 配置，目前仅支持 `hindsight` 和 `typesafe`。
 
 ```bash
 export HINDSIGHT_API_DECISION_MODEL_PROVIDER=typesafe
@@ -1498,8 +1556,8 @@ export HINDSIGHT_API_CONSOLIDATION_DECISION_MODEL_API_KEY=your-openai-key
 | Recall（保留交叉编码器） | `HINDSIGHT_API_RECALL_DECISION_MODEL_PROVIDER=none` | — |
 | 整合 | `HINDSIGHT_API_CONSOLIDATION_DECISION_MODEL_PROVIDER=none` | `consolidation_use_decision_model: false` |
 | Reflect | `HINDSIGHT_API_REFLECT_DECISION_MODEL_PROVIDER=none` | `reflect_use_decision_model: false` |
-| 知识页完整刷新 | `HINDSIGHT_API_REFLECT_DECISION_MODEL_PROVIDER=none` | `mental_model_refresh_use_decision_model: false` |
-| 知识页增量刷新 | `HINDSIGHT_API_REFLECT_DECISION_MODEL_PROVIDER=none` | `mental_model_delta_use_decision_model: false` |
+| 页面完整刷新 | `HINDSIGHT_API_REFLECT_DECISION_MODEL_PROVIDER=none` | `mental_model_refresh_use_decision_model: false` |
+| 页面增量刷新 | `HINDSIGHT_API_REFLECT_DECISION_MODEL_PROVIDER=none` | `mental_model_delta_use_decision_model: false` |
 
 记忆库设置也列在对应的[观测](#observations)和 [Reflect](#reflect) 部分。
 
@@ -1509,10 +1567,11 @@ export HINDSIGHT_API_CONSOLIDATION_DECISION_MODEL_API_KEY=your-openai-key
 |----------|-------------|---------|
 | `HINDSIGHT_API_RECALL_DECISION_MODEL_PRUNE` | 除排序外，还丢弃判定为无帮助的召回候选项（见下文）。可按记忆库配置（`recall_decision_model_prune`）。 | `false` |
 | `HINDSIGHT_API_RECALL_DECISION_MODEL_DEDUP` | 除排序外，还丢弃与排名更高的候选项重复的召回候选项（见下文）。可按记忆库配置（`recall_decision_model_dedup`）。 | `false` |
-| `HINDSIGHT_API_MENTAL_MODEL_DELTA_GATE_MAX_MEMORIES` | 知识页增量刷新向决策模型询问的新记忆数量上限；超过后刷新会运行 Reflect。见 [Reflect](#reflect)。 | `200` |
+| `HINDSIGHT_API_RECALL_DECISION_MODEL_FALLBACK` | 决策模型在重试后仍无法或拒绝为某次召回排序时，使用配置的 `HINDSIGHT_API_RERANKER_*` 重排序模型（包括故障转移链）排序，而不是使召回失败。关闭时召回会失败，让你能发现故障，而非悄然获得较差的结果。服务器级设置。 | `false` |
+| `HINDSIGHT_API_MENTAL_MODEL_DELTA_GATE_MAX_MEMORIES` | 页面增量刷新向决策模型询问的新记忆数量上限；超过后刷新会运行 Reflect。见 [Reflect](#reflect)。 | `200` |
 
-- **速率限制。** `HINDSIGHT_API_DECISION_MODEL_MAX_CONCURRENT` 限制每个操作的并发请求数。Recall 对每个候选项提出一个问题，按 `HINDSIGHT_API_DECISION_MODEL_MAX_REQUEST_TOKENS` 尽量合并成更少的请求，因此繁忙的 Recall 路径最易受此上限影响。
-- **其他模型。** 端点提供的模型不是该提供方的默认模型时，应设置 `HINDSIGHT_API_DECISION_MODEL_MODEL`、`HINDSIGHT_API_DECISION_MODEL_TOKENIZER`，并将 `HINDSIGHT_API_DECISION_MODEL_MAX_REQUEST_TOKENS` 设置为模型的上下文窗口减去一定余量。
+- **速率限制。** `HINDSIGHT_API_DECISION_MODEL_MAX_CONCURRENT` 限制每个操作的并发请求数。Recall 对每个候选项提出一个问题，按 `HINDSIGHT_API_DECISION_MODEL_MAX_REQUEST_TOKENS` 尽量合并成更少的请求（Hindsight Inference 为一个请求），因此繁忙的 Recall 路径最易受此上限影响。
+- **其他模型。** 端点提供的模型不是该提供方的默认模型时，应设置 `HINDSIGHT_API_DECISION_MODEL_MODEL`、`HINDSIGHT_API_DECISION_MODEL_TOKENIZER`，并将 `HINDSIGHT_API_DECISION_MODEL_MAX_REQUEST_TOKENS` 设置为模型的上下文窗口减去一定余量（Hindsight Inference 无需设置）。
 
 **Recall 裁剪和去重。** 两者默认关闭，Recall 请求可分别通过 `rerank.prune` / `rerank.dedup` 开启或关闭；请求省略某项时使用记忆库的值；记忆库未设置时使用服务器的值。这适用于所有 Recall，包括 Reflect 发起的调用（整合发起的 Recall 会跳过重排序模型）。
 
@@ -1521,7 +1580,7 @@ export HINDSIGHT_API_CONSOLIDATION_DECISION_MODEL_API_KEY=your-openai-key
 
 #### 从 TypeSafe 重排序模型迁移 {#moving-from-the-typesafe-reranker}
 
-`typesafe` [重排序模型](#reranker)提供方已弃用。请改用 `typesafe` 提供方配置共享决策模型：Recall 会用它替代重排序模型，整合、Reflect 和知识页也会使用它。
+`typesafe` [重排序模型](#reranker)提供方已弃用。请改用 `typesafe` 提供方配置共享决策模型：Recall 会用它替代重排序模型，整合、Reflect 和页面也会使用它。
 
 ```bash
 # Before
@@ -1648,7 +1707,7 @@ Webhook 发送有意忽略所有这些设置：它的 SSRF 防护会验证已解
 | `HINDSIGHT_API_RECENCY_DECAY_HALFLIFE_DAYS` | 指数衰减时，记忆达到中性状态的年龄（天）；更年轻的记忆获得新近度加分，较旧记忆受到惩罚。值越小，越强烈地偏好最近记忆。仅在 `HINDSIGHT_API_RECENCY_DECAY_FUNCTION=exponential` 时使用。 | `90` |
 | `HINDSIGHT_API_ENABLE_MENTAL_MODEL_HISTORY` | 追踪各心智模型内容变更历史（旧内容及时间戳），每次变更在 `mental_model_history` 表中存一行。设为 `false` 可完全关闭、不写入历史记录，减少审计历史不需要时的存储。**此项才是关闭功能的方法**（不是设置零上限）。 | `true` |
 | `HINDSIGHT_API_MENTAL_MODEL_MIN_REFRESH_INTERVAL_SECONDS` | 同一心智模型两次*自动*刷新之间的最短间隔，适用于整合后触发器和 cron 计划。间隔内触发的刷新不会丢弃，而会排队并等待间隔结束；等待期间后续触发会合并到同一个排队刷新中，因此连续多次小规模存入只需刷新一次。银行持续摄取数据且模型无需每分钟更新时可调高；等待期间累积的内容仍会纳入刷新。显式刷新（API、MCP、控制平面）会忽略此下限并立即运行，也会释放其合并的排队刷新。`0` 表示无下限，每次触发都立即刷新。支持分层配置，可通过[配置 API](#hierarchical-configuration)按银行覆盖；也可按模型通过 `trigger.min_refresh_interval_seconds` 覆盖（后者优先，显式设为 `0` 可让某个频繁更新模型不受银行级下限限制）。 | `0` |
-| `HINDSIGHT_API_KNOWLEDGE_PAGE_DEFAULT_TRIGGER` | 新建知识页的默认刷新设置，使用 JSON 对象与内置默认值合并（`{"mode": "delta", "fact_types": ["observation"], "exclude_mental_models": true, "refresh_after_consolidation": true}`）。只需设置要更改的字段，例如 `{"refresh_cron": "0 * * * *"}` 可让新页面改为每小时刷新，而不是每次整合后刷新。创建页面时传入的触发器优先；不会修改现有页面。可按银行配置。 | - |
+| `HINDSIGHT_API_PAGE_DEFAULT_TRIGGER` | 新建[页面](./pages)的默认刷新设置，使用 JSON 对象与内置默认值合并（`{"mode": "delta", "fact_types": ["observation"], "exclude_mental_models": true, "refresh_after_consolidation": true}`）。只需设置要更改的字段，例如 `{"refresh_cron": "0 * * * *"}` 可让新页面改为每小时刷新，而不是每次整合后刷新。创建页面时传入的触发器优先；不会修改现有页面。可按记忆库配置（`page_default_trigger`）。旧名称 `HINDSIGHT_API_KNOWLEDGE_PAGE_DEFAULT_TRIGGER`（记忆库键 `knowledge_page_default_trigger`）仍可使用，但已弃用，并将在 2.x 移除。 | - |
 | `HINDSIGHT_API_MENTAL_MODEL_HISTORY_MAX_ENTRIES` | 每个心智模型保留的历史行数上限。每次刷新都会将旧版本插入 `mental_model_history` 表，再删除超出上限的最旧记录，避免经常刷新时历史无限增长。设为 `0` 或负数会**取消上限**（每次刷新都增长且无界）；若要完全关闭历史，请设置 `HINDSIGHT_API_ENABLE_MENTAL_MODEL_HISTORY=false`。 | `50` |
 
 五项依赖嵌入的阈值——主语义检索、图检索种子、时间检索、语义链接创建和观测去重——服务于不同的精确率/召回率取舍，因此有意分别配置。默认值是在 `BAAI/bge-small-en-v1.5` 上校准的行为。更换嵌入模型后，即使两种模型都返回归一化向量，余弦相似度分布也可能变化；投入生产前，请针对各自任务重新校准全部五项阈值。
@@ -1688,7 +1747,7 @@ Webhook 发送有意忽略所有这些设置：它的 SSRF 防护会验证已解
 
 | 变量 | 说明 | 默认值 |
 |----------|-------------|---------|
-| `HINDSIGHT_API_ENABLE_TEXT_SEARCH` | 启用关键词（BM25）检索分支。设为 `false` 后将只进行**纯向量搜索**：该分支会从查询中完全移除，而不是筛选为空，因此其 SQL、查询分词和 `pg_stats` 词项选择查询都会跳过。知识页搜索也会移除关键词分支。 | `true` |
+| `HINDSIGHT_API_ENABLE_TEXT_SEARCH` | 启用关键词（BM25）检索分支。设为 `false` 后将只进行**纯向量搜索**：该分支会从查询中完全移除，而不是筛选为空，因此其 SQL、查询分词和 `pg_stats` 词项选择查询都会跳过。页面搜索也会移除关键词分支。 | `true` |
 | `HINDSIGHT_API_ENABLE_TEMPORAL_RETRIEVAL` | 启用时间检索分支。设为 `false` 后，还会跳过用于该分支的日期感知查询分析；没有识别到约束，就没有可用于筛选的条件。 | `true` |
 | `HINDSIGHT_API_ENABLE_GRAPH_RETRIEVAL` | 启用实体/链接图遍历分支。设为 `false` 后会跳过相关查询，不返回图检索结果。 | `true` |
 | `HINDSIGHT_API_ENABLE_RERANKING` | 使用交叉编码器对融合后的候选项重新排序。设为 `false` 后会直接返回 RRF 融合顺序，速度更快但精确度较低。 | `true` |
@@ -2280,14 +2339,14 @@ export HINDSIGHT_API_OBSERVATIONS_MISSION="Observations are recurring patterns i
 |---|---|---|
 | `HINDSIGHT_API_REFLECT_MAX_ITERATIONS` | 强制生成回答前的最大工具调用轮数 | `10` |
 | `HINDSIGHT_API_REFLECT_USE_DECISION_MODEL` | 配置 Reflect 决策模型（见[决策模型](#decision-model)）后，Reflect 会采用决策编排：先由 LLM 将请求改写为搜索查询，再用该查询并行运行各检索层。决策模型会筛选证据并判断其是否已足以回答请求；若足够，下一次 LLM 调用便生成答案；否则由 LLM 编写下一条查询，再进行一轮并行检索和判断。与逐轮调用 LLM 的智能体循环相比，LLM 调用更少、成本更低。决策模型失败时会回退到智能体循环。目前这里只支持 `hindsight` 和 `typesafe` 提供方；使用其他提供方时会记录警告并继续采用智能体循环。设为 `false` 可保留智能体循环（每个检索层各用一轮 LLM 编写查询）。可按记忆库配置。 | `true` |
-| `HINDSIGHT_API_MENTAL_MODEL_REFRESH_USE_DECISION_MODEL` | 对刷新知识页时使用的 Reflect 启用相同的决策编排。可按记忆库配置。 | `true` |
-| `HINDSIGHT_API_MENTAL_MODEL_DELTA_USE_DECISION_MODEL` | 配置 Reflect 决策模型（见[决策模型](#decision-model)）后，知识页增量刷新会跳过 Reflect：决策模型会筛选上次刷新以来新增且可能改变页面的记忆，编辑只依据这些记忆进行。若没有符合条件的记忆，则不会调用 LLM。设为 `false` 可让增量刷新也运行 Reflect。可按记忆库配置。 | `true` |
+| `HINDSIGHT_API_MENTAL_MODEL_REFRESH_USE_DECISION_MODEL` | 对刷新页面时使用的 Reflect 启用相同的决策编排。可按记忆库配置。 | `true` |
+| `HINDSIGHT_API_MENTAL_MODEL_DELTA_USE_DECISION_MODEL` | 配置 Reflect 决策模型（见[决策模型](#decision-model)）后，页面增量刷新会跳过 Reflect：决策模型会筛选上次刷新以来新增且可能改变页面的记忆，编辑只依据这些记忆进行。若没有符合条件的记忆，则不会调用 LLM。设为 `false` 可让增量刷新也运行 Reflect。可按记忆库配置。 | `true` |
 | `HINDSIGHT_API_MENTAL_MODEL_DELTA_GATE_MAX_MEMORIES` | 有筛选条件的增量刷新向决策模型询问的新记忆数量上限；超过后刷新会改为运行 Reflect。每条记忆对应一个包含完整页面的决策模型请求，每次刷新最多同时发送 8 个请求。其他问题已得到回答后，若某个问题失败，则保留其记忆。服务器级设置。 | `200` |
 | `HINDSIGHT_API_REFLECT_MAX_CONTEXT_TOKENS` | 反思循环中强制最终综合前可累计的上下文 token 上限，避免大型银行出现 `context_length_exceeded`。若 LLM 上下文窗口小于 128K，请调低。 | `100000` |
 | `HINDSIGHT_API_REFLECT_WALL_TIMEOUT` | 整个反思操作的墙钟超时时间（秒）。超时会使请求返回 HTTP 504；也限制工作进程中整个心智模型刷新任务，超时任务会取消并标记失败。 | `300` |
 | `HINDSIGHT_API_REFLECT_MISSION` | 全局反思任务说明（身份与推理框架）。可通过配置 API 按银行覆盖。 | - |
 | `HINDSIGHT_API_REFLECT_SOURCE_FACTS_MAX_TOKENS` | 反思时 `search_observations` 中源事实的 token 预算。`-1` 禁用（默认），`0` 启用且不限量，大于 `0` 时按指定预算启用。可通过配置 API 按银行覆盖。 | `-1` |
-| `HINDSIGHT_API_REFLECT_DEFAULT_OPTIONS` | JSON 对象形式的反思默认选项，在请求未指定时应用。心智模型刷新从自己的触发器读取设置，触发器默认值按记忆库由 `knowledge_page_default_trigger` 提供，并且始终只会完整获取排名最高的心智模型。`reflect_search_observations_max_tokens` 设置 `search_observations` 工具预算；较小的预算会剔除排名较低的观测并缩小反思上下文。`reflect_search_observations_include_entities` 可省略附加到观测的已消解实体名称（可能超过工具载荷的一半）；`reflect_search_mental_models_max_tokens` 设置 `search_mental_models` 完整返回心智模型的预算（默认值为 16000；排名最高的结果始终完整返回，其他超出预算的结果会以片段形式返回，供模型读取）。例如 `{"reflect_search_observations_max_tokens": 3000, "reflect_search_observations_include_entities": false}`。可通过配置 API 按记忆库覆盖。 | - |
+| `HINDSIGHT_API_REFLECT_DEFAULT_OPTIONS` | JSON 对象形式的反思默认选项，在请求未指定时应用。心智模型刷新从自己的触发器读取设置，触发器默认值按记忆库由 `page_default_trigger` 提供，并且始终只会完整获取排名最高的心智模型。`reflect_search_observations_max_tokens` 设置 `search_observations` 工具预算；较小的预算会剔除排名较低的观测并缩小反思上下文。`reflect_search_observations_include_entities` 可省略附加到观测的已消解实体名称（可能超过工具载荷的一半）；`reflect_search_mental_models_max_tokens` 设置 `search_mental_models` 完整返回心智模型的预算（默认值为 16000；排名最高的结果始终完整返回，其他超出预算的结果会以片段形式返回，供模型读取）。例如 `{"reflect_search_observations_max_tokens": 3000, "reflect_search_observations_include_entities": false}`。可通过配置 API 按记忆库覆盖。 | - |
 
 #### 内部召回（供反思和心智模型刷新使用） {#internal-recall-used-by-reflect-and-mental-model-refresh}
 
@@ -2334,7 +2393,9 @@ export HINDSIGHT_API_MCP_ENABLED_TOOLS=recall
 export HINDSIGHT_API_MCP_ENABLED_TOOLS=recall,reflect
 ```
 
-可用工具名称：`retain`、`recall`、`reflect`、`list_banks`、`create_bank`、`list_mental_models`、`get_mental_model`、`create_mental_model`、`update_mental_model`、`delete_mental_model`、`refresh_mental_model`、`list_directives`、`create_directive`、`delete_directive`、`list_memories`、`get_memory`、`list_documents`、`get_document`、`delete_document`、`list_operations`、`get_operation`、`cancel_operation`、`list_tags`、`get_bank`、`get_bank_stats`、`update_bank`、`delete_bank`、`clear_memories`、`get_knowledge_base_tree`、`search_knowledge_base`、`get_knowledge_page`、`create_knowledge_folder`、`create_knowledge_page`、`update_knowledge_node`、`delete_knowledge_node`。
+可用工具名称：`retain`、`recall`、`reflect`、`list_banks`、`create_bank`、`list_mental_models`、`get_mental_model`、`create_mental_model`、`update_mental_model`、`delete_mental_model`、`refresh_mental_model`、`list_directives`、`create_directive`、`delete_directive`、`list_memories`、`get_memory`、`list_documents`、`get_document`、`delete_document`、`list_operations`、`get_operation`、`cancel_operation`、`list_tags`、`get_bank`、`get_bank_stats`、`update_bank`、`delete_bank`、`clear_memories`、`get_page_tree`、`search_pages`、`get_page`、`create_page_folder`、`create_page`、`update_page_node`、`delete_page_node`。
+
+页面工具以前名为 `get_knowledge_base_tree`、`search_knowledge_base`、`get_knowledge_page`、`create_knowledge_folder`、`create_knowledge_page`、`update_knowledge_node`、`delete_knowledge_node`。这些名称与旧的 `/knowledge-base/...` 路径一样仍可使用，但已弃用，并将在 2.x 移除。
 
 也可通过[配置 API](#hierarchical-configuration)按银行覆盖：
 
@@ -2373,6 +2434,7 @@ export HINDSIGHT_API_MCP_INSTRUCTIONS="Also store every action you take, includi
 | `HINDSIGHT_API_BACKPRESSURE_DEFER_SECONDS` | 存储后端因背压暂缓的任务，在重试前等待的时间。等待应足够长，让积压有机会消退（满载时立即重试只会再次被暂缓），又不至于在积压清除后仍久等。延后不计入 `HINDSIGHT_API_WORKER_MAX_RETRIES`。 | `120` |
 | `HINDSIGHT_API_WORKER_HTTP_PORT` | 工作进程指标/健康检查 HTTP 端口（仅工作进程 CLI） | `8889` |
 | `HINDSIGHT_API_WORKER_MAX_SLOTS` | 每个工作进程的最大并发任务总数（所有操作类型合计） | `10` |
+| `HINDSIGHT_API_WORKER_SHUTDOWN_DRAIN_SECONDS` | 收到 SIGTERM 后，工作进程（包括 API 内嵌的工作进程）立即停止领取任务，然后等待此时长，让进行中的任务完成；超时后取消任务并将其交还为 `pending`，供其他工作进程处理。时间从收到信号时开始计算。取消和交还还需约 7 秒，因此应将此值设为比平台宽限期（`terminationGracePeriodSeconds`、Docker 的 `stop_grace_period`）低约 10 秒；默认值适用于 Kubernetes 默认的 30 秒。交还的任务会从头重试。 | `20` |
 | `HINDSIGHT_API_OPERATION_RETENTION_DAYS` | 已完成、失败和取消操作行（包括任务载荷和结果元数据）的全服务器静态保留时长。`0`（默认）表示永久保留；正数天数启用自动清理。 | `0` |
 | `HINDSIGHT_API_OPERATION_CLEANUP_BATCH_SIZE` | 每个清理周期中，每个租户 schema 删除的过期终态操作行上限；此值与清理间隔一起决定积压清除速度。必须为正整数。 | `1000` |
 | `HINDSIGHT_API_OPERATION_CLEANUP_INTERVAL_SECONDS` | 清理周期的间隔。每次周期会产生一次跨租户发现往返，对租户较多的部署而言，调大间隔是降低这项开销的主要方式（参见[后台维护](#background-maintenance)）。`0` 禁用此作业。 | `900` |
@@ -2498,7 +2560,7 @@ LLM 请求追踪会将 Hindsight 发出的每次 LLM 调用（用于存入、反
 | 决策模型 | `decision_*`（例如 `decision_recall_rerank`、`decision_consolidation_triage`、`decision_rank`、`decision_cut`、`decision_evidence_sufficiency`、`decision_page_impact`） | 请求、回答、输入 token 和耗时；每个请求一行。 |
 | LLM | 其他所有范围 | 同上文所述。 |
 
-可在 `/llm-requests` 和 `/llm-requests/stats` 上使用 `?call_type=embedding|rerank|decision|llm` 按类型筛选。每次调用都会关联到所属操作的运行记录（`retain`、`recall`、`reflect`、`consolidation`、`refresh_mental_model`），因此 Reflect 内部搜索也会显示在该 Reflect 记录下。直接创建或编辑知识页（不属于刷新操作）时，嵌入调用会关联到单独的 `mental_model_write` 运行记录。
+可在 `/llm-requests` 和 `/llm-requests/stats` 上使用 `?call_type=embedding|rerank|decision|llm` 按类型筛选。每次调用都会关联到所属操作的运行记录（`retain`、`recall`、`reflect`、`consolidation`、`refresh_mental_model`），因此 Reflect 内部搜索也会显示在该 Reflect 记录下。直接创建或编辑页面（不属于刷新操作）时，嵌入调用会关联到单独的 `mental_model_write` 运行记录。
 
 追踪行会先缓存在内存中，再批量写入（最多每 0.5 秒一次，或积累 500 行时写入），因此追踪一次 Recall 不会在请求路径上额外产生数据库往返。进程被强制结束时，缓冲区内尚未写入的行会丢失；正常关闭会先写入这些行。
 
@@ -2525,6 +2587,7 @@ LLM 请求追踪会将 Hindsight 发出的每次 LLM 调用（用于存入、反
 |---|---|---|
 | `HINDSIGHT_API_RETENTION_SWEEP_INTERVAL_SECONDS` | 跨所有租户 schema 删除过期 `audit_log` 和 `llm_requests` 行的频率。保留时限以天为单位，因此此项只影响过期记录被清除的及时程度。设为 `0` 可禁用扫描。 | `3600` |
 | `HINDSIGHT_API_OPERATION_CLEANUP_INTERVAL_SECONDS` | 清理过期终态操作行的频率。保留时限和批次大小请参阅[分布式工作进程](#distributed-workers)。设为 `0` 可禁用作业。 | `900` |
+| `HINDSIGHT_API_ATTACHMENT_SWEEP_INTERVAL_SECONDS` | 删除失败的存入操作所产生的图片和文件的频率。API 在执行存入前存储附件；若存入失败，其他流程不会删除这些附件。附件存储满一天且其文档未引用它时会被删除：文档可能从未创建，或添加附件的更新失败。只检查过去一周存储的附件；运行一次 `hindsight-admin repair-bank --all --attachments` 可清理更早的附件（参见[管理 CLI](./admin-cli.md)）。`0` 禁用此作业。 | `86400` |
 | `HINDSIGHT_API_MAINTENANCE_START_JITTER_SECONDS` | 进程首次运行维护周期前应用的随机延迟上限。首次周期中所有作业都会到期，因此若无偏移，同时启动的一组进程（例如部署或滚动重启）会在同一时刻执行各自的所有扫描。设为 `0` 可禁用抖动，采用确定性启动。 | `60` |
 
 :::tip 为大量租户调整参数

@@ -22,7 +22,7 @@
 | memory bank / bank | 记忆库 | 不写银行、记忆银行；bank_id 保留 | `api/memory-banks.mdx` |
 | memory / memories | 记忆 | 表示存储的内容；不一律改成事实 | `index.mdx`, `api/memories.mdx` |
 | memory unit | 记忆单元 | 原子存储单元，与文档、文本分块不同；一项输入可以产生多个记忆单元 | `api/memories.mdx`, `api/retain.mdx` |
-| fact | 事实 | 原文称为事实不代表系统已外部验证其真伪；与观测、心智模型、知识页不能统称为“摘要” | `retain.md`, `observations.mdx` |
+| fact | 事实 | 原文称为事实不代表系统已外部验证其真伪；与观测、心智模型、页面不能统称为“摘要” | `retain.md`, `observations.mdx` |
 | raw fact / source fact | 原始事实 / 来源事实 | 来源事实为派生知识提供证据 | `reflect.mdx`, `api/recall.mdx` |
 | world fact / world | 世界事实 | 关于外部人物、事物和事件；与经历事实按说话者是否为该库的智能体区分，不按第一人称语法区分。用户说“我买了一辆车”仍是关于用户的世界事实；`world` 不翻译 | `retain.md` |
 | experience fact / experience | 经历事实 | 该记忆库的智能体自己的经历；不泛指用户经历；类型值 `experience` 不翻译 | `retain.md` |
@@ -30,14 +30,15 @@
 | belief | 认知判断 | 指系统基于证据形成的认识，不译为信仰，也不承诺绝对正确 | `observations.mdx`, `index.mdx` |
 | consolidated knowledge / consolidated belief | 整合后的知识 / 整合后的认知判断 | 不等于临时生成的摘要 | `observations.mdx` |
 | mental model | 心智模型 | 用户定义问题，系统生成并维护常备答案；不等于底层 LLM | `mental-models.mdx`, `api/mental-models.mdx` |
-| knowledge page | 知识页 | 以心智模型为底层，提供持续更新的文档与目录树 | `knowledge-pages.mdx`, `api/knowledge-pages.mdx` |
-| knowledge base | 知识库 | 与记忆库区分；此处常指知识页目录树及内容 | `api/knowledge-pages.mdx` |
-| living document | 持续更新的文档 | 不写活文档 | `knowledge-pages.mdx` |
+| page / pages | 页面 | 原称 Knowledge Pages（知识页）；以心智模型为底层，提供持续更新的文档与目录树，与知识库区分 | `pages.mdx`, `api/pages.mdx` |
+| knowledge bank | 知识库 | 通过 knowledge_banks 将外部知识接入记忆库；不同于页面，也不同于 memory bank | `static/bank-template-schema.json`, `static/openapi.json` |
+| knowledge base（旧页面功能名称） | 知识库（旧称） | 仅用于旧名称、弃用别名或历史说明；原指页面目录树及内容，不等于新的 knowledge bank | `api/pages.mdx` |
+| living document | 持续更新的文档 | 不写活文档 | `pages.mdx` |
 | standing answer | 常备答案 | 预先写好、供反复读取并可更新的答案 | `mental-models.mdx` |
 | curated / curation | 人工维护的 / 人工维护 | 语境可写人工修订；不暗示全文必须由人手写 | `api/memories.mdx`, `mental-models.mdx` |
 | consolidation / consolidate | 整合 / 整合 | 知识处理过程，不只拼接或压缩文本 | `observations.mdx` |
 | observation consolidation | 观测整合 | 将相关事实整合为观测 | `observations.mdx`, `figures/observations.json` |
-| synthesis / synthesize | 综合生成 / 综合生成 | 根据证据生成内容；与整合过程的名称区分 | `knowledge-pages.mdx`, `reflect.mdx` |
+| synthesis / synthesize | 综合生成 / 综合生成 | 根据证据生成内容；与整合过程的名称区分 | `pages.mdx`, `reflect.mdx` |
 | deduplication / deduplicate | 去重 / 去重 | 不丢掉有意义的不同细节 | `observations.mdx` |
 | near-duplicate reconciliation | 近似重复项协调处理 | 决定合并或分别保留，不是全部删除 | `observations.mdx` |
 | contradictory evidence / reconciliation | 矛盾证据 / 协调处理 | 保留变化历史，不能写成盲目覆盖 | `observations.mdx` |
@@ -48,7 +49,7 @@
 | provenance / source provenance | 来源追溯信息 / 来源追溯信息 | 描述证据、来源及历史，不写出处可信度 | `mental-models.mdx`, `retain.md` |
 | citation / cite | 引用 / 引用 | 引用来源 ID 不翻译 | `reflect.mdx` |
 | freshness / freshness awareness | 更新状态 / 更新状态感知 | 关注是否落后于新记忆，不是缓存 TTL | `observations.mdx`, `mental-models.mdx` |
-| fresh / stale / staleness | 最新 / 待更新 / 待更新状态 | 表示是否落后于范围内的新记忆，不译为有效/无效；待更新不等于已证明错误或到期删除，需要时写“内容待更新” | `api/knowledge-pages.mdx`, `observations.mdx` |
+| fresh / stale / staleness | 最新 / 待更新 / 待更新状态 | 表示是否落后于范围内的新记忆，不译为有效/无效；待更新不等于已证明错误或到期删除，需要时写“内容待更新” | `api/pages.mdx`, `observations.mdx` |
 
 ## 摄取、内容与实体
 
@@ -104,6 +105,8 @@
 | multi-hop reasoning / hop | 多跳推理 / 跳 | 指跨关系链探索，不是多轮对话 | `rag-vs-hindsight.md`, `retrieval.md` |
 | link expansion | 连接扩展 | 当前默认图检索算法值为 `link_expansion`，原样保留 | `configuration.mdx` |
 | vector / embedding / embed | 向量 / 嵌入向量 / 生成嵌入向量 | 模型称“嵌入模型”；不写嵌入式向量 | `models.mdx`, `configuration.mdx` |
+| re-embed / re-embedding | 重新生成嵌入向量 | 更换模型后重算已存数据的向量；命令 reembed 保留 | `admin-cli.md`, `blog/2026-11-10-version-1-2-1.md` |
+| query embedder / passage embedder | 查询嵌入模型 / 文本段落嵌入模型 | 分别用于搜索查询与已存文本；两者必须输出可比较的向量，不能任意搭配 | `configuration.mdx`, `models.mdx` |
 | vector search / embedding dimension | 向量检索 / 嵌入维度 | 维度不是 token 长度 | `storage.md`, `models.mdx` |
 | approximate nearest neighbor (ANN) | 近似最近邻（ANN） | “近似”不能漏译 | `configuration.mdx`, `retrieval.md` |
 | tokenizer / tokenization / lexeme | 分词器 / 分词 / 词元 | 不把分词器的词元与 LLM token 计费混用 | `multilingual.mdx`, `api/recall.mdx` |
@@ -152,8 +155,8 @@
 | structured output / response schema | 结构化输出 / 响应模式 | JSON Schema 首次可写“JSON 模式（JSON Schema）”；与数据库 schema 区分 | `reflect.mdx` |
 | history / version snapshot | 历史记录 / 版本快照 | 失败记录与成功版本区分 | `api/mental-models.mdx` |
 | invalidate / restore / prune | 标记失效 / 恢复 / 清理 | 对记忆的失效可逆，清理与删除按接口区分 | `api/memories.mdx` |
-| projected view / mirror to disk | 映射视图 / 镜像到磁盘 | 知识页映射成文件，区别于事实存储本身 | `knowledge-pages.mdx` |
-| folder tree / subtree / node | 目录树 / 子树 / 节点 | 知识页树中节点可为文件夹或页面 | `api/knowledge-pages.mdx` |
+| projected view / mirror to disk | 映射视图 / 镜像到磁盘 | 页面映射成文件，区别于事实存储本身 | `pages.mdx` |
+| folder tree / subtree / node | 目录树 / 子树 / 节点 | 页面树中节点可为文件夹或页面 | `api/pages.mdx` |
 
 ## 服务、模型、配置与运维
 
@@ -178,7 +181,7 @@
 | retry / exponential backoff / jitter | 重试 / 指数退避 / 随机抖动 | 保留重试次数、间隔和范围 | `configuration.mdx` |
 | failover / fallback / round-robin | 故障切换 / 回退 / 轮询调度 | 调度的 round-robin 与任务 polling 区分 | `configuration.mdx` |
 | LLM / LLM provider | 大语言模型（LLM） / LLM 服务提供方 | 模型名、服务 ID 原样保留 | `models.mdx` |
-| decision model | 决策模型 | 回答类型化中间判断，可参与 Recall 排序、Reflect 证据筛选、观测整合及知识页刷新；不等同于生成正文的 LLM 或交叉编码器 | `docs/developer/configuration.mdx` |
+| decision model | 决策模型 | 回答类型化中间判断，可参与 Recall 排序、Reflect 证据筛选、观测整合及页面刷新；不等同于生成正文的 LLM 或交叉编码器 | `docs/developer/configuration.mdx` |
 | memory provider | 记忆提供方 | 集成中提供记忆能力的后端或适配层，不写记忆供应商；与 LLM 服务提供方区分 | `src/data/integrations.json`（Eve、Right Agent、Hermes Desktop） |
 | reasoning effort / inference | 推理强度 / 推断 | LLM 的资源配置与业务推理区分 | `configuration.mdx`, `performance.md` |
 | tool calling / structured-output support | 工具调用 / 结构化输出支持 | 原生支持与通过提示模拟不同 | `models.mdx`, `configuration.mdx` |

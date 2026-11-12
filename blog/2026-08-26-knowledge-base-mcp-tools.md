@@ -88,7 +88,7 @@ Hindsight 0.9.2 弥合了这一差距。知识库现在具备**原生 MCP 能力
 
 ## 设置 {#setup}
 
-在 0.9.2 中，MCP 客户端连接时会自动注册这些工具。像之前使用 `retain` 和 `recall` 那样，将智能体连接到 Hindsight 的 MCP 服务器，七种知识库工具就会一并出现，并且范围限定为你指定的记忆库。如需授予更有限的访问权限，可将记忆库的启用工具设置为希望该记忆库公开的子集。[MCP 服务器指南](/developer/mcp-server)介绍连接方法，[知识页文档](/developer/knowledge-pages)介绍知识页本身。
+在 0.9.2 中，MCP 客户端连接时会自动注册这些工具。像之前使用 `retain` 和 `recall` 那样，将智能体连接到 Hindsight 的 MCP 服务器，七种知识库工具就会一并出现，并且范围限定为你指定的记忆库。如需授予更有限的访问权限，可将记忆库的启用工具设置为希望该记忆库公开的子集。[MCP 服务器指南](/developer/mcp-server)介绍连接方法，[知识页文档](/developer/pages)介绍知识页本身。
 
 ## 常见问题 {#frequently-asked-questions}
 

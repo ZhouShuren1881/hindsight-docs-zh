@@ -169,6 +169,7 @@ const config: Config = {
     // 构建时索引集成更新日志页面，
     // 让集成中心知道哪些集成有更新日志入口。
     './plugins/integration-changelogs',
+    './plugins/renamed-docs',
     [
       '@docusaurus/plugin-content-docs',
       {

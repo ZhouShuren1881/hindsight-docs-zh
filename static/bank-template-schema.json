@@ -182,7 +182,7 @@
             }
           ],
           "default": null,
-          "description": "知识页刷新也采用相同设置。",
+          "description": "页面刷新也采用相同设置。",
           "title": "心智模型刷新是否使用决策模型"
         },
         "mental_model_delta_use_decision_model": {
@@ -341,6 +341,22 @@
           "description": "此记忆库的 MCP 工具允许列表（None 表示允许所有工具）",
           "title": "启用的 MCP 工具"
         },
+        "knowledge_banks": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "该记忆库执行 Reflect 时读取其内容片段的知识库",
+          "title": "知识库"
+        },
         "consolidation_llm_batch_size": {
           "anyOf": [
             {
@@ -467,6 +483,20 @@
           "description": "每次反思调用中源事实的 Token 数上限",
           "title": "反思源事实的 Token 数上限"
         },
+        "page_default_trigger": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "创建页面时，覆盖内置默认值的触发器字段，例如 {\"refresh_cron\": \"0 * * * *\"}。创建请求显式传入的触发器仍具有更高优先级。",
+          "title": "页面默认触发器"
+        },
         "knowledge_page_default_trigger": {
           "anyOf": [
             {
@@ -478,7 +508,8 @@
             }
           ],
           "default": null,
-          "description": "创建知识页时，覆盖内置默认值的触发器字段，例如 {\"refresh_cron\": \"0 * * * *\"}。创建请求显式传入的触发器仍具有更高优先级。",
+          "deprecated": true,
+          "description": "page_default_trigger 的已弃用别名。将在 2.x 中移除。",
           "title": "知识页默认触发器"
         },
         "reflect_default_options": {
@@ -492,7 +523,7 @@
             }
           ],
           "default": null,
-          "description": "此记忆库的默认反思选项，例如 {\"reflect_search_observations_max_tokens\": 3000, \"reflect_search_observations_include_entities\": false}。当请求或模型触发器未设置相应选项时，应用于该记忆库中的所有反思操作，包括 API、MCP 和心智模型刷新。",
+          "description": "此记忆库的默认 Reflect 选项（例如 {\"reflect_search_observations_max_tokens\": 3000, \"reflect_search_observations_include_entities\": false}）。应用于记忆库中每个未设置相应选项的 Reflect 请求（API 和 MCP）。心智模型刷新不会读取它：刷新从自身触发器获取这些选项，其记忆库级默认值由 page_default_trigger 设置。",
           "title": "默认反思选项"
         },
         "mental_model_min_refresh_interval_seconds": {
@@ -1138,7 +1169,7 @@
       "type": "object"
     },
     "MentalModelTrigger": {
-      "description": "心智模型的触发器设置。\n\n刷新不是更换参数后执行的一次临时反思：它要综合生成整篇文档，因此需要独立的检索和迭代设置。这些设置仅来自该触发器，记忆库的 ``reflect_default_options`` 有意不作用于刷新。这些字段的记忆库级默认值为 ``knowledge_page_default_trigger``，创建页面时按相同结构进行覆盖合并。",
+      "description": "心智模型的触发器设置。\n\n刷新不是更换参数后执行的一次临时反思：它要综合生成整篇文档，因此需要独立的检索和迭代设置。这些设置仅来自该触发器，记忆库的 ``reflect_default_options`` 有意不作用于刷新。这些字段的记忆库级默认值为 ``page_default_trigger``，创建页面时按相同结构进行覆盖合并。",
       "properties": {
         "budget": {
           "anyOf": [

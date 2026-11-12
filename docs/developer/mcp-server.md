@@ -364,7 +364,7 @@ MCP 工具仅在提供 `tags` 时才会转发 `tags_match`。对于原始事实�
 
 ### 触发设置 {#trigger-settings}
 
-`trigger` 指定心智模型（或知识页）的刷新策略：**何时**重建，以及**基于什么内容**重建。它接受 HTTP API 支持的所有字段，因此，通过 `PATCH /mental_models/{id}` 能配置的内容，也都可以由智能体通过 MCP 配置。
+`trigger` 指定心智模型（或页面）的刷新策略：**何时**重建，以及**基于什么内容**重建。它接受 HTTP API 支持的所有字段，因此，通过 `PATCH /mental_models/{id}` 能配置的内容，也都可以由智能体通过 MCP 配置。
 
 | 字段 | 类型 | 说明 |
 |-------|------|-------------|
@@ -387,7 +387,7 @@ MCP 工具仅在提供 `tags` 时才会转发 `tags_match`。对于原始事实�
 
 `refresh_after_consolidation` 和 `refresh_cron` **互斥**：模型只能在整合后刷新，或按计划刷新，不能同时启用。设置其中一个会清除另一个。
 
-**创建时**，省略的字段采用引擎默认值（`mode: full`、不设置计划、包含所有事实类型）；知识页则采用页面默认值（`mode: delta`、仅观测、自动刷新、排除同级页面）。
+**创建时**，省略的字段采用引擎默认值（`mode: full`、不设置计划、包含所有事实类型）；页面则采用页面默认值（`mode: delta`、仅观测、自动刷新、排除同级页面）。
 
 **更新时，`trigger` 是补丁**：仅更改传入的字段，因此为模型设置 cron 计划会保留其 `fact_types` 和 `mode`。传入显式的 `null` 可清除可空设置。如果要先检查当前策略再修改，请调用 `get_mental_model`，并将详情设为 `content` 或 `full`。
 
@@ -654,15 +654,15 @@ MCP 工具仅在提供 `tags` 时才会转发 `tags_match`。对于原始事实�
 
 ---
 
-### get_knowledge_base_tree {#get_knowledge_base_tree}
+### get_page_tree {#get_page_tree}
 
-以嵌套树的形式浏览知识库中的文件夹和页面。每个页面都会报告 `is_stale`：`false` 表示页面已确定为最新；`true` 表示自页面上次刷新以来，记忆库已有写入。
+以嵌套树的形式浏览记忆库中的文件夹和页面。每个页面都会报告 `is_stale`：`false` 表示页面已确定为最新；`true` 表示自页面上次刷新以来，记忆库已有写入。
 
 ---
 
-### search_knowledge_base {#search_knowledge_base}
+### search_pages {#search_pages}
 
-按相关性查找知识页（对页面名称和内容进行 BM25 与向量混合搜索）。结果会按排名返回，每页附带一段摘要。
+按相关性查找页面（对页面名称和内容进行 BM25 与向量混合搜索）。结果会按排名返回，每页附带一段摘要。
 
 | 参数 | 类型 | 必填 | 说明 |
 |-----------|------|----------|-------------|
@@ -671,9 +671,9 @@ MCP 工具仅在提供 `tags` 时才会转发 `tags_match`。对于原始事实�
 
 ---
 
-### get_knowledge_page {#get_knowledge_page}
+### get_page {#get_page}
 
-以 Markdown 文档形式读取知识页（YAML frontmatter 和综合生成的正文）。
+以 Markdown 文档形式读取页面（YAML frontmatter 和综合生成的正文）。
 
 | 参数 | 类型 | 必填 | 说明 |
 |-----------|------|----------|-------------|
@@ -681,9 +681,9 @@ MCP 工具仅在提供 `tags` 时才会转发 `tags_match`。对于原始事实�
 
 ---
 
-### create_knowledge_folder {#create_knowledge_folder}
+### create_page_folder {#create_page_folder}
 
-在知识库中创建文件夹。文件夹用于归类页面，本身不包含内容。
+为页面创建文件夹。文件夹用于归类页面，本身不包含内容。
 
 | 参数 | 类型 | 必填 | 说明 |
 |-----------|------|----------|-------------|
@@ -692,9 +692,9 @@ MCP 工具仅在提供 `tags` 时才会转发 `tags_match`。对于原始事实�
 
 ---
 
-### create_knowledge_page {#create_knowledge_page}
+### create_page {#create_page}
 
-创建知识页——通过运行 `source_query`，从记忆库中的记忆综合生成页面内容，形成一份动态文档。内容会异步生成；请使用返回的 `operation_id` 跟踪完成状态。
+创建页面——通过运行 `source_query`，从记忆库中的记忆综合生成页面内容，形成一份持续更新的文档。内容会异步生成；请使用返回的 `operation_id` 跟踪完成状态。
 
 | 参数 | 类型 | 必填 | 说明 |
 |-----------|------|----------|-------------|
@@ -703,14 +703,14 @@ MCP 工具仅在提供 `tags` 时才会转发 `tags_match`。对于原始事实�
 | `parent_id` | string | 否 | 父文件夹 ID（`kf-...` 节点 ID）。省略表示在顶层创建 |
 | `tags` | array | 否 | 限定用于生成页面的记忆范围的标签 |
 | `max_tokens` | integer | 否 | 生成内容的最大 token 数（默认值：4096） |
-| `trigger` | object | 否 | 刷新策略，见[触发设置](#trigger-settings)。省略的字段采用知识页默认值：`delta` 模式会在每次整合后根据已整合的观测重建，并忽略同级页面 |
+| `trigger` | object | 否 | 刷新策略，见[触发设置](#trigger-settings)。省略的字段采用页面默认值：`delta` 模式会在每次整合后根据已整合的观测重建，并忽略同级页面 |
 | `refresh_after_consolidation` | boolean | 否 | `trigger.refresh_after_consolidation` 的旧式简写 |
 
 设置 `trigger.refresh_cron`，可让页面停止由整合触发重建，改为按固定的 UTC 计划运行。二者互斥，因此设置 cron 会清除自动刷新，同时保留页面的 `mode` 和 `fact_types`。
 
 ---
 
-### update_knowledge_node {#update_knowledge_node}
+### update_page_node {#update_page_node}
 
 重命名或移动文件夹/页面，和/或更新页面选项。仅更改传入的参数。更改 `source_query` 会安排一次异步刷新，以便页面根据新问题重建。
 
@@ -727,7 +727,7 @@ MCP 工具仅在提供 `tags` 时才会转发 `tags_match`。对于原始事实�
 
 ---
 
-### delete_knowledge_node {#delete_knowledge_node}
+### delete_page_node {#delete_page_node}
 
 删除文件夹或页面及其整个子树。每个被删除的页面都会同时删除其底层心智模型。
 
@@ -736,7 +736,7 @@ MCP 工具仅在提供 `tags` 时才会转发 `tags_match`。对于原始事实�
 | `node_id` | string | 是 | 要删除的文件夹（`kf-...`）或页面（`kp-...`） |
 
 :::note
-有意不将知识库导出设为 MCP 工具——该操作会将整个记忆库作为一个 Markdown 包返回。请改用 HTTP 端点 `GET /v1/default/banks/{bank_id}/knowledge-base/export`。
+有意不将页面导出设为 MCP 工具——该操作会将整个记忆库作为一个 Markdown 包返回。请改用 HTTP 端点 `GET /v1/default/banks/{bank_id}/pages/export`。
 :::
 
 ---
