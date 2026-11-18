@@ -2,7 +2,13 @@
 sidebar_position: 5
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 import CodeSnippet from '@site/src/components/CodeSnippet';
+import treePy from '!!raw-loader!@site/examples/api/observation-tree.py';
+import treeMjs from '!!raw-loader!@site/examples/api/observation-tree.mjs';
+import treeSh from '!!raw-loader!@site/examples/api/observation-tree.sh';
+import treeGo from '!!raw-loader!@site/examples/api/observation-tree.go';
 import recallPy from '!!raw-loader!@site/examples/api/recall.py';
 import memoryBanksPy from '!!raw-loader!@site/examples/api/memory-banks.py';
 import observationsPy from '!!raw-loader!@site/examples/api/observations.py';
@@ -350,6 +356,35 @@ Content-Type: application/json
 | 参数 | 类型 | 说明 |
 |-----------|------|-------------|
 | `observation_scopes` | `list[list[str]]` \| `null` | 可选的标签范围列表。只有标签包含至少一个范围内全部标签的记忆才会被处理。省略此参数则扫描整个记忆库。 |
+
+## 观测树 {#observation-tree}
+
+观测树将记忆库的全部观测组织成由 Markdown 文件组成的目录树。每个主题对应一个文件，每个目录都包含一个介绍其内容的 `index.md`。智能体可以使用 `ls` 和 `grep` 查看观测树，在提出具体问题前了解记忆库掌握了哪些信息。用户也可以浏览观测树，检查记忆库学到了什么。
+
+主题按照观测中提及的实体分组，无需调用 LLM。每次请求都会重新构建观测树，同一个记忆库始终生成相同的路径。观测树遵循[开放知识格式（Open Knowledge Format，OKF）](https://okf.md/spec/)，支持 OKF 的工具可以直接读取。
+
+:::note 实验性功能
+端点和文件布局仍可能发生变化。
+:::
+
+在控制台中打开记忆库，前往 **Pages → Observations**，即可浏览、搜索观测树或将其下载为 `.zip` 文件。通过 API 调用 `GET /v1/default/banks/{bank_id}/observations/tree` 会返回文件夹和文件，每个文件的 Markdown 内容位于 `content` 中。传入 `tags`、`tags_match` 或 `tag_groups`（与 Recall 相同），即可仅根据匹配的观测构建观测树。
+
+<Tabs>
+<TabItem value="python" label="Python">
+<CodeSnippet code={treePy} section="get-tree" language="python" />
+</TabItem>
+<TabItem value="node" label="Node.js">
+<CodeSnippet code={treeMjs} section="get-tree" language="javascript" />
+</TabItem>
+<TabItem value="cli" label="CLI">
+<CodeSnippet code={treeSh} section="get-tree" language="bash" />
+</TabItem>
+<TabItem value="go" label="Go">
+<CodeSnippet code={treeGo} section="get-tree" language="go" />
+</TabItem>
+</Tabs>
+
+---
 
 ## 配置 {#configuration}
 

@@ -155,7 +155,7 @@ claude mcp add --transport http hindsight http://localhost:8888/mcp/my-bank/
 |----------|----------|---------|-------------|
 | `HINDSIGHT_API_LLM_API_KEY` | 是* | — | LLM 提供商的 API 密钥 |
 | `HINDSIGHT_API_LLM_PROVIDER` | 否 | `openai` | LLM 提供商（`openai`、`anthropic`、`ollama` 等） |
-| `HINDSIGHT_API_LLM_MODEL` | 否 | `gpt-4o-mini` | 模型名称 |
+| `HINDSIGHT_API_LLM_MODEL` | 否 | `gpt-5-nano` | 模型名称 |
 | `HINDSIGHT_API_DATABASE_URL` | 否 | `pg0://hindsight-mcp` | 覆盖数据库 URL |
 | `HINDSIGHT_API_PORT` | 否 | `8888` | 监听端口 |
 | `HINDSIGHT_API_LOG_LEVEL` | 否 | `info` | 日志级别 |

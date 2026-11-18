@@ -357,6 +357,42 @@
           "description": "该记忆库执行 Reflect 时读取其内容片段的知识库",
           "title": "知识库"
         },
+        "reflect_kb_search_media_types": {
+          "anyOf": [
+            {
+              "items": {
+                "enum": [
+                  "document",
+                  "image",
+                  "audio",
+                  "video",
+                  "text"
+                ],
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Reflect 在知识库中搜索时可返回的媒体类型（`None` 表示全部类型）",
+          "title": "Reflect 知识库搜索的媒体类型"
+        },
+        "reflect_kb_search_apply_tags": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "使用 Reflect 的标签筛选条件筛选知识库搜索结果，规则与筛选记忆相同",
+          "title": "Reflect 知识库搜索应用标签筛选"
+        },
         "consolidation_llm_batch_size": {
           "anyOf": [
             {

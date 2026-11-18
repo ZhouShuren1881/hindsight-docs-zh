@@ -27,6 +27,7 @@
 | world fact / world | 世界事实 | 关于外部人物、事物和事件；与经历事实按说话者是否为该库的智能体区分，不按第一人称语法区分。用户说“我买了一辆车”仍是关于用户的世界事实；`world` 不翻译 | `retain.md` |
 | experience fact / experience | 经历事实 | 该记忆库的智能体自己的经历；不泛指用户经历；类型值 `experience` 不翻译 | `retain.md` |
 | observation | 观测 | 从事实中整合、带证据并随证据演变的认知判断；不是观察动作、原始记录或心智模型 | `observations.mdx`, `figures/observations.json` |
+| observation tree | 观测树 | 将记忆库中的观测按主题组织成 Markdown 目录树 | `observations.mdx`, `static/openapi.json` |
 | belief | 认知判断 | 指系统基于证据形成的认识，不译为信仰，也不承诺绝对正确 | `observations.mdx`, `index.mdx` |
 | consolidated knowledge / consolidated belief | 整合后的知识 / 整合后的认知判断 | 不等于临时生成的摘要 | `observations.mdx` |
 | mental model | 心智模型 | 用户定义问题，系统生成并维护常备答案；不等于底层 LLM | `mental-models.mdx`, `api/mental-models.mdx` |

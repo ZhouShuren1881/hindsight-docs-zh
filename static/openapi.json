@@ -1510,6 +1510,126 @@
         }
       }
     },
+    "/v1/default/banks/{bank_id}/observations/tree": {
+      "get": {
+        "tags": [
+          "Memory"
+        ],
+        "summary": "获取观测树",
+        "description": "将记忆库学到的全部观测打包成 Markdown 文件。智能体可以像操作普通目录一样列出、读取和用 grep 搜索这些文件，也可以将文件包导出并挂载。观测按所涉及的实体归入规模有限的主题树。每个主题对应一个文件，列出该主题的所有观测。每个目录都有一个 `index.md`，列出该目录的主题及证据最充分的观测。文件包遵循开放知识格式（https://okf.md/spec/）。观测树按请求以确定性的方式构建，文件在记忆库发生变化时仍保有原路径。此功能处于实验阶段。",
+        "operationId": "get_observation_tree",
+        "parameters": [
+          {
+            "name": "bank_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "记忆库 ID"
+            }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "只对带有这些标签（即该范围内）的观测分组，规则与 Recall 一致。",
+              "title": "标签"
+            },
+            "description": "只对带有这些标签（即该范围内）的观测分组，规则与 Recall 一致。"
+          },
+          {
+            "name": "tags_match",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "any",
+                "all",
+                "any_strict",
+                "all_strict",
+                "exact"
+              ],
+              "type": "string",
+              "description": "`tags` 的匹配方式，支持与 Recall 相同的模式。",
+              "default": "any",
+              "title": "标签匹配方式"
+            },
+            "description": "`tags` 的匹配方式，支持与 Recall 相同的模式。"
+          },
+          {
+            "name": "tag_groups",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "复合标签筛选条件，采用 JSON 编码的标签组列表，与 Recall 请求体中的 `tag_groups` 结构相同。叶节点为 `{tags, match, resolve}`，可用 `{and: [...]}`、`{or: [...]}`、`{not: ...}` 组合。各组之间按 AND 匹配。与 `tags` 互斥。",
+              "title": "复合标签条件组"
+            },
+            "description": "复合标签筛选条件，采用 JSON 编码的标签组列表，与 Recall 请求体中的 `tag_groups` 结构相同。叶节点为 `{tags, match, resolve}`，可用 `{and: [...]}`、`{or: [...]}`、`{not: ...}` 组合。各组之间按 AND 匹配。与 `tags` 互斥。"
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功响应",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObservationTreeFolder"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记忆库不存在。"
+          },
+          "422": {
+            "description": "验证错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/default/banks/{bank_id}/entities/graph": {
       "get": {
         "tags": [
@@ -10445,6 +10565,40 @@
             "title": "知识库",
             "description": "该记忆库执行 Reflect 时读取其内容片段的知识库"
           },
+          "reflect_kb_search_media_types": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "document",
+                    "image",
+                    "audio",
+                    "video",
+                    "text"
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reflect 知识库搜索的媒体类型",
+            "description": "Reflect 在知识库中搜索时可返回的媒体类型（`None` 表示全部类型）"
+          },
+          "reflect_kb_search_apply_tags": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reflect 知识库搜索应用标签筛选",
+            "description": "使用 Reflect 的标签筛选条件筛选知识库搜索结果，规则与筛选记忆相同"
+          },
           "consolidation_llm_batch_size": {
             "anyOf": [
               {
@@ -14171,6 +14325,13 @@
             "type": "integer",
             "title": "持续时间（毫秒）",
             "description": "执行时间，单位为毫秒"
+          },
+          "started_at_ms": {
+            "type": "integer",
+            "format": "int64",
+            "title": "开始时间（毫秒）",
+            "description": "调用开始时间，以 Unix 纪元毫秒表示",
+            "default": 0
           }
         },
         "type": "object",
@@ -16731,6 +16892,13 @@
             "title": "迭代轮次",
             "description": "本次调用所属的智能体循环迭代轮次（从 1 开始）。",
             "default": 0
+          },
+          "started_at_ms": {
+            "type": "integer",
+            "format": "int64",
+            "title": "开始时间（毫秒）",
+            "description": "调用开始时间，以 Unix 纪元毫秒表示。",
+            "default": 0
           }
         },
         "type": "object",
@@ -17376,6 +17544,212 @@
           ],
           "total": 3
         }
+      },
+      "ObservationTreeFile": {
+        "properties": {
+          "path": {
+            "type": "string",
+            "title": "路径",
+            "description": "相对于观测树根目录的路径，例如 `gemma/vllm.md` 或 `gemma/index.md`。"
+          },
+          "name": {
+            "type": "string",
+            "title": "名称"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ObservationTreeFileKind",
+            "description": "`index` 包含目录概览（OKF 保留的 `index.md`）及证据最充分的观测。`topic` 包含同一主题下的全部观测。"
+          },
+          "title": {
+            "type": "string",
+            "title": "标题"
+          },
+          "observation_count": {
+            "type": "integer",
+            "title": "观测数量",
+            "description": "主题中的观测数量。对于索引，则是整个目录中的观测数量。"
+          },
+          "about": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "所属实体",
+            "description": "用来区分此主题与同级主题的实体。"
+          },
+          "related": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "相关主题",
+            "description": "观测树中其他相关主题文件的路径。"
+          },
+          "observations": {
+            "items": {
+              "$ref": "#/components/schemas/ObservationTreeObservation"
+            },
+            "type": "array",
+            "title": "观测",
+            "description": "文件列出的观测，证据最充分的排在前面。"
+          },
+          "content": {
+            "type": "string",
+            "title": "内容",
+            "description": "同一文件的 Markdown 内容，每行包含日期和来源数量。"
+          }
+        },
+        "type": "object",
+        "required": [
+          "path",
+          "name",
+          "kind",
+          "title",
+          "observation_count",
+          "about",
+          "related",
+          "observations",
+          "content"
+        ],
+        "title": "ObservationTreeFile",
+        "description": "观测树中的 Markdown 文件，可以是某个目录的 `index.md`，也可以是单个主题（OKF 中的概念）。"
+      },
+      "ObservationTreeFileKind": {
+        "type": "string",
+        "enum": [
+          "index",
+          "topic"
+        ],
+        "title": "ObservationTreeFileKind",
+        "description": "观测树文件的类型。这里使用命名枚举。生成的 Rust 客户端会以字段名命名内联枚举，而 `kind` 已用于页面节点的枚举。此处使用 `Literal` 定义内联 `kind` 枚举会占用该名称，导致 CLI 的 `Kind::Folder` 失效。"
+      },
+      "ObservationTreeFolder": {
+        "properties": {
+          "path": {
+            "type": "string",
+            "title": "路径",
+            "description": "相对于观测树根目录的路径。根目录的路径为空。"
+          },
+          "name": {
+            "type": "string",
+            "title": "名称"
+          },
+          "title": {
+            "type": "string",
+            "title": "标题",
+            "description": "便于阅读的主题名称。"
+          },
+          "observation_count": {
+            "type": "integer",
+            "title": "观测数量"
+          },
+          "folders": {
+            "items": {
+              "$ref": "#/components/schemas/ObservationTreeFolder"
+            },
+            "type": "array",
+            "title": "目录"
+          },
+          "files": {
+            "items": {
+              "$ref": "#/components/schemas/ObservationTreeFile"
+            },
+            "type": "array",
+            "title": "文件"
+          }
+        },
+        "type": "object",
+        "required": [
+          "path",
+          "name",
+          "title",
+          "observation_count",
+          "folders",
+          "files"
+        ],
+        "title": "ObservationTreeFolder",
+        "description": "观测树中的主题目录。"
+      },
+      "ObservationTreeObservation": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "ID"
+          },
+          "text": {
+            "type": "string",
+            "title": "文本"
+          },
+          "proof_count": {
+            "type": "integer",
+            "title": "源记忆数量",
+            "description": "为该观测提供证据的源记忆数量。"
+          },
+          "occurred_start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "发生时间起点"
+          },
+          "occurred_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "发生时间终点"
+          },
+          "mentioned_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "提及时间"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "更新时间"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "标签"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "text",
+          "proof_count",
+          "tags"
+        ],
+        "title": "ObservationTreeObservation",
+        "description": "观测树中列出的一条观测。"
       },
       "OperationProgress": {
         "properties": {
@@ -19274,6 +19648,13 @@
             "type": "integer",
             "title": "持续时间（毫秒）",
             "description": "执行时间，单位为毫秒"
+          },
+          "started_at_ms": {
+            "type": "integer",
+            "format": "int64",
+            "title": "开始时间（毫秒）",
+            "description": "调用开始时间，以 Unix 纪元毫秒表示",
+            "default": 0
           }
         },
         "type": "object",
@@ -19704,6 +20085,13 @@
             "type": "integer",
             "title": "迭代轮次",
             "description": "调用此工具的迭代编号（从 1 开始）",
+            "default": 0
+          },
+          "started_at_ms": {
+            "type": "integer",
+            "format": "int64",
+            "title": "开始时间（毫秒）",
+            "description": "调用开始时间，以 Unix 纪元毫秒表示",
             "default": 0
           }
         },

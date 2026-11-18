@@ -389,6 +389,14 @@ class MyValidator(OperationValidatorExtension):
 - `validate_memory_update(ctx: MemoryUpdateContext)` 在任何处理开始前运行。上下文包含请求的 `text`（编辑时）、请求的 `state` 以及 `edits_fields`。在此处拒绝即可阻止维护操作；返回的 `status_code` 会原样传入 HTTP 响应。
 - `on_memory_update_complete(result: MemoryUpdateResult)` 在变更提交后运行一次。`result.action` 的值为 `edit`、`invalidate`、`revert` 或 `reason`；`result.reembedded_tokens` 表示引擎重新嵌入的文本量（仅失效或仅更新原因时为 0）。编辑或恢复会重新嵌入记忆并重新整合记忆库，因此，如果维护操作的计费应与摄取相同，可据此数值计量。
 
+#### 知识库计量钩子 {#knowledge-bank-metering-hooks}
+
+知识库有自己的操作完成后钩子，扩展可以像使用 `on_recall_complete` 计量 Recall 一样计量知识库操作。每个钩子默认不执行任何操作，且均为尽力执行：如果钩子抛出异常，系统会记录错误，操作仍会成功。
+
+- `on_knowledge_bank_search_complete(result: KnowledgeBankSearchResult)` 在搜索返回后运行。`result.results_tokens` 表示返回片段的文本所占的 token 数（对应追踪记录中的 `tokens_used`，无论是否请求追踪记录都会计数），`result.result_count` 表示返回的结果数。
+- `on_knowledge_bank_ingest_complete(result: KnowledgeBankIngestResult)` 在工作进程每次提交一批文档时运行，`result.passages` 表示已提交的片段数。工作进程没有请求上下文，因此结果会包含摄取任务入队时记录的 `tenant_id` / `api_key_id`。
+- `on_knowledge_bank_delete_complete(result: KnowledgeBankDeleteResult)` 在删除文档（包括由它拆分出的子文档）或整个知识库后运行，`result.passages` 表示已移除的片段数。
+
 #### 检查心智模型的新文档 {#checking-a-mental-models-new-document}
 
 刷新（完整或增量）生成新文档后，`validate_mental_model_candidate(ctx: MentalModelCandidateContext)` 会在新文档替换已存储文档之前运行。`ctx.candidate_content` 是即将存储的精确 Markdown 内容；`ctx.current_content`、`ctx.max_tokens`、`ctx.refresh_mode` 和 `ctx.candidate_structured` 可用于将其与读者当前看到的页面进行比较。可以用它强制执行模型未必能遵守的规则，例如严格的长度限制或“不允许重复章节”。

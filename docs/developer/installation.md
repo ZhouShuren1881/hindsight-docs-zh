@@ -135,10 +135,10 @@ KeyError: 'getpwuid(): uid not found: 1042'
 
 | 变体 | 大小（AMD64） | 大小（ARM64） | 适用场景 |
 |---------|--------------|--------------|-------------|
-| **Full**（`latest`） | 约 9 GB | 约 3.7 GB | 默认选项。嵌入和重排在镜像内运行；LLM 始终使用外部服务，包括本地推理场景。 |
-| **Slim**（`slim`） | 约 500 MB | 约 500 MB | 当嵌入和重排已依赖外部服务（OpenAI、Cohere、TEI）时使用。镜像显著更小，部署速度更快。需要配置[外部服务提供方](./configuration#embeddings)。 |
+| **Full**（`latest`） | 约 4.5 GB（下载约 2.2 GB） | 约 4.4 GB（下载约 2.1 GB） | 默认选项。嵌入和重排在镜像内运行，并且内含知识库使用的 EmbeddingGemma 2 模型（约 1.5 GB），因此知识库可离线使用；LLM 始终使用外部服务，包括本地推理场景。 |
+| **Slim**（`slim`） | 约 1.4 GB（下载约 600 MB） | 约 1.4 GB（下载约 570 MB） | 当嵌入和重排已依赖外部服务（OpenAI、Cohere、TEI）时使用。镜像显著更小，部署速度更快。需要配置[外部服务提供方](./configuration#embeddings)。 |
 
-Slim 镜像对应 pip 包 [`hindsight-api-slim`](#bare-metal-pip)。外部提供方选项请参阅[配置](./configuration#embeddings)。
+以上大小是拉取后占用的磁盘空间；下载大小是压缩后的大小。Slim 镜像对应 pip 包 [`hindsight-api-slim`](#bare-metal-pip)。外部提供方选项请参阅[配置](./configuration#embeddings)。
 
 这两种镜像都不包含 llama.cpp，因此 Docker 中无法使用内置的 `llamacpp` 提供方。要在本地运行推理，请在 Hindsight 旁边启动 llama.cpp（或 Ollama、LM Studio、vLLM），并将 `HINDSIGHT_API_LLM_BASE_URL` 指向它 — 可参考 [`docker/docker-compose/local-llm/`](https://github.com/vectorize-io/hindsight/tree/main/docker/docker-compose/local-llm) 中可运行的 compose 文件。
 
@@ -152,7 +152,7 @@ docker compose -f docker/docker-compose/cuda/docker-compose.yaml up --build
 
 该方案将进程内 PyTorch 升级到 CUDA 12.6，并通过 NVIDIA Container Toolkit 配置 GPU 直通。请在实际运行镜像的机器上构建 — 经过模拟的跨架构镜像无法访问 GPU。
 
-CUDA 运行时是额外叠加的：基础镜像中的 CPU 版 PyTorch wheel 仍保留在底层，因此生成的镜像在磁盘上约为 **11 GB**，而 Full 镜像约为 9 GB。这就是为什么没有发布 CUDA 镜像 — 只有实际配备 GPU 并会使用它时，额外开销才值得承担。
+CUDA 运行时是额外叠加的：基础镜像中的 CPU 版 PyTorch wheel 仍保留在底层，因此 CUDA 库会在 Full 镜像的基础上额外占用**几 GB 磁盘空间**。这就是为什么没有发布 CUDA 镜像 — 只有实际配备 GPU 并会使用它时，额外开销才值得承担。
 
 前置条件、手动构建步骤和验证方法请参阅 [`docker/docker-compose/cuda/README.md`](https://github.com/vectorize-io/hindsight/tree/main/docker/docker-compose/cuda)。
 

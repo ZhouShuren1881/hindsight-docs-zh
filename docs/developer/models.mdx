@@ -9,7 +9,7 @@ Hindsight 使用四类模型。只有 LLM 需要配置：嵌入模型和重排�
 
 | 模型 | 作用 | 默认值 |
 |---|---|---|
-| [**LLM**](#llm) | 在 Retain 时提取事实、整合观测、撰写 Reflect 答案和页面 | `openai` 提供方，`gpt-4o-mini` |
+| [**LLM**](#llm) | 在 Retain 时提取事实、整合观测、撰写 Reflect 答案和页面 | `openai` 提供方，`gpt-5-nano` |
 | [**嵌入模型**](#embedding-model) | 将文本转换为向量，供语义检索使用 | `BAAI/bge-small-en-v1.5`，本地运行 |
 | [**重排序模型**](#cross-encoder-reranker) | 根据相关性对 Recall 候选结果排序 | `hindsight-ai/hs-rerank-1`，本地运行 |
 | [**决策模型**](#decision-model) | 快速回答类型化判断问题，让 Recall、整合、Reflect 和页面中的判断无需调用 LLM | 关闭。参见[决策模型](./decision-models) |
@@ -108,7 +108,7 @@ OpenAI 的 Chat Completions API，以及使用相同协议的 API，例如 Toget
 ```bash
 export HINDSIGHT_API_LLM_PROVIDER=openai
 export HINDSIGHT_API_LLM_API_KEY=sk-xxxxxxxxxxxx
-export HINDSIGHT_API_LLM_MODEL=gpt-5.6-luna   # default: gpt-4o-mini
+export HINDSIGHT_API_LLM_MODEL=gpt-5.6-luna   # default: gpt-5-nano
 ```
 
 `openai` 提供方调用 Chat Completions API（`/v1/chat/completions`），因此支持**任何兼容 OpenAI 的 API**（Together AI、vLLM、网关等）：将 `HINDSIGHT_API_LLM_BASE_URL` 设为提供 `/chat/completions` 的 URL。对大多数提供方来说，这是以 `/v1` 结尾的 URL，而**不是**账户或资源根地址。Azure OpenAI 不在资源根地址提供 API，因此仅使用 `https://<resource>.openai.azure.com` 会返回 `404 Resource not found`；可用的 URL 格式参见[设置 Azure OpenAI](#azure-openai-setup)。
@@ -140,7 +140,7 @@ export HINDSIGHT_API_LLM_REASONING_EFFORT=high
 ```bash
 export HINDSIGHT_API_LLM_PROVIDER=anthropic
 export HINDSIGHT_API_LLM_API_KEY=your-api-key
-# export HINDSIGHT_API_LLM_MODEL=claude-haiku-4-5   # the default
+# export HINDSIGHT_API_LLM_MODEL=claude-haiku-5-5   # the default
 ```
 
 </ProviderSetup>
@@ -154,7 +154,7 @@ export HINDSIGHT_API_LLM_API_KEY=your-api-key
 ```bash
 export HINDSIGHT_API_LLM_PROVIDER=gemini
 export HINDSIGHT_API_LLM_API_KEY=your-api-key
-# export HINDSIGHT_API_LLM_MODEL=gemini-3.5-flash   # the default
+# export HINDSIGHT_API_LLM_MODEL=gemini-3.8-flash   # the default
 ```
 
 </ProviderSetup>
@@ -203,14 +203,14 @@ export HINDSIGHT_API_LLM_API_KEY=your-api-key
 
 ### z.ai (GLM) {#llm-zai}
 
-z.ai 上的 GLM 模型。`glm-4.5-flash` 免费；`glm-4.5-air` 为付费层级。
+z.ai 上的 GLM 模型。默认模型为 `glm-5.3-flash`；`glm-4.5-flash` 属于免费层级。
 
 <ProviderSetup>
 
 ```bash
 export HINDSIGHT_API_LLM_PROVIDER=zai
 export HINDSIGHT_API_LLM_API_KEY=your-api-key
-# export HINDSIGHT_API_LLM_MODEL=glm-4.5-flash   # the default
+# export HINDSIGHT_API_LLM_MODEL=glm-5.3-flash   # the default
 ```
 
 </ProviderSetup>
@@ -283,14 +283,14 @@ export HINDSIGHT_API_LLM_EXTRA_BODY='{"provider":{"only":["deepinfra","novita"],
 
 ### Requesty {#llm-requesty}
 
-Requesty 的路由服务，模型名带提供方前缀，例如 `openai/gpt-4o-mini`。
+Requesty 的路由服务，模型名带提供方前缀，例如 `openai/gpt-5-nano`。
 
 <ProviderSetup>
 
 ```bash
 export HINDSIGHT_API_LLM_PROVIDER=requesty
 export HINDSIGHT_API_LLM_API_KEY=your-api-key
-# export HINDSIGHT_API_LLM_MODEL=openai/gpt-4o-mini   # the default
+# export HINDSIGHT_API_LLM_MODEL=openai/gpt-5-nano   # the default
 ```
 
 </ProviderSetup>
@@ -304,7 +304,7 @@ Fireworks AI 上的模型，使用完整路径命名，例如 `accounts/firework
 ```bash
 export HINDSIGHT_API_LLM_PROVIDER=fireworks
 export HINDSIGHT_API_LLM_API_KEY=your-api-key
-# export HINDSIGHT_API_LLM_MODEL=accounts/fireworks/models/llama-v3p1-8b-instruct   # the default
+# export HINDSIGHT_API_LLM_MODEL=accounts/fireworks/models/deepseek-v4-flash   # the default
 ```
 
 </ProviderSetup>

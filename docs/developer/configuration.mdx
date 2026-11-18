@@ -301,6 +301,8 @@ Hindsight 提供五种 BM25 关键词检索后端：
 | `HINDSIGHT_API_LLM_SUPPORTS_STRING_PATTERN` | 指定 LLM 后端是否接受结构化输出 schema 中的 JSON Schema `pattern`。设为 `true` 后，Retain 会将 `occurred_start` / `occurred_end` 限制为 ISO 时间戳，防止语法约束模型在时间戳字符串中推理而损坏日期，也避免未结束的响应消耗完整 completion 预算。默认关闭，因为支持范围有限，而且后端拒绝时会在请求阶段直接报 400：Bedrock 根据不包含此关键字的允许列表校验 schema，OpenAI 在 strict 模式下也会报不支持的关键字。对既不执行也不拒绝此项的后端，启用它没有收益。 | `false` |
 | `HINDSIGHT_API_LLM_STRUCTURED_OUTPUT_IN_PROMPT` | 将结构化输出模式 放入提示交给基于 LiteLLM 的提供方（`litellm`、`litellmrouter`、`bedrock`）并解析回复，而不发送 `response_format`。对于直接拒绝 `response_format` 的后端，设为 `true`。Bedrock Claude 的行为因区域而异：`ap-southeast-2`（`au.*` 推理配置文件）拒绝转换后的 Converse `outputConfig`，报错 `Extra inputs are not permitted`；同一模型在 `us-east-1`（`us.*`）接受该配置，无需设置此项。两者均已验证。其他提供方会忽略此项。 | `false` |
 | `HINDSIGHT_API_LLM_OPENAI_COMPATIBLE_JSON_MODE` | 指定兼容 OpenAI 的后端在宽松（非 strict）结构化输出流程中是否支持 `response_format={"type": "json_object"}`。留空时由提供方决定：LM Studio、Ollama、Volcano 和 z.ai 只在提示词中提供 schema；llama.cpp 遵循 `HINDSIGHT_API_LLAMACPP_NO_GRAMMAR`；其他提供方会发送 `json_object`。z.ai 会跳过此模式，因为它会从生成文本中删除字面 token `json`，导致 `latest.json` 变成 `latest.`：JSON 仍有效，但内容已被悄悄篡改。若 `provider=openai` 指向无法约束输出的本地服务器，可设为 `false`。一些服务器会改写提示词，而思考模型可能不断围绕改写后的内容循环，直到 LLM 超时。关闭此项不会让模型自动生成 JSON，只会删除服务器处理不当的请求字段；模型仍须遵循提示词中的 schema。设为 `true` 可强制向默认会跳过此字段的后端发送 `json_object`。 | 由提供方决定 |
+| `HINDSIGHT_API_LLM_OPENAI_COMPATIBLE_ENFORCE_SCHEMA` | 兼容 OpenAI 的宽松流程发送响应格式时，发送响应 schema 本身（`{"type": "json_schema", "strict": false}`），而非只保证返回某个 JSON 对象的 `json_object`。schema 也会保留在提示词中，以便模型写出语法约束不强制要求的可选字段。适用于对任何 schema 都施加语法约束的后端，例如 vLLM 和 llama.cpp。对 vLLM 上的 Gemma 4 设为 `true`：在 `json_object` 下，存入响应会原样返回 schema 键或空事实列表，而较长的嵌套响应（心智模型刷新、整合）会提前关闭列表并重复键直到达到 token 上限。这与发送所有字段均为必填的改写后 schema 的 `HINDSIGHT_API_LLM_STRICT_SCHEMA` 不同。 | `false` |
+| `HINDSIGHT_API_RETAIN_LLM_OPENAI_COMPATIBLE_JSON_MODE` | 仅用于存入事实提取的 `HINDSIGHT_API_LLM_OPENAI_COMPATIBLE_JSON_MODE`；未设置时遵循全局值。设为 `false` 还会关闭存入的 schema 强制约束，同时在提示词中保留 schema。对 vLLM 上的 Gemma 4 设为 `false`：存入是唯一可以合法返回空结果的操作，在任何解码约束（`json_object` 或强制 schema）下，Gemma 对包含大量事实的内容返回 `{"facts": []}`，而无约束时不会。原因是 vLLM 的 `--structured-outputs-config.disable_any_whitespace` 阻止了 Gemma 在列表开始后写入的换行；但允许空白字符又会导致响应在空白字符上循环。 | 全局值 |
 | `HINDSIGHT_API_LLM_CHATGPT_HOME` | `chatgpt` 提供方的凭据目录：包含 `credentials.json`（由 `hindsight-admin chatgpt login` 或无头服务器上的 `login --from-file` 写入）以及此主机的 `host_id`。仅限服务器级设置。参见 [ChatGPT 设置](./models#chatgpt-setup-sign-in-with-chatgpt)。 | `~/.hindsight/chatgpt` |
 | `HINDSIGHT_API_LLM_CODEX_HOME` | `openai-codex` 提供方的凭据目录，内含其用于认证的 `auth.json`。这会覆盖 Hindsight 自身 LLM 调用所用的进程级 `CODEX_HOME`。因为 `CODEX_HOME` 是进程级设置，可将此项与按成员设置的 `HINDSIGHT_API_LLM_<n>_CODEX_HOME` 配合，在一个进程中运行两个独立授权的 ChatGPT 配置档。这样由两个 Codex 成员组成的[多 LLM 链](#multi-llm-strategies-failover--round-robin)便可在不同账户间故障转移。 | 未设置（否则使用 `CODEX_HOME`，再否则使用 `~/.codex`） |
 | `HINDSIGHT_API_LLM_OLLAMA_NUM_CTX` | 可选的 Ollama 原生 `num_ctx` 覆盖值。留空时采用模型或服务器默认值；需要更大上下文窗口时才设置为正整数。设置后，包括启动连接探测在内的自由格式调用也会经由原生 `/api/chat` API，因为兼容 OpenAI 的端点不能表达上下文大小；详见下文。 | 未设置 |
@@ -416,7 +418,7 @@ export HINDSIGHT_API_LLM_MODEL=gpt-5.6-luna
 
 # Claude Code (Claude Pro/Max subscription - uses OAuth)
 export HINDSIGHT_API_LLM_PROVIDER=claude-code
-export HINDSIGHT_API_LLM_MODEL=claude-sonnet-4-5-20250929
+export HINDSIGHT_API_LLM_MODEL=claude-sonnet-5-5
 # No API key needed - uses `claude auth login` credentials.
 # Set HINDSIGHT_API_LLM_API_KEY to a token from `claude setup-token` to authenticate with a key instead.
 
@@ -470,7 +472,7 @@ export HINDSIGHT_API_LLM_MODEL=deepseek-v4-flash
 # z.ai (Zhipu GLM series, OpenAI-compatible, https://z.ai)
 export HINDSIGHT_API_LLM_PROVIDER=zai
 export HINDSIGHT_API_LLM_API_KEY=your-zai-api-key
-export HINDSIGHT_API_LLM_MODEL=glm-4.5-flash  # or glm-4.5-air for the paid tier
+export HINDSIGHT_API_LLM_MODEL=glm-5.3-flash  # or glm-4.5-flash for the free tier
 # Default base_url: https://api.z.ai/api/coding/paas/v4 (override with HINDSIGHT_API_LLM_BASE_URL if needed)
 
 # opencode-go (OpenAI-compatible)
@@ -602,6 +604,8 @@ export HINDSIGHT_API_LLM_LITELLMROUTER_CONFIG='{
 | `HINDSIGHT_API_LLM_<n>_MAX_RETRIES` | 成员专用的重试次数上限。未设置时回退到操作的 `MAX_RETRIES`；`0` 是有效值，表示立即故障转移。 | 操作的 `MAX_RETRIES` |
 | `HINDSIGHT_API_LLM_STRATEGY` | 用于在链中进行路由的 JSON 策略。未设置 = 仅使用主 LLM（行为不变）。 | - |
 
+在 `failover` 和 `round-robin` 模式下，如果存入响应没有 `facts` 列表（例如模型返回看到的 JSON schema 而非事实），该分块也会转交给下一个成员。这不会触发成员的冷却时间：该成员并未宕机，只是未能处理该输入。
+
 **冷却时间。**在 `failover` 和 `round-robin` 模式下，某个成员在自身重试后仍然失败时，会被移到顺序末尾，并进入 `cooldown_seconds` 冷却期（默认 `60`）。这样后续请求不会继续等待它报错或超时，适合成员用完每日或每周配额时使用。冷却期结束后若再次失败，冷却时间会加倍，最长一小时；成员下次成功后冷却时间清零。处于冷却期的成员只是优先级降低，不会被移除：其他所有成员都失败时，仍会尝试它。将 `"cooldown_seconds"` 设为 `0`，即可让每个请求都按顺序尝试所有成员。冷却状态按进程保存在内存中，重启后清除。
 
 策略 JSON 支持三种模式：
@@ -732,7 +736,7 @@ llama.cpp 服务器由所有 LLM 操作共享（存入、反思、整合）。�
 | `HINDSIGHT_API_REFLECT_LLM_REASONING_EFFORT` | 反思操作的推理强度 | 回退到 `HINDSIGHT_API_LLM_REASONING_EFFORT` |
 | `HINDSIGHT_API_REFLECT_LLM_EXTRA_BODY` | 反思操作额外请求正文参数（JSON 字典） | 回退到 `HINDSIGHT_API_LLM_EXTRA_BODY` |
 | `HINDSIGHT_API_REFLECT_LLM_CACHE_AFFINITY` | 反思操作的提示缓存亲和模式 | 回退到 `HINDSIGHT_API_LLM_CACHE_AFFINITY` |
-| `HINDSIGHT_API_REFLECT_MAX_COMPLETION_TOKENS` | 反思最终综合调用在传输层的输出上限（`max_completion_tokens`）。未设置时不设上限：模型会运行到自然停止；反思/心智模型的 `max_tokens` 通过提示指令和事后改写控制*可见*长度，而不会截断提供方调用。对于思考模型，原始提供方预算会被推理 token 消耗，因此在此处设置硬上限可能会让内容半字中断。只有在需要为综合调用强制设置成本上限时才设为整数。 | 未设置（无上限） |
+| `HINDSIGHT_API_REFLECT_MAX_COMPLETION_TOKENS` | 反思最终综合调用在传输层的输出上限（`max_completion_tokens`）。未设置时不设上限：模型会运行到自然停止；反思/心智模型的 `max_tokens` 通过提示指令和事后改写控制*可见*长度，而不会截断提供方调用。对于思考模型，原始提供方预算会被推理 token 消耗，因此在此处设置硬上限可能会让内容半字中断。只有在需要为综合调用强制设置成本上限时才设为整数。设置后，同一上限适用于反思循环的每一轮；未设置时，仅选择下次搜索的循环轮次上限为 1024 token。 | 未设置（无上限） |
 | `HINDSIGHT_API_CONSOLIDATION_LLM_PROVIDER` | 观测整合使用的 LLM 提供方 | 回退到 `HINDSIGHT_API_LLM_PROVIDER` |
 | `HINDSIGHT_API_CONSOLIDATION_LLM_API_KEY` | 整合 LLM 的 API 密钥 | 回退到 `HINDSIGHT_API_LLM_API_KEY` |
 | `HINDSIGHT_API_CONSOLIDATION_LLM_MODEL` | 整合操作使用的模型 | 回退到 `HINDSIGHT_API_LLM_MODEL` |
@@ -1532,8 +1536,9 @@ export HINDSIGHT_API_DECISION_MODEL_API_KEY=your-key
 | `HINDSIGHT_API_DECISION_MODEL_TIMEOUT` | 请求超时时间（秒）。 | `60` |
 | `HINDSIGHT_API_DECISION_MODEL_MAX_CONCURRENT` | 每个使用决策模型的操作所允许的最大并发请求数。 | `24` |
 | `HINDSIGHT_API_DECISION_MODEL_MAX_REQUEST_TOKENS` | 单次请求可携带的最大 token 数，按整个请求正文计数。较大的请求会拆分发送。此值应低于服务模型的上下文窗口，并留出余量。仅适用于不自行调整请求大小的端点：使用 Hindsight Inference 自身的 URL 时，`hindsight` 会将每个请求调整到模型窗口内，因此整个请求只发送一次（仅为不超过 2 MB 正文上限而拆分）。使用自定义 `HINDSIGHT_API_DECISION_MODEL_BASE_URL`（自己的 vLLM 上的模型）时，请求会再次拆分。 | `26000`；自定义 URL 的 `hindsight` 为 `54000`；Hindsight Inference 未设置 |
+| `HINDSIGHT_API_DECISION_MODEL_VISION` | 向决策模型提供图片。目前用于反思判断证据是否已回答问题时提供知识库图片；没有图片时，仅由图片承载的答案会被判断为“证据不足”，并多花一轮。仅适用于 System One 提供方（`typesafe`、`hindsight`）及可读取图片的模型（Jev 1.13+）。仅发送每边为 280–1568 像素的 PNG 和 JPEG 图片；其他内容仍以文本形式提供。默认关闭：System One 的图片支持处于预览阶段。仅可在服务器级设置。 | `false` |
 
-| `HINDSIGHT_API_DECISION_MODEL_TOKENIZER` | 计算请求上限和 Recall 各项上限（查询、共享上下文及每条记忆）所用的词汇表：使用服务模型自己的词汇表，因为它会拒绝超出窗口的请求。除 `HINDSIGHT_API_TOKENIZER_ENCODING` 支持的词汇表外，还支持 `jev`（Jev 计数的估算）和 `qwen3.5`。端点提供的模型不是该提供方的默认模型时应设置此项。 | `typesafe` 使用 `jev`；其他提供方使用 `HINDSIGHT_API_TOKENIZER_ENCODING` |
+| `HINDSIGHT_API_DECISION_MODEL_TOKENIZER` | 计算请求上限和 Recall 各项上限（查询、共享上下文及每条记忆）所用的词汇表：使用服务模型自己的词汇表，因为它会拒绝超出窗口的请求。除 `HINDSIGHT_API_TOKENIZER_ENCODING` 支持的词汇表外，还支持 `jev`（Jev 计数的估算）、`qwen3.5` 和 `hs-decide-1-flash`。端点提供的模型不是该提供方的默认模型时应设置此项。 | `typesafe` 使用 `jev`；其他提供方使用 `HINDSIGHT_API_TOKENIZER_ENCODING` |
 
 每个请求遇到速率限制（429）或暂时性故障时，都会单独重试。
 
@@ -2348,6 +2353,18 @@ export HINDSIGHT_API_OBSERVATIONS_MISSION="Observations are recurring patterns i
 | `HINDSIGHT_API_REFLECT_SOURCE_FACTS_MAX_TOKENS` | 反思时 `search_observations` 中源事实的 token 预算。`-1` 禁用（默认），`0` 启用且不限量，大于 `0` 时按指定预算启用。可通过配置 API 按银行覆盖。 | `-1` |
 | `HINDSIGHT_API_REFLECT_DEFAULT_OPTIONS` | JSON 对象形式的反思默认选项，在请求未指定时应用。心智模型刷新从自己的触发器读取设置，触发器默认值按记忆库由 `page_default_trigger` 提供，并且始终只会完整获取排名最高的心智模型。`reflect_search_observations_max_tokens` 设置 `search_observations` 工具预算；较小的预算会剔除排名较低的观测并缩小反思上下文。`reflect_search_observations_include_entities` 可省略附加到观测的已消解实体名称（可能超过工具载荷的一半）；`reflect_search_mental_models_max_tokens` 设置 `search_mental_models` 完整返回心智模型的预算（默认值为 16000；排名最高的结果始终完整返回，其他超出预算的结果会以片段形式返回，供模型读取）。例如 `{"reflect_search_observations_max_tokens": 3000, "reflect_search_observations_include_entities": false}`。可通过配置 API 按记忆库覆盖。 | - |
 
+#### 反思与关联的知识库 {#reflect-and-linked-knowledge-banks}
+
+交互式反思会搜索记忆库通过配置 `knowledge_banks` 关联的知识库；心智模型刷新绝不会读取这些知识库。媒体类型和标签过滤器可分层配置（按记忆库）；图片设置和预算仅可在服务器级设置。搜索的 token 预算使用反思的召回调用所用的预算。
+
+| 变量 | 说明 | 默认值 |
+|---|---|---|
+| `HINDSIGHT_API_REFLECT_KB_SEARCH_MEDIA_TYPES` | 搜索可返回的媒体类型，以逗号分隔，可选 `document`、`image`、`audio`、`video`、`text`。未设置时返回全部类型。 | - |
+| `HINDSIGHT_API_REFLECT_KB_SEARCH_IMAGES` | 将图片或 PDF 页面命中结果对应的图片作为图像提供给反思模型。仅在已知模型可读取图片时生效（见 `HINDSIGHT_API_LLM_VISION`）；否则命中结果仍为文本。 | `true` |
+| `HINDSIGHT_API_REFLECT_KB_SEARCH_MAX_IMAGES` | 每次搜索最多提供给模型的图片数。每张图片都会消耗输入 token。`0` 表示不发送图片。 | `4` |
+| `HINDSIGHT_API_REFLECT_KB_SEARCH_BUDGET` | 在 token 预算选出结果之前搜索排序的深度，即知识搜索的 `budget`：`low` 最快，`high` 涵盖最多候选项。 | `mid` |
+| `HINDSIGHT_API_REFLECT_KB_SEARCH_APPLY_TAGS` | 使用反思的 `tags`、`tags_match` 和 `tag_groups` 过滤知识库搜索，规则与记忆相同（`any` / `all` 保留无标签文档，`_strict` 模式排除无标签文档）。`false` 不论反思标签为何都会搜索所有文档。 | `true` |
+
 #### 内部召回（供反思和心智模型刷新使用） {#internal-recall-used-by-reflect-and-mental-model-refresh}
 
 以下参数控制反思智能体运行的召回工具（包括心智模型刷新）。它们决定模型未指定预算时 `recall` 工具调用返回的内容；模型的明确请求优先，但仍受反思逻辑对模型传入 token 参数的限制。支持分层配置，可通过配置 API 按银行覆盖；也可通过心智模型的 `trigger.include_chunks`、`trigger.recall_max_tokens` 和 `trigger.recall_chunks_max_tokens` 字段分别覆盖。
@@ -2367,6 +2384,42 @@ export HINDSIGHT_API_OBSERVATIONS_MISSION="Observations are recurring patterns i
 | `HINDSIGHT_API_DISPOSITION_SKEPTICISM` | 怀疑或信任的程度（1 = 信任，5 = 怀疑） | `3` |
 | `HINDSIGHT_API_DISPOSITION_LITERALISM` | 对信息作字面解释的程度（1 = 灵活，5 = 字面） | `3` |
 | `HINDSIGHT_API_DISPOSITION_EMPATHY` | 考虑情绪背景的程度（1 = 不带感情色彩，5 = 共情） | `3` |
+
+### 知识库 {#knowledge-banks}
+
+知识库保存文档（PDF、Office、图片、音频、视频、文本），供语义和关键词搜索；记忆库在其 `knowledge_banks` 配置中关联知识库，反思会读取它们（参见[反思](#reflect)）。该功能仍在开发中，默认关闭。标记为*按库*的设置可通过 `PATCH /v1/default/knowledge-banks/{bank_id}/config` 为单个知识库覆盖；知识库只能收紧服务器限制，不能放宽。
+
+| 变量 | 说明 | 默认值 |
+|---|---|---|
+| `HINDSIGHT_API_ENABLE_KB` | 启用知识库。关闭时，其 HTTP 路由返回 404，反思忽略关联知识库，控制平面隐藏知识库。 | `false` |
+| `HINDSIGHT_API_KB_EMBEDDINGS_PROVIDER` | 所有知识库共用的嵌入模型，其支持的嵌入内容决定可摄取的媒体类型。`local`（进程内 EmbeddingGemma 2：文本、图片、音频、视频）、`gemini` / `vertex`（Gemini Embedding 2）、`voyage`（文本、图片、视频）、`cohere`（文本、图片）、`openai`（任何兼容 OpenAI 的 `/v1/embeddings` 服务器）、`text`（记忆库嵌入模型，仅文本）。 | `local` |
+| `HINDSIGHT_API_KB_EMBEDDINGS_MODEL` | 模型。未设置时使用提供方默认模型：`google/embeddinggemma-2`、`gemini-embedding-2`、`voyage-multimodal-3.5`、`embed-v4.0`。`openai` 必填。 | - |
+| `HINDSIGHT_API_KB_EMBEDDINGS_API_KEY` | 远程提供方的 API 密钥。 | - |
+| `HINDSIGHT_API_KB_EMBEDDINGS_BASE_URL` | 服务器 URL：`openai` 的 `/v1` URL（必填），或 `voyage` / `cohere` 的代理地址。 | - |
+| `HINDSIGHT_API_KB_EMBEDDINGS_DIMENSIONS` | 支持缩短向量的模型所用的向量维度。未设置时保留模型原有维度。 | - |
+| `HINDSIGHT_API_KB_EMBEDDINGS_MODALITIES` | `openai` 远程模型支持嵌入的内容，以逗号分隔（`text`、`image`、`audio`、`video`）。 | `text,image` |
+| `HINDSIGHT_API_KB_EMBEDDINGS_DEVICE` | `local` 的 torch 设备（`cpu`、`cuda`、`mps`）。未设置时自动选择。 | - |
+| `HINDSIGHT_API_KB_EMBEDDINGS_BATCH_SIZE` | 每次嵌入请求的片段数。 | `32` |
+| `HINDSIGHT_API_KB_EMBEDDINGS_MAX_IN_FLIGHT` | 此进程中所有摄取和搜索向远程嵌入模型同时发出的请求上限。`0` 表示不限制。 | `16` |
+| `HINDSIGHT_API_KB_TEXT_EMBEDDINGS_*` | `text` 提供方自己的嵌入配置，可使用带此前缀的任意 `HINDSIGHT_API_EMBEDDINGS_*` 设置（如 `HINDSIGHT_API_KB_TEXT_EMBEDDINGS_PROVIDER`）。未设置时使用记忆库的嵌入模型。 | - |
+| `HINDSIGHT_API_KB_DISABLED_MEDIA_TYPES` | 摄取时拒绝的媒体类型，以逗号分隔（`document`、`image`、`audio`、`video`、`text`）。*按库*（知识库只能增加禁用类型）。 | - |
+| `HINDSIGHT_API_KB_MAX_FILE_MB` | 接受的最大文件大小。 | `500` |
+| `HINDSIGHT_API_KB_MAX_MEDIA_SECONDS` | 音频或视频文件的最长时长。*按库*。 | `7200` |
+| `HINDSIGHT_API_KB_MAX_PDF_PAGES` | 单个 PDF 的最大页数。*按库*。 | `2000` |
+| `HINDSIGHT_API_KB_TEXT_PASSAGE_TOKENS` | 文本片段大小，以 token 计；片段遵循文档结构。*按库*。 | `256` |
+| `HINDSIGHT_API_KB_IMAGE_TOKENS` | `local` 嵌入模型每张图片的视觉 token 数（70–1120）。*按库*。 | `280` |
+| `HINDSIGHT_API_KB_PDF_PAGE_PIXELS` | 渲染后的 PDF 页面最长边像素数。*按库*。 | `1536` |
+| `HINDSIGHT_API_KB_PDF_BANDS` | 同时嵌入每个 PDF 页面的三个水平条带：搜索效果更好，但摄取速度减半。*按库*。 | `false` |
+| `HINDSIGHT_API_KB_AUDIO_WINDOW_SECONDS` | 单个音频片段的时长。*按库*。 | `60` |
+| `HINDSIGHT_API_KB_VIDEO_WINDOW_SECONDS` | 单个视频片段的时长。*按库*。 | `30` |
+| `HINDSIGHT_API_KB_MEDIA_OVERLAP_SECONDS` | 相邻音频或视频片段的重叠时长。*按库*。 | `5` |
+| `HINDSIGHT_API_KB_PDF_TEXT_WEIGHT` | 搜索时，PDF 页面的分数为 `(1 - w)` × 图片分数 + `w` × 最佳文本分数。 | `0.7` |
+| `HINDSIGHT_API_KB_KEYWORD_WEIGHT` | 搜索时关键词匹配的权重：查询中包含在库内足够罕见的词时融合此分数。 | `0.2` |
+| `HINDSIGHT_API_KB_INGEST_CHILD_BYTES` | 异步摄取会按约这么多文件字节拆分成工作进程任务，使大型上传分散到多个工作进程。 | `1048576` |
+| `HINDSIGHT_API_KB_INGEST_MEMORY_BUDGET_MB` | 单个摄取批次在提交已有内容前可占用的内存。`0` 表示关闭限制。 | `128` |
+| `HINDSIGHT_API_KB_INGEST_STRATEGIES` | 命名摄取策略，采用 JSON 格式：`{name: {file_type: {"extension": "module:Class", "settings": {...}}}}`，其中扩展负责预处理各文件类型。 | - |
+| `HINDSIGHT_API_KB_INGEST_DEFAULT_STRATEGY` | 摄取使用的默认策略，除非条目指定其他策略。 | - |
+| `HINDSIGHT_API_KB_STORE_EXTENSION` | 文档和片段的存储位置：`KnowledgeStore` 的 `module.path:ClassName`。未设置时使用 PostgreSQL。 | - |
 
 ### MCP 服务器 {#mcp-server}
 
@@ -2431,7 +2484,7 @@ export HINDSIGHT_API_MCP_INSTRUCTIONS="Also store every action you take, includi
 | `HINDSIGHT_API_WORKER_POLL_INTERVAL_MS` | 数据库轮询间隔（毫秒） | `500` |
 | `HINDSIGHT_API_WORKER_MAX_RETRIES` | 将任务标记为失败前的最大重试次数 | `3` |
 | `HINDSIGHT_API_WORKER_TASK_RETRY_BACKOFF_SECONDS` | 暂时性任务失败后重试的等待秒数 | `60` |
-| `HINDSIGHT_API_BACKPRESSURE_DEFER_SECONDS` | 存储后端因背压暂缓的任务，在重试前等待的时间。等待应足够长，让积压有机会消退（满载时立即重试只会再次被暂缓），又不至于在积压清除后仍久等。延后不计入 `HINDSIGHT_API_WORKER_MAX_RETRIES`。 | `120` |
+| `HINDSIGHT_API_BACKPRESSURE_DEFER_SECONDS` | 存储后端因背压暂缓的任务，在重试前等待的时间。等待应足够长，让积压有机会消退（满载时立即重试只会再次被暂缓），又不至于在积压清除后仍久等。任何任务类型的延后均不计入 `HINDSIGHT_API_WORKER_MAX_RETRIES`；延后 180 次后任务会失败，因为存储后端拒绝任务如此之久表示它已卡住，而非繁忙。 | `120` |
 | `HINDSIGHT_API_WORKER_HTTP_PORT` | 工作进程指标/健康检查 HTTP 端口（仅工作进程 CLI） | `8889` |
 | `HINDSIGHT_API_WORKER_MAX_SLOTS` | 每个工作进程的最大并发任务总数（所有操作类型合计） | `10` |
 | `HINDSIGHT_API_WORKER_SHUTDOWN_DRAIN_SECONDS` | 收到 SIGTERM 后，工作进程（包括 API 内嵌的工作进程）立即停止领取任务，然后等待此时长，让进行中的任务完成；超时后取消任务并将其交还为 `pending`，供其他工作进程处理。时间从收到信号时开始计算。取消和交还还需约 7 秒，因此应将此值设为比平台宽限期（`terminationGracePeriodSeconds`、Docker 的 `stop_grace_period`）低约 10 秒；默认值适用于 Kubernetes 默认的 30 秒。交还的任务会从头重试。 | `20` |
@@ -2447,6 +2500,7 @@ export HINDSIGHT_API_MCP_INSTRUCTIONS="Also store every action you take, includi
 | `HINDSIGHT_API_WORKER_IMPORT_DOCUMENTS_RESERVED_SLOTS` | 在 `WORKER_MAX_SLOTS` 内为 import_documents 预留的最低槽位数 | `0` |
 | `HINDSIGHT_API_WORKER_EXPORT_BANK_RESERVED_SLOTS` | 在 `WORKER_MAX_SLOTS` 内为 export_bank 预留的最低槽位数 | `0` |
 | `HINDSIGHT_API_WORKER_IMPORT_BANK_RESERVED_SLOTS` | 在 `WORKER_MAX_SLOTS` 内为 import_bank 预留的最低槽位数 | `0` |
+| `HINDSIGHT_API_WORKER_KNOWLEDGE_INGEST_RESERVED_SLOTS` | 在 `WORKER_MAX_SLOTS` 内为知识库摄取（`knowledge_ingest`）预留的最低槽位数。 | `0` |
 | `HINDSIGHT_API_WORKER_<TYPE>_MAX_SLOTS` | **已弃用**的 `..._RESERVED_SLOTS` 别名，`<TYPE>` 可为 `CONSOLIDATION`、`RETAIN`、`FILE_CONVERT_RETAIN`、`REFRESH_MENTAL_MODEL`、`GRAPH_MAINTENANCE`、`IMPORT_DOCUMENTS`。名称有误——它设置预留下限而非上限。目前仍生效但会记录警告，未来将移除。若同时设置它和 `..._RESERVED_SLOTS` 则报错。 | （未设置） |
 
 终态操作会对整行使用统一的保留窗口。操作结束后 Hindsight 不会清除任务载荷：失败和取消的操作需要它来重试，而对已完成操作设置 `include_payload=true` 是一种显式调试方式。将载荷、结果元数据、进度和状态保存在一起也可避免操作历史不完整。终态行的 `updated_at` 超出配置窗口后，后台维护循环会按每个 schema 的有界批次进行清理，与其他定时扫描一起执行。仅适用于 PostgreSQL；Oracle 不运行维护循环。待处理和正在处理的行不会被清理。

@@ -24,7 +24,7 @@ OpenBot 智能体是持久的，但其上下文并非如此：每个线程填满
 连接 Hindsight MCP 服务器后，每个 OpenBot 智能体都可以使用 Hindsight 工具（`recall`、`retain`、`sync_retain`、`reflect`、心智模型和文档工具）。将每个智能体或整个团队指向一个 Hindsight **记忆库**，即可实现：
 
 - **记忆跨线程保留**：一个会话中存入的事实可以在下一个会话、上下文压缩后以及重启后召回。
-- **共享或隔离，由你选择**：团队可以共享一个记忆库，也可以为每个智能体单独设置记忆库以实现严格隔离。记忆库由 MCP URL 选择。
+- **共享或隔离，由你选择**：团队可以共享一个记忆库，也可以为每个智能体单独设置记忆库以实现严格隔离。记忆库的选择方式取决于连接方式。
 - **各处使用同一份数据**：OpenBot 智能体写入的记忆与其他 Hindsight 集成和自动化读取的记忆位于同一个库中，因此它们看到一致的数据视图。
 
 ## Hindsight 与 OpenBot 内置记忆 {#hindsight-and-openbots-built-in-memory}
@@ -42,18 +42,24 @@ OpenBot 自带内置记忆（`remember` / `search_memories` 工具），它是�
 
 ### 通过 OpenBot 应用市场安装（推荐） {#via-the-openbot-marketplace-recommended}
 
-在 OpenBot 中打开 **Apps**，找到 **Hindsight** 并点击 **Connect**。系统会要求填写两个值：
+点击 OpenBot **左侧栏**底部的店面按钮打开应用市场（它不在主导航中），然后打开 **Apps**，找到 **Hindsight** 并点击 **Connect**（[网页上的应用条目](https://openbot.run/plugins/hindsight)）。系统不会要求填写 URL：该条目固定连接到 Hindsight Cloud 的多记忆库地址 `https://api.hindsight.vectorize.io/mcp`。选择身份认证方式：
 
-| 字段 | 值 |
+| 选项 | 操作 |
 | --- | --- |
-| MCP URL | `https://api.hindsight.vectorize.io/mcp/<bank>/`（替换 `<bank>`） |
-| API key | 你的 Hindsight Cloud API 密钥（`hsk_…`） |
+| **Sign in** | 在浏览器中登录 Hindsight Cloud，选择允许 OpenBot 使用的组织。此操作需要 Owner 或 Admin 批准。 |
+| **Use an API key instead** | 粘贴从 [Connect 页面](https://ui.hindsight.vectorize.io/connect)获取的密钥（`hsk_…`）。OpenBot 会加密存储该密钥。 |
 
-为需要共享记忆的智能体启用该应用。
+然后为需要共享记忆的智能体启用该应用。
+
+:::note 此方式的记忆库行为不同
+由于该条目连接到**多记忆库**地址，智能体还可以使用 `list_banks`、`create_bank` 和 `get_bank_stats`，每个记忆工具都接受可选的 `bank_id`。在智能体指令或任务中告知每个智能体使用哪个记忆库。如果智能体没有指定记忆库，则使用名为 `default` 的记忆库，该库会在首次使用时创建，其中的记忆在其他记忆库中不可见。
+
+如果希望连接限定在单个记忆库内，无需传递 `bank_id`，也无法访问其他记忆库，请改为手动添加。
+:::
 
 ### 手动添加为自定义 MCP 服务器 {#add-it-manually-as-a-custom-mcp-server}
 
-无需应用市场中的条目，现在就可以连接 Hindsight。在 OpenBot 的**服务器设置**中，添加一个 URL MCP 服务器：
+如果希望一个连接严格限定在单个记忆库内，或使用自托管部署，请使用此方式。在 OpenBot 的**服务器设置**中，添加一个 URL MCP 服务器：
 
 - **URL**：`https://api.hindsight.vectorize.io/mcp/<bank>/`
 - **Header**：`Authorization: Bearer hsk_…`
@@ -72,10 +78,14 @@ hindsight-api
 
 ## 选择记忆库 {#choosing-a-bank}
 
-记忆库是 MCP URL（`/mcp/<bank>/`）的一部分，因此每个连接都限定在一个记忆库内，智能体无需传递 `bank_id`。
+记忆库的选择方式取决于上面采用的连接方式。
+
+**手动设置。** 记忆库是 MCP URL（`/mcp/<bank>/`）的一部分，因此每个连接都限定在一个记忆库内，智能体无需传递 `bank_id`。
 
 - **团队记忆**：为每个智能体提供相同的 URL（例如 `/mcp/team/`）。
 - **单智能体记忆**：为每个智能体提供各自的 URL（例如 `/mcp/research-bot/`、`/mcp/ops-bot/`）。
+
+**应用市场条目。** 该连接可访问账户中的所有记忆库，智能体在每次调用时指定记忆库。请在智能体指令中指定记忆库，否则会回退到 `default`。
 
 完整工具列表和记忆库选择规则请参见 [MCP 服务器参考](/developer/mcp-server)。
 

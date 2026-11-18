@@ -20,11 +20,11 @@ OpenBot 的记忆却没有以相同方式持久保存。它存在于线程中，
 
 ## TL;DR {#tldr}
 
-- 添加一个 URL 类型的 MCP 服务器，即可通过 MCP 将 OpenBot 智能体连接到 Hindsight **记忆库**
+- Hindsight 现已成为 OpenBot Apps 市场中可连接的 **App**，也可以手动将其添加为 URL 类型的 MCP 服务器
 - 将智能体指向记忆库后，它就能使用 `recall`、`retain`、`sync_retain` 和 `reflect`，以及心智模型和文档工具
 - 记忆在线程结束、上下文压缩和重启后依然存在
 - 指向**同一记忆库的每个智能体都能读取相同的记忆**，所以 Codex 学到的内容，Claude 也能知道
-- 设置只需一个 URL 和一个请求头
+- 通过市场设置只需点击并登录，手动设置则需要一个 URL 和一个请求头
 - 支持 [Hindsight Cloud](https://ui.hindsight.vectorize.io/signup) 或自托管服务器
 
 ---
@@ -59,7 +59,11 @@ OpenBot 确实自带记忆功能，即 `remember` 和 `search_memories` 工具�
 
 ## 两分钟完成设置 {#set-it-up-in-two-minutes}
 
-在 OpenBot 中，打开 **Local** 服务器的设置 → **MCP** → **Connect to a custom MCP**，选择 **Streamable HTTP**，然后输入服务器 URL 和 `Authorization` 请求头：
+**2026 年 11 月更新。** Hindsight 现已作为可连接的 App 上架 OpenBot 的 Apps 市场；本文发布时该市场尚不存在。打开 **Apps**，找到 **Hindsight** 并选择 **Connect**，无需输入 URL。在浏览器中登录 Hindsight Cloud，或选择 **Use an API key instead** 并粘贴密钥。然后为需要共享记忆的智能体启用该 App。有关发布过程的详细说明，请参阅 [Hindsight 现已成为 OpenBot 的一款 App](/blog/2026/11/12/hindsight-openbot-app)。
+
+有一点区别值得注意：市场中的 App 连接到 Hindsight 的**多记忆库**地址，因此智能体需要在每次调用时指定记忆库，而不是由 URL 固定。请告知每个智能体使用哪个记忆库，否则它会回退到名为 `default` 的记忆库。
+
+如果要将连接固定到一个记忆库，可以手动添加。在 OpenBot 中，打开 **Local** 服务器的设置 → **MCP** → **Connect to a custom MCP**，选择 **Streamable HTTP**，然后输入服务器 URL 和 `Authorization` 请求头：
 
 ```
 URL:    https://api.hindsight.vectorize.io/mcp/<bank>/
@@ -118,7 +122,9 @@ URL 中的 `<bank>` 部分决定范围，这是这里最主要的设计决策。
 - **每个团队一个记忆库**适用于跨越单个项目长期存在的上下文，例如审查标准或发布流程。
 - 如果需要隔离，可以选择**每个智能体一个记忆库**，但这会放弃共享层，而共享正是运行这套方案的原因。
 
-由于记忆库是 URL 的一部分，每个连接都只限定在一个记忆库内，智能体无需传递 `bank_id`。更改范围需要修改服务器条目，无需寻找藏在智能体内部的设置。
+手动添加服务器时，由于记忆库是 URL 的一部分，每个连接都只限定在一个记忆库内，智能体无需传递 `bank_id`。更改范围需要修改服务器条目，无需寻找藏在智能体内部的设置。
+
+市场中的 App 则相反：一个连接可以访问账户中的所有记忆库，智能体在每次调用时指定记忆库。这更加灵活，但安全性较低，因为没有指定记忆库的智能体会悄悄写入 `default`，而不是你原本想用的记忆库。
 
 ---
 
@@ -147,7 +153,7 @@ Hindsight Memory skill 正是为此而设计。它会引导智能体始终使用
 ## 后续步骤 {#next-steps}
 
 - **[注册 Hindsight Cloud](https://ui.hindsight.vectorize.io/signup)** 并生成密钥，大约需要一分钟
-- 在 OpenBot 的 Local 服务器设置中添加 Hindsight MCP URL（**MCP → Connect to a custom MCP**）
+- 从 OpenBot 的 **Apps** 市场安装 Hindsight，或在 Local 服务器设置中手动添加 MCP URL（**MCP → Connect to a custom MCP**）
 - 为需要使用的智能体启用 Hindsight Memory skill
 - 阅读 [OpenBot 集成参考文档](/sdks/integrations/openbot)，了解完整工具列表和自托管细节
 - 将两个不同的智能体指向同一记忆库，运行上述演示

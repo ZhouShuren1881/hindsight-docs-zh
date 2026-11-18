@@ -117,7 +117,7 @@ hindsight-embed control stop
 |----------|-------------|---------|
 | `HINDSIGHT_API_LLM_API_KEY` | **必填**。LLM 服务提供方的 API 密钥 | - |
 | `HINDSIGHT_API_LLM_PROVIDER` | LLM 服务提供方：`openai`、`anthropic`、`gemini`、`groq`、`minimax`、`ollama` | `openai` |
-| `HINDSIGHT_API_LLM_MODEL` | 模型名称 | `gpt-4o-mini` |
+| `HINDSIGHT_API_LLM_MODEL` | 模型名称 | `gpt-5-nano` |
 | `HINDSIGHT_EMBED_DAEMON_LOG_MAX_BYTES` | 守护进程启动时，若日志达到此大小则进行轮换；`0` 表示禁用轮换 | `10485760`（10 MiB） |
 | `HINDSIGHT_EMBED_DAEMON_LOG_BACKUP_COUNT` | 保留的备份数；`0` 表示在启动时截断已达到大小上限的日志 | `3` |
 | `HINDSIGHT_EMBED_CONTROL_PORT` | `hindsight-embed control start` 的默认端口 | `7878` |
